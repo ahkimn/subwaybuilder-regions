@@ -1,2 +1,2 @@
-# subwaybuilder-additional-statistics
-Mod to show/store additional statistics from the game
+# subwaybuilder-regions
+Mod to show/store regions within the game and analyze region-level data.

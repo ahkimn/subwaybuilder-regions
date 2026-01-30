@@ -1,0 +1,37 @@
+{
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^25.0.10",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.3.2",
+    "csv-parse": "^6.1.0",
+    "fs-extra": "^11.3.3",
+    "maplibre-gl": "^5.16.0",
+    "minimist": "^1.2.8",
+    "path": "^0.12.7",
+    "tsx": "^4.21.0"
+  },
+  "name": "subwaybuilder-additional-statistics",
+  "version": "1.0.0",
+  "description": "Mod to show/store additional statistics from the game",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build",
+    "serve": "tsx scripts/serve-data.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahkimn/subwaybuilder-additional-statistics.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ahkimn/subwaybuilder-additional-statistics/issues"
+  },
+  "homepage": "https://github.com/ahkimn/subwaybuilder-additional-statistics#readme"
+}

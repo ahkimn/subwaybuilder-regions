@@ -1,0 +1,10 @@
+# Ignore data directories
+data/
+source_data/
+
+# Ignore dependencies / build outputs
+dist/
+node_modules/
+
+# Ignore type declarations
+types.d.ts
