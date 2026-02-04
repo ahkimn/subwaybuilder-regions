@@ -1,11 +1,12 @@
 
-import { RegionsInfoController } from '../ui/panels/info/controller';
+import { RegionsInfoPanel } from '../ui/panels/info/RegionsInfoPanel';
 import { resolveInfoPanelRoot } from '../ui/resolve/resolve-info-panel';
 import { observeInfoPanelsRoot, observeMapLayersPanel } from '../ui/observers/observers';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
 import { injectRegionToggles } from '../ui/panels/layers/toggles';
 import { observeDatasetMapLayers } from '../map/handlers';
-import { MapLayersController } from '../map/controller';
+import { RegionsMapLayers } from '../map/RegionsMapLayers';
+
 
 const SERVE_URL = 'http://127.0.0.1:8080/'
 const INDEX_FILE = `${SERVE_URL}/index.json`;
@@ -13,6 +14,7 @@ const INDEX_FILE = `${SERVE_URL}/index.json`;
 const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
 
 const api = window.SubwayBuilderAPI;
+
 
 const RegionsMod = {
 
@@ -25,8 +27,8 @@ const RegionsMod = {
   layerPanelRoot: null as HTMLElement | null,
 
   infoPanelsRoot: null as HTMLElement | null,
-  regionsInfoController: null as RegionsInfoController | null,
-  mapLayersController: null as MapLayersController | null,
+  regionsInfoController: null as RegionsInfoPanel | null,
+  mapLayersController: null as RegionsMapLayers | null,
 
   async initialize() {
 
@@ -41,7 +43,7 @@ const RegionsMod = {
     // TODO: replace with local mod storage
     await this.registry.build();
 
-    this.regionsInfoController = new RegionsInfoController(REGIONS_INFO_PANEL_ID,
+    this.regionsInfoController = new RegionsInfoPanel(REGIONS_INFO_PANEL_ID,
       this.getInfoPanelRoot.bind(this)
     );
 
@@ -82,7 +84,7 @@ const RegionsMod = {
 
   async onMapReady(map: maplibregl.Map) {
     this.map = map;
-    this.mapLayersController = new MapLayersController(map, this.regionsInfoController!);
+    this.mapLayersController = new RegionsMapLayers(map, this.regionsInfoController!);
     // map.on('click', (e) => {
     //   console.log('[Regions] Map clicked at ', e.lngLat);
     //   console.log(`${this.currentCityCode}, ${this.map?.getBounds().getSouth()}, ${this.map?.getBounds().getWest()}, ${this.map?.getBounds().getNorth()}, ${this.map?.getBounds().getEast()}`);

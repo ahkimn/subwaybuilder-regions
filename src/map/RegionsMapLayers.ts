@@ -1,13 +1,13 @@
 import { RegionDataset } from "../core/datasets/RegionDataset";
-import { RegionsInfoController } from "../ui/panels/info/controller";
+import { RegionsInfoPanel } from "../ui/panels/info/RegionsInfoPanel";
 import { LayerToggleOptions } from "../ui/types/LayerToggleOptions";
 import { renderDataset } from "./render";
 
-export class MapLayersController {
+export class RegionsMapLayers {
   private map: maplibregl.Map;
-  private infoController: RegionsInfoController;
+  private infoController: RegionsInfoPanel;
 
-  constructor(map: maplibregl.Map, infoController: RegionsInfoController) {
+  constructor(map: maplibregl.Map, infoController: RegionsInfoPanel) {
     this.map = map;
     this.infoController = infoController;
   }

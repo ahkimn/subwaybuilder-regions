@@ -1,7 +1,7 @@
 import { RegionDataset } from "../core/datasets/RegionDataset";
-import { RegionsInfoController } from "../ui/panels/info/controller";
+import { RegionsInfoPanel } from "../ui/panels/info/RegionsInfoPanel";
 
-export function setupLabelHandlers(dataset: RegionDataset, map: maplibregl.Map, controller: RegionsInfoController): void {
+export function setupLabelHandlers(dataset: RegionDataset, map: maplibregl.Map, controller: RegionsInfoPanel): void {
   const labelLayerId = dataset.labelLayerId!;
 
   const sources = [
@@ -81,7 +81,7 @@ export function clearHandlers(
 export function observeDatasetMapLayers(
   dataset: RegionDataset,
   map: maplibregl.Map,
-  controller: RegionsInfoController
+  controller: RegionsInfoPanel
 ): void {
   // Handle when layers are removed outside of the mod
   const reconcile = () => {

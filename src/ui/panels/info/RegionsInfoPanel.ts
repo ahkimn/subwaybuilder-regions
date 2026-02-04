@@ -1,7 +1,7 @@
 import { RegionDataset } from "../../../core/datasets/RegionDataset";
-import { buildTestRegionPanel } from "../../elements/info-panel";
+import { buildTestRegionPanel } from "./info-panel";
 
-export class RegionsInfoController {
+export class RegionsInfoPanel {
   private root: HTMLElement | null = null;
   private containerId: string;
 
