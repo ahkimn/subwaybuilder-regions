@@ -6,5 +6,5 @@ source_data/
 dist/
 node_modules/
 
-# Ignore type declarations
-types.d.ts
+# Misc
+MODDING.md

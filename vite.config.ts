@@ -8,7 +8,7 @@ export default {
     lib: {
       entry: resolve(sourceDirectory, 'main.js'),
       formats: ['iife'],
-      name: 'SubwayBuilderAdditionalStatistics',
+      name: 'SubwayBuilderRegions',
       fileName: () => 'index.js'
     },
     rollupOptions: {
@@ -21,6 +21,7 @@ export default {
       }
     },
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    minify: false
   }
 } satisfies UserConfig;

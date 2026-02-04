@@ -1,40 +1,164 @@
 
+import { RegionsInfoController } from './ui/info-panel/controller';
+import { resolveInfoPanelRoot } from './ui/resolve-elements';
+import { observeInfoPanelsRoot, observeMapLayersPanel } from './ui/observers';
+import { RegionDatasetRegistry } from './core/dataset-registry';
+import { injectRegionToggles } from './ui/map-layers/toggles';
+import { observeDatasetMapLayers } from './ui/map-layers/handlers';
+import { MapLayersController } from './ui/map-layers/controller';
+
+const SERVE_URL = 'http://127.0.0.1:8080/'
+const INDEX_FILE = `${SERVE_URL}/index.json`;
+
+const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
+
 const api = window.SubwayBuilderAPI;
-const DATA_DIR = '/Users/AlexK/Github/subwaybuilder-additional-statistics/data';
 
-if (!api) {
-  console.error("[Additional Statistics] API not available");
-}
+const RegionsMod = {
 
-const latLngBuffer = 0.05; // Approximately 5km for US/GB latitudes
+  registry: new RegionDatasetRegistry(INDEX_FILE, SERVE_URL),
+  currentCityCode: null as string | null,
+  map: null as maplibregl.Map | null,
 
-const regionUnitedStates = "US";
-const regionGreatBritain = "GB";
+  layerPanelObserver: null as MutationObserver | null,
+  lastInjectedCity: null as string | null,
+  layerPanelRoot: null as HTMLElement | null,
 
-let cityCode: String;
+  infoPanelsRoot: null as HTMLElement | null,
+  regionsInfoController: null as RegionsInfoController | null,
+  mapLayersController: null as MapLayersController | null,
 
+  async initialize() {
 
-api.hooks.onMapReady(async (map) => {
+    console.log("[Regions] Initializing Mod");
 
-  const bounds = map.getMaxBounds() || map.getBounds();
-  const swBounds = bounds.getSouthWest();
-  const neBounds = bounds.getNorthEast();
+    if (!api) {
+      console.error("[Regions] API not available");
+      return;
+    }
 
-  map.queryRenderedFeatures();
+    // Build dataset registry from data index file. 
+    // TODO: replace with local mod storage
+    await this.registry.build();
 
+    this.regionsInfoController = new RegionsInfoController(REGIONS_INFO_PANEL_ID,
+      this.getInfoPanelRoot.bind(this)
+    );
 
-  console.log('[Additional Statistics] Map ready. Boundaries SW:', [swBounds.lat, swBounds.lng], 'NE:', [neBounds.lat, neBounds.lng]);
+    api.hooks.onCityLoad(this.onCityLoad.bind(this));
+    api.hooks.onMapReady(this.onMapReady.bind(this));
 
-  console.log('[Additional Statistics] Loading districts:')
-  const testPath = `${DATA_DIR}/england_districts.geojson`;
+    this.layerPanelObserver = observeMapLayersPanel((panel) => {
+      this.layerPanelRoot = panel;
+      this.tryInjectLayerPanelUI();
+    });
 
-  const json = await fetch(testPath).then((r) => r.json());
+    observeInfoPanelsRoot(this.getInfoPanelRoot.bind(this), this.regionsInfoController!.clear.bind(this.regionsInfoController));
 
-  console.log('[Additional Statistics] Finished Loading districts:');
+    console.log("[Regions] Mod Initialized");
+  },
 
+  getInfoPanelRoot(): HTMLElement | null {
+    if (!this.infoPanelsRoot && document.contains(this.infoPanelsRoot)) {
+      return this.infoPanelsRoot;
+    }
 
-});
+    this.infoPanelsRoot = resolveInfoPanelRoot();
+    return this.infoPanelsRoot;
+  },
 
+  toggleDatasetVisibility(name: string) {
+    const dataset = this.registry.getDatasetByCityAndName(this.currentCityCode!, name);
 
-api.ui.showNotification("Additional Statistics loaded!", "success");
-console.log("[Additional Statistics] Loaded");
+    if (!dataset || !this.map) {
+      console.warn(`[Regions] Cannot toggle visibility for dataset ${name}`);
+      return;
+    }
+
+    // Retrigger render in case layers/source have been unloaded from the map
+    this.mapLayersController!.ensureDatasetRendered(dataset);
+    this.mapLayersController!.toggleDatasetVisibility(dataset);
+  },
+
+  async onMapReady(map: maplibregl.Map) {
+    this.map = map;
+    this.mapLayersController = new MapLayersController(map, this.regionsInfoController!);
+    // map.on('click', (e) => {
+    //   console.log('[Regions] Map clicked at ', e.lngLat);
+    //   console.log(`${this.currentCityCode}, ${this.map?.getBounds().getSouth()}, ${this.map?.getBounds().getWest()}, ${this.map?.getBounds().getNorth()}, ${this.map?.getBounds().getEast()}`);
+    // })
+    this.getInfoPanelRoot();
+    this.tryLoadMapLayers();
+  },
+
+  async onCityLoad(cityCode: string) {
+    // TODO: Add mechanism to determine BoundaryBox from SubwayBuilderAPI for dynamic generation of datasets
+    this.reset();
+    this.currentCityCode = cityCode;
+    await this.registry.loadCityDatasets(cityCode);
+    api.ui.showNotification("[Regions] City data loaded", "success");
+    this.tryLoadMapLayers();
+  },
+
+  tryLoadMapLayers() {
+    // Ensure map and at least one region dataset is available
+    if (!this.map) {
+      console.warn("[Regions] Map not ready");
+      return;
+    }
+    if (!this.registry.getCityDatasets(this.currentCityCode!)) {
+      console.warn("[Regions] No region data available to load onto map");
+      return;
+    }
+
+    // Ensure map layers are only loaded once
+    if ((this as any).loadedMapLayers) return;
+    (this as any).loadedMapLayers = true;
+
+    const cityDatasets = this.registry.getCityDatasets(this.currentCityCode!)
+
+    console.log("[Regions] Map layers loaded");
+    console.log("[Regions] Available layers: ", cityDatasets.map(ds => ds.displayName).join(', '));
+
+    for (const dataset of cityDatasets) {
+      observeDatasetMapLayers(dataset, this.map, this.regionsInfoController!);
+    };
+
+    this.tryInjectLayerPanelUI();
+  },
+
+  tryInjectLayerPanelUI() {
+    if (!this.layerPanelRoot || !this.currentCityCode) return;
+
+    const cityDatasets = this.registry.getCityDatasets(this.currentCityCode!);
+
+    if (this.lastInjectedCity === this.currentCityCode) return;
+    this.lastInjectedCity = this.currentCityCode;
+
+    const toggleOptions = cityDatasets.map((ds) => this.mapLayersController!.getDatasetToggleOptions(ds));
+    injectRegionToggles(this.layerPanelRoot, toggleOptions);
+    console.log('[Regions] Layer panel UI injected');
+  },
+
+  reset() {
+    if (this.currentCityCode) {
+      const cityDatasets = this.registry.getCityDatasets(this.currentCityCode);
+      for (const dataset of cityDatasets) {
+        dataset.unloadData();
+        this.mapLayersController!.removeDatasetMapLayers(dataset);
+      }
+    }
+    this.currentCityCode = null;
+    this.lastInjectedCity = null;
+    (this as any).loadedMapLayers = false;
+  },
+
+  // -- Debugging --
+  printRegistry() {
+    this.registry.printIndex();
+  },
+};
+
+(window as any).SubwayBuilderRegions = RegionsMod;
+
+RegionsMod.initialize();

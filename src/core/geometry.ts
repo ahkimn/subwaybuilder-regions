@@ -1,13 +1,9 @@
-import type { Feature, Polygon, MultiPolygon, Geometry, GeoJsonProperties } from 'geojson';
+import type { Feature, Point, Polygon, MultiPolygon, Geometry, GeoJsonProperties } from 'geojson';
 import * as turf from '@turf/turf';
+import { cleanCoords } from '@turf/clean-coords';
 import { parseNumber } from '../utils/utils';
-
-export type BoundaryBox = {
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-}
+import { BoundaryBox } from './datasets';
+import polylabel from 'polylabel';
 
 export function isPolygonFeature(
   feature: Feature
@@ -26,15 +22,59 @@ export function isFullyWithinBBox(
     return turf.booleanWithin(feature, bboxPolygon);
   }
 
-  for (const coords of feature.geometry.coordinates) {
-    const poly: Feature<Polygon> = turf.polygon(coords);
+  try {
 
-    if (!turf.booleanWithin(poly, bboxPolygon)) {
-      return false;
+    for (const coords of feature.geometry.coordinates) {
+      const poly: Feature<Polygon> = turf.polygon(coords);
+
+      if (!turf.booleanWithin(poly, bboxPolygon)) {
+        return false;
+      }
     }
+  } catch (err) {
+
+    console.warn('Error validating MultiPolygon within bbox for feature:', feature.id, ' Error:', err);
+    // Fallback check for complex/malformed MultiPolygon geometries
+    return    turf.booleanContains(bboxPolygon, turf.bboxPolygon(turf.bbox(feature)))
   }
 
   return true;
+}
+
+function tryLabelPoint(feature: Feature<Polygon | MultiPolygon>): Feature<Point> {
+
+  const coords = feature.geometry.type === 'Polygon' ? feature.geometry.coordinates : feature.geometry.coordinates[0];
+
+  if (coords && coords.length > 0) {
+    try {
+      return turf.point(polylabel(coords, 1e-6));
+    } catch (err) {
+      console.warn('\tFailed to compute polylabel for feature:', feature.id, err);
+    }
+  }
+
+  try {
+    return turf.pointOnFeature(feature);
+  } catch (err) {
+    console.warn('\tFailed to compute pointOnFeature for feature:', feature.id, err);
+  }
+
+  try {
+    console.warn('\tFalling back to center of mass for label point for feature:', feature.id);
+    return turf.centerOfMass(feature);
+  } catch (err) {
+    console.warn('\tFailed to compute centerOfMass for feature:', feature.id, err);
+  }
+
+  try {
+    console.warn('\tFalling back to centroid for label point for feature:', feature.id);
+    return turf.centroid(feature);
+  } catch (err) {
+    console.warn('\tFailed to compute centroid for feature:', feature.id, err);
+  }
+
+  throw new Error('Unable to determine label point for feature: ' + feature.id);
+
 }
 
 export function filterAndClipRegionsToBoundary(
@@ -43,7 +83,7 @@ export function filterAndClipRegionsToBoundary(
   idProperty: string,
   nameProperty: string,
   displayNameProperties?: string[],
-  
+  populationNameProperty?: string  
 
 ): Array<Feature<Geometry, GeoJsonProperties>> {
 
@@ -70,23 +110,24 @@ export function filterAndClipRegionsToBoundary(
     const intersection = turf.intersect(
       turf.featureCollection([feature, bboxPolygon])
     );
+    const cleanedIntersection = cleanCoords(intersection);
 
-    if (!intersection || intersection.geometry.coordinates.length === 0) {
+    if (!cleanedIntersection || cleanedIntersection.geometry.coordinates.length === 0) {
       // Handle edge case of touching/malformed geometry
       console.warn('No valid intersection geometry for feature:', feature.id);
       continue;
     }
 
     const fullyWithinBoundary = isFullyWithinBBox(feature, bboxPolygon);
-    const clippedRegion = fullyWithinBoundary ? feature : intersection;
+    const clippedRegion = fullyWithinBoundary ? feature : cleanedIntersection;
 
-    const labelPoint = turf.pointOnFeature(clippedRegion);
+    const labelPoint = tryLabelPoint(clippedRegion);
 
 
     // Input GeoJSON should include properties
     const featureProperties: GeoJsonProperties = feature.properties!;    
 
-    const regionProperties: GeoJsonProperties = {
+    let regionProperties: GeoJsonProperties = {
       ID: featureProperties[idProperty]!,
       NAME: featureProperties[nameProperty]!,
       DISPLAY_NAME:  displayNameProperties
@@ -99,6 +140,14 @@ export function filterAndClipRegionsToBoundary(
       TOTAL_AREA: turf.area(feature) / 1_000_000
     }
 
+    if (populationNameProperty && featureProperties[populationNameProperty]) {
+      const populationValue = featureProperties[populationNameProperty]!;
+      regionProperties = {
+        ...regionProperties,
+        POPULATION: parseNumber(populationValue)
+      }
+    };    
+
     clippedRegion.properties = regionProperties;
     clippedRegion.id = feature.id;
 
@@ -110,13 +159,18 @@ export function filterAndClipRegionsToBoundary(
 
 export function attachRegionPopulationData(
   features: Array<Feature<Geometry, GeoJsonProperties>>,
-  populationIndex: Map<string, string>
+  populationIndex: Map<string, string>,
+  idProperty: string
 ): void {
   for (const feature of features) {
 
+    if (feature.properties!.POPULATION != null) {
+      continue; // Skip if population already set
+    }
+
     // Name matching is fragile but BUA codes are not consistent between years?
-    const featureName = feature.properties!.NAME;
-    const featurePopulation = populationIndex.has(featureName) ? parseNumber(populationIndex.get(featureName)!) : null;
+    const featureCode = feature.properties![idProperty];
+    const featurePopulation = populationIndex.has(featureCode) ? parseNumber(populationIndex.get(featureCode)!) : null;
     
     if (featurePopulation !== null) {
       feature.properties = {
@@ -124,8 +178,7 @@ export function attachRegionPopulationData(
         POPULATION: featurePopulation
       }
     } else {
-      console.warn('  No population data found for feature:', featureName, ' ID: ', feature.properties!.ID);
-    }
-    
+      console.warn('  No population data found for feature:', feature.properties!.NAME, ' ID: ', featureCode);
+    }    
   }
 }
