@@ -1,11 +1,11 @@
 
-import { RegionsInfoController } from './ui/info-panel/controller';
-import { resolveInfoPanelRoot } from './ui/resolve-elements';
-import { observeInfoPanelsRoot, observeMapLayersPanel } from './ui/observers';
-import { RegionDatasetRegistry } from './core/dataset-registry';
-import { injectRegionToggles } from './ui/map-layers/toggles';
-import { observeDatasetMapLayers } from './ui/map-layers/handlers';
-import { MapLayersController } from './ui/map-layers/controller';
+import { RegionsInfoController } from '../ui/panels/info/controller';
+import { resolveInfoPanelRoot } from '../ui/resolve/resolve-info-panel';
+import { observeInfoPanelsRoot, observeMapLayersPanel } from '../ui/observers/observers';
+import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
+import { injectRegionToggles } from '../ui/panels/layers/toggles';
+import { observeDatasetMapLayers } from '../map/handlers';
+import { MapLayersController } from '../map/controller';
 
 const SERVE_URL = 'http://127.0.0.1:8080/'
 const INDEX_FILE = `${SERVE_URL}/index.json`;
@@ -139,7 +139,7 @@ const RegionsMod = {
       this.mapLayersController!.ensureDatasetRendered(ds);
     });
     const toggleOptions = cityDatasets.map((ds) => this.mapLayersController!.getDatasetToggleOptions(ds));
-    
+
     injectRegionToggles(this.layerPanelRoot, toggleOptions);
     console.log('[Regions] Layer panel UI injected');
   },

@@ -21,14 +21,6 @@ export function createCheckBoxIcon(): HTMLSpanElement {
   return iconWrapper;
 }
 
-export function createCheckboxLabel(buttonElementId: string, labelText: string): HTMLLabelElement {
-  const label = document.createElement('label');
-  label.htmlFor = buttonElementId;
-  label.className = 'text-sm select-none cursor-pointer';
-  label.textContent = labelText;
-  return label;
-}
-
 export function createCheckbox(elementId: string): HTMLButtonElement {
   // Checkbox button -- mirrors current SubwayBuilder UI style
   const button = document.createElement('button');

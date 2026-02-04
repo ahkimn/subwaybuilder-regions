@@ -1,5 +1,6 @@
-import { createCheckboxLabel, createCheckbox, createCheckBoxIcon, updateCheckboxState } from "../../elements/checkbox";
-import { LayerToggleOptions } from "../types/layer-toggle-options";
+import { createCheckbox, createCheckBoxIcon, updateCheckboxState } from "../../elements/checkbox";
+import { createLabel } from "../../elements/labels";
+import { LayerToggleOptions } from "../../types/LayerToggleOptions";
 
 const REGIONS_CONTAINER_ATTR = 'data-regions-mod';
 const REGIONS_TOGGLE_ATTR = 'data-regions-toggle';
@@ -14,11 +15,11 @@ export function createToggleRow(
   const buttonElementId = `regions-toggle-${options.id}`;
   const icon = createCheckBoxIcon();
   const button = createCheckbox(buttonElementId);
-  const label = createCheckboxLabel(buttonElementId, options.label);
+  const label = createLabel(buttonElementId, options.label);
   button.appendChild(icon);
 
   // Initial state
-  updateCheckboxState(icon,button, options.isVisible());
+  updateCheckboxState(icon, button, options.isVisible());
 
   // Click handler
   button.addEventListener('click', () => {
@@ -57,21 +58,21 @@ export function injectRegionToggles(panel: HTMLElement, datasetsToggleOptions: L
     return;
   }
 
-   let regionSegment = segmentsContainer!.querySelector(
+  let regionSegment = segmentsContainer!.querySelector(
     `div[${REGIONS_CONTAINER_ATTR}]`
   ) as HTMLElement | null;
 
   if (!regionSegment) {
 
-  regionSegment = document.createElement('div');
-  regionSegment.setAttribute(REGIONS_CONTAINER_ATTR, 'true');
-  regionSegment.className = 'space-y-1';
+    regionSegment = document.createElement('div');
+    regionSegment.setAttribute(REGIONS_CONTAINER_ATTR, 'true');
+    regionSegment.className = 'space-y-1';
 
-  const segmentHeader = document.createElement('h4');
-  segmentHeader.className = 'font-medium mb-1.5 text-xs text-muted-foreground';
-  segmentHeader.textContent = 'Region Data Layers';
+    const segmentHeader = document.createElement('h4');
+    segmentHeader.className = 'font-medium mb-1.5 text-xs text-muted-foreground';
+    segmentHeader.textContent = 'Region Data Layers';
 
-  regionSegment.appendChild(segmentHeader);
+    regionSegment.appendChild(segmentHeader);
   }
 
   const existingToggles = regionSegment.querySelectorAll(

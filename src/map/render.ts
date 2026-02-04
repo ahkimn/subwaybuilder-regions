@@ -1,6 +1,6 @@
 import { ExpressionSpecification, MapLayerEventType } from "maplibre-gl";
-import { RegionDataset } from "../../core/datasets";
-import { PRIMARY_FILL_COLORS } from "../types/colors";
+import { RegionDataset } from "../core/datasets/RegionDataset";
+import { PRIMARY_FILL_COLORS } from "../ui/types/DisplayColor";
 
 export type MapListener = {
   eventType: keyof MapLayerEventType;

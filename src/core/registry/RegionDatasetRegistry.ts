@@ -1,9 +1,4 @@
-import { RegionDataset } from "./datasets";
-
-type RegistryIndexEntry = {
-  id: string;
-  name: string;
-}
+import { RegionDataset } from "../datasets/RegionDataset";
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
@@ -43,30 +38,31 @@ export class RegionDatasetRegistry {
 
   // -- Setup -- //
   async build() {
-      this.clear();
-  
-      const index = await fetch(this.indexFile).then(res => res.json());
-  
-      for (const[cityCode, datasets] of Object.entries(index)) {
-        let colorIndex = 0;
-  
-        for (const idx of datasets as RegistryIndexEntry[]) {    
-          this.registerDataset(
-            new RegionDataset(
-              idx.id,
-              cityCode,
-              {
-                type: 'static',
-                dataPath: `${this.serveUrl}/${cityCode}/${idx.id}.geojson`,
-                writable: false
-              },
-            idx.name,
+    this.clear();
+
+    const index = await fetch(this.indexFile).then(res => res.json());
+
+    for (const [cityCode, datasets] of Object.entries(index)) {
+      let colorIndex = 0;
+
+      for (const idx of datasets as { id: string; name: string }[]) {
+        const { id, name } = idx;
+        this.registerDataset(
+          new RegionDataset(
+            id,
+            cityCode,
+            {
+              type: 'static',
+              dataPath: `${this.serveUrl}/${cityCode}/${id}.geojson`,
+              writable: false
+            },
+            name,
             colorIndex++
           )
-            )
-        }
+        )
       }
-    }  
+    }
+  }
 
   clear(): void {
     this.datasets.clear();

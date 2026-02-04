@@ -6,7 +6,7 @@ const sourceDirectory = resolve(__dirname, 'src');
 export default {
   build: {
     lib: {
-      entry: resolve(sourceDirectory, 'main.js'),
+      entry: resolve(sourceDirectory, 'app', 'main.ts'),
       formats: ['iife'],
       name: 'SubwayBuilderRegions',
       fileName: () => 'index.js'
@@ -15,7 +15,6 @@ export default {
       external: ['maplibre-gl'],
       output: {
         globals: {
-          
           'maplibre-gl': 'maplibregl'
         }
       }

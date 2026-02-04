@@ -1,22 +1,8 @@
-import { PRIMARY_FILL_COLORS } from "../ui/types/colors";
-import { fetchGeoJSON } from "../utils/utils";
-import { MapListener } from "../ui/map-layers/render";
+import { MapListener } from "../../map/render";
+import { PRIMARY_FILL_COLORS } from "../../ui/types/DisplayColor";
+import { fetchGeoJSON } from "../../utils/utils";
+import { DatasetSource, LAYER_PREFIX, SOURCE_PREFIX } from "./types";
 
-const SOURCE_PREFIX = 'regions-src';
-const LAYER_PREFIX = 'regions-layer';
-
-export type BoundaryBox = {
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-};
-
-export type DatasetSource = {
-  type: 'static' | 'user';
-  dataPath: string; // relative path of Dataset from mod serve or user data directory
-  writable: boolean; // whether or not the data can be overwritten by the user
-}
 
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
@@ -29,11 +15,11 @@ export class RegionDataset {
   // Data store properties (boundaries / labels)
   boundaryData: GeoJSON.FeatureCollection | null = null;
   labelData: GeoJSON.FeatureCollection | null = null;
-  
+
   // Map layer properties
   boundaryLayerId: string | null = null;
   boundaryLineLayerId: string | null = null;
-  
+
   labelLayerId: string | null = null;
 
   boundaryDisplayColor: string | null = null;
@@ -58,14 +44,10 @@ export class RegionDataset {
     this.id = id;
     this.cityCode = cityCode;
     this.source = source;
-    this.displayName = displayName? displayName : id;
+    this.displayName = displayName ? displayName : id;
     if (colorIndex != null) {
-      this.boundaryDisplayColor = PRIMARY_FILL_COLORS[
-        colorIndex % PRIMARY_FILL_COLORS.length
-      ].hex;
-      this.hoverDisplayColor = PRIMARY_FILL_COLORS[
-        colorIndex % PRIMARY_FILL_COLORS.length
-      ].hover || null;
+      this.boundaryDisplayColor = PRIMARY_FILL_COLORS[colorIndex % PRIMARY_FILL_COLORS.length].hex;
+      this.hoverDisplayColor = PRIMARY_FILL_COLORS[colorIndex % PRIMARY_FILL_COLORS.length].hover || null;
     }
   }
 
@@ -130,19 +112,19 @@ export class RegionDataset {
   }
 
   setLayerIds(ids: {
-  boundaryLayerId: string;
-  boundaryLineLayerId: string;
-  labelLayerId: string;
-}) {
-  this.boundaryLayerId = ids.boundaryLayerId;
-  this.boundaryLineLayerId = ids.boundaryLineLayerId;
-  this.labelLayerId = ids.labelLayerId;
-}
+    boundaryLayerId: string;
+    boundaryLineLayerId: string;
+    labelLayerId: string;
+  }) {
+    this.boundaryLayerId = ids.boundaryLayerId;
+    this.boundaryLineLayerId = ids.boundaryLineLayerId;
+    this.labelLayerId = ids.labelLayerId;
+  }
 
   clearLayerIds() {
-  this.boundaryLayerId = null;
-  this.boundaryLineLayerId = null;
-  this.labelLayerId = null;
+    this.boundaryLayerId = null;
+    this.boundaryLineLayerId = null;
+    this.labelLayerId = null;
   }
 
   buildLabelData(): void {
@@ -176,7 +158,7 @@ export class RegionDataset {
           NAME: DISPLAY_NAME || NAME,
           ID: ID
         }
-      }
+      };
 
       labelFeatures.push(labelFeature);
     });
@@ -185,5 +167,5 @@ export class RegionDataset {
       type: 'FeatureCollection',
       features: labelFeatures
     };
-  }  
-};
+  }
+}

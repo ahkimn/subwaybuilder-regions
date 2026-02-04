@@ -1,6 +1,6 @@
-import { RegionDataset } from "../../core/datasets";
-import { RegionsInfoController } from "../info-panel/controller";
-import { LayerToggleOptions } from "../types/layer-toggle-options";
+import { RegionDataset } from "../core/datasets/RegionDataset";
+import { RegionsInfoController } from "../ui/panels/info/controller";
+import { LayerToggleOptions } from "../ui/types/LayerToggleOptions";
 import { renderDataset } from "./render";
 
 export class MapLayersController {

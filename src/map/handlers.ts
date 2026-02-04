@@ -1,5 +1,5 @@
-import { RegionDataset } from "../../core/datasets";
-import { RegionsInfoController } from "../info-panel/controller";
+import { RegionDataset } from "../core/datasets/RegionDataset";
+import { RegionsInfoController } from "../ui/panels/info/controller";
 
 export function setupLabelHandlers(dataset: RegionDataset, map: maplibregl.Map, controller: RegionsInfoController): void {
   const labelLayerId = dataset.labelLayerId!;
