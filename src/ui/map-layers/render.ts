@@ -80,6 +80,7 @@ export function renderDataset(dataset: RegionDataset, map: maplibregl.Map, light
   boundaryLineLayerId: string;
   labelLayerId: string;
 } {
+  console.log(`[Regions] Rendering dataset ${dataset.displayName} on map`);
   const sourceId = `${dataset.getSourcePrefix()}-boundaries`;
   const labelSourceId = `${dataset.getSourcePrefix()}-labels`;
   const boundaryLayerId = `${dataset.getLayerPrefix()}-boundary-fill`;

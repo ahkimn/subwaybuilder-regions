@@ -135,7 +135,11 @@ const RegionsMod = {
     if (this.lastInjectedCity === this.currentCityCode) return;
     this.lastInjectedCity = this.currentCityCode;
 
+    cityDatasets.forEach(ds => {
+      this.mapLayersController!.ensureDatasetRendered(ds);
+    });
     const toggleOptions = cityDatasets.map((ds) => this.mapLayersController!.getDatasetToggleOptions(ds));
+    
     injectRegionToggles(this.layerPanelRoot, toggleOptions);
     console.log('[Regions] Layer panel UI injected');
   },

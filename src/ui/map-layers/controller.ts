@@ -24,14 +24,11 @@ export class MapLayersController {
   toggleDatasetVisibility(dataset: RegionDataset) {
     dataset.visible = !dataset.visible;
     this.applyDatasetVisibility(dataset);
-    console.log(
-      `[Regions] Toggled visibility for dataset ${dataset.displayName} to ${dataset.visible}`,
-    );
+    console.log(`[Regions] Toggled visibility for dataset ${dataset.displayName} to ${dataset.visible}`);
   }
 
   private applyDatasetVisibility(dataset: RegionDataset) {
     const visibility = dataset.visible ? "visible" : "none";
-
     [
       dataset.boundaryLayerId,
       dataset.boundaryLineLayerId,
