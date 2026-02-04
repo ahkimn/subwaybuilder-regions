@@ -9,5 +9,7 @@ node_modules/
 # Misc
 MODDING.md
 
+package-lock.json
+
 repo_structure.txt
 scripts/create-repo-structure.js
