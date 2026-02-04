@@ -43,7 +43,6 @@ export class RegionDatasetRegistry {
     const index = await fetch(this.indexFile).then(res => res.json());
 
     for (const [cityCode, datasets] of Object.entries(index)) {
-      let colorIndex = 0;
 
       for (const idx of datasets as { id: string; name: string }[]) {
         const { id, name } = idx;
@@ -56,8 +55,7 @@ export class RegionDatasetRegistry {
               dataPath: `${this.serveUrl}/${cityCode}/${id}.geojson`,
               writable: false
             },
-            name,
-            colorIndex++
+            name
           )
         )
       }
@@ -72,7 +70,7 @@ export class RegionDatasetRegistry {
   printIndex(): void {
     console.log("Registered Region Datasets:");
     for (const [key, dataset] of this.datasets.entries()) {
-      console.log(` - ${key} (loaded: ${dataset.loaded}, writable: ${dataset.isWritable})`);
+      console.log(` - ${key} (status: ${dataset.status}, writable: ${dataset.isWritable})`);
     }
   }
 }

@@ -33,6 +33,10 @@ export class RegionsInfoPanel {
     this.root = container;
   }
 
+  get rootElement(): HTMLElement | null {
+    return this.root;
+  }
+
   clear() {
     if (this.root && this.root.parentElement) {
       this.root.remove();

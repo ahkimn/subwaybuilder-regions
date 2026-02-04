@@ -1,8 +1,8 @@
-import { MapListener } from "../../map/render";
-import { PRIMARY_FILL_COLORS } from "../../ui/types/DisplayColor";
 import { fetchGeoJSON } from "../../utils/utils";
-import { DatasetSource, LAYER_PREFIX, SOURCE_PREFIX } from "./types";
+import { DatasetSource, DatasetStatus } from "./types";
 
+export const SOURCE_PREFIX = 'regions-src';
+export const LAYER_PREFIX = 'regions-layer';
 
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
@@ -16,22 +16,7 @@ export class RegionDataset {
   boundaryData: GeoJSON.FeatureCollection | null = null;
   labelData: GeoJSON.FeatureCollection | null = null;
 
-  // Map layer properties
-  boundaryLayerId: string | null = null;
-  boundaryLineLayerId: string | null = null;
-
-  labelLayerId: string | null = null;
-
-  boundaryDisplayColor: string | null = null;
-  hoverDisplayColor: string | null = null;
-
-  // Map interaction properties
-  visible: boolean = false;
-
-  labelLayerListeners: MapListener[] = [];
-
-  // Data state properties
-  loaded: boolean = false;
+  status: DatasetStatus = DatasetStatus.Unloaded;
   isUserEdited: boolean = false;
 
   constructor(
@@ -39,16 +24,11 @@ export class RegionDataset {
     cityCode: string,
     source: DatasetSource,
     displayName?: string,
-    colorIndex?: number
   ) {
     this.id = id;
     this.cityCode = cityCode;
     this.source = source;
     this.displayName = displayName ? displayName : id;
-    if (colorIndex != null) {
-      this.boundaryDisplayColor = PRIMARY_FILL_COLORS[colorIndex % PRIMARY_FILL_COLORS.length].hex;
-      this.hoverDisplayColor = PRIMARY_FILL_COLORS[colorIndex % PRIMARY_FILL_COLORS.length].hover || null;
-    }
   }
 
   get isWritable(): boolean {
@@ -59,36 +39,50 @@ export class RegionDataset {
     return this.source.dataPath;
   }
 
+  get isLoaded(): boolean {
+    return this.status === DatasetStatus.Loaded;
+  }
+
+  private async loadBoundaryData(): Promise<void> {
+    this.boundaryData = await fetchGeoJSON(this.source.dataPath);
+  }
+
+  private unloadData(): void {
+    this.boundaryData = null;
+    this.labelData = null;
+  }
+
   async load(): Promise<boolean> {
-    if (this.loaded) {
+    if (this.status === DatasetStatus.Loaded) {
       return true;
     }
+
+    if (this.status === DatasetStatus.Loading) {
+      return false;
+    }
+
+    this.status = DatasetStatus.Loading;
+
     try {
-      this.boundaryData = await fetchGeoJSON(this.source.dataPath);
+      await this.loadBoundaryData();
       this.buildLabelData();
-      this.loaded = true;
+      this.status = DatasetStatus.Loaded;
       this.isUserEdited = false;
       return true;
-      // We don't want to error out the mod if any single dataset fails to load properly
     } catch (err) {
-      console.warn(err);
-      this.loaded = false;
-      this.boundaryData = null;
-      this.labelData = null;
+      console.warn(
+        `[Regions] Failed to load dataset: ${this.id} for city ${this.cityCode}: `, err
+      );
+      this.status = DatasetStatus.Error;
+      this.unloadData();
       return false;
     }
   }
 
-  unloadData(): void {
-    // Dereference data -- not sure how much this will realistically help with JS garbage collection :/
-    this.boundaryData = null;
-    this.labelData = null;
-    this.boundaryLayerId = null;
-    this.boundaryLineLayerId = null;
-    this.labelLayerId = null;
-    this.loaded = false;
+  clearData(): void {
+    this.unloadData();
+    this.status = DatasetStatus.Unloaded;
     this.isUserEdited = false;
-    this.visible = false;
   }
 
   markEdited(): void {
@@ -109,22 +103,6 @@ export class RegionDataset {
 
   getIdentifier(): string {
     return `${this.cityCode}-${this.id}`;
-  }
-
-  setLayerIds(ids: {
-    boundaryLayerId: string;
-    boundaryLineLayerId: string;
-    labelLayerId: string;
-  }) {
-    this.boundaryLayerId = ids.boundaryLayerId;
-    this.boundaryLineLayerId = ids.boundaryLineLayerId;
-    this.labelLayerId = ids.labelLayerId;
-  }
-
-  clearLayerIds() {
-    this.boundaryLayerId = null;
-    this.boundaryLineLayerId = null;
-    this.labelLayerId = null;
   }
 
   buildLabelData(): void {

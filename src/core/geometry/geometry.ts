@@ -4,7 +4,7 @@ import { cleanCoords } from '@turf/clean-coords';
 import { parseNumber } from '../../utils/utils';
 import { BoundaryBox } from '../datasets/types';
 import polylabel from 'polylabel';
-import { isPolygonFeature, isFullyWithinBBox } from './isPolygonFeature';
+import { isPolygonFeature, isFullyWithinBBox } from './helpers';
 
 function tryLabelPoint(feature: Feature<Polygon | MultiPolygon>): Feature<Point> {
 
