@@ -1,5 +1,5 @@
 import { createCheckbox, createCheckBoxIcon, updateCheckboxState } from "../../elements/checkbox";
-import { createLabel } from "../../elements/labels";
+import { Label } from "../../elements/Label";
 import { LayerToggleOptions } from "../../types/LayerToggleOptions";
 
 const REGIONS_CONTAINER_ATTR = 'data-regions-mod';
@@ -15,7 +15,7 @@ export function createToggleRow(
   const buttonElementId = `regions-toggle-${options.id}`;
   const icon = createCheckBoxIcon();
   const button = createCheckbox(buttonElementId);
-  const label = createLabel(buttonElementId, options.label);
+  const label = Label(buttonElementId, options.label);
   button.appendChild(icon);
 
   // Initial state

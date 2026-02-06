@@ -40,12 +40,15 @@ export class RegionsMod {
   }
 
   private onMapReady = (map: maplibregl.Map) => {
-    this.map = map;
-
     this.mapLayers = new RegionsMapLayers(map);
     this.uiManager = new RegionsUIManager(this.mapLayers);
 
+    console.log("[Regions] Map Layers and UI Manager initialized");
+
     this.uiManager.initialize();
+
+    this.map = map;
+
     if (this.currentCityCode) {
       this.activateCity(this.currentCityCode);
     }
@@ -56,9 +59,11 @@ export class RegionsMod {
     if (this.currentCityCode) {
       this.deactivateCity();
     }
-    this.currentCityCode = cityCode;
+    console.log(`[Regions] Loading data for city: ${cityCode}`);
     await this.registry.loadCityDatasets(cityCode);
     api.ui.showNotification("[Regions] City data loaded", "success");
+
+    this.currentCityCode = cityCode;
 
     if (this.map) {
       this.activateCity(cityCode);
@@ -72,6 +77,13 @@ export class RegionsMod {
       console.error("[Regions] Cannot activate city: Map layers or UI manager not initialized");
       return;
     };
+
+    const demandData = api.gameState.getDemandData();
+    if (!demandData) {
+      console.warn("[Regions] Demand data not available on demand change");
+      return;
+    }
+    this.registry.updateWithDemandData(cityCode, demandData);
 
     const datasets = this.registry.getCityDatasets(cityCode);
     if (datasets.length === 0) {
@@ -110,8 +122,8 @@ export class RegionsMod {
 const mod = new RegionsMod();
 (window as any).SubwayBuilderRegions = {
   debug: {
-    printRegistry: () => mod.printRegistry,
-    getCurrentCityCode: () => mod.getCurrentCityCode
+    printRegistry: () => mod.printRegistry(),
+    getCurrentCityCode: () => mod.getCurrentCityCode()
   }
 }
 mod.initialize();

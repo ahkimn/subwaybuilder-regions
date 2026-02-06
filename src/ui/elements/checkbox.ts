@@ -1,3 +1,4 @@
+import { CheckboxIconHTML } from "./utils/get-icon";
 
 export function createCheckBoxIcon(): HTMLSpanElement {
   const iconWrapper = document.createElement('span');
@@ -5,19 +6,7 @@ export function createCheckBoxIcon(): HTMLSpanElement {
     'flex items-center justify-center text-current';
   iconWrapper.style.pointerEvents = 'none';
 
-  iconWrapper.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="currentColor"
-         stroke-width="2"
-         stroke-linecap="round"
-         stroke-linejoin="round"
-         class="h-4 w-4">
-      <path d="M20 6 9 17l-5-5"></path>
-    </svg>
-  `;
-
+  iconWrapper.innerHTML = CheckboxIconHTML;
   return iconWrapper;
 }
 

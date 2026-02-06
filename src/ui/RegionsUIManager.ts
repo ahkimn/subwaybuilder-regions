@@ -1,18 +1,20 @@
 import { RegionDataset } from "../core/datasets/RegionDataset";
 import { RegionsMapLayers } from "../map/RegionsMapLayers";
 import { observeInfoPanelsRoot, observeMapLayersPanel } from "./observers/observers";
-import { RegionsInfoPanel } from "./panels/info/RegionsInfoPanel";
+import { RegionsInfoPanelRenderer } from "./panels/info/RegionsInfoPanelRenderer";
 import { injectRegionToggles } from "./panels/layers/toggles";
 import { resolveInfoPanelRoot } from "./resolve/resolve-info-panel";
 
 
 export type UISurface = 'info' | 'data';
 
-const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
+const REGIONS_INFO_CONTAINER_ID = 'regions-info-container';
 
 export class RegionsUIManager {
   private mapLayers: RegionsMapLayers;
-  private infoPanel: RegionsInfoPanel;
+  private infoPanelRenderer: RegionsInfoPanelRenderer;
+
+  private initialized: boolean;
 
   layerPanelRoot: HTMLElement | null = null;
   infoPanelsRoot: HTMLElement | null = null;
@@ -29,16 +31,24 @@ export class RegionsUIManager {
   };
 
   constructor(
-    mapLayers: RegionsMapLayers
+    mapLayers: RegionsMapLayers,
   ) {
     this.mapLayers = mapLayers;
-    this.infoPanel = new RegionsInfoPanel(
-      REGIONS_INFO_PANEL_ID,
+    this.infoPanelRenderer = new RegionsInfoPanelRenderer(
+      REGIONS_INFO_CONTAINER_ID,
       this.getInfoPanelRoot.bind(this)
     );
+    this.initialized = false;
   }
 
   initialize() {
+    if (this.initialized) {
+      // Unexpected state. If this happens, it means 
+      console.error("[Regions] UI Manager is already initialized");
+      return;
+    }
+    this.initialized = true;
+
     this.mapLayers.setEvents({
       onRegionSelect: this.onRegionSelect.bind(this),
     })
@@ -49,8 +59,8 @@ export class RegionsUIManager {
     });
 
     observeInfoPanelsRoot(
-      () => this.infoPanel.rootElement,
-      () => this.infoPanel.clear()
+      () => this.infoPanelRenderer.rootElement,
+      () => this.infoPanelRenderer.tearDown()
     );
   }
 
@@ -69,7 +79,6 @@ export class RegionsUIManager {
 
     this.state.lastInjectedCity = this.state.cityCode;
 
-
     this.state.cityDatasets.forEach(ds => {
       this.mapLayers!.ensureDatasetRendered(ds);
     });
@@ -85,7 +94,7 @@ export class RegionsUIManager {
     this.state.activeFeatureId = payload.featureId;
     this.state.activeSurface = 'info'
 
-    this.infoPanel.showFeatureData(payload.dataset, payload.featureId);
+    this.infoPanelRenderer.showFeatureData(payload.dataset, payload.featureId);
   }
 
   get activeSelection() {
@@ -111,6 +120,6 @@ export class RegionsUIManager {
     this.state.activeSurface = null;
 
     this.state.cityDatasets = [];
-    this.infoPanel.clear();
+    this.infoPanelRenderer.tearDown();
   }
 }

@@ -16,7 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import minimist from 'minimist';
-import { requireNumber } from './script-utils';
+import { requireNumber } from './utils/script-utils';
 
 const DEFAULT_PORT = 8080;
 const DEFAULT_DATA_DIR = path.join(__dirname, '..', 'data');

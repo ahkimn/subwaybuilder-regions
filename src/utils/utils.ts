@@ -17,3 +17,14 @@ export function parseNumber(
 
   return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
 }
+
+export function formatFixedNumber(
+  n: number,
+  decimals: number = 0,
+  locale: string = "en-US"
+): string {
+  return n.toLocaleString(locale, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}

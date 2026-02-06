@@ -4,6 +4,7 @@ import { LayerToggleOptions } from "../ui/types/LayerToggleOptions";
 import { BASE_FILL_OPACITY, DEFAULT_DARK_MODE_BOUNDARY_SETTINGS, DEFAULT_DARK_MODE_LABEL_SETTINGS, DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS, DEFAULT_LIGHT_MODE_LABEL_SETTINGS, HOVER_FILL_OPACITY, LightMode, stateBoolean } from "./default-settings";
 
 type MapLayersState = {
+  datasetIdentifier: string,
   sourceId: string;
   labelSourceId: string;
   boundaryLayerId: string;
@@ -57,7 +58,7 @@ export class RegionsMapLayers {
 
     const datasetIdentifier = dataset.getIdentifier();
     if (this.layers.has(datasetIdentifier)) {
-      // Dataset should already be rendered
+      this.updateMapLayers(dataset, this.layers.get(datasetIdentifier)!, 'dark');
       return;
     }
 
@@ -67,20 +68,17 @@ export class RegionsMapLayers {
     const boundaryLineLayerId = `${dataset.getLayerPrefix()}-boundary-outline`;
     const labelLayerId = `${dataset.getLayerPrefix()}-label`;
 
-    this.updateSource(sourceId, dataset.boundaryData!);
-    this.updateSource(labelSourceId, dataset.labelData!);
-
-    this.addBoundaryLayers(dataset, sourceId, boundaryLayerId, boundaryLineLayerId, 'dark');
-    this.addLabelLayer(dataset, labelSourceId, labelLayerId, 'dark');
-
-    this.layers.set(datasetIdentifier, {
+    const state: MapLayersState = {
+      datasetIdentifier,
       sourceId,
       labelSourceId,
       boundaryLayerId,
       boundaryLineLayerId,
       labelLayerId,
       visible: false,
-    })
+    };
+    this.updateMapLayers(dataset, state, 'dark');
+    this.layers.set(datasetIdentifier, state)
   }
 
   toggleVisibility(dataset: RegionDataset) {
@@ -90,6 +88,7 @@ export class RegionsMapLayers {
       console.warn(`[Regions] Cannot toggle visibility for unknown dataset ${datasetIdentifier}`);
       return;
     }
+    this.ensureDatasetRendered(dataset);
     state.visible = !state.visible;
     this.applyVisibility(state);
     console.log(`[Regions] Toggled visibility for dataset ${dataset.displayName} to ${state.visible}`);
@@ -169,10 +168,19 @@ export class RegionsMapLayers {
       label: dataset.displayName,
       isVisible: () => this.isVisible(dataset),
       toggle: () => this.toggleVisibility(dataset),
+      // TODO: On map layer reset, ensure toggle state is synced
     };
   }
 
   // --- Layer Render Helpers --- //
+  private updateMapLayers(dataset: RegionDataset, state: MapLayersState, lightMode: LightMode) {
+    this.updateSource(state.sourceId, dataset.boundaryData!);
+    this.updateSource(state.labelSourceId, dataset.labelData!);
+
+    this.addBoundaryLayers(state, lightMode);
+    this.addLabelLayer(state, lightMode);
+  }
+
   private updateSource(sourceId: string, data: GeoJSON.FeatureCollection) {
     if (!this.map.getSource(sourceId)) {
       this.map.addSource(
@@ -190,8 +198,7 @@ export class RegionsMapLayers {
     }
   }
 
-  private determineStyle(dataset: RegionDataset): MapLayerStyle {
-    const datasetIdentifier = dataset.getIdentifier();
+  private determineStyle(datasetIdentifier: string): MapLayerStyle {
     if (this.styles.has(datasetIdentifier)) {
       return this.styles.get(datasetIdentifier)!;
     }
@@ -204,14 +211,14 @@ export class RegionsMapLayers {
     return style;
   }
 
-  private addBoundaryLayers(dataset: RegionDataset, sourceId: string, boundaryLayerId: string, boundaryLineLayerId: string, lightMode: LightMode) {
+  private addBoundaryLayers(state: MapLayersState, lightMode: LightMode) {
     const boundarySettings = lightMode === 'light' ? DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS : DEFAULT_DARK_MODE_BOUNDARY_SETTINGS;
-    const style = this.determineStyle(dataset);
-    if (!this.map.getLayer(boundaryLayerId)) {
+    const style = this.determineStyle(state.datasetIdentifier);
+    if (!this.map.getLayer(state.boundaryLayerId)) {
       this.map.addLayer({
-        id: boundaryLayerId,
+        id: state.boundaryLayerId,
         type: 'fill',
-        source: sourceId,
+        source: state.sourceId,
         layout: {
           visibility: 'none',
         },
@@ -231,11 +238,11 @@ export class RegionsMapLayers {
       })
     }
 
-    if (!this.map.getLayer(boundaryLineLayerId)) {
+    if (!this.map.getLayer(state.boundaryLineLayerId)) {
       this.map.addLayer({
-        id: boundaryLineLayerId,
+        id: state.boundaryLineLayerId,
         type: 'line',
-        source: sourceId,
+        source: state.sourceId,
         layout: {
           visibility: 'none',
         },
@@ -248,13 +255,13 @@ export class RegionsMapLayers {
     };
   }
 
-  private addLabelLayer(dataset: RegionDataset, labelSourceId: string, labelLayerId: string, lightMode: LightMode) {
+  private addLabelLayer(state: MapLayersState, lightMode: LightMode) {
     const labelSettings = lightMode === 'light' ? DEFAULT_LIGHT_MODE_LABEL_SETTINGS : DEFAULT_DARK_MODE_LABEL_SETTINGS;
-    if (!this.map.getLayer(labelLayerId)) {
+    if (!this.map.getLayer(state.labelLayerId)) {
       this.map.addLayer({
-        id: labelLayerId,
+        id: state.labelLayerId,
         type: 'symbol',
-        source: labelSourceId,
+        source: state.labelSourceId,
         layout: {
           'text-field': ['get', 'NAME'],
           'text-size': labelSettings["text-size"],
@@ -300,10 +307,12 @@ export class RegionsMapLayers {
 
         if (hasLayer && !state.handlers) {
           this.attachLabelHandlers(dataset);
+          console.log(`[Regions] Re-attached label handlers for dataset ${dataset.getIdentifier()} after layer re-addition`);
         }
 
         if (!hasLayer && state.handlers) {
           this.detachLabelHandlers(dataset);
+          console.log(`[Regions] Detached label handlers for dataset ${dataset.getIdentifier()} due to layer removal`);
         }
       }
     });
@@ -364,7 +373,6 @@ export class RegionsMapLayers {
     }
 
     const onClick = (e: maplibregl.MapLayerMouseEvent) => {
-      console.log(e.features);
       if (!this.map.getLayer(labelLayerId)) return;
       if (!e.features?.length) return;
       const feature = e.features[0];
@@ -388,8 +396,8 @@ export class RegionsMapLayers {
   }
 
   private detachLabelHandlers(dataset: RegionDataset): void {
-    const state = this.layers.get(dataset.getIdentifier());
-    if (!state || !state.handlers) {
+    const state = this.layers.get(dataset.getIdentifier())!;
+    if (!state.handlers) {
       console.warn(`[Regions] Cannot detach label handlers for dataset ${dataset.getIdentifier()}`);
       return;
     }

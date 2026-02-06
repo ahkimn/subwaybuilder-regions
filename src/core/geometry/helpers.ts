@@ -34,3 +34,12 @@ export function isFullyWithinBBox(
 
   return true;
 }
+
+export function isCoordinateWithinFeature(
+  lat: number,
+  lng: number,
+  feature: Feature<Polygon | MultiPolygon>
+) {
+  const point = turf.point([lng, lat]);
+  return turf.booleanPointInPolygon(point, feature, { ignoreBoundary: true });
+}

@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import readline from "readline";
 import { parse } from 'csv-parse/sync';
-import { BoundaryBox } from '../../src/core/datasets';
+import { BoundaryBox } from '../../src/core/datasets/types';
 import { arcgisToGeoJSON } from '@terraformer/arcgis'
 
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
@@ -202,8 +202,8 @@ function isFeatureCollection(
 }
 
 export function isValidCountySubdivision(
-    name: string,
-    cousubfp?: string
+  name: string,
+  cousubfp?: string
 ): boolean {
   if (cousubfp === '00000') return false
   if (
@@ -221,33 +221,35 @@ function bboxToGeometryString(bbox: BoundaryBox): string {
 
 export function buildCountyUrl(queryBbox: BoundaryBox): ArcGisQueryRequest {
   return {
-    url: `${TIGERWEB_API_URL}/State_County/MapServer/1/query`, 
+    url: `${TIGERWEB_API_URL}/State_County/MapServer/1/query`,
     params: new URLSearchParams({
-    where: '1=1',
-    geometry: bboxToGeometryString(queryBbox),
-    geometryType: 'esriGeometryEnvelope',
-    inSR: '4326',
-    outSR: '4326',
-    outFields: 'GEOID,NAME',
-    returnGeometry: 'true',
-    f: 'json'
-  })}
+      where: '1=1',
+      geometry: bboxToGeometryString(queryBbox),
+      geometryType: 'esriGeometryEnvelope',
+      inSR: '4326',
+      outSR: '4326',
+      outFields: 'GEOID,NAME',
+      returnGeometry: 'true',
+      f: 'json'
+    })
+  }
 }
 
 export function buildCountySubdivisionUrl(queryBbox: BoundaryBox): ArcGisQueryRequest {
   return {
-    url: `${TIGERWEB_API_URL}/Places_CouSub_ConCity_SubMCD/MapServer/1/query`, 
-    params:  new URLSearchParams({
-    where: '1=1',
-    geometry: bboxToGeometryString(queryBbox),
-    geometryType: 'esriGeometryEnvelope',
-    spatialRel: 'esriSpatialRelIntersects',
-    inSR: '4326',
-    outSR: '4326',
-    outFields: '*',
-    returnGeometry: 'true',
-    f: 'json',
-  })}
+    url: `${TIGERWEB_API_URL}/Places_CouSub_ConCity_SubMCD/MapServer/1/query`,
+    params: new URLSearchParams({
+      where: '1=1',
+      geometry: bboxToGeometryString(queryBbox),
+      geometryType: 'esriGeometryEnvelope',
+      spatialRel: 'esriSpatialRelIntersects',
+      inSR: '4326',
+      outSR: '4326',
+      outFields: '*',
+      returnGeometry: 'true',
+      f: 'json',
+    })
+  }
 }
 
 export function buildPlacesQuery(queryBbox: BoundaryBox, layerId: number): ArcGisQueryRequest {
@@ -269,17 +271,19 @@ export function buildPlacesQuery(queryBbox: BoundaryBox, layerId: number): ArcGi
 }
 
 export function buildZctaUrl(queryBbox: BoundaryBox): ArcGisQueryRequest {
-  return {url: `${TIGERWEB_API_URL}/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query`, params: new URLSearchParams({
-    where: '1=1',
-    geometry: `${queryBbox.west},${queryBbox.south},${queryBbox.east},${queryBbox.north}`,
-    geometryType: 'esriGeometryEnvelope',
-    spatialRel: 'esriSpatialRelIntersects',
-    inSR: '4326',
-    outSR: '4326',
-    outFields: '*',
-    returnGeometry: 'true',
-    f: 'json'
-  })}
+  return {
+    url: `${TIGERWEB_API_URL}/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query`, params: new URLSearchParams({
+      where: '1=1',
+      geometry: `${queryBbox.west},${queryBbox.south},${queryBbox.east},${queryBbox.north}`,
+      geometryType: 'esriGeometryEnvelope',
+      spatialRel: 'esriSpatialRelIntersects',
+      inSR: '4326',
+      outSR: '4326',
+      outFields: '*',
+      returnGeometry: 'true',
+      f: 'json'
+    })
+  }
 }
 
 export async function fetchGeoJSONFromArcGIS(request: ArcGisQueryRequest): Promise<GeoJSON.FeatureCollection> {
