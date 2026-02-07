@@ -4,11 +4,11 @@ import path from 'path';
 import process from 'process';
 
 import osmtogeojson from 'osmtogeojson';
-import { attachRegionPopulationData, filterAndClipRegionsToBoundary } from '../src/core/geometry.ts';
 import { loadGeoJSON, loadCSV, requireString, Row, buildCSVIndex, saveGeoJSON, loadGeoJSONFromNDJSON, fetchOverpassData, loadBoundariesFromCSV, updateIndexJson, fetchGeoJSONFromArcGIS, fetchCountyPopulationsByState, buildCountyUrl, buildCountySubdivisionUrl, fetchCountySubdivisionPopulations, buildZctaUrl, fetchZctaPopulations, isValidCountySubdivision, STATES_USING_CITIES_AS_COUSUBS, buildPlacesQuery, fetchPlacePopulations } from './utils/script-utils.ts';
 
 import minimist from 'minimist';
-import { BoundaryBox } from '../src/core/datasets.ts';
+import { BoundaryBox, filterAndClipRegionsToBoundary, attachRegionPopulationData } from './utils/geometry.ts';
+
 
 // Usage: npx tsx scripts/extract-map-features.ts --input=england_districts.geojson [--south=.. --west=.. --north=.. --east=..]
 
@@ -209,12 +209,12 @@ async function extractUSBoundaries(args: Args, bbox: BoundaryBox): Promise<void>
       applicableNameProperties = ['BASENAME', 'NAME'];
       let couSubStates = new Set<string>()
       let couSubGeoJson = await fetchGeoJSONFromArcGIS(buildCountySubdivisionUrl(queryBbox))
-      const filteredFeatures = couSubGeoJson.features.filter(f =>{
-        return isValidCountySubdivision(f.properties!.NAME!, f.properties!.COUSUBFP) && 
-        STATES_USING_CITIES_AS_COUSUBS.has(f.properties!.STATE!)
-  })
+      const filteredFeatures = couSubGeoJson.features.filter(f => {
+        return isValidCountySubdivision(f.properties!.NAME!, f.properties!.COUSUBFP) &&
+          STATES_USING_CITIES_AS_COUSUBS.has(f.properties!.STATE!)
+      })
       filteredFeatures.forEach(f => {
-        couSubStates.add( f.properties!.STATE!)
+        couSubStates.add(f.properties!.STATE!)
       })
       for (const state of Array.from(couSubStates)) {
         const m = await fetchCountySubdivisionPopulations(state)
@@ -235,7 +235,7 @@ async function extractUSBoundaries(args: Args, bbox: BoundaryBox): Promise<void>
         return !STATES_USING_CITIES_AS_COUSUBS.has(f.properties!.STATE!)
       })
       filteredPlaceFeatures.forEach(f => {
- placesStates.add( f.properties!.STATE!)
+        placesStates.add(f.properties!.STATE!)
       })
       for (const state of Array.from(placesStates)) {
         const m = await fetchPlacePopulations(state)
@@ -247,7 +247,7 @@ async function extractUSBoundaries(args: Args, bbox: BoundaryBox): Promise<void>
           ...filteredFeatures,
           ...filteredPlaceFeatures
         ]
-      }    
+      }
       break;
     case 'zctas':
       displayName = "ZIP Code Tabulation Areas";

@@ -1,10 +1,18 @@
 import type { Feature, Point, Polygon, MultiPolygon, Geometry, GeoJsonProperties } from 'geojson';
 import * as turf from '@turf/turf';
 import { cleanCoords } from '@turf/clean-coords';
-import { parseNumber } from '../../utils/utils';
-import { BoundaryBox } from '../types';
+import { parseNumber } from '../../src/utils/utils';
 import polylabel from 'polylabel';
-import { isPolygonFeature, isFullyWithinBBox } from './helpers';
+import { isPolygonFeature, isFullyWithinBBox } from '../../src/core/geometry/helpers';
+
+// --- Geometry --- //
+export type BoundaryBox = {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+};
+
 
 function tryLabelPoint(feature: Feature<Polygon | MultiPolygon>): Feature<Point> {
 

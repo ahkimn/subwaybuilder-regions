@@ -1,12 +1,3 @@
-// --- Geometry --- //
-export type BoundaryBox = {
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-};
-
-
 // --- Statistics Types --- //
 
 export type ModeShare = {

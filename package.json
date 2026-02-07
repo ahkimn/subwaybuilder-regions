@@ -32,7 +32,8 @@
   "main": "index.js",
   "scripts": {
     "build": "vite build",
-    "serve": "tsx scripts/serve-data.ts"
+    "serve": "tsx scripts/serve-data.ts",
+    "extract:map-features": "tsx scripts/extract-map-features.ts"
   },
   "repository": {
     "type": "git",

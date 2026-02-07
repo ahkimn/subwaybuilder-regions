@@ -2,8 +2,8 @@ import fs from 'fs-extra';
 import path from 'path';
 import readline from "readline";
 import { parse } from 'csv-parse/sync';
-import { BoundaryBox } from '../../src/core/datasets/types';
 import { arcgisToGeoJSON } from '@terraformer/arcgis'
+import { BoundaryBox } from './geometry';
 
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 const TIGERWEB_API_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb';
