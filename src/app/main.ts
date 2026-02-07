@@ -41,7 +41,7 @@ export class RegionsMod {
 
   private onMapReady = (map: maplibregl.Map) => {
     this.mapLayers = new RegionsMapLayers(map);
-    this.uiManager = new RegionsUIManager(api, this.mapLayers);
+    this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
 
     console.log("[Regions] Map Layers and UI Manager initialized");
 
@@ -55,7 +55,7 @@ export class RegionsMod {
   }
 
   private onCityLoad = async (cityCode: string) => {
-    // TODO: Add mechanism to determine BoundaryBox from SubwayBuilderAPI for dynamic generation of datasets
+    // TODO (Issue 2): Add mechanism to determine BoundaryBox from SubwayBuilderAPI for dynamic generation of datasets
     if (this.currentCityCode) {
       this.deactivateCity();
     }
@@ -118,14 +118,19 @@ export class RegionsMod {
   getCurrentCityCode() {
     return this.currentCityCode;
   }
-};
+
+  getActiveSelection() {
+    return this.uiManager?.activeSelection;
+  }
+}
 
 // Initialize mod
 const mod = new RegionsMod();
 (window as any).SubwayBuilderRegions = {
   debug: {
     printRegistry: () => mod.printRegistry(),
-    getCurrentCityCode: () => mod.getCurrentCityCode()
+    getCurrentCityCode: () => mod.getCurrentCityCode(),
+    getActiveSelection: () => mod.getActiveSelection(),
   }
 }
 mod.initialize();

@@ -14,9 +14,12 @@ const CloseIconPath: string[] = ['M18 6 6 18', 'm6 6 12 12'];
 const FileChartColumnIconPath: string[] = ['M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z', 'M14 2v5a1 1 0 0 0 1 1h5', 'M8 18v-1', 'M12 18v-6', 'M16 18v-3'];
 const TramFrontIconPath: string[] = ['M4 11h16', 'M12 3v8', 'm8 19-2 3', 'm18 22-2-3', 'M8 15h.01', 'M16 15h.01'];
 const TramFrontIconShapes: string[] = ['<rect width="16" height="16" x="4" y="3" rx="2"/>'];
+const RefreshIconPath: string[] = ['M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5', 'M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16', 'M16 16h5v5'];
 
 export const TramFrontIconHTML: string = getIconHTML(TramFrontIconPath, 24, TramFrontIconShapes);
 export const FileChartColumnIconHTML: string = getIconHTML(FileChartColumnIconPath, 24);
 
 export const CheckboxIconHTML: string = getIconHTML(CheckboxPath);
 export const CloseIconHTML: string = getIconHTML(CloseIconPath);
+export const RefreshIconHTML: string = getIconHTML(RefreshIconPath, 24);
+

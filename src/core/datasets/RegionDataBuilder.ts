@@ -1,9 +1,9 @@
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import { ModdingAPI, Route, Station, Track } from "../../types";
 import { arcLengthInsideBoundary, isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
-import { DatasetInvalidFeatureTypeError, DatasetMissingFeatureError } from "./errors";
+import { DatasetInvalidFeatureTypeError, DatasetMissingFeatureError } from "../errors";
 import { RegionDataset } from "./RegionDataset";
-import { ModeShare, RegionCommuterData, RegionInfraData, RouteBulletType, RouteDisplayParams } from "./types";
+import { ModeShare, RegionCommuterData, RegionInfraData, RouteBulletType, RouteDisplayParams } from "../types";
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
@@ -13,7 +13,7 @@ export class RegionDataBuilder {
   ) { }
 
   // TODO: If an API is added to show only changed demand points, this function + the region data structure should be optimized to only update the changed demand points
-  buildRegionCommuteData(dataset: RegionDataset, featureId: string | number): RegionCommuterData | null {
+  buildRegionCommuteData(dataset: RegionDataset, featureId: string | number, updateTime?: number): RegionCommuterData | null {
 
     const demandData = this.api.gameState.getDemandData();
 
@@ -29,8 +29,8 @@ export class RegionDataBuilder {
       walking: 0,
       unknown: 0,
     };
-    const residentModeShares = new Map<string | number, ModeShare>();
-    const workerModeShares = new Map<string | number, ModeShare>();
+    const residentModeShares = new Map<string, ModeShare>();
+    const workerModeShares = new Map<string, ModeShare>();
 
     if (!demandData) {
       console.error("[Regions] Demand data not available");
@@ -51,30 +51,50 @@ export class RegionDataBuilder {
         continue;
       }
 
-      const isResident = currentGameData.demandData.demandPointIds.has(popData.residenceId);
-      const isWorker = currentGameData.demandData.demandPointIds.has(popData.jobId);
+      const demandPointIds = currentGameData.demandData.demandPointIds;
 
-      const popModeShare: ModeShare = popData.lastCommute.modeChoice
-
-      let homeRegion: string | number | undefined;
-      let workRegion: string | number | undefined;
-
+      const isResident = demandPointIds.has(popData.residenceId);
+      const isWorker = demandPointIds.has(popData.jobId);
 
       if (!isResident && !isWorker) {
         console.error(`[Regions] Population ID ${popId} in region ${featureId} of dataset ${dataset.id} is not associated with a region demand point.`);
         continue;
       }
+
+      // If no lastCommute data is available for the population, the first day has likely not been completed yet.
+      // We can assign all of its commuters to the unknown mode choice
+      const popModeShare: ModeShare =
+        popData.lastCommute?.modeChoice ??
+        { transit: 0, driving: 0, walking: 0, unknown: popData.size };
+
+      let homeRegion: string | undefined; // Defined if the population works in this region
+      let workRegion: string | undefined; // Defined if the population lives in this region
+
+      const resolveRegion = (demandPointId: string): string | undefined => {
+        return dataset.regionNameMap.get(
+          dataset.regionDemandPointMap.get(demandPointId)!
+        );
+      }
+
+      // Population both lives and works in region
+      if (isResident && isWorker) {
+        homeRegion = workRegion = dataset.regionNameMap.get(featureId)!;
+
+        residentModeShare = ModeShare.add(residentModeShare, popModeShare);
+        workerModeShare = ModeShare.add(workerModeShare, popModeShare);
+      }
+      // Population lives in region but works outside of it
       else if (isResident) {
-        homeRegion = featureId;
-        workRegion = dataset.regionDemandPointMap.get(popData.jobId);
+        workRegion = resolveRegion(popData.jobId);
         if (!workRegion) {
           console.error(`[Regions] Unable to find work region for population ID ${popId}`);
           continue;
         }
         residentModeShare = ModeShare.add(residentModeShare, popModeShare);
-      } else {
-        workRegion = featureId;
-        homeRegion = dataset.regionDemandPointMap.get(popData.residenceId);
+      }
+      // Population works in region but lives outside of it
+      else {
+        homeRegion = resolveRegion(popData.residenceId);
         if (!homeRegion) {
           console.error(`[Regions] Unable to find home region for population ID ${popId}`);
           continue;
@@ -84,12 +104,22 @@ export class RegionDataBuilder {
 
       // Update mode share by region maps
       if (homeRegion) {
-        const currentResidentModeShare = residentModeShares.get(homeRegion!) || { transit: 0, driving: 0, walking: 0, unknown: 0 };
-        residentModeShares.set(homeRegion!, ModeShare.add(currentResidentModeShare, popModeShare));
+        workerModeShares.set(
+          homeRegion,
+          ModeShare.add(
+            workerModeShares.get(homeRegion) ?? { transit: 0, driving: 0, walking: 0, unknown: 0 },
+            popModeShare
+          )
+        );
       }
       if (workRegion) {
-        const currentWorkerModeShare = workerModeShares.get(workRegion!) || { transit: 0, driving: 0, walking: 0, unknown: 0 };
-        workerModeShares.set(workRegion!, ModeShare.add(currentWorkerModeShare, popModeShare));
+        residentModeShares.set(
+          workRegion,
+          ModeShare.add(
+            residentModeShares.get(workRegion) ?? { transit: 0, driving: 0, walking: 0, unknown: 0 },
+            popModeShare
+          )
+        );
       }
     }
 
@@ -98,6 +128,10 @@ export class RegionDataBuilder {
       workerModeShare: workerModeShare,
       residentModeShareByRegion: residentModeShares,
       workerModeShareByRegion: workerModeShares,
+      metadata: {
+        lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
+        dirty: false
+      }
     }
   }
 

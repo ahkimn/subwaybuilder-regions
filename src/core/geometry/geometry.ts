@@ -2,7 +2,7 @@ import type { Feature, Point, Polygon, MultiPolygon, Geometry, GeoJsonProperties
 import * as turf from '@turf/turf';
 import { cleanCoords } from '@turf/clean-coords';
 import { parseNumber } from '../../utils/utils';
-import { BoundaryBox } from '../datasets/types';
+import { BoundaryBox } from '../types';
 import polylabel from 'polylabel';
 import { isPolygonFeature, isFullyWithinBBox } from './helpers';
 

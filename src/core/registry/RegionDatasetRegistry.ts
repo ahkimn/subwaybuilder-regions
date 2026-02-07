@@ -1,4 +1,5 @@
 import { RegionDataset } from "../datasets/RegionDataset";
+import { RegistryMissingDatasetError } from "../errors";
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
@@ -13,7 +14,7 @@ export class RegionDatasetRegistry {
 
   // -- Dataset Setters --
   registerDataset(dataset: RegionDataset): void {
-    this.datasets.set(dataset.getIdentifier(), dataset);
+    this.datasets.set(RegionDataset.getIdentifier(dataset), dataset);
   }
 
   // -- Dataset Getters --
@@ -23,9 +24,12 @@ export class RegionDatasetRegistry {
     );
   }
 
-  getDatasetByCityAndName(cityCode: string, name: string): RegionDataset | null {
-    // Can this be made less brittle? Key generation is in the RegionDataset class
-    return this.datasets.get(`${cityCode}-${name}`) || null;
+  getDatasetByIdentifier(identifier: string): RegionDataset {
+    const dataset = this.datasets.get(identifier) || null;
+    if (!dataset) {
+      throw new RegistryMissingDatasetError(identifier);
+    }
+    return dataset;
   }
 
   // -- Dataset Mutations --

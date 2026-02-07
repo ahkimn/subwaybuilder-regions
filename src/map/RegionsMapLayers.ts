@@ -56,17 +56,17 @@ export class RegionsMapLayers {
       return;
     }
 
-    const datasetIdentifier = dataset.getIdentifier();
+    const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     if (this.layers.has(datasetIdentifier)) {
       this.updateMapLayers(dataset, this.layers.get(datasetIdentifier)!, 'dark');
       return;
     }
 
-    const sourceId = `${dataset.getSourcePrefix()}-boundaries`;
-    const labelSourceId = `${dataset.getSourcePrefix()}-labels`;
-    const boundaryLayerId = `${dataset.getLayerPrefix()}-boundary-fill`;
-    const boundaryLineLayerId = `${dataset.getLayerPrefix()}-boundary-outline`;
-    const labelLayerId = `${dataset.getLayerPrefix()}-label`;
+    const sourceId = `${RegionDataset.getSourcePrefix(dataset)}-boundaries`;
+    const labelSourceId = `${RegionDataset.getSourcePrefix(dataset)}-labels`;
+    const boundaryLayerId = `${RegionDataset.getLayerPrefix(dataset)}-boundary-fill`;
+    const boundaryLineLayerId = `${RegionDataset.getLayerPrefix(dataset)}-boundary-outline`;
+    const labelLayerId = `${RegionDataset.getLayerPrefix(dataset)}-label`;
 
     const state: MapLayersState = {
       datasetIdentifier,
@@ -82,7 +82,7 @@ export class RegionsMapLayers {
   }
 
   toggleVisibility(dataset: RegionDataset) {
-    const datasetIdentifier = dataset.getIdentifier();
+    const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     const state = this.layers.get(datasetIdentifier);
     if (!state) {
       console.warn(`[Regions] Cannot toggle visibility for unknown dataset ${datasetIdentifier}`);
@@ -159,7 +159,7 @@ export class RegionsMapLayers {
 
   // --- Minor Helpers --- //
   isVisible(dataset: RegionDataset): boolean {
-    return this.layers.get(dataset.getIdentifier())?.visible ?? false;
+    return this.layers.get(RegionDataset.getIdentifier(dataset))?.visible ?? false;
   }
 
   getDatasetToggleOptions(dataset: RegionDataset): LayerToggleOptions {
@@ -168,7 +168,7 @@ export class RegionsMapLayers {
       label: dataset.displayName,
       isVisible: () => this.isVisible(dataset),
       toggle: () => this.toggleVisibility(dataset),
-      // TODO: On map layer reset, ensure toggle state is synced
+      // TODO (Bug 1): On map layer reset, ensure toggle state is synced
     };
   }
 
@@ -301,25 +301,26 @@ export class RegionsMapLayers {
   observeMapLayersForDatasets(datasets: RegionDataset[]) {
     this.map.on('data', () => {
       for (const dataset of datasets) {
-        const state = this.layers.get(dataset.getIdentifier());
+        const identifier = RegionDataset.getIdentifier(dataset);
+        const state = this.layers.get(identifier);
         if (!state) return;
         const hasLayer = this.map.getLayer(state.labelLayerId);
 
         if (hasLayer && !state.handlers) {
           this.attachLabelHandlers(dataset);
-          console.log(`[Regions] Re-attached label handlers for dataset ${dataset.getIdentifier()} after layer re-addition`);
+          console.log(`[Regions] Re-attached label handlers for dataset ${identifier} after layer re-addition`);
         }
 
         if (!hasLayer && state.handlers) {
           this.detachLabelHandlers(dataset);
-          console.log(`[Regions] Detached label handlers for dataset ${dataset.getIdentifier()} due to layer removal`);
+          console.log(`[Regions] Detached label handlers for dataset ${identifier} due to layer removal`);
         }
       }
     });
   }
 
   private attachLabelHandlers(dataset: RegionDataset): void {
-    const datasetIdentifier = dataset.getIdentifier();
+    const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     const state = this.layers.get(datasetIdentifier);
     if (!state) {
       console.warn(`[Regions] Cannot attach label handlers ${datasetIdentifier}`);
@@ -396,9 +397,10 @@ export class RegionsMapLayers {
   }
 
   private detachLabelHandlers(dataset: RegionDataset): void {
-    const state = this.layers.get(dataset.getIdentifier())!;
+    const identifier = RegionDataset.getIdentifier(dataset);
+    const state = this.layers.get(identifier)!;
     if (!state.handlers) {
-      console.warn(`[Regions] Cannot detach label handlers for dataset ${dataset.getIdentifier()}`);
+      console.warn(`[Regions] Cannot detach label handlers for dataset ${identifier}`);
       return;
     }
 

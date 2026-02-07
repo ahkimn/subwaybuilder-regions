@@ -34,7 +34,7 @@ export function createToggleRow(
 }
 
 export function injectRegionToggles(panel: HTMLElement, datasetsToggleOptions: LayerToggleOptions[]) {
-  // TODO: When modding API for UI components is more mature, refactor to use that instead :/
+  // TODO (Issue 4): When modding API for UI components is more mature, refactor to use that instead :/
   console.log("[Regions] Injecting region toggles into layers panel");
 
   // const contentContainers = panel.lastChild;

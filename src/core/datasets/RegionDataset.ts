@@ -2,25 +2,12 @@ import { Feature, MultiPolygon, Polygon } from "geojson";
 import { DemandData } from "../../types";
 import { fetchGeoJSON } from "../../utils/utils";
 import { isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
-import { DatasetSource, DatasetStatus, RegionCommuterData, RegionDemandData, RegionGameData, RegionInfraData, UNASSIGNED_REGION_ID } from "./types";
-import { DatasetInvalidFeatureTypeError, DatasetMissingDataLayerError } from "./errors";
+import { DatasetSource, DatasetStatus, RegionCommuterData, RegionDemandData, RegionGameData, RegionInfraData } from "../types";
+import { DEFAULT_UNIT_LABELS, LAYER_PREFIX, PRESET_UNIT_LABELS, SOURCE_PREFIX, UNASSIGNED_REGION_ID, UNKNOWN_VALUE_DISPLAY } from "../constants";
+import { DatasetInvalidFeatureTypeError, DatasetMissingDataLayerError } from "../errors";
 
 import * as turf from '@turf/turf';
 
-export const SOURCE_PREFIX = 'regions-src';
-export const LAYER_PREFIX = 'regions-layer';
-
-const PRESET_UNIT_LABELS: Record<string, { singular: string; plural: string }> = {
-  'districts': { singular: 'District', plural: 'Districts' }, // GB local authority districts
-  'bua': { singular: 'BUA', plural: 'BUAs' }, // GB built-up areas
-  'wards': { singular: 'Ward', plural: 'Wards' }, // GB electoral wards
-  'counties': { singular: 'County', plural: 'Counties' },
-  'county-subdivisions': { singular: 'County Subdivision', plural: 'County Subdivisions' },
-  'zctas': { singular: 'ZCTA', plural: 'ZCTAs' },
-}
-
-// For non-preset datasets or custom user datasets
-const DEFAULT_UNIT_LABELS = { singular: 'Region', plural: 'Regions' };
 
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
@@ -43,6 +30,7 @@ export class RegionDataset {
   // Map of demand point ID to set of associated region feature IDs for quick lookup when building demand data
   // Populations may have more than one associated region if they live and work in different regions
   readonly regionDemandPointMap: Map<string, string | number> = new Map();
+  readonly regionNameMap: Map<string | number, string> = new Map();
 
   status: DatasetStatus = DatasetStatus.Unloaded;
   isUserEdited: boolean = false;
@@ -127,16 +115,16 @@ export class RegionDataset {
     }
   }
 
-  getLayerPrefix(): string {
-    return `${LAYER_PREFIX}-${this.cityCode}-${this.id}`;
+  static getLayerPrefix(dataset: RegionDataset): string {
+    return `${LAYER_PREFIX}-${dataset.cityCode}-${dataset.id}`;
   }
 
-  getSourcePrefix(): string {
-    return `${SOURCE_PREFIX}-${this.cityCode}-${this.id}`;
+  static getSourcePrefix(dataset: RegionDataset): string {
+    return `${SOURCE_PREFIX}-${dataset.cityCode}-${dataset.id}`;
   }
 
-  getIdentifier(): string {
-    return `${this.cityCode}-${this.id}`;
+  static getIdentifier(dataset: RegionDataset): string {
+    return `${dataset.cityCode}-${dataset.id}`;
   }
 
   updateWithCommuterData(featureId: string | number, commuterData: RegionCommuterData): void {
@@ -198,7 +186,9 @@ export class RegionDataset {
       // If no region included the demand point, assign it to the UNASSIGNED region and maintain a record of it in the point => region map for commuter calculations
       if (!this.regionDemandPointMap.has(id)) {
         unassignedDemandPointIds.add(id);
+        // TODO (Issue 1) We need to be careful to not let the user click into the UNASSIGNED region and cause errors within UI components as there will be no boundary/label data for it
         this.regionDemandPointMap.set(id, UNASSIGNED_REGION_ID);
+        this.regionNameMap.set(UNASSIGNED_REGION_ID, UNKNOWN_VALUE_DISPLAY);
       }
     }
 
@@ -225,13 +215,11 @@ export class RegionDataset {
   }
 
   private populateStaticData(): void {
-    if (!this.boundaryData) {
-      throw new DatasetMissingDataLayerError(this.id, 'boundaryData');
-    }
-    this.boundaryData.features.forEach((feature) => {
+    this.boundaryData!.features.forEach((feature) => {
       const featureId: string | number = feature.properties?.ID!;
       const displayName: string = feature.properties?.DISPLAY_NAME || feature.properties?.NAME!;
 
+      this.regionNameMap.set(featureId, displayName);
       this.gameData.set(featureId, {
         datasetId: this.id,
         featureId: featureId,
