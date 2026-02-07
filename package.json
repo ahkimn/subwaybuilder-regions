@@ -18,7 +18,7 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
-    "@turf/turf": "^7.3.2",
+    "@turf/turf": "^7.3.3",
     "csv-parse": "^6.1.0",
     "fs-extra": "^11.3.3",
     "maplibre-gl": "^5.16.0",

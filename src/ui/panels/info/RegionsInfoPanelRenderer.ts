@@ -1,4 +1,5 @@
 import { RegionDataset } from "../../../core/datasets/RegionDataset";
+import { RegionGameData } from "../../../core/datasets/types";
 import { InfoPanel } from "./InfoPanel";
 
 export class RegionsInfoPanelRenderer {
@@ -65,6 +66,13 @@ export class RegionsInfoPanelRenderer {
     return !!this.root && document.contains(this.root);
   }
 
+  updateFeatureData(
+    datasetId: string,
+    featureData: RegionGameData
+  ) {
+    this.infoPanel?.setFeatureData(datasetId, featureData);
+  }
+
   showFeatureData(
     dataset: RegionDataset,
     featureId: string | number
@@ -75,9 +83,9 @@ export class RegionsInfoPanelRenderer {
       console.warn(`[Regions] Unable to find feature ${featureId} in dataset ${dataset.id}`);
     }
 
-    const featureData = dataset.getFeatureDisplayData(featureId);
+    const featureData = dataset.getRegionGameData(featureId);
     if (!featureData) {
-      console.warn(`[Regions] Unable to find demand details for feature ${featureId} in dataset ${dataset.id}`);
+      console.warn(`[Regions] Unable to find demand data for feature ${featureId} in dataset ${dataset.id}`);
       return;
     }
 

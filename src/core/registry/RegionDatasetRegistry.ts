@@ -1,4 +1,3 @@
-import { DemandData } from "../../types";
 import { RegionDataset } from "../datasets/RegionDataset";
 
 export class RegionDatasetRegistry {
@@ -30,17 +29,12 @@ export class RegionDatasetRegistry {
   }
 
   // -- Dataset Mutations --
-  async loadCityDatasets(cityCode: string) {
+  async loadCityDatasets(cityCode: string, onComplete: () => void) {
     const datasets = this.getCityDatasets(cityCode);
     await Promise.all(
       datasets.map((dataset) => dataset.load())
     );
-  }
-
-  updateWithDemandData(cityCode: string, demandData: DemandData) {
-    this.getCityDatasets(cityCode).forEach((dataset) => {
-      dataset.updateWithDemandData(demandData);
-    });
+    onComplete();
   }
 
   // -- Setup -- //

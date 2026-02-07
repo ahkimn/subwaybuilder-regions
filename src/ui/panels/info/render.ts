@@ -1,4 +1,4 @@
-import { RegionDisplayDetails } from "../../../core/datasets/types";
+import { RegionGameData } from "../../../core/datasets/types";
 import { formatFixedNumber } from "../../../utils/utils";
 import { DataRow } from "../../elements/DataRow";
 import { DetailRow } from "../../elements/DetailRow";
@@ -6,15 +6,15 @@ import { Divider } from "../../elements/Divider";
 
 export function renderStatisticsView(
   datasetId: string,
-  featureData: RegionDisplayDetails
+  featureData: RegionGameData
 ): HTMLElement {
   const root = document.createElement('div');
   root.className = 'flex flex-col gap-2';
 
   const realPopulation = featureData.realPopulation;
-  const demandPoints = featureData.demandDetails?.demandPoints;
-  const residents = featureData.demandDetails?.residents;
-  const workers = featureData.demandDetails?.workers;
+  const demandPoints = featureData.demandData?.demandPoints;
+  const residents = featureData.demandData?.residents;
+  const workers = featureData.demandData?.workers;
 
   root.append(
     DetailRow('Name', featureData.displayName),
@@ -28,7 +28,7 @@ export function renderStatisticsView(
     DetailRow('Total Area', `${formatFixedNumber(featureData.area, 2)} km²`),
     DetailRow('Playable Area', `${formatFixedNumber(featureData.gameArea, 2)} km²`),
     Divider(),
-    DetailRow('Station Count', '—'),
+    DetailRow('Station Count', '—'), // TODO: Pull from game state
     DetailRow('Track Length', '—'),
     DetailRow('Routes Serving Region', '—'),
   );
@@ -36,7 +36,7 @@ export function renderStatisticsView(
 }
 
 export function renderCommutersView(
-  featureData: RegionDisplayDetails
+  featureData: RegionGameData
 ): HTMLElement {
 
   const root = document.createElement('div');

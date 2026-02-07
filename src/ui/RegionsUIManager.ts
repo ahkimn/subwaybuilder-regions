@@ -1,18 +1,26 @@
+import { RegionDataBuilder } from "../core/datasets/RegionDataBuilder";
 import { RegionDataset } from "../core/datasets/RegionDataset";
 import { RegionsMapLayers } from "../map/RegionsMapLayers";
+import { ModdingAPI } from "../types";
 import { observeInfoPanelsRoot, observeMapLayersPanel } from "./observers/observers";
 import { RegionsInfoPanelRenderer } from "./panels/info/RegionsInfoPanelRenderer";
 import { injectRegionToggles } from "./panels/layers/toggles";
 import { resolveInfoPanelRoot } from "./resolve/resolve-info-panel";
 
-
-export type UISurface = 'info' | 'data';
-
 const REGIONS_INFO_CONTAINER_ID = 'regions-info-container';
+const REGIONS_INFO_UPDATE_GAME_INTERVAL = 1800; // 30 in-game minutes
+const REGIONS_INFO_UPDATE_REAL_INTERVAL = 10; // 10 real-world seconds
 
 export class RegionsUIManager {
   private mapLayers: RegionsMapLayers;
   private infoPanelRenderer: RegionsInfoPanelRenderer;
+
+  private regionDataBuilder: RegionDataBuilder;
+
+  private api: ModdingAPI;
+  private lastCheckedGameTime: number = -1; // negative value indicates unchecked
+
+  private commutersUpdateInterval: number | null = null;
 
   private initialized: boolean;
 
@@ -27,10 +35,10 @@ export class RegionsUIManager {
     activeFeatureId: null as string | number | null,
 
     cityDatasets: [] as RegionDataset[],
-    activeSurface: null as UISurface | null,
   };
 
   constructor(
+    api: ModdingAPI,
     mapLayers: RegionsMapLayers,
   ) {
     this.mapLayers = mapLayers;
@@ -38,6 +46,10 @@ export class RegionsUIManager {
       REGIONS_INFO_CONTAINER_ID,
       this.getInfoPanelRoot.bind(this)
     );
+
+    this.regionDataBuilder = new RegionDataBuilder(api);
+
+    this.api = api;
     this.initialized = false;
   }
 
@@ -48,6 +60,7 @@ export class RegionsUIManager {
       return;
     }
     this.initialized = true;
+    this.startCommutersUpdateLoop();
 
     this.mapLayers.setEvents({
       onRegionSelect: this.onRegionSelect.bind(this),
@@ -92,7 +105,6 @@ export class RegionsUIManager {
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {
     this.state.activeDatasetId = payload.dataset.getIdentifier();
     this.state.activeFeatureId = payload.featureId;
-    this.state.activeSurface = 'info'
 
     this.infoPanelRenderer.showFeatureData(payload.dataset, payload.featureId);
   }
@@ -115,11 +127,66 @@ export class RegionsUIManager {
   }
 
   reset() {
+    this.stopCommutersUpdateLoop();
+
     this.state.activeDatasetId = null;
     this.state.activeFeatureId = null;
-    this.state.activeSurface = null;
 
     this.state.cityDatasets = [];
     this.infoPanelRenderer.tearDown();
   }
-}
+
+  // --- Commuter Updates --- //
+  private startCommutersUpdateLoop() {
+    if (this.commutersUpdateInterval !== null) {
+      return;
+    }
+
+    this.commutersUpdateInterval = window.setInterval(() => {
+      this.tryUpdateCommutersData();
+    }, REGIONS_INFO_UPDATE_REAL_INTERVAL * 1000);
+  }
+
+  private stopCommutersUpdateLoop() {
+    if (this.commutersUpdateInterval !== null) {
+      clearInterval(this.commutersUpdateInterval);
+      this.commutersUpdateInterval = null;
+    }
+  }
+
+  private tryUpdateCommutersData() {
+    if (!this.infoPanelRenderer?.isVisible()) return;
+
+    const elapsedSeconds = this.api.gameState.getElapsedSeconds();
+    if (elapsedSeconds - this.lastCheckedGameTime < REGIONS_INFO_UPDATE_GAME_INTERVAL) {
+      return;
+    }
+
+    this.updateCommutersData()
+    this.lastCheckedGameTime = elapsedSeconds;
+
+  }
+
+  private updateCommutersData() {
+    if (this.state.activeDatasetId == null || this.state.activeFeatureId == null) {
+      return;
+    }
+
+    const dataset = this.state.cityDatasets.find(ds => ds.getIdentifier() === this.state.activeDatasetId);
+    if (!dataset) {
+      console.error(`[Regions] Unable to find active dataset: ${this.state.activeDatasetId}`);
+      return;
+    }
+
+    const commuterData = this.regionDataBuilder.buildRegionCommuteData(dataset, this.state.activeFeatureId);
+
+    if (commuterData) {
+      dataset.updateWithCommuterData(this.state.activeFeatureId, commuterData);
+
+      this.infoPanelRenderer.updateFeatureData(
+        this.state.activeDatasetId,
+        dataset.getRegionGameData(this.state.activeFeatureId)!
+      )
+    }
+  }
+};

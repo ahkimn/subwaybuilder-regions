@@ -2,25 +2,47 @@ import { Feature, MultiPolygon, Polygon } from "geojson";
 import { DemandData } from "../../types";
 import { fetchGeoJSON } from "../../utils/utils";
 import { isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
-import { DatasetSource, DatasetStatus, RegionDemandDetails, RegionDisplayDetails } from "./types";
+import { DatasetSource, DatasetStatus, RegionCommuterData, RegionDemandData, RegionGameData, RegionInfraData, UNASSIGNED_REGION_ID } from "./types";
+import { DatasetInvalidFeatureTypeError, DatasetMissingDataLayerError } from "./errors";
+
+import * as turf from '@turf/turf';
 
 export const SOURCE_PREFIX = 'regions-src';
 export const LAYER_PREFIX = 'regions-layer';
+
+const PRESET_UNIT_LABELS: Record<string, { singular: string; plural: string }> = {
+  'districts': { singular: 'District', plural: 'Districts' }, // GB local authority districts
+  'bua': { singular: 'BUA', plural: 'BUAs' }, // GB built-up areas
+  'wards': { singular: 'Ward', plural: 'Wards' }, // GB electoral wards
+  'counties': { singular: 'County', plural: 'Counties' },
+  'county-subdivisions': { singular: 'County Subdivision', plural: 'County Subdivisions' },
+  'zctas': { singular: 'ZCTA', plural: 'ZCTAs' },
+}
+
+// For non-preset datasets or custom user datasets
+const DEFAULT_UNIT_LABELS = { singular: 'Region', plural: 'Regions' };
 
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
   readonly cityCode: string; // city identifier (e.x. "LON", "MAN", "BOS")
   readonly source: DatasetSource;
 
-  // Optional, mutable display name for UI
+  // Optional, mutable display names for UI
   displayName: string;
 
-  // Data store properties (boundaries / labels)
+  readonly unitLabelSingular: string;
+  readonly unitLabelPlural: string;
+
+  // Static data store properties (boundaries / labels)
   boundaryData: GeoJSON.FeatureCollection | null = null;
   labelData: GeoJSON.FeatureCollection | null = null;
 
-  // Display / demand details mapped by feature ID
-  displayData: Map<string | number, RegionDisplayDetails> = new Map();
+  // Dynamic game-specific data store, keyed by feature ID
+  // Partially populated on load, augmented with demand/commuter/infra data from game state
+  readonly gameData: Map<string | number, RegionGameData> = new Map();
+  // Map of demand point ID to set of associated region feature IDs for quick lookup when building demand data
+  // Populations may have more than one associated region if they live and work in different regions
+  readonly regionDemandPointMap: Map<string, string | number> = new Map();
 
   status: DatasetStatus = DatasetStatus.Unloaded;
   isUserEdited: boolean = false;
@@ -35,6 +57,9 @@ export class RegionDataset {
     this.cityCode = cityCode;
     this.source = source;
     this.displayName = displayName ? displayName : id;
+
+    this.unitLabelSingular = PRESET_UNIT_LABELS[id]?.singular || DEFAULT_UNIT_LABELS.singular;
+    this.unitLabelPlural = PRESET_UNIT_LABELS[id]?.plural || DEFAULT_UNIT_LABELS.plural;
   }
 
   get isWritable(): boolean {
@@ -74,7 +99,7 @@ export class RegionDataset {
     try {
       await this.loadBoundaryData();
       this.buildLabelData();
-      this.populateStaticDisplayData();
+      this.populateStaticData();
       this.status = DatasetStatus.Loaded;
       this.isUserEdited = false;
       return true;
@@ -114,79 +139,110 @@ export class RegionDataset {
     return `${this.cityCode}-${this.id}`;
   }
 
-  // TODO: Add incremental update methods for demand details when that functionality is added to the game
-  // TODO: This is also quite slow and probably should be async 
-  updateWithDemandData(demandData: DemandData): void {
-
-    if (!this.displayData.size || !this.boundaryData) {
-      throw new Error(`Cannot build demand details with empty display or boundary data for: ${this.id}`);
-    }
-
-    const addedDemandPointIds: Set<string> = new Set();
-
-    // TODO: Optimize this
-    this.boundaryData.features.forEach((feature) => {
-
-      if (!isPolygonFeature(feature)) {
-        console.error(`Non-polygon feature exists in boundary data for dataset: ${this.id}. Skipping feature ID: ${feature.id}`);
-        return;
-      }
-
-      const featureId: string | number = feature.properties?.ID!;
-      const demandPointIds: Set<string> = new Set();
-      const populationIds: Set<string> = new Set();
-
-      let residents = 0;
-      let workers = 0;
-
-      demandData.points.forEach((point, id) => {
-        const location = point.location
-        const [lng, lat] = location;
-
-        // Check if demand point is within the region feature, including boundary
-        if (isCoordinateWithinFeature(lat, lng, feature as Feature<Polygon | MultiPolygon>)) {
-          if (addedDemandPointIds.has(id)) {
-            // Multiple regions contain the same demand point if it lies on a boundary
-            console.warn(`Demand point ID: ${id} already assigned to a region in dataset: ${this.id}. Skipping duplicate assignment.`);
-            return;
-          }
-
-          demandPointIds.add(id);
-          addedDemandPointIds.add(id);
-
-          residents += point.residents;
-          workers += point.jobs;
-
-          point.popIds.forEach(popId => populationIds.add(popId));
-        }
-      })
-
-      const regionDemandDetails: RegionDemandDetails = {
-        demandPointIds,
-        populationIds,
-        demandPoints: demandPointIds.size,
-        residents,
-        workers,
-      };
-
-      this.displayData.get(featureId)!.demandDetails = regionDemandDetails;
-    });
+  updateWithCommuterData(featureId: string | number, commuterData: RegionCommuterData): void {
+    this.gameData.get(featureId)!.commuterData = commuterData;
   }
 
-  private populateStaticDisplayData(): void {
+  updateWithInfraData(featureId: string | number, infraData: RegionInfraData): void {
+    this.gameData.get(featureId)!.infraData = infraData;
+  }
+
+  private assignDemandPoints(
+    demandData: DemandData): Map<string | number, RegionDemandData> {
+
     if (!this.boundaryData) {
-      throw new Error(`Cannot populate static display data with unloaded boundary data for dataset: ${this.id}`);
+      throw new DatasetMissingDataLayerError(this.id, 'boundaryData');
+    }
+    if (!this.gameData.size) {
+      throw new DatasetMissingDataLayerError(this.id, 'gameData');
+    }
+
+    const accumulator = this.boundaryData.features.map(feature => {
+      if (!isPolygonFeature(feature)) throw new DatasetInvalidFeatureTypeError(this.id, feature);
+      const featureId: string | number = feature.properties?.ID!;
+
+      return {
+        featureId: featureId,
+        feature: feature as Feature<Polygon | MultiPolygon>,
+        bbox: turf.bbox(feature),
+        demandPointIds: new Set<string>(),
+        populationIds: new Set<string>(),
+        residents: 0,
+        workers: 0,
+      }
+    })
+
+    const unassignedDemandPointIds = new Set<string>();
+
+    for (const [id, point] of demandData.points) {
+      const [lng, lat] = point.location;
+
+      for (const region of accumulator) {
+
+        if (!isCoordinateWithinFeature(lat, lng, region.feature, region.bbox)) {
+          continue;
+        }
+
+        region.residents += point.residents;
+        region.workers += point.jobs;
+
+        for (const popId of point.popIds) {
+          region.populationIds.add(popId);
+        }
+
+        region.demandPointIds.add(id);
+        this.regionDemandPointMap.set(id, region.featureId);
+        break;
+      }
+
+      // If no region included the demand point, assign it to the UNASSIGNED region and maintain a record of it in the point => region map for commuter calculations
+      if (!this.regionDemandPointMap.has(id)) {
+        unassignedDemandPointIds.add(id);
+        this.regionDemandPointMap.set(id, UNASSIGNED_REGION_ID);
+      }
+    }
+
+    if (unassignedDemandPointIds.size > 0) {
+      console.warn(`Unassigned demand points in dataset ${this.id}:`, unassignedDemandPointIds);
+    }
+
+    return new Map(accumulator.map(region => {
+      return [region.featureId, {
+        demandPointIds: region.demandPointIds,
+        populationIds: region.populationIds,
+        demandPoints: region.demandPointIds.size,
+        residents: region.residents,
+        workers: region.workers,
+      } as RegionDemandData]
+    }));
+  }
+
+  updateWithDemandData(demandData: DemandData): void {
+    const results = this.assignDemandPoints(demandData);
+    for (const [featureId, demandData] of results) {
+      this.gameData.get(featureId)!.demandData = demandData;
+    }
+  }
+
+  private populateStaticData(): void {
+    if (!this.boundaryData) {
+      throw new DatasetMissingDataLayerError(this.id, 'boundaryData');
     }
     this.boundaryData.features.forEach((feature) => {
       const featureId: string | number = feature.properties?.ID!;
       const displayName: string = feature.properties?.DISPLAY_NAME || feature.properties?.NAME!;
 
-      this.displayData.set(featureId, {
-        displayName,
+      this.gameData.set(featureId, {
+        datasetId: this.id,
+        featureId: featureId,
+        displayName: displayName,
+        unitNames: {
+          singular: this.unitLabelSingular,
+          plural: this.unitLabelPlural,
+        },
         area: feature.properties?.TOTAL_AREA!,
         gameArea: feature.properties?.AREA_WITHIN_BBOX!,
-        realPopulation: feature.properties?.POPULATION || null,
-        demandDetails: null
+        realPopulation: feature.properties?.POPULATION || null
       });
     });
   }
@@ -233,7 +289,7 @@ export class RegionDataset {
     };
   }
 
-  getFeatureDisplayData(featureId: string | number): RegionDisplayDetails | null {
-    return this.displayData.get(featureId) || null;
+  getRegionGameData(featureId: string | number): RegionGameData | null {
+    return this.gameData.get(featureId) || null;
   }
 }

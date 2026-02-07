@@ -41,7 +41,7 @@ export class RegionsMod {
 
   private onMapReady = (map: maplibregl.Map) => {
     this.mapLayers = new RegionsMapLayers(map);
-    this.uiManager = new RegionsUIManager(this.mapLayers);
+    this.uiManager = new RegionsUIManager(api, this.mapLayers);
 
     console.log("[Regions] Map Layers and UI Manager initialized");
 
@@ -60,14 +60,15 @@ export class RegionsMod {
       this.deactivateCity();
     }
     console.log(`[Regions] Loading data for city: ${cityCode}`);
-    await this.registry.loadCityDatasets(cityCode);
-    api.ui.showNotification("[Regions] City data loaded", "success");
-
-    this.currentCityCode = cityCode;
-
-    if (this.map) {
-      this.activateCity(cityCode);
-    }
+    // This is async but we do not want to block the main thread. The UI will show a loading state
+    this.registry.loadCityDatasets(cityCode, () => {
+      api.ui.showNotification(`[Regions] City data loaded for: ${this.registry.getCityDatasets(cityCode).map(d => d.displayName).join(', ')}`, "success");
+      this.currentCityCode = cityCode;
+      if (this.map) {
+        this.activateCity(cityCode);
+      }
+    });
+    api.ui.showNotification("[Regions] City data loading", "info");
   }
 
   // Activate city datasets in map layers and UI. Should only be called once per city
@@ -83,13 +84,14 @@ export class RegionsMod {
       console.warn("[Regions] Demand data not available on demand change");
       return;
     }
-    this.registry.updateWithDemandData(cityCode, demandData);
 
     const datasets = this.registry.getCityDatasets(cityCode);
     if (datasets.length === 0) {
       console.warn("[Regions] No region data available for current city");
       return;
     }
+
+    datasets.forEach(dataset => dataset.updateWithDemandData(demandData));
 
     this.uiManager!.onCityChange(cityCode, datasets);
     this.mapLayers!.observeMapLayersForDatasets(datasets);

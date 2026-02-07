@@ -1,4 +1,4 @@
-import { RegionDisplayDetails } from "../../../core/datasets/types";
+import { RegionGameData } from "../../../core/datasets/types";
 import { PanelHeader } from "../../elements/PanelHeader";
 import { SelectRow } from "../../elements/SelectRow";
 import { FileChartColumnIconHTML, TramFrontIconHTML } from "../../elements/utils/get-icon";
@@ -15,7 +15,7 @@ export class InfoPanel {
   private contentPanel: HTMLDivElement;
   private mainSelectRow: SelectRow;
 
-  private featureData: RegionDisplayDetails | null = null;
+  private featureData: RegionGameData | null = null;
   private datasetId: string | null = null;
 
   private activeView: InfoPanelView = 'statistics';
@@ -105,9 +105,8 @@ export class InfoPanel {
     }
   }
 
-
   public setFeatureData(
-    datasetId: string, featureData: RegionDisplayDetails) {
+    datasetId: string, featureData: RegionGameData) {
     this.datasetId = datasetId;
     this.featureData = featureData;
   }
