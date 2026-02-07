@@ -44,7 +44,7 @@ Here's a list of some major/minor features I plan to work on in the near future 
 
 #### Minor Features
 
-- `:yellow-square:`` Special Demand Point Data
+- `:yellow-square:` Special Demand Point Data
   - Show special demand points within the info view of a region (e.x. Airports/Universities/etc.).
   - This isn't well documented in the API and I will probably wait for clarity if the current pattern of ({PREFIX}\_{ID}) can be relied on
 
