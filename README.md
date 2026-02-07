@@ -4,21 +4,25 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 
 ## Summary
 
-> **SubwayBuilder Regions** adds real-world geographic regions (e.g. ZIP codes, counties, wards) to the game SubwayBuilder,
-> allowing players and modders to visualize region-based statistics such as population, commuter flows, and infrastructure.
+> **SubwayBuilder Regions** allows users to import real-world geographic regions (e.g. ZIP codes, counties, wards) into the game SubwayBuilder,
+>
+> The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
+
+_Latest Mod Version:_ `v0.1.0`  
+_Latest Tested Game Version:_ `v0.12.6`
 
 ## Table of Contents
 
-- Features
-- Specifications
-- Usage
-  - Installation
-  - Data Preparation
-- Planned Features
-- Known Issues
-- Changelog
-- Contributing
-- Credits
+- [Features](#features)
+- [Specifications](#specifications)
+- [Usage](#usage)
+  - [General User Installation](#general-user-installation)
+  - [Dev Installation](#dev-installation)
+- [Planned Features](#planned-features)
+- [Known Issues](#known-issues)
+- [Changelog](#changelog)
+- [Contributing](#contributing)
+- [Credits](#credits)
 
 ## Features
 
@@ -31,7 +35,6 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
   - Infrastructure Data (station count / track length / routes / etc.)
 - **Dynamic Data State**: Region-based data is dynamically updated based on the game state
   - :information_source: Currently, this is limited to just the commuter data
-
 - **Preset Regions**: Scripts to obtain region boundaries for the following real-world geographical divisions are provided:
   - **GB** (United Kingdom)
     - Local Authority Districts
@@ -45,16 +48,8 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 ## Specifications
 
 - **Region Data**:
-  - Region boundary data is stored on the local machine in GeoJSON format,
+  - Region boundary data is stored on the local machine in GeoJSON format
   - :warning: Features must have Polygon/MultiPolygon geometry
-  - :warning: Required feature properties
-    - ID (unique identifier)
-    - NAME
-  - Optional properties
-    - DISPLAY_NAME
-    - POPULATION
-    - TOTAL_AREA
-    - AREA_WITHIN_BBOX
   - :warning: Overlapping boundary data will likely cause issues. Avoid if possible during pre-processing
 - **Local Data Server**:
   - Currently, data is exposed to the game via a configurable local HTTP server (`scripts/serve-data.ts`)
@@ -67,7 +62,21 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
   - source_data/  -- Folder for pre-downloaded boundary source data
   ```
 
+### GeoJSON Feature Requirements
+
+- **Required**
+  - `ID` – unique identifier
+  - `NAME`
+
+- **Optional**
+  - `DISPLAY_NAME`
+  - `POPULATION`
+  - `TOTAL_AREA`
+  - `AREA_WITHIN_BBOX`
+
 ## Usage
+
+### General User Installation
 
 > :warning: This mod currently does not ship prebuilt binaries.
 > General users will need to wait for a `dist/` release.
@@ -76,88 +85,97 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 
 1. Clone repository & Install dependencies
 
-```
-  git clone https://github.com/ahkimn/subwaybuilder-regions.git;
-  cd subwaybuilder-regions;
-  npm install
-```
+   ```
+     git clone https://github.com/ahkimn/subwaybuilder-regions.git;
+     cd subwaybuilder-regions;
+     npm install
+   ```
 
 2. Download Source Data (Optional)
 
-// TODO: Create a script to download GB data for local use
+   > // TODO: Create a script to download GB data for local use
 
 3. Update City Config (Optional)
-   - The `boundaries.csv` contains the boundary box for clipping regions to all of the game's current cities. If you are working on a custom city, please add an entry for the custom city within the file
+
+   The `boundaries.csv` contains the boundary box for clipping regions to all of the game's current cities. If you are working on a custom city, please add an entry for the custom city within the file
 
 4. Build Boundary GeoJSONs
 
-From the project repository root, run
+   From the project repository root, run
 
-```
-npm run extract:map-features -- \
-  --country-code=US \
-  --data-type=zctas \
-  --city-code=DEN \
-```
+   ```
+   npm run extract:map-features -- \
+     --country-code=US \
+     --data-type=zctas \
+     --city-code=DEN \
+   ```
 
-Or to override the boundaries set in `boundaries.csv`, manually provide a boundary box
+   Or to override the boundaries set in `boundaries.csv`, manually provide a boundary box
 
-```
-npm run extract:map-features -- \
-  --country-code=US \
-  --data-type=zctas \
-  --city-code=DEN \
-  --west=-105.2 \
-  --south=39.5 \
-  --north=40.1 \
-  --east=-104.6
-```
+   ```
+   npm run extract:map-features -- \
+     --country-code=US \
+     --data-type=zctas \
+     --city-code=DEN \
+     --west=-105.2 \
+     --south=39.5 \
+     --north=40.1 \
+     --east=-104.6
+   ```
 
-This command generates clipped GeoJSON files under `data/`, which are later served to the game via the local data server.
+   This command generates clipped GeoJSON files under `data/`, which are later served to the game via the local data server.
 
-The following are the current valid combinations of `country-code` and `data-type` for preset data
+   **Preset Parameters**
 
-| `country-code` | `data-type `        | description                             | source                |
-| -------------- | ------------------- | --------------------------------------- | --------------------- |
-| **GB**         | districts           | Local Authority Districts (LADs)        | ONS (offline)         |
-| **GB**         | bua                 | Built Up Areas                          | ONS (offline)         |
-| **GB**         | wards               | Electoral Wards                         | ONS (offline)         |
-| **US**         | counties            | Counties                                | TIGERweb API (online) |
-| **US**         | county-subdivisions | County Subdivisions (Towns/Cities/CDPs) | TIGERweb API (online) |
-| **US**         | zctas               | ZIP Code Tabulation Areas               | TIGERweb API (online) |
+   The following are the current valid combinations of `country-code` and `data-type` for preset data
 
-:warning: If boundaries are not provided, `city-code` must be in `boundaries.csv`
+   | `country-code` | `data-type `        | description                             | source                |
+   | -------------- | ------------------- | --------------------------------------- | --------------------- |
+   | **GB**         | districts           | Local Authority Districts (LADs)        | ONS (offline)         |
+   | **GB**         | bua                 | Built Up Areas                          | ONS (offline)         |
+   | **GB**         | wards               | Electoral Wards                         | ONS (offline)         |
+   | **US**         | counties            | Counties                                | TIGERweb API (online) |
+   | **US**         | county-subdivisions | County Subdivisions (Towns/Cities/CDPs) | TIGERweb API (online) |
+   | **US**         | zctas               | ZIP Code Tabulation Areas               | TIGERweb API (online) |
+
+   :warning: If boundaries are not provided, `city-code` must be in `boundaries.csv`
 
 5. Serve Local Data
    From the repository root, run:
 
-```
-npm run serve
-```
+   ```
+   npm run serve
+   ```
 
-By default this serves: http://127.0.0.1:8080.
+   By default this serves: http://127.0.0.1:8080.
 
 6. Build
    From the repository root, run:
 
-```
-npm run build
-```
+   ```
+   npm run build
+   ```
 
-This will build the `index.js` in `dist/`
+   This will build the `index.js` in `dist/`
 
 7. Install
+
    Move or symlink the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
-:warning: This mod was developed on Windows, behavior on other platforms is undetermined
+**Disclaimer**
 
-- Please raise issues on this repository or within the dedicated thread within the game's [Discord server](https://discord.gg/97JhJprW) if you encounter any issues.
+> :warning: This mod was developed on Windows, behavior on other platforms is undetermined
+>
+> If you encountered issues, please:
+>
+> - Raise an issue (see [Contributing](#contributing)) on the repository
+> - Send a message within the mod's dedicated thread within the game's [Discord server](https://discord.gg/97JhJprW)
 
 ## Planned Features
 
-List of features that are planned to be implemented in the near future and their status
+List of features that are planned to be implemented in the near future. Those with :construction: are currently under implementation
 
-#### Major Features
+### Major Features
 
 - **Hotkey Support**
   - Game panels should respond to in-game hotkeys as other parts of the existing game UI do (e.g. Esc to clear panel / selection)
@@ -172,7 +190,7 @@ List of features that are planned to be implemented in the near future and their
 - :construction: **Aggregate Data View**
   - Add a new table component to show all region statistics at a glance
 
-#### Minor Features
+### Minor Features
 
 - **Special Demand Point Data**
   - Show special demand points within the info view of a region (e.g. Airports/Universities/etc.).
@@ -184,7 +202,7 @@ List of features that are planned to be implemented in the near future and their
   - Game currently assumes it is being run on the default game Dark mode, but some recoloring will be required to support the default Light mode
   - Custom colorization (powered by mod settings when implemented)
 
-#### Ideation
+### Ideation
 
 Some additional potential features that will likely remain ideas for the foreseeable future
 
@@ -204,7 +222,7 @@ Some additional potential features that will likely remain ideas for the foresee
 
 ## Known Issues
 
-#### Major Bugs
+### Major Bugs
 
 Bugs that break core mod functionality and lead to unexpected mod state / crashes are listed here. These will be addressed in the near future
 
@@ -219,7 +237,7 @@ Bugs that break core mod functionality and lead to unexpected mod state / crashe
    - As a result, the mod can be placed into an inconsistent state
    - **Workaround**: fully reload a city to reset the mod state
 
-#### Minor Bugs / Issues
+### Minor Bugs / Issues
 
 Bugs or issues that are inconvenient but do not break the core mod functionality are listed here
 
@@ -238,11 +256,20 @@ Bugs or issues that are inconvenient but do not break the core mod functionality
 
 ## Changelog
 
-#### Last Update
+### v0.1.0 — 2026-02-08 (Initial Release)
 
-> :information_source: Last updated: 2026-02-08  
-> :information_source: Last checked game version  
-> :warning: Mod behavior may be unstable with future updates
+_Game version_ v0.12.6
+
+#### Updates
+
+- Added visualization for preset region boundaries + labels
+- Added information panel when a user selects a region within the game
+  - Panel contains region summary statistics as well as commuter / infrastructure data
+- Added initial dev scripts to fetch/process data for preset cities
+
+#### Bugfixes
+
+- None (initial bugs added)
 
 ## Contributing
 
