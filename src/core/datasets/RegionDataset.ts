@@ -228,8 +228,8 @@ export class RegionDataset {
           singular: this.unitLabelSingular,
           plural: this.unitLabelPlural,
         },
-        area: feature.properties?.TOTAL_AREA!,
-        gameArea: feature.properties?.AREA_WITHIN_BBOX!,
+        area: feature.properties?.TOTAL_AREA,
+        gameArea: feature.properties?.AREA_WITHIN_BBOX,
         realPopulation: feature.properties?.POPULATION || null
       });
     });

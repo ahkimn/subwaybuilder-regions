@@ -33,8 +33,8 @@ export function renderStatisticsView(
     DetailRow('Residents', residents ? formatFixedNumber(residents) : UNKNOWN_VALUE_DISPLAY),
     DetailRow('Jobs', workers ? formatFixedNumber(workers) : UNKNOWN_VALUE_DISPLAY),
     Divider(),
-    DetailRow('Total Area', `${formatFixedNumber(featureData.area, 2)} km²`),
-    DetailRow('Playable Area', `${formatFixedNumber(featureData.gameArea, 2)} km²`),
+    DetailRow('Total Area', featureData.area ? `${formatFixedNumber(featureData.area, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
+    DetailRow('Playable Area', featureData.gameArea ? `${formatFixedNumber(featureData.gameArea, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
     Divider(),
     DetailRow('Station Count', UNKNOWN_VALUE_DISPLAY), // TODO: (Feature): Pull from game state
     DetailRow('Track Length', UNKNOWN_VALUE_DISPLAY),

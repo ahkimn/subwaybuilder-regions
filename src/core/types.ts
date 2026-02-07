@@ -123,8 +123,8 @@ export type RegionGameData = {
     plural: string;   // plural form of the unit name
   };
 
-  readonly area: number; // area of the region in square kilometers
-  readonly gameArea: number; // area of the region within the game's playable area in square kilometers
+  readonly area: number | null; // area of the region in square kilometers
+  readonly gameArea: number | null; // area of the region within the game's playable area in square kilometers
   readonly realPopulation: number | null; // real-world population if available
   demandData?: RegionDemandData; // demand data for the region, dynamically updated
   commuterData?: RegionCommuterData; // commuter data for the region, dynamically updated
