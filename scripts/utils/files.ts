@@ -3,6 +3,7 @@ import path from 'path';
 import readline from "readline";
 import { parse } from 'csv-parse/sync';
 import { BoundaryBox } from './geometry';
+import { DATA_INDEX_FILE } from '../../shared/consts';
 
 export type Row = Record<string, string>;
 
@@ -134,8 +135,8 @@ export function updateIndexJson(indexPath: string, cityCode: string, dataType: s
   if (!existingEntry) {
     index[cityCode].push({ id: dataType, name: displayName });
     fs.writeJsonSync(indexPath, index, { spaces: 2 });
-    console.log(`Updated index.json for ${cityCode} with new dataset: ${displayName}`);
+    console.log(`Updated ${DATA_INDEX_FILE} for ${cityCode} with new dataset: ${displayName}`);
   } else {
-    console.log(`Dataset ${displayName} already exists in index.json for ${cityCode}.`);
+    console.log(`Dataset ${displayName} already exists in ${DATA_INDEX_FILE} for ${cityCode}.`);
   }
 }

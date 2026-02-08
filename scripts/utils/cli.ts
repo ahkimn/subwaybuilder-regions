@@ -37,6 +37,16 @@ export function requireNumber(
   process.exit(1);
 }
 
+export function parseNumber(
+  value: string
+): number | undefined {
+  const normalizedValue = value.replace(/,/g, '').trim();
+  const parsedNumber = Number(normalizedValue);
+
+  return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
+}
+
+
 export function parseArgs(): ExtractMapFeaturesArgs {
 
   let argv = minimist(process.argv.slice(2), {

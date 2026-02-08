@@ -54,12 +54,15 @@ _Latest Tested Game Version:_ `v0.12.6`
 - **Local Data Server**:
   - Currently, data is exposed to the game via a configurable local HTTP server (`scripts/serve-data.ts`)
   - This will be moved to local storage as the mod API matures
-- **Directories**:
+- **Key Files/Directories**:
   ```
-  - data/         -- Output directory for boundary data
-  - scripts/      -- Scripts for downloading / serving local data
-  - src/          -- Core mod logic
-  - source_data/  -- Folder for pre-downloaded boundary source data
+  - data/                   -- Output directory for boundary data
+    - data_index.json       -- JSON file of available datasets (for consumption by mod)
+  - scripts/                -- Scripts for downloading / serving local data
+  - src/                    -- Core mod logic
+  - shared/                 -- Shared values between dev / runtime
+  - source_data/            -- Folder for pre-downloaded boundary source data
+    - boundaries.csv        -- CSV of city codes to boundary boxes
   ```
 
 ### GeoJSON Feature Requirements
@@ -196,8 +199,10 @@ List of features that are planned to be implemented in the near future. Those wi
   - Show special demand points within the info view of a region (e.g. Airports/Universities/etc.).
   - This isn't well documented in the API and I will probably wait for clarity if the current pattern of ({PREFIX}\_{ID}) can be relied on
 - :construction: **Better Preset Data**
-  - US data is fetched from TIGERweb REST API; however, GB data is generated using (very large) downloaded GeoJSONs
-  - GB population data is spotty due to inconsistent IDs between data years
+  - Queries for GB Data
+    - GB data is generated using (very large) downloaded GeoJSONs
+    - GB population data is spotty due to inconsistent IDs between data years
+  - Label Generation Improvements (heuristic scoring of different candidate labels)
 - **Theme Integration**
   - Game currently assumes it is being run on the default game Dark mode, but some recoloring will be required to support the default Light mode
   - Custom colorization (powered by mod settings when implemented)

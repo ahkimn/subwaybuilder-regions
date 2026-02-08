@@ -1,12 +1,12 @@
 import type { Feature, Point, Polygon, MultiPolygon, Geometry, GeoJsonProperties } from 'geojson';
 import * as turf from '@turf/turf';
 import { cleanCoords } from '@turf/clean-coords';
-import { parseNumber } from '../../src/utils/utils';
 import polylabel from 'polylabel';
 import { isPolygonFeature, isFullyWithinBBox } from '../../src/core/geometry/helpers';
 import { DataConfig } from '../extract/handler-types';
+import { parseNumber } from './cli';
 
-// --- Geometry --- //
+// --- Basic Geometry & Helpers --- //
 export type BoundaryBox = {
   west: number;
   south: number;
@@ -33,40 +33,103 @@ export function expandBbox(bbox: BoundaryBox, paddingDegrees: number): BoundaryB
   };
 }
 
-function tryLabelPoint(feature: Feature<Polygon | MultiPolygon>): Feature<Point> {
+// --- Label Point Calculation --- //
 
-  const coords = feature.geometry.type === 'Polygon' ? feature.geometry.coordinates : feature.geometry.coordinates[0];
+type LabelCandidate = {
+  lat: number;
+  lng: number;
+  method: string;
+  withinPolygon: boolean;
+}
 
-  if (coords && coords.length > 0) {
-    try {
-      return turf.point(polylabel(coords, 1e-6));
-    } catch (err) {
-      console.warn('\tFailed to compute polylabel for feature:', feature.id, err);
+function getLargestPolygon(
+  feature: Feature<MultiPolygon>
+): Polygon {
+
+  let maxArea = -Infinity;
+  let largestPolygon: Polygon | null = null;
+
+  for (const coords of feature.geometry.coordinates) {
+    const poly: Polygon = {
+      type: 'Polygon',
+      coordinates: coords,
+    };
+    const area = turf.area(poly);
+    if (area > maxArea) {
+      maxArea = area;
+      largestPolygon = poly;
     }
   }
 
+  if (!largestPolygon) {
+    throw new Error('MultiPolygon has no valid polygons');
+  }
+
+  return largestPolygon;
+}
+
+function getLabelCandidates(feature: Feature<Polygon | MultiPolygon>): LabelCandidate[] {
+
+  const candidates: Array<{ method: string, point: Feature<Point> }> = [];
+
+  const coords = feature.geometry.type === 'Polygon' ?
+    feature.geometry.coordinates :
+    getLargestPolygon(feature as Feature<MultiPolygon>).coordinates;
+
+  if (!coords || coords.length === 0) {
+    throw new Error('Feature has no valid coordinates');
+  }
+
   try {
-    return turf.pointOnFeature(feature);
+    candidates.push({
+      method: 'polylabel',
+      point: turf.point(polylabel(coords, 1e-6))
+    })
+  } catch (err) {
+    console.warn('\tFailed to compute polylabel for feature:', feature.id, err);
+  }
+
+  try {
+    candidates.push({
+      method: 'pointOnFeature',
+      point: turf.pointOnFeature(feature)
+    })
   } catch (err) {
     console.warn('\tFailed to compute pointOnFeature for feature:', feature.id, err);
   }
 
   try {
-    console.warn('\tFalling back to center of mass for label point for feature:', feature.id);
-    return turf.centerOfMass(feature);
+    candidates.push({
+      method: 'centerOfMass',
+      point: turf.centerOfMass(feature)
+    })
   } catch (err) {
     console.warn('\tFailed to compute centerOfMass for feature:', feature.id, err);
   }
 
   try {
-    console.warn('\tFalling back to centroid for label point for feature:', feature.id);
-    return turf.centroid(feature);
+    candidates.push({
+      method: 'centroid',
+      point: turf.centroid(feature)
+    })
   } catch (err) {
     console.warn('\tFailed to compute centroid for feature:', feature.id, err);
   }
 
-  throw new Error('Unable to determine label point for feature: ' + feature.id);
+
+  if (candidates.length === 0) {
+    throw new Error('Unable to determine label point for feature: ' + feature.id);
+  }
+
+  return candidates.map(({ method, point }) => ({
+    method: method,
+    lat: point.geometry.coordinates[1],
+    lng: point.geometry.coordinates[0],
+    withinPolygon: turf.booleanPointInPolygon(point, feature)
+  }));
 }
+
+// --- Boundary Filtering and Clipping --- //
 
 export function filterAndClipRegionsToBoundary(
   shapeJSON: GeoJSON.FeatureCollection,
@@ -108,11 +171,14 @@ export function filterAndClipRegionsToBoundary(
     const fullyWithinBoundary = isFullyWithinBBox(feature, bboxPolygon);
     const clippedRegion = fullyWithinBoundary ? feature : cleanedIntersection;
 
-    const labelPoint = tryLabelPoint(clippedRegion);
-
+    // Try label with the original (unclipped) geometry if it is fully within the boundary
+    const labelCandidates: LabelCandidate[] = getLabelCandidates(fullyWithinBoundary ? feature : clippedRegion);
 
     // Input GeoJSON should include properties
     const featureProperties: GeoJsonProperties = feature.properties!;
+
+    // Find first label candidate that is within the polygon, otherwise default to the first candidate
+    const primaryLabel = labelCandidates.find(c => c.withinPolygon) || labelCandidates[0];
 
     let regionProperties: GeoJsonProperties = {
       ID: featureProperties[dataConfig.idProperty]!,
@@ -120,8 +186,12 @@ export function filterAndClipRegionsToBoundary(
       DISPLAY_NAME: dataConfig.applicableNameProperties
         ?.map((key) => featureProperties[key])
         .find((v): v is string => typeof v === 'string' && v.trim().length > 0)!,
-      LAT: labelPoint.geometry.coordinates[1],
-      LNG: labelPoint.geometry.coordinates[0],
+      LAT: primaryLabel.lat,
+      LNG: primaryLabel.lng,
+      LABEL_POINTS: {
+        primary: { lat: primaryLabel.lat, lng: primaryLabel.lng },
+        candidates: labelCandidates
+      },
       WITHIN_BBOX: fullyWithinBoundary,
       AREA_WITHIN_BBOX: turf.area(clippedRegion) / 1_000_000,
       TOTAL_AREA: turf.area(feature) / 1_000_000
@@ -140,32 +210,5 @@ export function filterAndClipRegionsToBoundary(
 
     results.push(clippedRegion);
   }
-
   return results;
-}
-
-export function attachRegionPopulationData(
-  features: Array<Feature<Geometry, GeoJsonProperties>>,
-  populationIndex: Map<string, string>,
-  idProperty: string
-): void {
-  for (const feature of features) {
-
-    if (feature.properties!.POPULATION != null) {
-      continue; // Skip if population already set
-    }
-
-    // Name matching is fragile but BUA codes are not consistent between years?
-    const featureCode = feature.properties![idProperty];
-    const featurePopulation = populationIndex.has(featureCode) ? parseNumber(populationIndex.get(featureCode)!) : null;
-
-    if (featurePopulation !== null) {
-      feature.properties = {
-        ...feature.properties,
-        POPULATION: featurePopulation
-      }
-    } else {
-      console.warn('  No population data found for feature:', feature.properties!.NAME, ' ID: ', featureCode);
-    }
-  }
 }

@@ -1,15 +1,16 @@
 # Ignore data directories
 data/
-source_data/
+source_data/*
+!source_data/**/*.csv
+!source_data/.gitkeep
 
 # Ignore dependencies / build outputs
 dist/
 node_modules/
+package-lock.json
 
 # Misc
 MODDING.md
-
-package-lock.json
 
 repo_structure.txt
 scripts/create-repo-structure.js

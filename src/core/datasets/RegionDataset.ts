@@ -1,12 +1,12 @@
 import { Feature, MultiPolygon, Polygon } from "geojson";
 import { DemandData } from "../../types";
-import { fetchGeoJSON } from "../../utils/utils";
 import { isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
 import { DatasetSource, DatasetStatus, RegionCommuterData, RegionDemandData, RegionGameData, RegionInfraData } from "../types";
 import { DEFAULT_UNIT_LABELS, LAYER_PREFIX, PRESET_UNIT_LABELS, SOURCE_PREFIX, UNASSIGNED_REGION_ID, UNKNOWN_VALUE_DISPLAY } from "../constants";
 import { DatasetInvalidFeatureTypeError, DatasetMissingDataLayerError } from "../errors";
 
 import * as turf from '@turf/turf';
+import { fetchGeoJSON } from "./utils";
 
 
 export class RegionDataset {

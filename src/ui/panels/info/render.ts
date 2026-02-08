@@ -1,6 +1,5 @@
 import { DEFAULT_UNIT_LABELS, UNKNOWN_VALUE_DISPLAY } from "../../../core/constants";
 import { ModeShare, RegionCommuterData, RegionGameData } from "../../../core/types";
-import { formatFixedNumber } from "../../../utils/utils";
 import { DataRow } from "../../elements/DataRow";
 import { DetailRow } from "../../elements/DetailRow";
 import { Divider } from "../../elements/Divider";

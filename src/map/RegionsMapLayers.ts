@@ -1,7 +1,7 @@
 import { RegionDataset } from "../core/datasets/RegionDataset";
 import { DisplayColor, PRIMARY_FILL_COLORS } from "../ui/types/DisplayColor";
 import { LayerToggleOptions } from "../ui/types/LayerToggleOptions";
-import { BASE_FILL_OPACITY, DEFAULT_DARK_MODE_BOUNDARY_SETTINGS, DEFAULT_DARK_MODE_LABEL_SETTINGS, DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS, DEFAULT_LIGHT_MODE_LABEL_SETTINGS, HOVER_FILL_OPACITY, LightMode, stateBoolean } from "./default-settings";
+import { BASE_FILL_OPACITY, DEFAULT_DARK_MODE_BOUNDARY_SETTINGS, DEFAULT_DARK_MODE_LABEL_SETTINGS, DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS, DEFAULT_LIGHT_MODE_LABEL_SETTINGS, HOVER_FILL_OPACITY, LightMode, stateBoolean } from "./styles";
 
 type MapLayersState = {
   datasetIdentifier: string,

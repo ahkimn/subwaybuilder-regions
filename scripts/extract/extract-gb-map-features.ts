@@ -4,6 +4,7 @@ import { loadGeoJSONFromNDJSON, loadGeoJSON, Row, loadCSV, buildCSVIndex } from 
 import { BoundaryBox, expandBbox } from "../utils/geometry";
 import { BoundaryDataHandler, DataConfig } from "./handler-types";
 import { processAndSaveBoundaries } from "./process";
+import { SOURCE_DATA_DIR } from "../../shared/consts";
 
 /* --- Local Authority Districts (LAD) ---
   Source: https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-may-2025-boundaries-uk-bfc-v2/about
@@ -82,22 +83,22 @@ const GB_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
 }
 
 function extractDistrictBoundaries(bbox: BoundaryBox) {
-  const boundaries: GeoJSON.FeatureCollection = loadGeoJSON(path.resolve('source_data', GB_DISTRICT_BOUNDARIES));
-  const populationCharacteristics: Row[] = loadCSV(path.resolve('source_data', GB_DISTRICT_POPULATIONS));
+  const boundaries: GeoJSON.FeatureCollection = loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_BOUNDARIES));
+  const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS));
   const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
   return { geoJson: boundaries, populationMap: populationIndex };
 }
 
 function extractBUABoundaries(bbox: BoundaryBox) {
-  const boundaries: GeoJSON.FeatureCollection = loadGeoJSON(path.resolve('source_data', GB_BUA_BOUNDARIES));
-  const populationCharacteristics: Row[] = loadCSV(path.resolve('source_data', GB_BUA_POPULATIONS));
+  const boundaries: GeoJSON.FeatureCollection = loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_BUA_BOUNDARIES));
+  const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS));
   const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
   return { geoJson: boundaries, populationMap: populationIndex };
 }
 
 async function extractWardBoundaries(bbox: BoundaryBox) {
-  const boundaries: GeoJSON.FeatureCollection = await loadGeoJSONFromNDJSON(path.resolve('source_data', GB_WARD_BOUNDARIES));
-  const populationCharacteristics: Row[] = loadCSV(path.resolve('source_data', GB_WARD_POPULATIONS));
+  const boundaries: GeoJSON.FeatureCollection = await loadGeoJSONFromNDJSON(path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES));
+  const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS));
   const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
   return { geoJson: boundaries, populationMap: populationIndex };
 }

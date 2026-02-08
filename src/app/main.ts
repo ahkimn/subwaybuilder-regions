@@ -1,10 +1,11 @@
 
+import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/consts';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
 import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
 
-const SERVE_URL = 'http://127.0.0.1:8080/'
-const INDEX_FILE = `${SERVE_URL}/index.json`;
+const SERVE_URL = `http://${DEFAULT_URL}:${DEFAULT_PORT}/`
+const INDEX_FILE = `${SERVE_URL}/${DATA_INDEX_FILE}`;
 
 const api = window.SubwayBuilderAPI;
 

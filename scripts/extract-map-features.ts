@@ -7,8 +7,9 @@ import { ExtractMapFeaturesArgs, getBboxFromArgs, hasExplicitBbox, parseArgs } f
 import { BoundaryBox } from './utils/geometry.ts';
 import { extractUSBoundaries } from './extract/extract-us-map-features.ts';
 import { extractGBBoundaries } from './extract/extract-gb-map-features.ts';
+import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/consts.ts';
 
-const BOUNDARIES_INDEX_FILE = path.resolve('boundaries.csv');
+const BOUNDARIES_INDEX_FILE = path.resolve(__dirname, '..', SOURCE_DATA_DIR, CITY_BOUNDARIES_FILE);
 
 async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
 

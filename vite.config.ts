@@ -4,6 +4,11 @@ import { resolve } from 'path';
 const sourceDirectory = resolve(__dirname, 'src');
 
 export default {
+  resolve: {
+    alias: {
+      '@shared': resolve(__dirname, 'shared')
+    }
+  },
   build: {
     lib: {
       entry: resolve(sourceDirectory, 'app', 'main.ts'),

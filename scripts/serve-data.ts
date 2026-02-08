@@ -16,10 +16,10 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import minimist from 'minimist';
-import { requireNumber } from './utils/script-utils';
+import { requireNumber } from './utils/cli';
+import { DATA_DIR, DEFAULT_PORT, DEFAULT_URL } from '../shared/consts';
 
-const DEFAULT_PORT = 8080;
-const DEFAULT_DATA_DIR = path.join(__dirname, '..', 'data');
+const DEFAULT_DATA_DIR = path.join(__dirname, '..', DATA_DIR);
 
 
 const argv = minimist(process.argv.slice(2), {
@@ -128,14 +128,14 @@ function serveFile(filePath: string, res: ServerResponse): void {
 // --------------------
 // Startup
 // --------------------
-server.listen(port, '127.0.0.1', () => {
+server.listen(port, DEFAULT_URL, () => {
   console.log('');
   console.log('='.repeat(50));
   console.log('  Subway Builder Data Server');
   console.log('='.repeat(50));
   console.log('');
   console.log(`  Serving: ${dir}`);
-  console.log(`  URL:     http://127.0.0.1:${port}`);
+  console.log(`  URL:     http://${DEFAULT_URL}:${port}`);
   console.log('');
   console.log('  Press Ctrl+C to stop');
   console.log('');
