@@ -1,5 +1,4 @@
-import { createCheckbox, createCheckBoxIcon, updateCheckboxState } from "../../elements/checkbox";
-import { Label } from "../../elements/Label";
+import { Checkbox } from "../../elements/Checkbox";
 import { LayerToggleOptions } from "../../types/LayerToggleOptions";
 
 const REGIONS_CONTAINER_ATTR = 'data-regions-mod';
@@ -8,29 +7,7 @@ const REGIONS_TOGGLE_ATTR = 'data-regions-toggle';
 export function createToggleRow(
   options: LayerToggleOptions
 ): HTMLElement {
-  const row = document.createElement('div');
-  row.className = 'flex items-center gap-2';
-  row.setAttribute(REGIONS_TOGGLE_ATTR, 'true');
-
-  const buttonElementId = `regions-toggle-${options.id}`;
-  const icon = createCheckBoxIcon();
-  const button = createCheckbox(buttonElementId);
-  const label = Label(buttonElementId, options.label);
-  button.appendChild(icon);
-
-  // Initial state
-  updateCheckboxState(icon, button, options.isVisible());
-
-  // Click handler
-  button.addEventListener('click', () => {
-    options.toggle();
-    updateCheckboxState(icon, button, options.isVisible());
-  });
-
-  row.appendChild(button);
-  row.appendChild(label);
-
-  return row;
+  return Checkbox(options, REGIONS_TOGGLE_ATTR);
 }
 
 export function injectRegionToggles(panel: HTMLElement, datasetsToggleOptions: LayerToggleOptions[]) {

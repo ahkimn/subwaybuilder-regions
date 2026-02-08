@@ -1,6 +1,54 @@
+import { LayerToggleOptions } from "../types/LayerToggleOptions";
+import { Label } from "./Label";
 import { CheckboxIconHTML } from "./utils/get-icon";
 
-export function createCheckBoxIcon(): HTMLSpanElement {
+export function Checkbox(
+  options: LayerToggleOptions,
+  attribute: string
+): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'flex items-center gap-2';
+  row.setAttribute(attribute, 'true');
+
+  const buttonElementId = `regions-toggle-${options.id}`;
+  const icon = buildCheckBoxIcon();
+  const button = buildButtonElement(buttonElementId);
+  const label = Label(buttonElementId, options.label);
+  button.appendChild(icon);
+
+  const syncState = () => {
+    const visible = options.isVisible();
+    button.setAttribute('aria-checked', String(visible));
+    button.dataset.state = visible ? 'checked' : 'unchecked';
+
+    if (visible && !button.contains(icon)) {
+      button.appendChild(icon);
+    } else if (!visible && button.contains(icon)) {
+      icon.remove();
+    } else {
+      console.warn("[Regions] Unexpected state in toggle button with id: ", button.id);
+    }
+
+    icon.dataset.state = visible ? 'checked' : 'unchecked';
+  }
+
+
+  // Initial state
+  syncState();
+
+  // Click handler
+  button.addEventListener('click', () => {
+    options.toggle();
+    syncState();
+  });
+
+  row.appendChild(button);
+  row.appendChild(label);
+
+  return row;
+}
+
+export function buildCheckBoxIcon(): HTMLSpanElement {
   const iconWrapper = document.createElement('span');
   iconWrapper.className =
     'flex items-center justify-center text-current';
@@ -10,7 +58,7 @@ export function createCheckBoxIcon(): HTMLSpanElement {
   return iconWrapper;
 }
 
-export function createCheckbox(elementId: string): HTMLButtonElement {
+function buildButtonElement(elementId: string): HTMLButtonElement {
   // Checkbox button -- mirrors current SubwayBuilder UI style
   const button = document.createElement('button');
   button.type = 'button';
@@ -26,22 +74,4 @@ export function createCheckbox(elementId: string): HTMLButtonElement {
     'data-[state=checked]:bg-primary ' +
     'data-[state=checked]:text-primary-foreground';
   return button;
-}
-
-export function updateCheckboxState(iconWrapper: HTMLSpanElement, button: HTMLButtonElement, visible: boolean): void {
-
-  button.setAttribute('aria-checked', String(visible));
-  button.dataset.state = visible ? 'checked' : 'unchecked';
-
-  const hasIcon = iconWrapper.parentElement === button;
-
-  if (visible && !hasIcon) {
-    button.appendChild(iconWrapper);
-  } else if (!visible && hasIcon) {
-    iconWrapper.remove();
-  } else {
-    console.warn("[Regions] Unexpected state in toggle button with id: ", button.id);
-  }
-
-  iconWrapper.dataset.state = visible ? 'checked' : 'unchecked';
 }

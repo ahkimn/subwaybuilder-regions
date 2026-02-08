@@ -170,8 +170,6 @@ export class RegionsUIManager {
   private updateCommutersData() {
     const commuterData = this.regionDataManager.ensureExistsCommuterData(this.state);
 
-    console.log(`[Regions] Commuter data updated for feature ${this.state.activeFeatureId} in dataset ${this.state.activeDatasetId}:`, commuterData);
-
     if (commuterData) {
       this.infoPanelRenderer.tryUpdatePanel();
     }

@@ -19,8 +19,8 @@ export class RegionsInfoPanel {
   private activeView: RegionsInfoPanelView = 'statistics';
   private commutersViewState: CommutersViewState = {
     direction: 'outbound',
-    modeDisplay: 'percent',
-    modeLayout: 'combined',
+    modeDisplay: 'absolute',
+    modeLayout: 'transit',
     expanded: false
   }
 
@@ -108,7 +108,7 @@ export class RegionsInfoPanel {
         break;
       case 'commuters':
         this.contentPanel.appendChild(
-          renderCommutersView(this.gameData!.commuterData!, this.commutersViewState, direction => {
+          renderCommutersView(this.gameData!, this.commutersViewState, direction => {
             if (this.commutersViewState.direction === direction) return;
 
             this.commutersViewState.direction = direction;

@@ -159,7 +159,13 @@ _Latest Tested Game Version:_ `v0.12.6`
 
 6. Install
 
-   Move or symlink the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
+   Move or the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
+
+   Alternatively, use the provided powershell script to symlink the files:
+
+   ```
+   .\link-mod.ps1 -ProjectDir "REPOSITORY_DIR" -GameModsDir "GAME_MOD_DIRS\REGIONS_MOD_DIR"
+   ```
 
 ### Disclaimer
 

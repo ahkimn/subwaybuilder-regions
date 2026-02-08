@@ -1,7 +1,7 @@
-import { formatFixedNumber } from "src/core/utils";
+import { formatFixedNumber } from "../../../core/utils";
 import { DEFAULT_UNIT_LABELS, UNKNOWN_VALUE_DISPLAY } from "../../../core/constants";
-import { ModeShare, RegionCommuterData, RegionGameData } from "../../../core/types";
-import { DataRow } from "../../elements/DataRow";
+import { ModeShare, RegionGameData } from "../../../core/types";
+import { DataRowOptions, DataTable } from "../../elements/DataTable";
 import { DetailRow } from "../../elements/DetailRow";
 import { Divider } from "../../elements/Divider";
 import { ExpandButton } from "../../elements/ExpandButton";
@@ -10,22 +10,29 @@ import { CommutersViewState } from "./types";
 
 const MAX_TABLE_ROWS = 10; // Max number of rows to show in commuters by region table before truncation
 
+type CommuterRowData = {
+  regionName: string;
+  commuters: number;
+  transitCount: number;
+  drivingCount: number;
+  walkingCount: number;
+}
 
 export function renderStatisticsView(
-  featureData: RegionGameData
+  gameData: RegionGameData
 ): HTMLElement {
   const root = document.createElement('div');
   root.className = 'flex flex-col gap-2';
 
-  const realPopulation = featureData.realPopulation;
-  const demandPoints = featureData.demandData?.demandPoints;
-  const residents = featureData.demandData?.residents;
-  const workers = featureData.demandData?.workers;
+  const realPopulation = gameData.realPopulation;
+  const demandPoints = gameData.demandData?.demandPoints;
+  const residents = gameData.demandData?.residents;
+  const workers = gameData.demandData?.workers;
 
-  const unitLabel = featureData.unitNames?.singular;
+  const unitLabel = gameData.unitNames?.singular;
 
   root.append(
-    DetailRow('Name', featureData.displayName),
+    DetailRow('Name', gameData.displayName),
     DetailRow('Type', unitLabel ? unitLabel : DEFAULT_UNIT_LABELS.singular),
     DetailRow('Real Population', realPopulation ? formatFixedNumber(realPopulation) : UNKNOWN_VALUE_DISPLAY),
     Divider(),
@@ -33,8 +40,8 @@ export function renderStatisticsView(
     DetailRow('Residents', residents ? formatFixedNumber(residents) : UNKNOWN_VALUE_DISPLAY),
     DetailRow('Jobs', workers ? formatFixedNumber(workers) : UNKNOWN_VALUE_DISPLAY),
     Divider(),
-    DetailRow('Total Area', featureData.area ? `${formatFixedNumber(featureData.area, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
-    DetailRow('Playable Area', featureData.gameArea ? `${formatFixedNumber(featureData.gameArea, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
+    DetailRow('Total Area', gameData.area ? `${formatFixedNumber(gameData.area, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
+    DetailRow('Playable Area', gameData.gameArea ? `${formatFixedNumber(gameData.gameArea, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
     Divider(),
     DetailRow('Station Count', UNKNOWN_VALUE_DISPLAY), // TODO: (Feature): Pull from game state
     DetailRow('Track Length', UNKNOWN_VALUE_DISPLAY),
@@ -44,10 +51,12 @@ export function renderStatisticsView(
 }
 
 export function renderCommutersView(
-  commuterData: RegionCommuterData,
+  gameData: RegionGameData,
   viewState: CommutersViewState,
   setDirection: (direction: 'outbound' | 'inbound') => void
 ): HTMLElement {
+
+  const commuterData = gameData.commuterData!;
 
   const root = document.createElement('div');
   root.className = 'flex flex-col gap-2 text-xs';
@@ -59,7 +68,7 @@ export function renderCommutersView(
 
   const populationCount = ModeShare.total(aggregateModeShare)
 
-  // --- Direction Select --- //
+  const header = builtCommuterViewHeader(gameData.displayName);
   const directionRow = new SelectRow(
     'commutes-direction',
     [
@@ -68,11 +77,63 @@ export function renderCommutersView(
     ],
     isOutbound ? 0 : 1
   );
+  header.appendChild(directionRow.element);
+  root.appendChild(header);
 
-  root.appendChild(directionRow.element);
 
-  // --- Summary Statistics --- //
-  root.append(
+  root.append(...buildSummaryStatistics(populationCount, aggregateModeShare));
+
+  const tableData: Array<{ rowValues: Array<string | number>, options?: DataRowOptions }> = [
+    buildTableHeader(viewState)
+  ];
+
+  // --- Mode Share by Region --- //
+  const rows: CommuterRowData[] = Array.from(byRegionModeShare.entries()).map(([regionName, modeShare]) => {
+    return {
+      regionName: regionName,
+      commuters: ModeShare.total(modeShare),
+      transitCount: modeShare.transit,
+      drivingCount: modeShare.driving,
+      walkingCount: modeShare.walking
+    }
+  })
+    .sort((a, b) => b.commuters - a.commuters); // sort by commuter count descending
+
+  const maxRows = viewState.expanded ? rows.length : MAX_TABLE_ROWS;
+
+  rows.slice(0, maxRows).forEach((rowData) => {
+    tableData.push(buildTableRow(viewState, populationCount, rowData));
+  });
+
+  root.appendChild(DataTable(getColumnTemplate(viewState), tableData));
+
+  // --- Expanded Table --- //
+
+  if (rows.length > MAX_TABLE_ROWS && !viewState.expanded) {
+    const expandButton = ExpandButton(rows.length - MAX_TABLE_ROWS, () => {
+      viewState.expanded = true;
+      root.replaceWith(
+        renderCommutersView(gameData, viewState, setDirection)
+      );
+    });
+    root.appendChild(expandButton);
+  }
+
+  return root;
+}
+
+function builtCommuterViewHeader(name: string): HTMLDivElement {
+  const header = document.createElement('div');
+  header.className = 'flex justify-between items-center';
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'font-medium';
+  nameSpan.textContent = name;
+  header.appendChild(nameSpan);
+  return header;
+}
+
+function buildSummaryStatistics(populationCount: number, aggregateModeShare: ModeShare): HTMLElement[] {
+  return [
     DetailRow(
       'Total Commuters',
       formatFixedNumber(populationCount)
@@ -90,48 +151,55 @@ export function renderCommutersView(
       `${formatFixedNumber(aggregateModeShare.walking / populationCount * 100, 2)}%`
     ),
     Divider()
-  );
+  ]
+}
 
-  // --- Table Header --- //
-  root.appendChild(
-    DataRow(
-      [isOutbound ? 'Destination' : 'Origin', 'Commuters', 'Transit Users'],
-      {
-        header: true,
-        align: ['left', 'right', 'right']
-      }
-    )
-  )
+function getColumnTemplate(viewState: CommutersViewState): string {
+  const base = ['minmax(0,1fr)', 'auto', 'auto'];
 
-  // --- Mode Share by Region --- //
-  const rows = Array.from(byRegionModeShare.entries()).map(([regionName, modeShare]) => {
-    return {
-      regionName: regionName,
-      commuters: ModeShare.total(modeShare),
-      transitCount: modeShare.transit
-    }
-  })
-    .sort((a, b) => b.commuters - a.commuters); // sort by commuter count descending
-
-  const maxRows = viewState.expanded ? rows.length : MAX_TABLE_ROWS;
-
-  rows.slice(0, maxRows).forEach(({ regionName, commuters, transitCount }) => {
-    root.appendChild(
-      DataRow(
-        [regionName, formatFixedNumber(commuters), `${formatFixedNumber(transitCount)}`],
-        { align: ['left', 'right', 'right'] }
-      )
-    );
-  });
-
-  // --- Expanded Table --- //
-
-  if (rows.length > MAX_TABLE_ROWS && !viewState.expanded) {
-    const expandButton = ExpandButton(rows.length - MAX_TABLE_ROWS, () => root.replaceWith(
-      renderCommutersView(commuterData, { ...viewState, expanded: true }, setDirection)
-    ));
-    root.appendChild(expandButton);
+  if (viewState.modeLayout === 'all') {
+    base.push('auto', 'auto');
   }
 
-  return root;
+  return base.join(' ');
+}
+
+function buildTableHeader(viewState: CommutersViewState): { rowValues: Array<string | number>, options: DataRowOptions } {
+  const headerRowValues = [viewState.direction === 'outbound' ? 'Destination' : 'Origin', 'Commuters', 'Transit Users']
+  const headerRowOptions = {
+    header: true,
+    align: ['left', 'right', 'right']
+  }
+
+  if (viewState.modeLayout === 'all') {
+    headerRowValues.push('Driving Users', 'Walking Users');
+    headerRowOptions.align?.push('right', 'right');
+  }
+
+  return { rowValues: headerRowValues, options: headerRowOptions as DataRowOptions };
+}
+
+function buildTableRow(viewState: CommutersViewState, totalCommuters: number, rowData: CommuterRowData): {
+  rowValues: Array<string | number>;
+  options: DataRowOptions;
+} {
+  const { regionName, commuters, transitCount, drivingCount, walkingCount } = rowData;
+  const rowValues: Array<string | number> = [
+    regionName,
+    viewState.modeDisplay === 'absolute' ? formatFixedNumber(commuters) : formatFixedNumber(commuters / totalCommuters * 100, 2),
+    viewState.modeDisplay === 'absolute' ? formatFixedNumber(transitCount) : formatFixedNumber(transitCount / commuters * 100, 2)
+  ];
+  const options: DataRowOptions = {
+    align: ['left', 'right', 'right']
+  };
+
+  if (viewState.modeLayout === 'all') {
+    rowValues.push(
+      viewState.modeDisplay === 'absolute' ? formatFixedNumber(drivingCount) : formatFixedNumber(drivingCount / commuters * 100, 2),
+      viewState.modeDisplay === 'absolute' ? formatFixedNumber(walkingCount) : formatFixedNumber(walkingCount / commuters * 100, 2)
+    );
+    options.align?.push('right', 'right');
+  }
+
+  return { rowValues, options };
 }
