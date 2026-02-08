@@ -4,6 +4,7 @@ import { cleanCoords } from '@turf/clean-coords';
 import { parseNumber } from '../../src/utils/utils';
 import polylabel from 'polylabel';
 import { isPolygonFeature, isFullyWithinBBox } from '../../src/core/geometry/helpers';
+import { DataConfig } from '../extract/handler-types';
 
 // --- Geometry --- //
 export type BoundaryBox = {
@@ -13,6 +14,24 @@ export type BoundaryBox = {
   north: number;
 };
 
+export function isFeatureCollection(
+  geoJson: GeoJSON.GeoJSON
+): geoJson is GeoJSON.FeatureCollection {
+  return geoJson.type === 'FeatureCollection';
+}
+
+export function bboxToGeometryString(bbox: BoundaryBox): string {
+  return `${bbox.west},${bbox.south},${bbox.east},${bbox.north}`;
+}
+
+export function expandBbox(bbox: BoundaryBox, paddingDegrees: number): BoundaryBox {
+  return {
+    west: bbox.west - paddingDegrees,
+    south: bbox.south - paddingDegrees,
+    east: bbox.east + paddingDegrees,
+    north: bbox.north + paddingDegrees,
+  };
+}
 
 function tryLabelPoint(feature: Feature<Polygon | MultiPolygon>): Feature<Point> {
 
@@ -47,17 +66,12 @@ function tryLabelPoint(feature: Feature<Polygon | MultiPolygon>): Feature<Point>
   }
 
   throw new Error('Unable to determine label point for feature: ' + feature.id);
-
 }
 
 export function filterAndClipRegionsToBoundary(
   shapeJSON: GeoJSON.FeatureCollection,
   bbox: BoundaryBox,
-  idProperty: string,
-  nameProperty: string,
-  displayNameProperties?: string[],
-  populationNameProperty?: string
-
+  dataConfig: DataConfig
 ): Array<Feature<Geometry, GeoJsonProperties>> {
 
   const bboxPolygon = turf.bboxPolygon([
@@ -101,9 +115,9 @@ export function filterAndClipRegionsToBoundary(
     const featureProperties: GeoJsonProperties = feature.properties!;
 
     let regionProperties: GeoJsonProperties = {
-      ID: featureProperties[idProperty]!,
-      NAME: featureProperties[nameProperty]!,
-      DISPLAY_NAME: displayNameProperties
+      ID: featureProperties[dataConfig.idProperty]!,
+      NAME: featureProperties[dataConfig.nameProperty]!,
+      DISPLAY_NAME: dataConfig.applicableNameProperties
         ?.map((key) => featureProperties[key])
         .find((v): v is string => typeof v === 'string' && v.trim().length > 0)!,
       LAT: labelPoint.geometry.coordinates[1],
@@ -113,8 +127,8 @@ export function filterAndClipRegionsToBoundary(
       TOTAL_AREA: turf.area(feature) / 1_000_000
     }
 
-    if (populationNameProperty && featureProperties[populationNameProperty]) {
-      const populationValue = featureProperties[populationNameProperty]!;
+    if (dataConfig.populationProperty && featureProperties[dataConfig.populationProperty]) {
+      const populationValue = featureProperties[dataConfig.populationProperty]!;
       regionProperties = {
         ...regionProperties,
         POPULATION: parseNumber(populationValue)
