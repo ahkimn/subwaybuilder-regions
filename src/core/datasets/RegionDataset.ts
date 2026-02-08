@@ -6,8 +6,7 @@ import { DEFAULT_UNIT_LABELS, LAYER_PREFIX, PRESET_UNIT_LABELS, SOURCE_PREFIX, U
 import { DatasetInvalidFeatureTypeError, DatasetMissingDataLayerError } from "../errors";
 
 import * as turf from '@turf/turf';
-import { fetchGeoJSON } from "./utils";
-
+import { fetchGeoJSON } from "../utils";
 
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")

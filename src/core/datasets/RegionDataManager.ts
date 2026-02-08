@@ -46,7 +46,7 @@ export class RegionDataManager {
       dataset.updateWithCommuterData(uiState.activeFeatureId!, updatedCommuterData!);
     }
 
-    console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeFeatureId} in dataset ${uiState.activeDatasetId}:`, updatedCommuterData);
+    console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeFeatureId} in dataset ${uiState.activeDatasetId}:`);
     return updatedCommuterData;
   }
 

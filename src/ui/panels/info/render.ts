@@ -1,3 +1,4 @@
+import { formatFixedNumber } from "src/core/utils";
 import { DEFAULT_UNIT_LABELS, UNKNOWN_VALUE_DISPLAY } from "../../../core/constants";
 import { ModeShare, RegionCommuterData, RegionGameData } from "../../../core/types";
 import { DataRow } from "../../elements/DataRow";

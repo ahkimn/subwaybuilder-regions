@@ -11,7 +11,7 @@ export type DataConfig = {
 
 export type BoundaryDataHandler = {
   dataConfig: DataConfig;
-  extractBoundaries(bbox: BoundaryBox): Promise<{
+  extractBoundaries(bbox: BoundaryBox, useLocalData?: boolean): Promise<{
     geoJson: GeoJSON.FeatureCollection;
     populationMap?: Map<string, string>;
   }>;

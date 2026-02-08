@@ -5,6 +5,7 @@ import { BoundaryBox, expandBbox } from "../utils/geometry";
 import { BoundaryDataHandler, DataConfig } from "./handler-types";
 import { processAndSaveBoundaries } from "./process";
 import { SOURCE_DATA_DIR } from "../../shared/consts";
+import { fetchGeoJSONFromArcGIS, getBUAONSQuery, getDistrictONSQuery, getWardONSQuery } from "../utils/queries";
 
 /* --- Local Authority Districts (LAD) ---
   Source: https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-may-2025-boundaries-uk-bfc-v2/about
@@ -41,7 +42,6 @@ const WARD_CODE_PROPERTY = 'WD25CD';
 const WARD_NAME_PROPERTY = 'WD25NM';
 const WARD_WELSH_NAME_PROPERTY = 'WD25NMW';
 
-
 const GB_DATA_CONFIGS: Record<string, DataConfig> = {
   'districts': {
     displayName: "Districts",
@@ -70,34 +70,35 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
 const GB_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
   'districts': {
     dataConfig: GB_DATA_CONFIGS['districts'],
-    extractBoundaries: async (bbox: BoundaryBox) => extractDistrictBoundaries(bbox)
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) => extractDistrictBoundaries(bbox, useLocalData)
   },
   'bua': {
     dataConfig: GB_DATA_CONFIGS['bua'],
-    extractBoundaries: async (bbox: BoundaryBox) => extractBUABoundaries(bbox)
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) => extractBUABoundaries(bbox, useLocalData)
   },
   'wards': {
     dataConfig: GB_DATA_CONFIGS['wards'],
-    extractBoundaries: async (bbox: BoundaryBox) => extractWardBoundaries(bbox)
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) => extractWardBoundaries(bbox, useLocalData)
   }
 }
 
-function extractDistrictBoundaries(bbox: BoundaryBox) {
-  const boundaries: GeoJSON.FeatureCollection = loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_BOUNDARIES));
+async function extractDistrictBoundaries(bbox: BoundaryBox, useLocal: boolean = false) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_BOUNDARIES)) : await fetchGeoJSONFromArcGIS(getDistrictONSQuery(bbox));
   const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS));
   const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
   return { geoJson: boundaries, populationMap: populationIndex };
 }
 
-function extractBUABoundaries(bbox: BoundaryBox) {
-  const boundaries: GeoJSON.FeatureCollection = loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_BUA_BOUNDARIES));
+async function extractBUABoundaries(bbox: BoundaryBox, useLocal: boolean = false) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_BUA_BOUNDARIES)) : await fetchGeoJSONFromArcGIS(getBUAONSQuery(bbox));
   const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS));
   const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
   return { geoJson: boundaries, populationMap: populationIndex };
 }
 
-async function extractWardBoundaries(bbox: BoundaryBox) {
-  const boundaries: GeoJSON.FeatureCollection = await loadGeoJSONFromNDJSON(path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES));
+async function extractWardBoundaries(bbox: BoundaryBox, useLocal: boolean = false) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal ? await loadGeoJSONFromNDJSON(path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES)) : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox));
+  console.log(boundaries.features[0]);
   const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS));
   const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
   return { geoJson: boundaries, populationMap: populationIndex };
@@ -109,7 +110,7 @@ export async function extractGBBoundaries(args: ExtractMapFeaturesArgs, bbox: Bo
   if (!handler) {
     throw new Error(`Unsupported data type for GB: ${args.dataType}`);
   }
-  const { geoJson, populationMap } = await handler.extractBoundaries(expandBbox(bbox, 0.01));
+  const { geoJson, populationMap } = await handler.extractBoundaries(expandBbox(bbox, 0.01), args.useLocalData);
 
   processAndSaveBoundaries(
     geoJson,

@@ -13,6 +13,7 @@ export type ExtractMapFeaturesArgs = {
   west?: number;
   north?: number;
   east?: number;
+  useLocalData?: boolean;
 };
 
 export function requireString(
@@ -51,6 +52,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
 
   let argv = minimist(process.argv.slice(2), {
     string: ['data-type', 'city-code', 'country-code'],
+    boolean: ['use-local-data'],
     alias: {
       dataType: 'data-type',
       cityCode: 'city-code',
@@ -71,7 +73,9 @@ export function parseArgs(): ExtractMapFeaturesArgs {
   const north = argv['north'] as number | undefined;
   const east = argv['east'] as number | undefined;
 
-  console.log('Parsed arguments:', { "data-type": dataType, countryCode: countryCode, cityCode: cityCode, south: south, west: west, north: north, east: east });
+  const useLocalData = argv['use-local-data'] as boolean | undefined;
+
+  console.log('Parsed arguments:', { "data-type": dataType, countryCode: countryCode, cityCode: cityCode, south: south, west: west, north: north, east: east, useLocalData: useLocalData });
 
   return {
     dataType: dataType!,
@@ -81,6 +85,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     west: west,
     north: north,
     east: east,
+    useLocalData: useLocalData
   }
 }
 

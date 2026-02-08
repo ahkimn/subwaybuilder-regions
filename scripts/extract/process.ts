@@ -1,10 +1,9 @@
 import path from "path";
-import { ExtractMapFeaturesArgs } from "../utils/cli";
+import { ExtractMapFeaturesArgs, parseNumber } from "../utils/cli";
 import { saveGeoJSON, updateIndexJson } from "../utils/files";
 import { BoundaryBox, filterAndClipRegionsToBoundary } from "../utils/geometry";
 import { DataConfig } from "./handler-types";
 import type { Feature, Geometry, GeoJsonProperties } from "geojson";
-import { parseNumber } from "../../shared/utils";
 import { DATA_INDEX_FILE } from "../../shared/consts";
 
 const OUTPUT_INDEX_FILE = path.resolve('data', DATA_INDEX_FILE);

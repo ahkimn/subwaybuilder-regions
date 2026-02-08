@@ -109,7 +109,6 @@ export class RegionsInfoPanel {
       case 'commuters':
         this.contentPanel.appendChild(
           renderCommutersView(this.gameData!.commuterData!, this.commutersViewState, direction => {
-            console.log(`[RegionsInfoPanel] Commuters view direction changed to ${direction}`);
             if (this.commutersViewState.direction === direction) return;
 
             this.commutersViewState.direction = direction;

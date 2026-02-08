@@ -94,15 +94,11 @@ _Latest Tested Game Version:_ `v0.12.6`
      npm install
    ```
 
-2. Download Source Data (Optional)
-
-   > // TODO: Create a script to download GB data for local use
-
-3. Update City Config (Optional)
+2. Update City Config (Optional)
 
    The `boundaries.csv` contains the boundary box for clipping regions to all of the game's current cities. If you are working on a custom city, please add an entry for the custom city within the file
 
-4. Build Boundary GeoJSONs
+3. Build Boundary GeoJSONs
 
    From the project repository root, run
 
@@ -143,7 +139,7 @@ _Latest Tested Game Version:_ `v0.12.6`
 
    :warning: If boundaries are not provided, `city-code` must be in `boundaries.csv`
 
-5. Serve Local Data
+4. Serve Local Data
    From the repository root, run:
 
    ```
@@ -152,7 +148,7 @@ _Latest Tested Game Version:_ `v0.12.6`
 
    By default this serves: http://127.0.0.1:8080.
 
-6. Build
+5. Build
    From the repository root, run:
 
    ```
@@ -161,15 +157,15 @@ _Latest Tested Game Version:_ `v0.12.6`
 
    This will build the `index.js` in `dist/`
 
-7. Install
+6. Install
 
    Move or symlink the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
-**Disclaimer**
+### Disclaimer
 
 > :warning: This mod was developed on Windows, behavior on other platforms is undetermined
 >
-> If you encountered issues, please:
+> If you encountered issues while working with the mod, please:
 >
 > - Raise an issue (see [Contributing](#contributing)) on the repository
 > - Send a message within the mod's dedicated thread within the game's [Discord server](https://discord.gg/97JhJprW)
@@ -198,11 +194,11 @@ List of features that are planned to be implemented in the near future. Those wi
 - **Special Demand Point Data**
   - Show special demand points within the info view of a region (e.g. Airports/Universities/etc.).
   - This isn't well documented in the API and I will probably wait for clarity if the current pattern of ({PREFIX}\_{ID}) can be relied on
-- :construction: **Better Preset Data**
-  - Queries for GB Data
-    - GB data is generated using (very large) downloaded GeoJSONs
+- **Better Preset Data**
+  - More Comprehensive GB Population Data
     - GB population data is spotty due to inconsistent IDs between data years
   - Label Generation Improvements (heuristic scoring of different candidate labels)
+  - More descriptive `type` for individual regions (e.g. _town_, _city_, _township_, _CDP_) for county subdivisions
 - **Theme Integration**
   - Game currently assumes it is being run on the default game Dark mode, but some recoloring will be required to support the default Light mode
   - Custom colorization (powered by mod settings when implemented)
