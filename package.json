@@ -27,7 +27,7 @@
     "tsx": "^4.21.0"
   },
   "name": "subwaybuilder-regions",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Mod to show/store regions within the game and analyze region-level data.",
   "main": "index.js",
   "scripts": {

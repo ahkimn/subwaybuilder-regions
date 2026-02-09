@@ -1,7 +1,7 @@
 import path from "path";
 import { ExtractMapFeaturesArgs } from "../utils/cli";
 import { loadGeoJSONFromNDJSON, loadGeoJSON, Row, loadCSV, buildCSVIndex } from "../utils/files";
-import { BoundaryBox, expandBbox } from "../utils/geometry";
+import { BoundaryBox, expandBBox } from "../utils/geometry";
 import { BoundaryDataHandler, DataConfig } from "./handler-types";
 import { processAndSaveBoundaries } from "./process";
 import { SOURCE_DATA_DIR } from "../../shared/consts";
@@ -110,7 +110,7 @@ export async function extractGBBoundaries(args: ExtractMapFeaturesArgs, bbox: Bo
   if (!handler) {
     throw new Error(`Unsupported data type for GB: ${args.dataType}`);
   }
-  const { geoJson, populationMap } = await handler.extractBoundaries(expandBbox(bbox, 0.01), args.useLocalData);
+  const { geoJson, populationMap } = await handler.extractBoundaries(expandBBox(bbox, 0.01), args.useLocalData);
 
   processAndSaveBoundaries(
     geoJson,

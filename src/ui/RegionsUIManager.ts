@@ -8,7 +8,7 @@ import { RegionsMapLayers } from "../map/RegionsMapLayers";
 import { ModdingAPI } from "../types";
 import { observeInfoPanelsRoot, observeMapLayersPanel } from "./observers/observers";
 import { RegionsInfoPanelRenderer } from "./panels/info/RegionsInfoPanelRenderer";
-import { injectRegionToggles } from "./panels/layers/toggles";
+import { injectRegionToggles } from "./map-layers/toggles";
 import { resolveInfoPanelRoot } from "./resolve/resolve-info-panel";
 
 export class RegionsUIManager {
@@ -167,10 +167,9 @@ export class RegionsUIManager {
     this.lastCheckedGameTime = elapsedSeconds;
   }
 
-  private updateCommutersData() {
-    const commuterData = this.regionDataManager.ensureExistsCommuterData(this.state);
+  private async updateCommutersData() {
 
-    if (commuterData) {
+    if (await this.regionDataManager.ensureExistsData(this.state, 'commuter')) {
       this.infoPanelRenderer.tryUpdatePanel();
     }
   }

@@ -1,4 +1,4 @@
-import { REGIONS_INFO_PANEL_ID, REGIONS_INFO_PANEL_MOD_ID, REGIONS_INFO_PANEL_TITLE, REGIONS_INFO_PANEL_WIDTH } from "../../../core/constants";
+import { REGIONS_INFO_PANEL_ID, REGIONS_INFO_PANEL_MOD_ID, REGIONS_INFO_PANEL_TITLE, INFO_PANEL_MIN_WIDTH } from "../../../core/constants";
 import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
 import { RegionGameData, UIState } from "../../../core/types";
 import { PanelHeader } from "../../elements/PanelHeader";
@@ -16,12 +16,16 @@ export class RegionsInfoPanel {
 
   private gameData: RegionGameData | null = null;
 
+  private renderToken: number = 0;
   private activeView: RegionsInfoPanelView = 'statistics';
   private commutersViewState: CommutersViewState = {
     direction: 'outbound',
-    modeDisplay: 'absolute',
-    modeLayout: 'transit',
-    expanded: false
+    commuterCountDisplay: 'absolute',
+    modeShareDisplay: 'absolute',
+    modeShareLayout: 'transit',
+    expanded: false,
+    sortIndex: 1, // default to sorting by commuter count
+    sortDirection: 'desc'
   }
 
   constructor(
@@ -49,12 +53,12 @@ export class RegionsInfoPanel {
     this.root.appendChild(b1);
 
     const b2 = document.createElement('div');
-    b2.className = `p-2 flex bg-primary-foreground/60 backdrop-blur-sm max-h-auto overflow-auto min-w-${REGIONS_INFO_PANEL_WIDTH} justify-center`;
+    b2.className = `p-2 flex bg-primary-foreground/60 backdrop-blur-sm max-h-auto overflow-auto min-w-${INFO_PANEL_MIN_WIDTH} justify-center`;
     b1.appendChild(b2);
 
 
     const b3 = document.createElement('div');
-    b3.className = `flex flex-col gap-2 w-full min-w-${REGIONS_INFO_PANEL_WIDTH} h-full`;
+    b3.className = `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} h-full`;
     b2.appendChild(b3);
 
     this.mainSelectRow = new SelectRow(
@@ -86,13 +90,28 @@ export class RegionsInfoPanel {
     this.render(true);
   }
 
-  private render(forceRefresh: boolean = false) {
-    this.contentPanel.replaceChildren();
+  private async render(forceRefresh: boolean = false) {
+    const token = ++this.renderToken
 
     if (this.activeView === 'commuters' && forceRefresh) {
-      this.regionDataManager.ensureExistsCommuterData(this.uiState, { forceBuild: true });
+      await this.regionDataManager.ensureExistsData(this.uiState, 'commuter', { forceBuild: true });
+    } else if (this.activeView === 'statistics' && forceRefresh) {
+      // Do not force rebuild infra data since it is more computationally expensive and will not change without user input
+      this.regionDataManager.ensureExistsData(this.uiState, 'infra', { forceBuild: false })
+        .then(() => {
+          if (token !== this.renderToken) return; // Abort if a newer render has been initialized
+          console.log('[RegionsInfoPanel] Statistics view data refresh complete.');
+          // Let computation continue async and attempt to rerender once the data is ready
+          if (this.activeView === 'statistics') {
+            requestAnimationFrame(() => this.render());
+          }
+        })
     }
 
+    if (token !== this.renderToken) {
+      console.warn(`Aborting render due to newer render token. Current: ${this.renderToken}. Required: ${token}`);
+      return;
+    }
     this.gameData = this.regionDataManager.getGameData(this.uiState);
 
     if (!this.gameData) {
@@ -100,23 +119,24 @@ export class RegionsInfoPanel {
       return;
     }
 
+    let viewNode: HTMLElement;
+
+    this.contentPanel.replaceChildren();
     switch (this.activeView) {
       case 'statistics':
-        this.contentPanel.appendChild(
-          renderStatisticsView(this.gameData!)
-        )
+        viewNode = renderStatisticsView(this.gameData!);
         break;
       case 'commuters':
-        this.contentPanel.appendChild(
+        viewNode =
           renderCommutersView(this.gameData!, this.commutersViewState, direction => {
             if (this.commutersViewState.direction === direction) return;
-
             this.commutersViewState.direction = direction;
             requestAnimationFrame(() => this.render());
           })
-        )
         break;
     }
+
+    this.contentPanel.replaceChildren(viewNode);
   }
 
   public tryRender(forceRefresh: boolean = false) {

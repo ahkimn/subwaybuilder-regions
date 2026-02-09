@@ -85,7 +85,7 @@ export type RegionCommuterData = {
 
 export type RegionInfraData = {
   stations: Map<string, string>; // Map of station IDs to station names within region
-  tracks: Set<string>; // Set of trackIDs that pass through the region
+  tracks: Map<string, number>; // Map of trackIDs to their lengths within the region (in kilometers)
   trackLengths: Map<string, number>; // Length of track segments per type within the region (in kilometers)
   routes: Set<string>; // Set of routeIDs that have at least one station within the region
   routeDisplayParams: Map<string, RouteDisplayParams>; // Map of route IDs to display parameters for the route
@@ -108,7 +108,8 @@ export type RegionGameData = {
   readonly datasetId: string; // ID of the dataset this region belongs to
   readonly featureId: string | number; // ID of the feature in the dataset's boundary data
 
-  readonly displayName: string; // name to display for the region
+  readonly fullName: string; // full name of the region
+  readonly displayName: string; // name to display for the region, equivalent to full name if no abbreviated name exists
   readonly unitNames: {
     singular: string; // singular form of the unit name
     plural: string;   // plural form of the unit name

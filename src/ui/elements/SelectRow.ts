@@ -44,11 +44,11 @@ export class SelectRow {
     });
 
     if (configs.length > 0) {
-      this.select(initialIndex !== undefined ? initialIndex : 0);
+      this.select(initialIndex !== undefined ? initialIndex : 0, true);
     }
   }
 
-  private select(index: number) {
+  private select(index: number, initialSelect: boolean = false) {
     if (this.activeIndex === index) return;
 
     // Update button active states. Only one should be active at a time
@@ -59,7 +59,11 @@ export class SelectRow {
     this.activeIndex = index;
 
     this.buttons[index]!.el.blur();
-    this.buttonConfigs[index]!.onSelect();
+
+    // On initialization we want to set the button active but not trigger the callback to avoid side effects on the parent object
+    if (!initialSelect) {
+      this.buttonConfigs[index]!.onSelect();
+    }
   }
 
   get element(): HTMLElement {

@@ -1,9 +1,12 @@
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import { ModdingAPI, Route, Station, Track } from "../../types";
-import { arcLengthInsideBoundary, isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
+import { Coordinate, isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
+import { prepareBoundaryParams } from '../geometry/arc-length';
+import { geodesicArcLengthInsideBoundary, planarArcLengthInsideBoundary } from '../geometry/arc-length';
 import { DatasetInvalidFeatureTypeError, DatasetMissingFeatureError } from "../errors";
 import { RegionDataset } from "./RegionDataset";
 import { ModeShare, RegionCommuterData, RegionInfraData, RouteBulletType, RouteDisplayParams } from "../types";
+import * as turf from '@turf/turf';
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
@@ -135,7 +138,7 @@ export class RegionDataBuilder {
     }
   }
 
-  buildRegionInfraData(dataset: RegionDataset, featureId: string | number): RegionInfraData | null {
+  buildRegionInfraData(dataset: RegionDataset, featureId: string | number, updateTime?: number): RegionInfraData | null {
 
     const allStations: Station[] = this.api.gameState.getStations();
     const allTracks: Track[] = this.api.gameState.getTracks();
@@ -146,7 +149,7 @@ export class RegionDataBuilder {
       return null
     }
 
-    const feature = dataset.boundaryData.features.find(f => f.id === featureId);
+    const feature = dataset.boundaryData.features.find(f => f.properties?.ID! === featureId);
     if (!feature) throw new DatasetMissingFeatureError(dataset.id, 'boundaryData', featureId)
     if (!isPolygonFeature(feature)) throw new DatasetInvalidFeatureTypeError(dataset.id, feature);
 
@@ -157,7 +160,7 @@ export class RegionDataBuilder {
     }
 
     const { stationNames, stationNodes } = this.getStationDataWithinRegion(feature, allStations);
-    const { trackIds, trackLengths } = this.getTracksWithinRegion(feature, allTracks);
+    const { trackIds, trackLengths } = this.getTracksWithinRegion(feature, allTracks, true);
     const { routes, routeDisplayParams } = this.getRoutesWithinRegion(allRoutes, stationNodes);
 
     return {
@@ -166,6 +169,10 @@ export class RegionDataBuilder {
       trackLengths: trackLengths,
       routes: routes,
       routeDisplayParams: routeDisplayParams,
+      metadata: {
+        lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
+        dirty: false
+      }
     };
   }
 
@@ -175,10 +182,12 @@ export class RegionDataBuilder {
   } {
     const stationNames = new Map<string, string>();
     const stationNodes = new Set<string>();
+    const featureBBox = turf.bbox(feature);
+
     for (const station of stations) {
-      if (station.buildType === 'constructed') continue; // Ignore blueprint stations
+      if (station.buildType !== 'constructed') continue; // Ignore blueprint stations
       const [lng, lat] = station.coords;
-      if (isCoordinateWithinFeature(lat, lng, feature)) {
+      if (isCoordinateWithinFeature(lat, lng, feature, featureBBox)) {
         stationNames.set(station.id, station.name);
         station.stNodeIds?.forEach(nodeId => stationNodes.add(nodeId));
       }
@@ -186,17 +195,40 @@ export class RegionDataBuilder {
     return { stationNames, stationNodes };
   }
 
-  private getTracksWithinRegion(feature: Feature<Polygon | MultiPolygon>, tracks: Track[]): { trackIds: Set<string>, trackLengths: Map<string, number> } {
-    const trackIds = new Set<string>();
+  /**
+   * Given a region boundary feature, and a list of all current tracks within the game, returns the following:
+   * - A map of track IDs to their lengths within the region (in kilometers)
+   * - A map of track types to total length of tracks of that type within the region (in kilometers)
+   *
+   * This function allows for both geodesic and planar approximations of track length within the region, with planar being the default due to its much lower computational cost.
+   * The geodesic calculation is more accurate but takes significantly more time (up to 50x), especially for larger regions in games with many track segments. 
+   * 
+   * TODO: (Performance) Allow optional override of planar approximation for tracks if the region is small enough OR there are few track nodes OR if the user overrides through settings
+   */
+  private getTracksWithinRegion(feature: Feature<Polygon | MultiPolygon>, tracks: Track[], forcePlanar: boolean): { trackIds: Map<string, number>, trackLengths: Map<string, number> } {
+    const trackIds = new Map<string, number>();
     const trackLengths = new Map<string, number>();
 
-    for (const track of tracks) {
-      if (track.buildType === 'constructed') continue; // Ignore blueprint tracks
-      const trackLengthInRegion = arcLengthInsideBoundary(track.coords as Array<[number, number]>, feature);
-      trackIds.add(track.id);
-      trackLengths.set(track.trackType!, trackLengthInRegion);
-    };
+    const featureBBox = turf.bbox(feature);
+    let boundaryParams;
 
+    for (const track of tracks) {
+      if (track.buildType !== 'constructed') continue; // Ignore blueprint tracks
+      let trackLengthInRegion: number;
+      const knownTrackLength = track.length; // Game track length should be geodesic
+
+      if (forcePlanar) {
+        trackLengthInRegion = planarArcLengthInsideBoundary(track.coords as Array<Coordinate>, knownTrackLength, boundaryParams ??= prepareBoundaryParams(feature));
+      } else {
+        trackLengthInRegion = geodesicArcLengthInsideBoundary(track.coords as Array<Coordinate>, feature, featureBBox, knownTrackLength);
+      }
+
+      if (trackLengthInRegion > 0) {
+        trackIds.set(track.id, trackLengthInRegion);
+        trackLengths.has(track.trackType!) ? trackLengths.set(track.trackType!, trackLengths.get(track.trackType!)! + trackLengthInRegion) :
+          trackLengths.set(track.trackType!, trackLengthInRegion);
+      }
+    };
     return { trackIds, trackLengths };
   }
 
@@ -228,3 +260,4 @@ export class RegionDataBuilder {
     return { routes: routesWithinRegion, routeDisplayParams };
   }
 }
+

@@ -1,5 +1,4 @@
-
-
+// TODO: (Issue 5) - Make sure the info panel clears when a default data panel is opened
 export function observeInfoPanelsRoot(getRoot: () => HTMLElement | null,
   onPanelOpened: () => void) {
   const root = getRoot();

@@ -1,11 +1,15 @@
 export type RegionsInfoPanelView = 'statistics' | 'commuters';
 export type CommuterDirection = 'outbound' | 'inbound'
-export type ModeDisplay = 'absolute' | 'percentage';
+export type NumberDisplay = 'absolute' | 'percentage';
 export type ModeLayout = 'transit' | 'all';
+export type SortDirection = 'asc' | 'desc';
 
 export type CommutersViewState = {
   direction: CommuterDirection;
-  modeDisplay: ModeDisplay;
-  modeLayout: ModeLayout;
+  commuterCountDisplay: NumberDisplay;
+  modeShareDisplay: NumberDisplay;
+  modeShareLayout: ModeLayout;
   expanded: boolean;
+  sortIndex: number;
+  sortDirection: SortDirection;
 };

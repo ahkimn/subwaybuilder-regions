@@ -1,5 +1,5 @@
 import osmtogeojson from "osmtogeojson";
-import { BoundaryBox, expandBbox, } from "../utils/geometry";
+import { BoundaryBox, expandBBox, } from "../utils/geometry";
 import { fetchGeoJSONFromArcGIS, buildCountyUrl, extractStateCodesFromGeoIDs, fetchCountyPopulations, buildZctaUrl, fetchCountySubdivisionPopulations, fetchOverpassData, fetchPlacePopulations, fetchZctaPopulations, fetchPlaceFeatures, fetchCouSubFeatures, buildNeighborhoodOverpassQuery } from "../utils/queries";
 import { ExtractMapFeaturesArgs } from "../utils/cli";
 import { BoundaryDataHandler, DataConfig } from "./handler-types";
@@ -120,7 +120,7 @@ export async function extractUSBoundaries(args: ExtractMapFeaturesArgs, bbox: Bo
     throw new Error(`Unsupported data type for US: ${args.dataType}`);
   }
 
-  const { geoJson, populationMap } = await handler.extractBoundaries(expandBbox(bbox, 0.01));
+  const { geoJson, populationMap } = await handler.extractBoundaries(expandBBox(bbox, 0.01));
 
   processAndSaveBoundaries(
     geoJson,

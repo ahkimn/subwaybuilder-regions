@@ -1,3 +1,4 @@
+// Unused for now
 export function RouteBullet(opts: {
   label: string;
   color: string;

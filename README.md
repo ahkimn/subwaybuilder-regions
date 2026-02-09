@@ -130,9 +130,9 @@ _Latest Tested Game Version:_ `v0.12.6`
 
    | `country-code` | `data-type `        | description                             | source                |
    | -------------- | ------------------- | --------------------------------------- | --------------------- |
-   | **GB**         | districts           | Local Authority Districts (LADs)        | ONS (offline)         |
-   | **GB**         | bua                 | Built Up Areas                          | ONS (offline)         |
-   | **GB**         | wards               | Electoral Wards                         | ONS (offline)         |
+   | **GB**         | districts           | Local Authority Districts (LADs)        | ONS (online)          |
+   | **GB**         | bua                 | Built Up Areas                          | ONS (online)          |
+   | **GB**         | wards               | Electoral Wards                         | ONS (online)          |
    | **US**         | counties            | Counties                                | TIGERweb API (online) |
    | **US**         | county-subdivisions | County Subdivisions (Towns/Cities/CDPs) | TIGERweb API (online) |
    | **US**         | zctas               | ZIP Code Tabulation Areas               | TIGERweb API (online) |
@@ -161,7 +161,7 @@ _Latest Tested Game Version:_ `v0.12.6`
 
    Move or the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
-   Alternatively, use the provided powershell script to symlink the files:
+   Alternatively, on windows use the provided powershell script to symlink the files (requires Administrator privileges):
 
    ```
    .\link-mod.ps1 -ProjectDir "REPOSITORY_DIR" -GameModsDir "GAME_MOD_DIRS\REGIONS_MOD_DIR"
@@ -178,15 +178,14 @@ _Latest Tested Game Version:_ `v0.12.6`
 
 ## Planned Features
 
-List of features that are planned to be implemented in the near future. Those with :construction: are currently under implementation
+List of features that are feasible and may be added in the near future. Those with :construction: are currently under implementation
 
 ### Major Features
 
-- **Hotkey Support**
-  - Game panels should respond to in-game hotkeys as other parts of the existing game UI do (e.g. Esc to clear panel / selection)
 - **Better Data Imports**
   - Mod expects GeoJSONs with features that have specific properties.
-  - A conversion script is possible, but this is a brittle contract for any user-imported data
+    - A conversion script is possible, but this is a brittle contract for any user-imported data
+  - Allow users to import preset regions directly from the game
 - **Settings**
   - Mod-level settings should be added in the main menu. This could include:
     - Metric/Imperial conversion
@@ -194,37 +193,42 @@ List of features that are planned to be implemented in the near future. Those wi
     - etc.
 - :construction: **Aggregate Data View**
   - Add a new table component to show all region statistics at a glance
+  - Sync data / selection state across multiple panels
+- **Hotkey Support**
+  - Game panels should respond to in-game hotkeys as other parts of the existing game UI do (e.g. Esc to clear panel / selection)
 
 ### Minor Features
 
-- **Special Demand Point Data**
-  - Show special demand points within the info view of a region (e.g. Airports/Universities/etc.).
-  - This isn't well documented in the API and I will probably wait for clarity if the current pattern of ({PREFIX}\_{ID}) can be relied on
 - **Better Preset Data**
   - More Comprehensive GB Population Data
     - GB population data is spotty due to inconsistent IDs between data years
   - Label Generation Improvements (heuristic scoring of different candidate labels)
   - More descriptive `type` for individual regions (e.g. _town_, _city_, _township_, _CDP_) for county subdivisions
-- **Theme Integration**
+- **Visual Updates + Theme Integration**
   - Game currently assumes it is being run on the default game Dark mode, but some recoloring will be required to support the default Light mode
-  - Custom colorization (powered by mod settings when implemented)
+  - Once mod-level settings are added:
+    - Custom color palettes to override presets
+    - Data-linked coloring of labels/statistics (e.g. apply in-game demand bubble coloring for mode share stats)
+- **Special Demand Point Data**
+  - Show special demand points within the info view of a region (e.g. Airports/Universities/etc.).
+  - This isn't well documented in the API and I will probably wait for clarity if the current pattern of ({PREFIX}\_{ID}) can be relied on
 
 ### Ideation
 
-Some additional potential features that will likely remain ideas for the foreseeable future
+Some additional features that will likely remain just ideas for the foreseeable future
 
 - **Editable / Dynamic User Regions**
   - Users should be able to define / edit region boundaries within the game UX
   - Implementation?
     - Based on existing demand points (allow user to select subset, build boundaries around selection)
     - Based on existing layers (integrate with the game's existing map layers, snap to roads, water, etc.)
-- **Core Game Mechanic Integration**
+- **Core Game Mechanic Integration** (Requires new API hooks/functions)
   - Commute costs
     - Region-based fares / driving cost (e.g. congestion pricing zone)
   - Dynamic demand
     - Region-differentiated demand growth / decline (perhaps in the form of region-level policies)
   - Construction
-    - "Enable/disable" construction for certain regions (e.g. pay to unlock new land to build on)
+    - "Enable/disable" construction for certain regions (e.g. pay to unlock new areas to build on, or be paid to expand to a region by X time)
     - Region-based construction cost multipliers
 
 ## Known Issues
@@ -260,6 +264,8 @@ Bugs or issues that are inconvenient but do not break the core mod functionality
 4. _Brittle DOM Injection_
    - Forced DOM injection of `Map Layers` toggles should be replaced by API calls in the future
    - Class-based DOM query / injection of info panel should be replaced by API call
+5. _Multiple Top Left Panels_
+   - The info panel should auto-hide when a different panel (e.g. Demand Details) is opened
 
 ## Changelog
 

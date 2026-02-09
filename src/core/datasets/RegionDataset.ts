@@ -216,12 +216,14 @@ export class RegionDataset {
   private populateStaticData(): void {
     this.boundaryData!.features.forEach((feature) => {
       const featureId: string | number = feature.properties?.ID!;
-      const displayName: string = feature.properties?.DISPLAY_NAME || feature.properties?.NAME!;
+      const fullName = feature.properties?.NAME!
+      const displayName: string = feature.properties?.DISPLAY_NAME || fullName;
 
       this.regionNameMap.set(featureId, displayName);
       this.gameData.set(featureId, {
         datasetId: this.id,
         featureId: featureId,
+        fullName: fullName,
         displayName: displayName,
         unitNames: {
           singular: this.unitLabelSingular,

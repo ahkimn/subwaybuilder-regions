@@ -24,7 +24,7 @@ export function bboxToGeometryString(bbox: BoundaryBox): string {
   return `${bbox.west},${bbox.south},${bbox.east},${bbox.north}`;
 }
 
-export function expandBbox(bbox: BoundaryBox, paddingDegrees: number): BoundaryBox {
+export function expandBBox(bbox: BoundaryBox, paddingDegrees: number): BoundaryBox {
   return {
     west: bbox.west - paddingDegrees,
     south: bbox.south - paddingDegrees,

@@ -64,6 +64,7 @@ export class RegionsInfoPanelRenderer {
   }
 
   tryUpdatePanel() {
+    console.log("[RegionsInfoPanelRenderer] tryUpdatePanel called. Current panel:", this.infoPanel ? "exists" : "null");
     this.infoPanel?.tryRender();
   }
 
@@ -75,7 +76,6 @@ export class RegionsInfoPanelRenderer {
         this.state,
         () => this.tearDown())
     }
-
     this.infoPanel.tryRender(true)
     this.show();
   }

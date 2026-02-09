@@ -1,10 +1,10 @@
-import { Checkbox } from "../../elements/Checkbox";
-import { LayerToggleOptions } from "../../types/LayerToggleOptions";
+import { Checkbox } from "../elements/Checkbox";
+import { LayerToggleOptions } from "../types/LayerToggleOptions";
 
 const REGIONS_CONTAINER_ATTR = 'data-regions-mod';
 const REGIONS_TOGGLE_ATTR = 'data-regions-toggle';
 
-export function createToggleRow(
+function createToggleRow(
   options: LayerToggleOptions
 ): HTMLElement {
   return Checkbox(options, REGIONS_TOGGLE_ATTR);

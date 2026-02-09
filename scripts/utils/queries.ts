@@ -37,12 +37,12 @@ export function isValidCountySubdivision(
 
 // --- Census Boundary Queries --- //
 
-export function buildCountyUrl(queryBbox: BoundaryBox): ArcGisQueryRequest {
+export function buildCountyUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/State_County/MapServer/1/query`,
     params: new URLSearchParams({
       where: '1=1',
-      geometry: bboxToGeometryString(queryBbox),
+      geometry: bboxToGeometryString(queryBBox),
       geometryType: 'esriGeometryEnvelope',
       inSR: '4326',
       outSR: '4326',
@@ -53,12 +53,12 @@ export function buildCountyUrl(queryBbox: BoundaryBox): ArcGisQueryRequest {
   };
 }
 
-export function buildCountySubdivisionUrl(queryBbox: BoundaryBox): ArcGisQueryRequest {
+export function buildCountySubdivisionUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/1/query`,
     params: new URLSearchParams({
       where: '1=1',
-      geometry: bboxToGeometryString(queryBbox),
+      geometry: bboxToGeometryString(queryBBox),
       geometryType: 'esriGeometryEnvelope',
       spatialRel: 'esriSpatialRelIntersects',
       inSR: '4326',
@@ -70,12 +70,12 @@ export function buildCountySubdivisionUrl(queryBbox: BoundaryBox): ArcGisQueryRe
   };
 }
 
-export function buildPlacesQuery(queryBbox: BoundaryBox, layerId: number): ArcGisQueryRequest {
+export function buildPlacesQuery(queryBBox: BoundaryBox, layerId: number): ArcGisQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/${layerId}/query`,
     params: new URLSearchParams({
       where: '1=1',
-      geometry: bboxToGeometryString(queryBbox),
+      geometry: bboxToGeometryString(queryBBox),
       geometryType: 'esriGeometryEnvelope',
       spatialRel: 'esriSpatialRelIntersects',
       inSR: '4326',
@@ -87,11 +87,11 @@ export function buildPlacesQuery(queryBbox: BoundaryBox, layerId: number): ArcGi
   };
 }
 
-export function buildZctaUrl(queryBbox: BoundaryBox): ArcGisQueryRequest {
+export function buildZctaUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query`, params: new URLSearchParams({
       where: '1=1',
-      geometry: `${queryBbox.west},${queryBbox.south},${queryBbox.east},${queryBbox.north}`,
+      geometry: `${queryBBox.west},${queryBBox.south},${queryBBox.east},${queryBBox.north}`,
       geometryType: 'esriGeometryEnvelope',
       spatialRel: 'esriSpatialRelIntersects',
       inSR: '4326',
@@ -322,13 +322,13 @@ export async function fetchOverpassData(query: string): Promise<any> {
 export function buildONSArcGisQuery(
   baseServiceUrl: string,
   layerId: number,
-  queryBbox: BoundaryBox
+  queryBBox: BoundaryBox
 ): ArcGisQueryRequest {
   return {
     url: `${baseServiceUrl}/${layerId}/query`,
     params: new URLSearchParams({
       where: '1=1',
-      geometry: bboxToGeometryString(queryBbox),
+      geometry: bboxToGeometryString(queryBBox),
       geometryType: 'esriGeometryEnvelope',
       spatialRel: 'esriSpatialRelIntersects',
       inSR: '4326',
@@ -340,16 +340,16 @@ export function buildONSArcGisQuery(
   };
 }
 
-export function getDistrictONSQuery(queryBbox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/LAD_MAY_2025_UK_BFC_V2/FeatureServer`, 0, queryBbox);
+export function getDistrictONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
+  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/LAD_MAY_2025_UK_BFC_V2/FeatureServer`, 0, queryBBox);
 }
 
-export function getBUAONSQuery(queryBbox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/BUA_2022_GB/FeatureServer`, 0, queryBbox);
+export function getBUAONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
+  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/BUA_2022_GB/FeatureServer`, 0, queryBBox);
 }
 
-export function getWardONSQuery(queryBbox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/WD_MAY_2025_UK_BFC_V2/FeatureServer`, 0, queryBbox);
+export function getWardONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
+  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/WD_MAY_2025_UK_BFC_V2/FeatureServer`, 0, queryBBox);
 }
 
 

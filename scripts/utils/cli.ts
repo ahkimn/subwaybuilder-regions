@@ -90,11 +90,11 @@ export function parseArgs(): ExtractMapFeaturesArgs {
 }
 
 // --- Argument Helpers --- //
-export function hasExplicitBbox(args: ExtractMapFeaturesArgs): args is ExtractMapFeaturesArgs & BoundaryBox {
+export function hasExplicitBBox(args: ExtractMapFeaturesArgs): args is ExtractMapFeaturesArgs & BoundaryBox {
   return [args.south, args.west, args.north, args.east].every(v => typeof v === 'number');
 }
 
-export function getBboxFromArgs(args: ExtractMapFeaturesArgs): BoundaryBox {
+export function getBBoxFromArgs(args: ExtractMapFeaturesArgs): BoundaryBox {
   return {
     south: args.south!,
     west: args.west!,
