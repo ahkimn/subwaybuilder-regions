@@ -75,7 +75,8 @@ export class RegionsInfoPanelRenderer {
       this.infoPanel = new RegionsInfoPanel(
         this.dataManager,
         this.state,
-        this.onClose)
+        this.onClose
+      )
     }
     this.infoPanel.tryRender(true)
     this.show();

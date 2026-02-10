@@ -49,8 +49,8 @@ export class UIState {
 }
 
 export type RegionSelection = {
-  datasetId: string | null;
-  featureId: string | number | null;
+  datasetId: string;
+  featureId: string | number;
 }
 
 // --- Dataset Types --- //

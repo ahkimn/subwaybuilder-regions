@@ -105,15 +105,15 @@ export class RegionsUIManager {
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {
     const nextDatasetId = RegionDataset.getIdentifier(payload.dataset);
     const nextFeatureId = payload.featureId;
-    const prevSelection = this.state.activeSelection;
+    const previousSelection = this.state.activeSelection;
 
-    if (prevSelection?.datasetId === nextDatasetId && prevSelection?.featureId === nextFeatureId) {
+    if (previousSelection !== null) {
       this.clearSelection();
       return;
     }
 
     this.state.activeSelection = { datasetId: nextDatasetId, featureId: nextFeatureId };
-    this.mapLayers.updateSelection(prevSelection, this.state.activeSelection);
+    this.mapLayers.updateSelection(previousSelection, this.state.activeSelection);
     this.infoPanelRenderer.showFeatureData();
   }
 
@@ -138,11 +138,11 @@ export class RegionsUIManager {
   }
 
   private clearSelection() {
-    const prevSelection = this.state.activeSelection;
+    const previousSelection = this.state.activeSelection;
 
     this.state.activeSelection = null;
 
-    this.mapLayers.updateSelection(prevSelection, this.state.activeSelection);
+    this.mapLayers.updateSelection(previousSelection, this.state.activeSelection);
     this.infoPanelRenderer.tearDown();
   }
 

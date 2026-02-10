@@ -66,18 +66,18 @@ export class RegionsMapLayers {
     this.selectionProvider = provider;
   }
 
-  updateSelection(prev: RegionSelection | null, next: RegionSelection | null) {
-    if (prev?.datasetId && prev.featureId !== null) {
-      const prevState = this.layerStates.get(prev.datasetId);
-      if (prevState) {
-        this.setSelectedState(prevState, prev.featureId, false);
+  updateSelection(previousSelection: RegionSelection | null, newSelection: RegionSelection | null) {
+    if (previousSelection !== null) {
+      const previousState = this.layerStates.get(previousSelection.datasetId);
+      if (previousState) {
+        this.setSelectedState(previousState, previousSelection.featureId, false);
       }
     }
 
-    if (next?.datasetId && next.featureId !== null) {
-      const nextState = this.layerStates.get(next.datasetId);
+    if (newSelection !== null) {
+      const nextState = this.layerStates.get(newSelection.datasetId);
       if (nextState) {
-        this.setSelectedState(nextState, next.featureId, true);
+        this.setSelectedState(nextState, newSelection.featureId, true);
       }
     }
   }
@@ -421,11 +421,9 @@ export class RegionsMapLayers {
   private applySelectionFromProvider(layerState: MapLayerState): void {
     if (!this.selectionProvider) return;
     const selection = this.selectionProvider();
-    if (!selection) return;
-    const { datasetId, featureId } = selection;
-    if (datasetId === null || featureId === null) return;
-    if (datasetId !== layerState.datasetIdentifier) return;
-    this.setSelectedState(layerState, featureId, true);
+    if (selection === null) return;
+    if (selection.datasetId !== layerState.datasetIdentifier) return;
+    this.setSelectedState(layerState, selection.featureId, true);
   }
 
   private setSelectedState(layerState: MapLayerState, featureId: string | number, selected: boolean) {
