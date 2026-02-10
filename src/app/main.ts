@@ -136,6 +136,22 @@ export class RegionsMod {
   getActiveSelection() {
     return this.uiManager?.activeSelection;
   }
+
+  logMapStyle() {
+    if (!this.map) {
+      console.warn("[Regions] Map not initialized");
+      return;
+    }
+    console.log(this.map.getStyle());
+  }
+
+  logLayerOrder() {
+    if (!this.map) {
+      console.warn("[Regions] Map not initialized");
+      return;
+    }
+    console.log(this.map.getStyle().layers?.map((layer) => layer.id));
+  }
 }
 
 // Initialize mod
@@ -145,6 +161,8 @@ const mod = new RegionsMod();
     printRegistry: () => mod.printRegistry(),
     getCurrentCityCode: () => mod.getCurrentCityCode(),
     getActiveSelection: () => mod.getActiveSelection(),
+    logMapStyle: () => mod.logMapStyle(),
+    logLayerOrder: () => mod.logLayerOrder(),
   }
 }
 mod.initialize();
