@@ -2,6 +2,7 @@
 import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/consts';
 import { REGIONS_DESELECT_KEY } from '../core/constants';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
+import { RegistryError, handleRegionsModError, setRegionsModErrorHandler } from '../core/errors';
 import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
 
@@ -36,11 +37,19 @@ export class RegionsMod {
       return;
     }
 
+    setRegionsModErrorHandler((err) => {
+      console.error(`[Regions][${err.code}] ${err.message}`, err.context ?? {});
+    });
+
     // Build dataset registry from data index file. 
     // TODO (Future): replace with local mod storage
     await this.registry.build(
       () => {
-        console.error("[Regions] Failed to load dataset index");
+        handleRegionsModError(new RegistryError(
+          'registry_missing_index',
+          `Dataset index could not be fetched from ${SERVE_URL}/${DATA_INDEX_FILE}`,
+          { indexFile: DATA_INDEX_FILE, url: SERVE_URL }
+        ));
         api.ui.showNotification("[Regions] Failed to load region data index. Please ensure local data is being served.", "error")
       }
     );

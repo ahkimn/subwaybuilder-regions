@@ -1,5 +1,5 @@
 import { RegionDataset } from "../datasets/RegionDataset";
-import { RegistryMissingDatasetError, RegistryMissingIndexError } from "../errors";
+import { RegistryError } from "../errors";
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
@@ -27,7 +27,11 @@ export class RegionDatasetRegistry {
   getDatasetByIdentifier(identifier: string): RegionDataset {
     const dataset = this.datasets.get(identifier) || null;
     if (!dataset) {
-      throw new RegistryMissingDatasetError(identifier);
+      throw new RegistryError(
+        'registry_missing_dataset',
+        `Dataset ${identifier} does not exist in the registry`,
+        { datasetId: identifier }
+      );
     }
     return dataset;
   }
@@ -51,7 +55,11 @@ export class RegionDatasetRegistry {
       index = await fetch(`${this.serveUrl}/${this.indexFile}`).then(res => res.json());
     } catch (e) {
       onFetchError();
-      throw new RegistryMissingIndexError(this.indexFile, this.serveUrl);
+      throw new RegistryError(
+        'registry_missing_index',
+        `Dataset index could not be fetched from ${this.serveUrl}/${this.indexFile}`,
+        { indexFile: this.indexFile, url: this.serveUrl }
+      );
     }
 
     for (const [cityCode, datasets] of Object.entries(index)) {

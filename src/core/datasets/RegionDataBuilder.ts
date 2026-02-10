@@ -3,7 +3,7 @@ import { ModdingAPI, Route, Station, Track } from "../../types";
 import { Coordinate, isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
 import { prepareBoundaryParams } from '../geometry/arc-length';
 import { geodesicArcLengthInsideBoundary, planarArcLengthInsideBoundary } from '../geometry/arc-length';
-import { DatasetInvalidFeatureTypeError, DatasetMissingFeatureError } from "../errors";
+import { DatasetRuntimeError, handleRegionsModError } from "../errors";
 import { RegionDataset } from "./RegionDataset";
 import { ModeShare, RegionCommuterData, RegionInfraData, RouteBulletType, RouteDisplayParams } from "../types";
 import * as turf from '@turf/turf';
@@ -36,13 +36,21 @@ export class RegionDataBuilder {
     const workerModeShares = new Map<string, ModeShare>();
 
     if (!demandData) {
-      console.error("[Regions] Demand data not available");
+      handleRegionsModError(new DatasetRuntimeError(
+        'dataset_missing_demand_data',
+        "[Regions] Demand data not available",
+        { datasetId: dataset.id }
+      ));
       return null;
     }
 
     const currentGameData = dataset.getRegionGameData(featureId);
     if (!currentGameData || !currentGameData.demandData) {
-      console.error(`[Regions] No game data or demand data found for feature ${featureId} in dataset ${dataset.id}`);
+      handleRegionsModError(new DatasetRuntimeError(
+        'dataset_missing_game_or_demand_data',
+        `[Regions] No game data or demand data found for feature ${featureId} in dataset ${dataset.id}`,
+        { datasetId: dataset.id, featureId }
+      ));
       return null;
     }
 
@@ -50,7 +58,11 @@ export class RegionDataBuilder {
     for (const popId of currentGameData.demandData.populationIds) {
       const popData = demandData.popsMap.get(popId);
       if (!popData) {
-        console.error(`[Regions] No demand data found for population ID ${popId}`);
+        handleRegionsModError(new DatasetRuntimeError(
+          'dataset_missing_population_demand_data',
+          `[Regions] No demand data found for population ID ${popId}`,
+          { datasetId: dataset.id, featureId, populationId: popId }
+        ));
         continue;
       }
 
@@ -60,7 +72,11 @@ export class RegionDataBuilder {
       const isWorker = demandPointIds.has(popData.jobId);
 
       if (!isResident && !isWorker) {
-        console.error(`[Regions] Population ID ${popId} in region ${featureId} of dataset ${dataset.id} is not associated with a region demand point.`);
+        handleRegionsModError(new DatasetRuntimeError(
+          'dataset_population_missing_region_demand_point',
+          `[Regions] Population ID ${popId} in region ${featureId} of dataset ${dataset.id} is not associated with a region demand point.`,
+          { datasetId: dataset.id, featureId, populationId: popId }
+        ));
         continue;
       }
 
@@ -90,7 +106,11 @@ export class RegionDataBuilder {
       else if (isResident) {
         workRegion = resolveRegion(popData.jobId);
         if (!workRegion) {
-          console.error(`[Regions] Unable to find work region for population ID ${popId}`);
+          handleRegionsModError(new DatasetRuntimeError(
+            'dataset_population_missing_work_region',
+            `[Regions] Unable to find work region for population ID ${popId}`,
+            { datasetId: dataset.id, featureId, populationId: popId }
+          ));
           continue;
         }
         residentModeShare = ModeShare.add(residentModeShare, popModeShare);
@@ -99,7 +119,11 @@ export class RegionDataBuilder {
       else {
         homeRegion = resolveRegion(popData.residenceId);
         if (!homeRegion) {
-          console.error(`[Regions] Unable to find home region for population ID ${popId}`);
+          handleRegionsModError(new DatasetRuntimeError(
+            'dataset_population_missing_home_region',
+            `[Regions] Unable to find home region for population ID ${popId}`,
+            { datasetId: dataset.id, featureId, populationId: popId }
+          ));
           continue;
         }
         workerModeShare = ModeShare.add(workerModeShare, popModeShare);
@@ -145,17 +169,37 @@ export class RegionDataBuilder {
     const allRoutes: Route[] = this.api.gameState.getRoutes();
 
     if (!dataset.boundaryData) {
-      console.error(`[Regions] No boundary data found for dataset ${dataset.id}`);
+      handleRegionsModError(new DatasetRuntimeError(
+        'dataset_missing_boundary_data',
+        `[Regions] No boundary data found for dataset ${dataset.id}`,
+        { datasetId: dataset.id }
+      ));
       return null
     }
 
     const feature = dataset.boundaryData.features.find(f => f.properties?.ID! === featureId);
-    if (!feature) throw new DatasetMissingFeatureError(dataset.id, 'boundaryData', featureId)
-    if (!isPolygonFeature(feature)) throw new DatasetInvalidFeatureTypeError(dataset.id, feature);
+    if (!feature) {
+      throw new DatasetRuntimeError(
+        'dataset_missing_feature',
+        `Dataset ${dataset.id} is missing required data for feature ${featureId} in boundaryData`,
+        { datasetId: dataset.id, featureId, layerType: 'boundaryData' }
+      );
+    }
+    if (!isPolygonFeature(feature)) {
+      throw new DatasetRuntimeError(
+        'dataset_invalid_feature_type',
+        `Feature ${feature.id} in dataset ${dataset.id} is invalid. Feature type: ${feature.geometry.type} is not supported.`,
+        { datasetId: dataset.id, featureId: feature.id, geometryType: feature.geometry.type }
+      );
+    }
 
     const currentGameData = dataset.getRegionGameData(featureId);
     if (!currentGameData) {
-      console.error(`[Regions] No game data found for feature ${featureId} in dataset ${dataset.id}`);
+      handleRegionsModError(new DatasetRuntimeError(
+        'dataset_missing_game_data',
+        `[Regions] No game data found for feature ${featureId} in dataset ${dataset.id}`,
+        { datasetId: dataset.id, featureId }
+      ));
       return null;
     }
 

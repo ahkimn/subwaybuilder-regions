@@ -3,6 +3,7 @@ import { RegionDatasetRegistry } from "../registry/RegionDatasetRegistry";
 import { STALE_COMMUTER_DATA_THRESHOLD_SECONDS, STALE_INFRA_DATA_THRESHOLD_SECONDS } from "../constants";
 import { RegionDataBuilder } from "./RegionDataBuilder";
 import { RegionCommuterData, RegionGameData, RegionInfraData, UIState } from "../types";
+import { DatasetRuntimeError, handleRegionsModError } from "../errors";
 
 export class RegionDataManager {
 
@@ -25,7 +26,11 @@ export class RegionDataManager {
   ): Promise<RegionCommuterData | RegionInfraData | null> {
 
     if (!uiState.isActive) {
-      console.error("[Regions] UI State not active: ", uiState);
+      handleRegionsModError(new DatasetRuntimeError(
+        'ui_state_not_active',
+        "[Regions] UI State not active",
+        { uiState }
+      ));
       return null;
     }
 
@@ -73,7 +78,11 @@ export class RegionDataManager {
 
   getGameData(uiState: Readonly<UIState>): RegionGameData | null {
     if (!uiState.isActive) {
-      console.error("[Regions] UI State not active: ", uiState);
+      handleRegionsModError(new DatasetRuntimeError(
+        'ui_state_not_active',
+        "[Regions] UI State not active",
+        { uiState }
+      ));
       return null;
     }
     const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetId!);

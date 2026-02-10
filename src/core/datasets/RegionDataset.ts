@@ -3,7 +3,7 @@ import { DemandData } from "../../types";
 import { isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
 import { DatasetSource, DatasetStatus, RegionCommuterData, RegionDemandData, RegionGameData, RegionInfraData } from "../types";
 import { DEFAULT_UNIT_LABELS, LAYER_PREFIX, PRESET_UNIT_LABELS, SOURCE_PREFIX, UNASSIGNED_REGION_ID, UNKNOWN_VALUE_DISPLAY } from "../constants";
-import { DatasetInvalidFeatureTypeError, DatasetMissingDataLayerError } from "../errors";
+import { DatasetRuntimeError } from "../errors";
 
 import * as turf from '@turf/turf';
 import { fetchGeoJSON } from "../utils";
@@ -138,17 +138,31 @@ export class RegionDataset {
     demandData: DemandData): Map<string | number, RegionDemandData> {
 
     if (!this.boundaryData) {
-      throw new DatasetMissingDataLayerError(this.id, 'boundaryData');
+      throw new DatasetRuntimeError(
+        'dataset_missing_data_layer',
+        `Dataset ${this.id} is missing required data boundaryData`,
+        { datasetId: this.id, layerType: 'boundaryData' }
+      );
     }
     if (!this.gameData.size) {
-      throw new DatasetMissingDataLayerError(this.id, 'gameData');
+      throw new DatasetRuntimeError(
+        'dataset_missing_data_layer',
+        `Dataset ${this.id} is missing required data gameData`,
+        { datasetId: this.id, layerType: 'gameData' }
+      );
     }
 
     // Tear down existing demand point associations .
     this.regionDemandPointMap.clear();
 
     const accumulator = this.boundaryData.features.map(feature => {
-      if (!isPolygonFeature(feature)) throw new DatasetInvalidFeatureTypeError(this.id, feature);
+      if (!isPolygonFeature(feature)) {
+        throw new DatasetRuntimeError(
+          'dataset_invalid_feature_type',
+          `Feature ${feature.id} in dataset ${this.id} is invalid. Feature type: ${feature.geometry.type} is not supported.`,
+          { datasetId: this.id, featureId: feature.id, geometryType: feature.geometry.type }
+        );
+      }
       const featureId: string | number = feature.properties?.ID!;
 
       return {
