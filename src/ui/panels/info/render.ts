@@ -86,14 +86,30 @@ export function renderCommutersView(
   root.className = 'flex flex-col gap-2 text-xs min-h-0';
 
   const isOutbound = viewState.direction === 'outbound';
-
   const aggregateModeShare = isOutbound ? commuterData.residentModeShare : commuterData.workerModeShare;
   const byRegionModeShare = isOutbound ? commuterData.residentModeShareByRegion : commuterData.workerModeShareByRegion;
+  const populationCount = ModeShare.total(aggregateModeShare);
 
-  const populationCount = ModeShare.total(aggregateModeShare)
+  root.appendChild(buildCommutersHeader(gameData, viewState, setDirection));
+  root.append(...buildSummaryStatistics(populationCount, aggregateModeShare));
 
-  // -- View Header / Summary Statistics -- //
+  const rows = sortCommuterRows(
+    deriveCommuterRows(byRegionModeShare, populationCount, viewState),
+    viewState
+  );
 
+  const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
+  const mayRequireScroll = rows.length > DEFAULT_TABLE_ROWS;
+
+  root.appendChild(buildCommutersTable(viewState, rows, rowsToDisplay, mayRequireScroll, renderPanel));
+  return root;
+}
+
+function buildCommutersHeader(
+  gameData: RegionGameData,
+  viewState: CommutersViewState,
+  setDirection: (direction: 'outbound' | 'inbound') => void
+): HTMLDivElement {
   const header = buildViewHeader(gameData.displayName);
   const directionRow = new SelectRow(
     'commutes-direction',
@@ -101,72 +117,96 @@ export function renderCommutersView(
       { label: 'Residents', onSelect: () => setDirection('outbound') },
       { label: 'Workers', onSelect: () => setDirection('inbound') },
     ],
-    isOutbound ? 0 : 1
+    viewState.direction === 'outbound' ? 0 : 1
   );
   header.appendChild(directionRow.element);
-  root.appendChild(header);
-  root.append(...buildSummaryStatistics(populationCount, aggregateModeShare));
+  return header;
+}
 
+function buildSummaryStatistics(populationCount: number, aggregateModeShare: ModeShare): HTMLElement[] {
+  return [
+    DetailRow('Total Commuters', formatFixedNumber(populationCount)),
+    DetailRow('Transit Mode Share', `${formatFixedNumber(aggregateModeShare.transit / populationCount * 100, PERCENT_DECIMALS)}%`),
+    DetailRow('Driving Mode Share', `${formatFixedNumber(aggregateModeShare.driving / populationCount * 100, PERCENT_DECIMALS)}%`),
+    DetailRow('Walking Mode Share', `${formatFixedNumber(aggregateModeShare.walking / populationCount * 100, PERCENT_DECIMALS)}%`),
+    Divider(2),
+  ]
+}
+
+function deriveCommuterRows(
+  byRegionModeShare: Map<string, ModeShare>,
+  populationCount: number,
+  viewState: CommutersViewState
+): CommuterRowData[] {
+  return Array.from(byRegionModeShare.entries()).map(([regionName, modeShare]) => {
+    return {
+      regionName: regionName,
+      commuterValue: viewState.commuterCountDisplay === 'absolute'
+        ? ModeShare.total(modeShare)
+        : (ModeShare.total(modeShare) / populationCount * 100),
+      transitValue: viewState.modeShareDisplay === 'absolute'
+        ? modeShare.transit
+        : ModeShare.share(modeShare, 'transit') * 100,
+      drivingValue: viewState.modeShareDisplay === 'absolute'
+        ? modeShare.driving
+        : ModeShare.share(modeShare, 'driving') * 100,
+      walkingValue: viewState.modeShareDisplay === 'absolute'
+        ? modeShare.walking
+        : ModeShare.share(modeShare, 'walking') * 100
+    };
+  });
+}
+
+function sortCommuterRows(rows: CommuterRowData[], viewState: CommutersViewState): CommuterRowData[] {
+  const sorted = [...rows].sort((a, b) =>
+    viewState.sortIndex === 1 ? b.commuterValue - a.commuterValue // sort by commuter count
+      : viewState.sortIndex === 2 ? b.transitValue - a.transitValue // sort by transit commuter count
+        : viewState.sortIndex === 3 ? b.drivingValue - a.drivingValue // sort by driving commuter count
+          : viewState.sortIndex === 4 ? b.walkingValue - a.walkingValue // sort by walking commuter count
+            : a.regionName.localeCompare(b.regionName) // sort alphabetically by region name
+  );
+
+  if (viewState.sortDirection === 'asc') {
+    sorted.reverse();
+  }
+  return sorted;
+}
+
+function buildCommutersTable(
+  viewState: CommutersViewState,
+  rows: CommuterRowData[],
+  rowsToDisplay: number,
+  mayRequireScroll: boolean,
+  renderPanel: () => void
+): HTMLElement {
   const tableFrame = document.createElement('div');
   tableFrame.className = 'border-t border-border/30 pt-1';
 
-  // --- Table Data --- //
-
-  const tableBodyData: DataTableRow[] = [];
-  const rows: CommuterRowData[] = Array.from(byRegionModeShare.entries()).map(([regionName, modeShare]) => {
-    return {
-      regionName: regionName,
-      commuterValue: viewState.commuterCountDisplay === 'absolute' ? ModeShare.total(modeShare) : (ModeShare.total(modeShare) / populationCount * 100),
-      transitValue: viewState.modeShareDisplay === 'absolute' ? modeShare.transit : ModeShare.share(modeShare, 'transit') * 100,
-      drivingValue: viewState.modeShareDisplay === 'absolute' ? modeShare.driving : ModeShare.share(modeShare, 'driving') * 100,
-      walkingValue: viewState.modeShareDisplay === 'absolute' ? modeShare.walking : ModeShare.share(modeShare, 'walking') * 100
-    }
-  })
-    .sort((a, b) =>
-      viewState.sortIndex === 1 ? b.commuterValue - a.commuterValue // sort by commuter count
-        : viewState.sortIndex === 2 ? b.transitValue - a.transitValue // sort by transit commuter count
-          : viewState.sortIndex === 3 ? b.drivingValue - a.drivingValue // sort by driving commuter count
-            : viewState.sortIndex === 4 ? b.walkingValue - a.walkingValue // sort by walking commuter count
-              : a.regionName.localeCompare(b.regionName) // sort alphabetically be region name
-    ); // sort by column index
-  if (viewState.sortDirection === 'asc') {
-    rows.reverse();
-  }
-  const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
-  const mayRequireScroll = viewState.expanded && rows.length > DEFAULT_TABLE_ROWS
-
-  // -- Table Header -- //
-
   const headerWrap = document.createElement('div');
-  if (mayRequireScroll) headerWrap.style.scrollbarGutter = 'stable'; // Prevent layout shift when scrollbar appears below;
+  if (mayRequireScroll) headerWrap.style.scrollbarGutter = 'stable'; // Ensure header accounts for body scrollbar if needed to prevent data misalignment
+
   const tableOptions = new TableOptions(getColumnTemplate(viewState), 'standard');
-  const tableHeaderData: DataTableRow[] = buildTableHeader(viewState, renderPanel);
+  const tableHeaderData = buildTableHeader(viewState, renderPanel);
   const tableHeader = DataTable(tableOptions, tableHeaderData);
-  if (mayRequireScroll) tableHeader.className += ' pr-2'; // Add padding to account for scrollbar
+  if (mayRequireScroll) tableHeader.className += ' pr-2';
   headerWrap.appendChild(tableHeader);
   tableFrame.appendChild(headerWrap);
 
+  const rowsToRender = rows.slice(0, rowsToDisplay);
+  const tableBodyData = rowsToRender.map((rowData) => buildTableRow(viewState, rowData));
 
-  // --- Table Body --- //
-
-  rows.slice(0, rowsToDisplay).forEach((rowData) => {
-    tableBodyData.push(buildTableRow(viewState, rowData));
-  });
-
-  const bodyScroll = document.createElement('div'); // Wrapper around table body to enable scrolling
+  const bodyScroll = document.createElement('div');
   bodyScroll.className = 'overflow-y-auto min-h-0';
   bodyScroll.style.maxHeight = '60vh';
   if (mayRequireScroll) {
     bodyScroll.style.scrollbarWidth = 'thin';
-    bodyScroll.style.scrollbarGutter = 'stable'; // Prevent layout shift when scrollbar appears
+    bodyScroll.style.scrollbarGutter = 'stable';
   }
 
   const tableBody = DataTable(tableOptions, tableBodyData);
-  if (mayRequireScroll) tableBody.className += ' pr-2'; // Add padding to account for scrollbar
+  if (mayRequireScroll) tableBody.className += ' pr-2';
   bodyScroll.appendChild(tableBody);
   tableFrame.appendChild(bodyScroll);
-
-  // --- Expand/Collapse Table --- //
 
   if (rows.length > DEFAULT_TABLE_ROWS) {
     const tableFooter = document.createElement('div');
@@ -181,18 +221,7 @@ export function renderCommutersView(
     tableFrame.appendChild(tableFooter);
   }
 
-  root.appendChild(tableFrame);
-  return root;
-}
-
-function buildSummaryStatistics(populationCount: number, aggregateModeShare: ModeShare): HTMLElement[] {
-  return [
-    DetailRow('Total Commuters', formatFixedNumber(populationCount)),
-    DetailRow('Transit Mode Share', `${formatFixedNumber(aggregateModeShare.transit / populationCount * 100, PERCENT_DECIMALS)}%`),
-    DetailRow('Driving Mode Share', `${formatFixedNumber(aggregateModeShare.driving / populationCount * 100, PERCENT_DECIMALS)}%`),
-    DetailRow('Walking Mode Share', `${formatFixedNumber(aggregateModeShare.walking / populationCount * 100, PERCENT_DECIMALS)}%`),
-    Divider(2),
-  ]
+  return tableFrame;
 }
 
 function getColumnTemplate(viewState: CommutersViewState): string {
@@ -253,8 +282,6 @@ function buildTableHeader(viewState: CommutersViewState, render: () => void): Da
     }
   };
 
-
-
   const commutersDiv = document.createElement('div');
   commutersDiv.className = 'flex justify-end gap-1 opacity-80';
   commutersDiv.appendChild(
@@ -292,7 +319,6 @@ function buildTableHeader(viewState: CommutersViewState, render: () => void): Da
       }
     )
   );
-
 
   const togglesRow = {
     rowValues: ['', commutersDiv, modeShareDiv],
