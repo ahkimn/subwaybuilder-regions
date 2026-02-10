@@ -11,7 +11,8 @@ export class RegionsInfoPanelRenderer {
   constructor(
     private readonly state: Readonly<UIState>,
     private dataManager: RegionDataManager,
-    private getParentContainer: () => HTMLElement | null
+    private getParentContainer: () => HTMLElement | null,
+    private onClose: () => void
   ) {
   };
 
@@ -74,7 +75,8 @@ export class RegionsInfoPanelRenderer {
       this.infoPanel = new RegionsInfoPanel(
         this.dataManager,
         this.state,
-        () => this.tearDown())
+        this.onClose
+      )
     }
     this.infoPanel.tryRender(true)
     this.show();

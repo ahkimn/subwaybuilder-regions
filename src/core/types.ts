@@ -37,22 +37,21 @@ export enum DatasetStatus {
   Error = 'error',
 }
 
-
 export class UIState {
   cityCode: string | null = null;
   lastInjectedCity: string | null = null;
-  activeDatasetId: string | null = null;
-  activeFeatureId: string | number | null = null;
+  activeSelection: RegionSelection | null = null;
 
   get isActive(): boolean {
     return this.cityCode !== null &&
-      this.activeDatasetId !== null &&
-      this.activeFeatureId !== null;
+      this.activeSelection !== null;
   }
 }
 
-
-
+export type RegionSelection = {
+  datasetId: string;
+  featureId: string | number;
+}
 
 // --- Dataset Types --- //
 export type DatasetSource = {

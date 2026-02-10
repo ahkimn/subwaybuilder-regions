@@ -271,6 +271,8 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
 5. _Multiple Top Left Panels_
    - The info panel should either auto-hide when an existing UI panel (e.g. Demand Details) is opened or have consistent behavior (always on top / always on bottom)
    - If the Info Panel is wider than the existing panel will no longer be aligned to the left-hand side of the screen; instead, it will be centered under/over the Info Panel
+6. _Selection Escape_
+   - Currently, pressing `Esc` clears the selection, as expected; however, it also opens the Settings Menu if there are no active UI panels from the game itself
 
 ## Changelog
 
