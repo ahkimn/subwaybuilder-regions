@@ -20,7 +20,7 @@ export class SelectRow {
     initialIndex?: number
   ) {
     this.container = document.createElement('div');
-    this.container.className = 'flex gap-1';
+    this.container.className = 'flex items-center gap-1 h-8';
     this.container.id = id;
 
     if (configs.length === 0 || configs.length > MAX_SELECT_BUTTONS) {
