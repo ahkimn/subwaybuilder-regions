@@ -29,9 +29,9 @@ export class RegionDataManager {
       return null;
     }
 
-    const dataset = this.registry.getDatasetByIdentifier(uiState.activeDatasetId!);
+    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetId!);
 
-    const gameData = dataset.getRegionGameData(uiState.activeFeatureId!);
+    const gameData = dataset.getRegionGameData(uiState.activeSelection!.featureId!);
     if (!gameData) {
       return null;
     }
@@ -54,18 +54,18 @@ export class RegionDataManager {
 
     switch (datatype) {
       case 'commuter':
-        const updatedCommuterData = this.builder.buildRegionCommuteData(dataset, uiState.activeFeatureId!, currentTime);
+        const updatedCommuterData = this.builder.buildRegionCommuteData(dataset, uiState.activeSelection!.featureId!, currentTime);
         if (updatedCommuterData) {
-          dataset.updateWithCommuterData(uiState.activeFeatureId!, updatedCommuterData!);
+          dataset.updateWithCommuterData(uiState.activeSelection!.featureId!, updatedCommuterData!);
         }
-        console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeFeatureId} in dataset ${uiState.activeDatasetId}:`);
+        console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetId}:`);
         return updatedCommuterData;
       case 'infra':
-        const updatedInfraData = this.builder.buildRegionInfraData(dataset, uiState.activeFeatureId!, currentTime);
+        const updatedInfraData = this.builder.buildRegionInfraData(dataset, uiState.activeSelection!.featureId!, currentTime);
         if (updatedInfraData) {
-          dataset.updateWithInfraData(uiState.activeFeatureId!, updatedInfraData);
+          dataset.updateWithInfraData(uiState.activeSelection!.featureId!, updatedInfraData);
         }
-        console.log(`[Regions] Infra data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeFeatureId} in dataset ${uiState.activeDatasetId}:`);
+        console.log(`[Regions] Infra data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetId}:`);
         return updatedInfraData;
     }
   }
@@ -76,8 +76,8 @@ export class RegionDataManager {
       console.error("[Regions] UI State not active: ", uiState);
       return null;
     }
-    const dataset = this.registry.getDatasetByIdentifier(uiState.activeDatasetId!);
-    return dataset.getRegionGameData(uiState.activeFeatureId!);
+    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetId!);
+    return dataset.getRegionGameData(uiState.activeSelection!.featureId!);
   }
 }
 

@@ -1,5 +1,6 @@
 
 import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/consts';
+import { REGIONS_DESELECT_KEY } from '../core/constants';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
 import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
@@ -58,6 +59,11 @@ export class RegionsMod {
     console.log("[Regions] Map Layers and UI Manager initialized");
 
     this.uiManager.initialize();
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key !== REGIONS_DESELECT_KEY) return;
+      this.uiManager?.handleDeselect();
+    });
 
     this.map = map;
 

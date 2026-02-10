@@ -3,7 +3,7 @@ import { RegionDataBuilder } from "../core/datasets/RegionDataBuilder";
 import { RegionDataManager } from "../core/datasets/RegionDataManager";
 import { RegionDataset } from "../core/datasets/RegionDataset";
 import { RegionDatasetRegistry } from "../core/registry/RegionDatasetRegistry";
-import { UIState } from "../core/types";
+import { RegionSelection, UIState } from "../core/types";
 import { RegionsMapLayers } from "../map/RegionsMapLayers";
 import { ModdingAPI } from "../types";
 import { observeInfoPanelsRoot, observeMapLayersPanel } from "./observers/observers";
@@ -41,7 +41,8 @@ export class RegionsUIManager {
     this.infoPanelRenderer = new RegionsInfoPanelRenderer(
       this.state,
       this.regionDataManager,
-      this.getInfoPanelRoot.bind(this)
+      this.getInfoPanelRoot.bind(this),
+      () => this.clearSelection()
     );
 
     this.initialized = false;
@@ -59,6 +60,8 @@ export class RegionsUIManager {
       onRegionSelect: this.onRegionSelect.bind(this),
       onLayerStateSync: () => this.tryInjectLayerPanel(true),
     })
+
+    this.mapLayers.setSelectionProvider((): RegionSelection | null => this.state.activeSelection);
 
     observeMapLayersPanel((panel) => {
       this.layerPanelRoot = panel;
@@ -100,17 +103,22 @@ export class RegionsUIManager {
   }
 
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {
-    this.state.activeDatasetId = RegionDataset.getIdentifier(payload.dataset);
-    this.state.activeFeatureId = payload.featureId;
+    const nextDatasetId = RegionDataset.getIdentifier(payload.dataset);
+    const nextFeatureId = payload.featureId;
+    const prevSelection = this.state.activeSelection;
 
+    if (prevSelection?.datasetId === nextDatasetId && prevSelection?.featureId === nextFeatureId) {
+      this.clearSelection();
+      return;
+    }
+
+    this.state.activeSelection = { datasetId: nextDatasetId, featureId: nextFeatureId };
+    this.mapLayers.updateSelection(prevSelection, this.state.activeSelection);
     this.infoPanelRenderer.showFeatureData();
   }
 
-  get activeSelection() {
-    return {
-      datasetId: this.state.activeDatasetId,
-      featureId: this.state.activeFeatureId,
-    };
+  get activeSelection(): RegionSelection | null {
+    return this.state.activeSelection;
   }
 
   // TODO (Feature): Add setter for entry point into data / chart element
@@ -126,10 +134,22 @@ export class RegionsUIManager {
   reset() {
     this.stopCommutersUpdateLoop();
 
-    this.state.activeDatasetId = null;
-    this.state.activeFeatureId = null;
+    this.clearSelection();
+  }
 
+  private clearSelection() {
+    const prevSelection = this.state.activeSelection;
+
+    this.state.activeSelection = null;
+
+    this.mapLayers.updateSelection(prevSelection, this.state.activeSelection);
     this.infoPanelRenderer.tearDown();
+  }
+
+  public handleDeselect() {
+    if (this.state.isActive) {
+      this.clearSelection();
+    }
   }
 
   // --- Commuter Updates --- //

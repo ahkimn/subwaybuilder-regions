@@ -1,4 +1,5 @@
 import { RegionDataset } from "../core/datasets/RegionDataset";
+import { RegionSelection } from "../core/types";
 import { DisplayColor, PRIMARY_FILL_COLORS } from "../ui/types/DisplayColor";
 import { LayerToggleOptions } from "../ui/types/LayerToggleOptions";
 import { BASE_FILL_OPACITY, DEFAULT_DARK_MODE_BOUNDARY_SETTINGS, DEFAULT_DARK_MODE_LABEL_SETTINGS, DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS, DEFAULT_LIGHT_MODE_LABEL_SETTINGS, HOVER_FILL_OPACITY, LightMode, stateBoolean } from "./styles";
@@ -49,6 +50,8 @@ export class RegionsMapLayers {
   private styleHandler: (() => void) | null = null;
   private sourceHandler: (() => void) | null = null;
 
+  private selectionProvider: (() => RegionSelection | null) | null = null;
+
   private events: RegionsMapLayersEvents = {};
 
   constructor(map: maplibregl.Map) {
@@ -57,6 +60,26 @@ export class RegionsMapLayers {
 
   setEvents(events: RegionsMapLayersEvents) {
     this.events = events;
+  }
+
+  setSelectionProvider(provider: () => RegionSelection | null) {
+    this.selectionProvider = provider;
+  }
+
+  updateSelection(prev: RegionSelection | null, next: RegionSelection | null) {
+    if (prev?.datasetId && prev.featureId !== null) {
+      const prevState = this.layerStates.get(prev.datasetId);
+      if (prevState) {
+        this.setSelectedState(prevState, prev.featureId, false);
+      }
+    }
+
+    if (next?.datasetId && next.featureId !== null) {
+      const nextState = this.layerStates.get(next.datasetId);
+      if (nextState) {
+        this.setSelectedState(nextState, next.featureId, true);
+      }
+    }
   }
 
   ensureDatasetRendered(dataset: RegionDataset) {
@@ -249,16 +272,23 @@ export class RegionsMapLayers {
           visibility: 'none',
         },
         paint: {
-          'fill-color':
+          'fill-color': stateBoolean(
+            'selected',
+            style.fillColor.hover,
             stateBoolean(
               'hover',
               style.fillColor.hover,
               style.fillColor.hex
-            ),
+            )
+          ),
           'fill-opacity': stateBoolean(
-            'hover',
+            'selected',
             HOVER_FILL_OPACITY,
-            BASE_FILL_OPACITY
+            stateBoolean(
+              'hover',
+              HOVER_FILL_OPACITY,
+              BASE_FILL_OPACITY
+            )
           )
         }
       })
@@ -351,6 +381,7 @@ export class RegionsMapLayers {
 
         if (hasLayer && !layerState.handlers) {
           this.applyVisibility(layerState);
+          this.applySelectionFromProvider(layerState);
           this.attachLabelHandlers(dataset);
           console.log(`[Regions] Re-attached label handlers for dataset ${identifier} after layer re-addition`);
           syncLayerState = true;
@@ -385,6 +416,28 @@ export class RegionsMapLayers {
         this.map.moveLayer(layerState.labelLayerId);
       }
     }
+  }
+
+  private applySelectionFromProvider(layerState: MapLayerState): void {
+    if (!this.selectionProvider) return;
+    const selection = this.selectionProvider();
+    if (!selection) return;
+    const { datasetId, featureId } = selection;
+    if (datasetId === null || featureId === null) return;
+    if (datasetId !== layerState.datasetIdentifier) return;
+    this.setSelectedState(layerState, featureId, true);
+  }
+
+  private setSelectedState(layerState: MapLayerState, featureId: string | number, selected: boolean) {
+    const sources = [layerState.sourceId, layerState.labelSourceId];
+    sources.forEach(sourceId => {
+      if (this.map.getSource(sourceId)) {
+        this.map.setFeatureState(
+          { source: sourceId, id: featureId },
+          { selected }
+        );
+      }
+    });
   }
 
   private attachLabelHandlers(dataset: RegionDataset): void {
