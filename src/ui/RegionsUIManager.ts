@@ -57,6 +57,7 @@ export class RegionsUIManager {
 
     this.mapLayers.setEvents({
       onRegionSelect: this.onRegionSelect.bind(this),
+      onLayerStateSync: () => this.tryInjectLayerPanel(true),
     })
 
     observeMapLayersPanel((panel) => {
@@ -79,12 +80,14 @@ export class RegionsUIManager {
     return this.infoPanelsRoot;
   }
 
-  tryInjectLayerPanel() {
+  tryInjectLayerPanel(force: boolean = false) {
 
     if (!this.layerPanelRoot || !this.state.cityCode) return;
-    if (this.state.lastInjectedCity === this.state.cityCode) return;
+    if (!force && this.state.lastInjectedCity === this.state.cityCode) return;
 
-    this.state.lastInjectedCity = this.state.cityCode;
+    if (this.state.lastInjectedCity !== this.state.cityCode) {
+      this.state.lastInjectedCity = this.state.cityCode;
+    }
 
     const cityDatasets = this.datasetRegistry.getCityDatasets(this.state.cityCode)
     cityDatasets.forEach(ds => {

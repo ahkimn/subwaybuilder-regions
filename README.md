@@ -237,12 +237,13 @@ Some additional features that will likely remain just ideas for the foreseeable 
 
 Bugs that break core mod functionality and lead to unexpected mod state / crashes are listed here. These will be addressed in the near future
 
-1. _Unsynced Map Layers_
+1. _Unsynced Map Layers_ (partially resolved)
    - Custom map layers are reset when:
      - A default data view (e.g. demand point) is opened
      - Render angle changes (zoom seems to not trigger this)
-   - The toggle state shown in the `Map Layers` panel is not synced to this reset
-   - **Workaround**: Reset the toggle to the empty state, then toggle again to reattach the map layer
+   - ~~The toggle state shown in the `Map Layers` panel is not synced to this reset~~
+   - When the game force-drops layers/sources during these resets, the console can log errors (e.g. removing a source while a layer still references it). These do not appear to crash the mod but indicate unstable layer teardown.
+   - ~~Workaround: Reset the toggle to the empty state, then toggle again to reattach the map layer~~
 2. _Hot-reload inconsistencies_
    - `onCityLoad()` and `onMapReady()` are not always re-triggered on hot-reload
    - As a result, the mod can be placed into an inconsistent state
@@ -250,7 +251,7 @@ Bugs that break core mod functionality and lead to unexpected mod state / crashe
 
 ### Minor Bugs / Issues
 
-Bugs or issues that are inconvenient but do not break the core mod functionality are listed here
+Bugs or issues that are cosmetic / inconvenient but do not break the core mod functionality are listed here
 
 1. _Unassigned Regions UI_
    - These should not be clickable in any info panel as no boundary exists
@@ -265,13 +266,14 @@ Bugs or issues that are inconvenient but do not break the core mod functionality
    - Forced DOM injection of `Map Layers` toggles should be replaced by API calls in the future
    - Class-based DOM query / injection of info panel should be replaced by API call
 5. _Multiple Top Left Panels_
-   - The info panel should auto-hide when a different panel (e.g. Demand Details) is opened
+   - The info panel should either auto-hide when an existing UI panel (e.g. Demand Details) is opened or have consistent behavior (always on top / always on bottom)
+   - If the Info Panel is wider than the existing panel will no longer be aligned to the left-hand side of the screen; instead, it will be centered under/over the Info Panel
 
 ## Changelog
 
 ### v0.1.0 — 2026-02-09 (Initial Release)
 
-_Game version_ v0.12.6
+_Game version_ v0.12.7
 
 #### Updates
 

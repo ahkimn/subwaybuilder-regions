@@ -13,9 +13,12 @@ export class RegionsMod {
 
   private registry: RegionDatasetRegistry;
   private currentCityCode: string | null = null;
-  private map: maplibregl.Map | null = null;
+  private cityLoadToken = 0;
 
+  private map: maplibregl.Map | null = null;
   private mapLayers: RegionsMapLayers | null = null;
+
+  private mapInitialized = false;
   private uiManager: RegionsUIManager | null = null;
 
   constructor() {
@@ -41,6 +44,12 @@ export class RegionsMod {
   }
 
   private onMapReady = (map: maplibregl.Map) => {
+    if (this.mapInitialized) {
+      console.warn("[Regions] onMapReady called more than once; skipping re-initialization");
+      return;
+    }
+
+    this.mapInitialized = true;
     this.mapLayers = new RegionsMapLayers(map);
     this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
 
@@ -57,12 +66,16 @@ export class RegionsMod {
 
   private onCityLoad = async (cityCode: string) => {
     // TODO (Issue 2): Add mechanism to determine BoundaryBox from SubwayBuilderAPI for dynamic generation of datasets
+    const loadToken = ++this.cityLoadToken;
     if (this.currentCityCode) {
       this.deactivateCity();
     }
     console.log(`[Regions] Loading data for city: ${cityCode}`);
     // This is async but we do not want to block the main thread. The UI will show a loading state
     this.registry.loadCityDatasets(cityCode, () => {
+      if (loadToken !== this.cityLoadToken) {
+        return;
+      }
       api.ui.showNotification(`[Regions] City data loaded for: ${this.registry.getCityDatasets(cityCode).map(d => d.displayName).join(', ')}`, "success");
       this.currentCityCode = cityCode;
       if (this.map) {
