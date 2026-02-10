@@ -248,6 +248,9 @@ Bugs that break core mod functionality and lead to unexpected mod state / crashe
    - `onCityLoad()` and `onMapReady()` are not always re-triggered on hot-reload
    - As a result, the mod can be placed into an inconsistent state
    - **Workaround**: fully reload a city to reset the mod state
+3. _Region labels can be obscured by game layers_
+   - Some non-background map layers render above region labels, making them hard to see and click
+   - The game appears to re-order layers during runtime and map layers registered via API do not show up
 
 ### Minor Bugs / Issues
 
