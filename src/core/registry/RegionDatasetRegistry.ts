@@ -1,5 +1,5 @@
 import { RegionDataset } from "../datasets/RegionDataset";
-import { RegistryMissingDatasetError } from "../errors";
+import { RegistryMissingDatasetError, RegistryMissingIndexError } from "../errors";
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
@@ -42,15 +42,22 @@ export class RegionDatasetRegistry {
   }
 
   // -- Setup -- //
-  async build() {
+  async build(onFetchError: () => void) {
     this.clear();
 
-    const index = await fetch(this.indexFile).then(res => res.json());
+    // Expected format of index.json is { [cityCode: string]: { id: string; displayName: string }[] }
+    let index: Record<string, { id: string; name: string }[]> = {};
+    try {
+      index = await fetch(`${this.serveUrl}/${this.indexFile}`).then(res => res.json());
+    } catch (e) {
+      onFetchError();
+      throw new RegistryMissingIndexError(this.indexFile, this.serveUrl);
+    }
 
     for (const [cityCode, datasets] of Object.entries(index)) {
 
-      for (const idx of datasets as { id: string; name: string }[]) {
-        const { id, name } = idx;
+      for (const record of datasets) {
+        const { id, name } = record;
         this.registerDataset(
           new RegionDataset(
             id,

@@ -1,0 +1,31 @@
+# Defaults:
+# macOS: /Applications/Subway Builder.app/Contents/MacOS/Subway Builder
+# macOS (alt): ~/Applications/Subway Builder.app/Contents/MacOS/Subway Builder
+# Windows: %LOCALAPPDATA%\Programs\subway-builder\Subway Builder.exe
+# Windows: %PROGRAMFILES%\Subway Builder\Subway Builder.exe
+# Windows: %PROGRAMFILES(X86)%\Subway Builder\Subway Builder.exe
+# Linux: ~/Applications/Subway Builder.AppImage
+# Linux: ~/.local/bin/Subway Builder.AppImage
+# Linux: /usr/local/bin/Subway Builder.AppImage
+# Example (Windows):
+# gamePath: "C:\\Users\\<USER>\\AppData\\Local\\Programs\\subway-builder\\Subway Builder.exe"
+# Example (macOS):
+# gamePath: "/Applications/Subway Builder.app/Contents/MacOS/Subway Builder"
+# Example (Linux):
+# gamePath: "/home/<USER>/.local/bin/Subway Builder.AppImage"
+gamePath: null
+
+# Defaults:
+# macOS: ~/Library/Application Support/metro-maker4/mods/
+# Windows: %APPDATA%\metro-maker4\mods\
+# Linux: ~/.config/metro-maker4/mods/
+# Example (Windows):
+# baseModsDir: "C:\\Users\\<USER>\\AppData\\Roaming\\metro-maker4\\mods\\"
+# Example (macOS):
+# baseModsDir: "/Users/<USER>/Library/Application Support/metro-maker4/mods/"
+# Example (Linux):
+# baseModsDir: "/home/<USER>/.config/metro-maker4/mods/"
+baseModsDir: null
+
+# Default: regions
+modDirName: 'regions'

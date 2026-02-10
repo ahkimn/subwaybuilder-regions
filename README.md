@@ -161,10 +161,20 @@ _Latest Tested Game Version:_ `v0.12.6`
 
    Move or the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
-   Alternatively, on windows use the provided powershell script to symlink the files (requires Administrator privileges):
+   Alternatively, use the following command (requires `config.yaml`) to create symlinks between the dev folder and the mod directory:
 
    ```
-   .\link-mod.ps1 -ProjectDir "REPOSITORY_DIR" -GameModsDir "GAME_MOD_DIRS\REGIONS_MOD_DIR"
+   npm run link
+   ```
+
+   The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
+
+7. Dev Launch (Optional)
+
+   Configure `config.yaml`. Then, use the following command to run the game from terminal with the Console enabled.
+
+   ```
+   npm run dev
    ```
 
 ### Disclaimer

@@ -6,7 +6,7 @@ import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
 
 const SERVE_URL = `http://${DEFAULT_URL}:${DEFAULT_PORT}/`
-const INDEX_FILE = `${SERVE_URL}/${DATA_INDEX_FILE}`;
+const INDEX_FILE = `${DATA_INDEX_FILE}`;
 
 const api = window.SubwayBuilderAPI;
 
@@ -38,7 +38,12 @@ export class RegionsMod {
 
     // Build dataset registry from data index file. 
     // TODO (Future): replace with local mod storage
-    await this.registry.build();
+    await this.registry.build(
+      () => {
+        console.error("[Regions] Failed to load dataset index");
+        api.ui.showNotification("[Regions] Failed to load region data index. Please ensure local data is being served.", "error")
+      }
+    );
 
     api.hooks.onCityLoad(this.onCityLoad.bind(this));
     api.hooks.onMapReady(this.onMapReady.bind(this));

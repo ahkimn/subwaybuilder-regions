@@ -17,3 +17,4 @@ scripts/create-repo-structure.js
 
 .prettierrc.js
 .eslintrc.js
+config.yaml
