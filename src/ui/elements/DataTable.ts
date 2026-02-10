@@ -18,14 +18,32 @@ export type DataTableRow = {
   options?: DataRowOptions
 }
 
+export type TableDensity = 'compact' | 'standard' | 'relaxed';
+
+export class TableOptions {
+  columnTemplate: string;
+  density: TableDensity;
+
+  constructor(columnTemplate: string, density: TableDensity = 'standard') {
+    this.columnTemplate = columnTemplate;
+    this.density = density;
+  }
+}
+
+const DEFAULT_TABLE_DENSITY_OPTIONS: Record<TableDensity, string> = {
+  compact: 'gap-y-0.5 text-xs leading-4',
+  standard: 'gap-y-1 text-[0.78rem] leading-4',
+  relaxed: 'gap-y-1.5 text-[0.8rem] leading-5',
+};
+
 export function DataTable(
-  columnTemplate: string,
+  tableOptions: TableOptions,
   tableValues: Array<DataTableRow>,
 ): HTMLElement {
 
   const table = document.createElement('div');
-  table.className = 'grid gap-y-0.5 text-xs min-w-0';
-  table.style.gridTemplateColumns = columnTemplate;
+  table.className = `grid min-w-0 ${DEFAULT_TABLE_DENSITY_OPTIONS[tableOptions.density]}`;
+  table.style.gridTemplateColumns = tableOptions.columnTemplate;
 
   for (const { rowValues, options } of tableValues) {
     const rowOptions = options ?? {};
@@ -63,9 +81,10 @@ export function DataTable(
             ? 'text-center'
             : 'text-left'
         );
+      cell.className += ' py-0.5';
 
       if (isHeader) {
-        cell.className += ' text-xs text-muted-foreground font-semibold pb-1 tracking-wide whitespace-nowrap';
+        cell.className += ' text-[0.72rem] text-muted-foreground font-semibold pb-1.5 tracking-wide whitespace-nowrap';
       }
       // Apply font-mono to all non-header data values
       else if (i > 0) {

@@ -1,7 +1,7 @@
 import { formatFixedNumber } from "../../../core/utils";
 import { DEFAULT_UNIT_LABELS, LOADING_VALUE_DISPLAY, UNKNOWN_VALUE_DISPLAY } from "../../../core/constants";
 import { ModeShare, RegionGameData } from "../../../core/types";
-import { DataRowOptions, DataTable, DataTableRow } from "../../elements/DataTable";
+import { DataRowOptions, DataTable, DataTableRow, TableOptions } from "../../elements/DataTable";
 import { DetailRow } from "../../elements/DetailRow";
 import { Divider } from "../../elements/Divider";
 import { ExtendButton } from "../../elements/ExtendButton";
@@ -139,8 +139,9 @@ export function renderCommutersView(
 
   const headerWrap = document.createElement('div');
   if (mayRequireScroll) headerWrap.style.scrollbarGutter = 'stable'; // Prevent layout shift when scrollbar appears below;
+  const tableOptions = new TableOptions(getColumnTemplate(viewState), 'standard');
   const tableHeaderData: DataTableRow[] = buildTableHeader(viewState, renderPanel);
-  const tableHeader = DataTable(getColumnTemplate(viewState), tableHeaderData);
+  const tableHeader = DataTable(tableOptions, tableHeaderData);
   if (mayRequireScroll) tableHeader.className += ' pr-2'; // Add padding to account for scrollbar
   headerWrap.appendChild(tableHeader);
   tableFrame.appendChild(headerWrap);
@@ -160,7 +161,7 @@ export function renderCommutersView(
     bodyScroll.style.scrollbarGutter = 'stable'; // Prevent layout shift when scrollbar appears
   }
 
-  const tableBody = DataTable(getColumnTemplate(viewState), tableBodyData);
+  const tableBody = DataTable(tableOptions, tableBodyData);
   if (mayRequireScroll) tableBody.className += ' pr-2'; // Add padding to account for scrollbar
   bodyScroll.appendChild(tableBody);
   tableFrame.appendChild(bodyScroll);
