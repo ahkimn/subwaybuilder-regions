@@ -84,6 +84,8 @@ _Latest Tested Game Version:_ `v0.12.7`
 > :warning: This mod currently does not have a prebuilt release.
 > General users will need to wait for a release package to be available.
 
+TODO: Section on Usage
+
 ### Dev Installation
 
 1. Clone repository & Install dependencies
