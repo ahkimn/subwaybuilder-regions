@@ -7,6 +7,8 @@ import { DatasetInvalidFeatureTypeError, DatasetMissingFeatureError } from "../e
 import { RegionDataset } from "./RegionDataset";
 import { ModeShare, RegionCommuterData, RegionInfraData, RouteBulletType, RouteDisplayParams } from "../types";
 import * as turf from '@turf/turf';
+import { DEFAULT_CHUNK_SIZE } from "../constants";
+import { processInChunks } from "../utils";
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
@@ -138,7 +140,12 @@ export class RegionDataBuilder {
     }
   }
 
-  buildRegionInfraData(dataset: RegionDataset, featureId: string | number, updateTime?: number): RegionInfraData | null {
+  async buildRegionInfraData(
+    dataset: RegionDataset,
+    featureId: string | number,
+    updateTime?: number,
+    chunkSize: number = DEFAULT_CHUNK_SIZE
+  ): Promise<RegionInfraData | null> {
 
     const allStations: Station[] = this.api.gameState.getStations();
     const allTracks: Track[] = this.api.gameState.getTracks();
@@ -160,7 +167,7 @@ export class RegionDataBuilder {
     }
 
     const { stationNames, stationNodes } = this.getStationDataWithinRegion(feature, allStations);
-    const { trackIds, trackLengths } = this.getTracksWithinRegion(feature, allTracks, true);
+    const { trackIds, trackLengths } = await this.getTracksWithinRegionAsync(feature, allTracks, true, chunkSize);
     const { routes, routeDisplayParams } = this.getRoutesWithinRegion(allRoutes, stationNodes);
 
     return {
@@ -205,15 +212,20 @@ export class RegionDataBuilder {
    * 
    * TODO: (Performance) Allow optional override of planar approximation for tracks if the region is small enough OR there are few track nodes OR if the user overrides through settings
    */
-  private getTracksWithinRegion(feature: Feature<Polygon | MultiPolygon>, tracks: Track[], forcePlanar: boolean): { trackIds: Map<string, number>, trackLengths: Map<string, number> } {
+  private async getTracksWithinRegionAsync(
+    feature: Feature<Polygon | MultiPolygon>,
+    tracks: Track[],
+    forcePlanar: boolean,
+    chunkSize: number
+  ): Promise<{ trackIds: Map<string, number>, trackLengths: Map<string, number> }> {
     const trackIds = new Map<string, number>();
     const trackLengths = new Map<string, number>();
 
     const featureBBox = turf.bbox(feature);
     let boundaryParams;
 
-    for (const track of tracks) {
-      if (track.buildType !== 'constructed') continue; // Ignore blueprint tracks
+    await processInChunks(tracks, chunkSize, (track) => {
+      if (track.buildType !== 'constructed') return; // Ignore blueprint tracks
       let trackLengthInRegion: number;
       const knownTrackLength = track.length; // Game track length should be geodesic
 
@@ -228,7 +240,7 @@ export class RegionDataBuilder {
         trackLengths.has(track.trackType!) ? trackLengths.set(track.trackType!, trackLengths.get(track.trackType!)! + trackLengthInRegion) :
           trackLengths.set(track.trackType!, trackLengthInRegion);
       }
-    };
+    });
     return { trackIds, trackLengths };
   }
 

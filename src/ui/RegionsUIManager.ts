@@ -103,16 +103,15 @@ export class RegionsUIManager {
   }
 
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {
-    const nextDatasetId = RegionDataset.getIdentifier(payload.dataset);
-    const nextFeatureId = payload.featureId;
+    const nextSelection = { datasetId: RegionDataset.getIdentifier(payload.dataset), featureId: payload.featureId };
     const previousSelection = this.state.activeSelection;
 
-    if (previousSelection !== null) {
+    if (RegionSelection.isEqual(previousSelection, nextSelection)) {
       this.clearSelection();
       return;
     }
 
-    this.state.activeSelection = { datasetId: nextDatasetId, featureId: nextFeatureId };
+    this.state.activeSelection = nextSelection;
     this.mapLayers.updateSelection(previousSelection, this.state.activeSelection);
     this.infoPanelRenderer.showFeatureData();
   }

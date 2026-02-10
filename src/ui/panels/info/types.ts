@@ -11,5 +11,7 @@ export type CommutersViewState = {
   modeShareLayout: ModeLayout;
   expanded: boolean;
   sortIndex: number;
+  previousSortIndex: number;
   sortDirection: SortDirection;
+  previousSortDirection: SortDirection;
 };

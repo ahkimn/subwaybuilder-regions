@@ -53,6 +53,13 @@ export type RegionSelection = {
   featureId: string | number;
 }
 
+export const RegionSelection = {
+  isEqual(a: RegionSelection | null, b: RegionSelection | null): boolean {
+    if (!a || !b) return false;
+    return a.datasetId === b.datasetId && a.featureId === b.featureId;
+  }
+};
+
 // --- Dataset Types --- //
 export type DatasetSource = {
   type: 'static' | 'user';

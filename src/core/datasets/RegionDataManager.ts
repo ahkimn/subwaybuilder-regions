@@ -3,6 +3,7 @@ import { RegionDatasetRegistry } from "../registry/RegionDatasetRegistry";
 import { STALE_COMMUTER_DATA_THRESHOLD_SECONDS, STALE_INFRA_DATA_THRESHOLD_SECONDS } from "../constants";
 import { RegionDataBuilder } from "./RegionDataBuilder";
 import { RegionCommuterData, RegionGameData, RegionInfraData, UIState } from "../types";
+import { yieldToEventLoop } from "../utils";
 
 export class RegionDataManager {
 
@@ -12,9 +13,6 @@ export class RegionDataManager {
     private api: ModdingAPI
   ) { }
 
-  private async yield(): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, 0));
-  }
 
   async ensureExistsData(
     uiState: Readonly<UIState>,
@@ -50,10 +48,11 @@ export class RegionDataManager {
       return existingData;
     }
 
-    await this.yield();
+    await yieldToEventLoop();
 
     switch (datatype) {
       case 'commuter':
+        // TODO: (Performance) If commuter data calculation becomes more complex, we may need to perform chunked processing 
         const updatedCommuterData = this.builder.buildRegionCommuteData(dataset, uiState.activeSelection!.featureId!, currentTime);
         if (updatedCommuterData) {
           dataset.updateWithCommuterData(uiState.activeSelection!.featureId!, updatedCommuterData!);
@@ -61,7 +60,7 @@ export class RegionDataManager {
         console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetId}:`);
         return updatedCommuterData;
       case 'infra':
-        const updatedInfraData = this.builder.buildRegionInfraData(dataset, uiState.activeSelection!.featureId!, currentTime);
+        const updatedInfraData = await this.builder.buildRegionInfraData(dataset, uiState.activeSelection!.featureId!, currentTime);
         if (updatedInfraData) {
           dataset.updateWithInfraData(uiState.activeSelection!.featureId!, updatedInfraData);
         }
