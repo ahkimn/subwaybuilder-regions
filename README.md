@@ -15,11 +15,12 @@ _Latest Tested Game Version:_ `v0.12.7`
 
 - [Features](#features)
 - [Specifications](#specifications)
-- [Usage](#usage)
+- [Installation](#installation)
   - [General User Installation](#general-user-installation)
   - [Dev Installation](#dev-installation)
-- [Planned Features](#planned-features)
-- [Known Issues](#known-issues)
+- [Usage](#usage)
+- [Planned Features](PLANNED_FEATURES.md#planned-features)
+- [Known Issues](KNOWN_ISSUES.md#known-issues)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
 - [Credits](#credits)
@@ -77,14 +78,12 @@ _Latest Tested Game Version:_ `v0.12.7`
   - `TOTAL_AREA`
   - `AREA_WITHIN_BBOX`
 
-## Usage
+## Installation
 
 ### General User Installation
 
 > :warning: This mod currently does not have a prebuilt release.
 > General users will need to wait for a release package to be available.
-
-TODO: Section on Usage
 
 ### Dev Installation
 
@@ -188,103 +187,17 @@ TODO: Section on Usage
 > - Raise an issue (see [Contributing](#contributing)) on the repository
 > - Send a message within the mod's dedicated thread within the game's [Discord server](https://discord.gg/97JhJprW)
 
+## Usage
+
+TODO
+
 ## Planned Features
 
-List of features that are feasible and may be added in the near future. Those with :construction: are currently under implementation
-
-### Major Features
-
-- **Better Data Imports**
-  - Mod expects GeoJSONs with features that have specific properties.
-    - A conversion script is possible, but this is a brittle contract for any user-imported data
-  - Allow users to import preset regions directly from the game
-- **Settings**
-  - Mod-level settings should be added in the main menu. This could include:
-    - Metric/Imperial conversion
-    - Hotkey modification,
-    - etc.
-- :construction: **Aggregate Data View**
-  - Add a new table component to show all region statistics at a glance
-  - Sync data / selection state across multiple panels
-- **Hotkey Support**
-  - Game panels should respond to in-game hotkeys as other parts of the existing game UI do (e.g. Esc to clear panel / selection)
-
-### Minor Features
-
-- **Better Preset Data**
-  - More Comprehensive GB Population Data
-    - GB population data is spotty due to inconsistent IDs between data years
-  - Label Generation Improvements (heuristic scoring of different candidate labels)
-  - More descriptive `type` for individual regions (e.g. _town_, _city_, _township_, _CDP_) for county subdivisions
-- **Visual Updates + Theme Integration**
-  - Game currently assumes it is being run on the default game Dark mode, but some recoloring will be required to support the default Light mode
-  - Once mod-level settings are added:
-    - Custom color palettes to override presets
-    - Data-linked coloring of labels/statistics (e.g. apply in-game demand bubble coloring for mode share stats)
-- **Special Demand Point Data**
-  - Show special demand points within the info view of a region (e.g. Airports/Universities/etc.).
-  - This isn't well documented in the API and I will probably wait for clarity if the current pattern of ({PREFIX}\_{ID}) can be relied on
-
-### Ideation
-
-Some additional features that will likely remain just ideas for the foreseeable future
-
-- **Editable / Dynamic User Regions**
-  - Users should be able to define / edit region boundaries within the game UX
-  - Implementation?
-    - Based on existing demand points (allow user to select subset, build boundaries around selection)
-    - Based on existing layers (integrate with the game's existing map layers, snap to roads, water, etc.)
-- **Core Game Mechanic Integration** (Requires new API hooks/functions)
-  - Commute costs
-    - Region-based fares / driving cost (e.g. congestion pricing zone)
-  - Dynamic demand
-    - Region-differentiated demand growth / decline (perhaps in the form of region-level policies)
-  - Construction
-    - "Enable/disable" construction for certain regions (e.g. pay to unlock new areas to build on, or be paid to expand to a region by X time)
-    - Region-based construction cost multipliers
+See [PLANNED_FEATURES.md](PLANNED_FEATURES.md) for the current list of planned features and long-term ideas.
 
 ## Known Issues
 
-### Major Bugs
-
-Bugs that break core mod functionality and lead to unexpected mod state / crashes are listed here. These will be addressed in the near future
-
-1. _Unsynced Map Layers_ (partially resolved)
-   - Custom map layers are reset when:
-     - A default data view (e.g. demand point) is opened
-     - Render angle changes (zoom seems to not trigger this)
-   - ~~The toggle state shown in the `Map Layers` panel is not synced to this reset~~
-   - When the game force-drops layers/sources during these resets, the console can log errors (e.g. removing a source while a layer still references it). These do not appear to crash the mod but indicate unstable layer teardown.
-   - ~~Workaround: Reset the toggle to the empty state, then toggle again to reattach the map layer~~
-2. _Hot-reload inconsistencies_
-   - `onCityLoad()` and `onMapReady()` are not always re-triggered on hot-reload
-   - As a result, the mod can be placed into an inconsistent state
-   - **Workaround**: fully reload a city to reset the mod state
-3. _Region labels can be obscured by game layers_
-   - Some non-background map layers render above region labels, making them hard to see and click
-   - The game appears to re-order layers during runtime and map layers registered via API do not show up
-
-### Minor Bugs / Issues
-
-Bugs or issues that are cosmetic / inconvenient but do not break the core mod functionality are listed here
-
-1. _Unassigned Regions UI_
-   - These should not be clickable in any info panel as no boundary exists
-2. _Inaccurate Feature Bounds_
-   - Map bounds used for preset regions are inaccurate
-   - They should replaced either with a demand-based boundary OR a pre-set polygon provided by API / User
-3. _Excessive Console Outputs._
-   - Mod currently prints many debug statements to console (to aid development)
-   - Console logging should be a toggle in mod settings
-   - Full debug should be shown
-4. _Brittle DOM Injection_
-   - Forced DOM injection of `Map Layers` toggles should be replaced by API calls in the future
-   - Class-based DOM query / injection of info panel should be replaced by API call
-5. _Multiple Top Left Panels_
-   - The info panel should either auto-hide when an existing UI panel (e.g. Demand Details) is opened or have consistent behavior (always on top / always on bottom)
-   - If the Info Panel is wider than the existing panel will no longer be aligned to the left-hand side of the screen; instead, it will be centered under/over the Info Panel
-6. _Selection Escape_
-   - Currently, pressing `Esc` clears the selection, as expected; however, it also opens the Settings Menu if there are no active UI panels from the game itself
+See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for the current list of major/minor issues and workarounds.
 
 ## Changelog
 
