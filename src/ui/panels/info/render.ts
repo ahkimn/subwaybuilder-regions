@@ -9,9 +9,7 @@ import { SelectRow } from "../../elements/SelectRow";
 import { CommutersViewState } from "./types";
 import { InlineToggle } from "../../elements/InlineToggle";
 
-const MAX_TABLE_ROWS = 10; // Max number of rows to show in commuters by region table before truncation
-const MAX_UNEXPANDED_ROWS = 25; // Max number of rows to show in commuters by region table when expanded before requiring scroll
-
+const DEFAULT_TABLE_ROWS = 10; // Max number of rows to show in commuters by region table before truncation
 const PERCENT_DECIMALS = 2;
 
 // --- Shared Elements --- //
@@ -82,9 +80,10 @@ export function renderCommutersView(
 ): HTMLElement {
 
   const commuterData = gameData.commuterData!;
+  const renderPanel = () => root.replaceWith(renderCommutersView(gameData, viewState, setDirection));
 
   const root = document.createElement('div');
-  root.className = 'flex flex-col gap-2 text-xs';
+  root.className = 'flex flex-col gap-2 text-xs min-h-0';
 
   const isOutbound = viewState.direction === 'outbound';
 
@@ -92,6 +91,8 @@ export function renderCommutersView(
   const byRegionModeShare = isOutbound ? commuterData.residentModeShareByRegion : commuterData.workerModeShareByRegion;
 
   const populationCount = ModeShare.total(aggregateModeShare)
+
+  // -- View Header / Summary Statistics -- //
 
   const header = buildViewHeader(gameData.displayName);
   const directionRow = new SelectRow(
@@ -104,15 +105,14 @@ export function renderCommutersView(
   );
   header.appendChild(directionRow.element);
   root.appendChild(header);
-
-
   root.append(...buildSummaryStatistics(populationCount, aggregateModeShare));
 
-  const tableData: Array<DataTableRow> = [
-    ...buildTableHeader(viewState, () => root.replaceWith(renderCommutersView(gameData, viewState, setDirection)))
-  ];
+  const tableFrame = document.createElement('div');
+  tableFrame.className = 'border-t border-border/30 pt-1';
 
-  // --- Mode Share by Region --- //
+  // --- Table Data --- //
+
+  const tableBodyData: DataTableRow[] = [];
   const rows: CommuterRowData[] = Array.from(byRegionModeShare.entries()).map(([regionName, modeShare]) => {
     return {
       regionName: regionName,
@@ -132,37 +132,55 @@ export function renderCommutersView(
   if (viewState.sortDirection === 'asc') {
     rows.reverse();
   }
+  const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
+  const mayRequireScroll = viewState.expanded && rows.length > DEFAULT_TABLE_ROWS
 
-  const maxRows = viewState.expanded ? rows.length : MAX_TABLE_ROWS;
+  // -- Table Header -- //
 
-  rows.slice(0, maxRows).forEach((rowData) => {
-    tableData.push(buildTableRow(viewState, rowData));
+  const headerWrap = document.createElement('div');
+  if (mayRequireScroll) headerWrap.style.scrollbarGutter = 'stable'; // Prevent layout shift when scrollbar appears below;
+  const tableHeaderData: DataTableRow[] = buildTableHeader(viewState, renderPanel);
+  const tableHeader = DataTable(getColumnTemplate(viewState), tableHeaderData);
+  if (mayRequireScroll) tableHeader.className += ' pr-2'; // Add padding to account for scrollbar
+  headerWrap.appendChild(tableHeader);
+  tableFrame.appendChild(headerWrap);
+
+
+  // --- Table Body --- //
+
+  rows.slice(0, rowsToDisplay).forEach((rowData) => {
+    tableBodyData.push(buildTableRow(viewState, rowData));
   });
 
-  root.appendChild(DataTable(getColumnTemplate(viewState), tableData));
+  const bodyScroll = document.createElement('div'); // Wrapper around table body to enable scrolling
+  bodyScroll.className = 'overflow-y-auto min-h-0';
+  bodyScroll.style.maxHeight = '60vh';
+  if (mayRequireScroll) {
+    bodyScroll.style.scrollbarWidth = 'thin';
+    bodyScroll.style.scrollbarGutter = 'stable'; // Prevent layout shift when scrollbar appears
+  }
+
+  const tableBody = DataTable(getColumnTemplate(viewState), tableBodyData);
+  if (mayRequireScroll) tableBody.className += ' pr-2'; // Add padding to account for scrollbar
+  bodyScroll.appendChild(tableBody);
+  tableFrame.appendChild(bodyScroll);
 
   // --- Expand/Collapse Table --- //
 
-  if (rows.length > MAX_TABLE_ROWS && !viewState.expanded) {
-    const expandButton = ExtendButton('Expand', rows.length - MAX_TABLE_ROWS, () => {
-      viewState.expanded = true;
-      root.replaceWith(
-        renderCommutersView(gameData, viewState, setDirection)
-      );
-    });
-    root.appendChild(expandButton);
+  if (rows.length > DEFAULT_TABLE_ROWS) {
+    const tableFooter = document.createElement('div');
+    tableFooter.className = 'pt-1 flex justify-center';
+    tableFooter.appendChild(ExtendButton(
+      viewState.expanded ? 'Collapse' : 'Expand',
+      rows.length - DEFAULT_TABLE_ROWS,
+      () => {
+        viewState.expanded = !viewState.expanded;
+        renderPanel();
+      }));
+    tableFrame.appendChild(tableFooter);
   }
 
-  if (rows.length > MAX_TABLE_ROWS && viewState.expanded) {
-    const expandButton = ExtendButton('Collapse', rows.length - MAX_TABLE_ROWS, () => {
-      viewState.expanded = false;
-      root.replaceWith(
-        renderCommutersView(gameData, viewState, setDirection)
-      );
-    });
-    root.appendChild(expandButton);
-  }
-
+  root.appendChild(tableFrame);
   return root;
 }
 

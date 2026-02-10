@@ -144,6 +144,9 @@ export class RegionDataset {
       throw new DatasetMissingDataLayerError(this.id, 'gameData');
     }
 
+    // Tear down existing demand point associations .
+    this.regionDemandPointMap.clear();
+
     const accumulator = this.boundaryData.features.map(feature => {
       if (!isPolygonFeature(feature)) throw new DatasetInvalidFeatureTypeError(this.id, feature);
       const featureId: string | number = feature.properties?.ID!;

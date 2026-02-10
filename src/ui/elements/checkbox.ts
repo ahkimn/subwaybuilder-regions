@@ -54,7 +54,7 @@ export function buildCheckBoxIcon(): HTMLSpanElement {
     'flex items-center justify-center text-current';
   iconWrapper.style.pointerEvents = 'none';
 
-  const iconElement = createIconElement(CheckboxIcon, { size: 16 });
+  const iconElement = createIconElement(CheckboxIcon, { size: 12 });
   iconWrapper.appendChild(iconElement);
   return iconWrapper;
 }

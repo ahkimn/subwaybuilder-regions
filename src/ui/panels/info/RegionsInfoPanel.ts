@@ -39,26 +39,30 @@ export class RegionsInfoPanel {
     this.root = document.createElement('div');
     this.root.id = this.rootId;
     this.root.dataset.modId = REGIONS_INFO_PANEL_MOD_ID;
-    this.root.className =
-      'pointer-events-auto backdrop-blur-sm border border-border/50 ' +
-      'h-fit rounded-lg text-sm shadow-lg overflow-hidden ' +
-      'bg-transparent w-full max-h-full flex flex-col';
+    this.root.className = [
+      'pointer-events-auto',
+      'backdrop-blur-sm bg-transparent',
+      'border border-border/50',
+      'h-fit rounded-lg',
+      'text-sm shadow-lg overflow-hidden',
+      'w-full max-h-full flex flex-col min-h-0'
+    ].join(' ');
 
     const { el: header, } = PanelHeader(REGIONS_INFO_PANEL_TITLE, onClose);
     this.root.appendChild(header);
 
     // Wrappers around main content
     const b1 = document.createElement('div');
-    b1.className = 'max-h-full overflow-auto'
+    b1.className = 'flex-1 min-h-0 overflow-hidden';
     this.root.appendChild(b1);
 
     const b2 = document.createElement('div');
-    b2.className = `p-2 flex bg-primary-foreground/60 backdrop-blur-sm max-h-auto overflow-auto min-w-${INFO_PANEL_MIN_WIDTH} justify-center`;
+    b2.className = `p-2 flex flex-1 min-h-0 bg-primary-foreground/60 backdrop-blur-sm min-w-${INFO_PANEL_MIN_WIDTH} justify-center overflow-hidden`;
     b1.appendChild(b2);
 
 
     const b3 = document.createElement('div');
-    b3.className = `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} h-full`;
+    b3.className = `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`;
     b2.appendChild(b3);
 
     this.mainSelectRow = new SelectRow(
@@ -79,7 +83,7 @@ export class RegionsInfoPanel {
     b3.appendChild(this.mainSelectRow.element);
 
     this.contentPanel = document.createElement('div');
-    this.contentPanel.className = 'flex flex-col gap-2';
+    this.contentPanel.className = 'flex flex-col gap-2 min-h-0';
     b3.appendChild(this.contentPanel);
   }
 
