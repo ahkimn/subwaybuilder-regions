@@ -6,7 +6,7 @@ import { DetailRow } from "../../elements/DetailRow";
 import { Divider } from "../../elements/Divider";
 import { ExtendButton } from "../../elements/ExtendButton";
 import { SelectRow } from "../../elements/SelectRow";
-import { CommutersViewState } from "./types";
+import { CommutersViewState, SortDirection } from "./types";
 import { InlineToggle } from "../../elements/InlineToggle";
 
 const DEFAULT_TABLE_ROWS = 10; // Max number of rows to show in commuters by region table before truncation
@@ -158,17 +158,33 @@ function deriveCommuterRows(
 }
 
 function sortCommuterRows(rows: CommuterRowData[], viewState: CommutersViewState): CommuterRowData[] {
-  const sorted = [...rows].sort((a, b) =>
-    viewState.sortIndex === 1 ? b.commuterValue - a.commuterValue // sort by commuter count
-      : viewState.sortIndex === 2 ? b.transitValue - a.transitValue // sort by transit commuter count
-        : viewState.sortIndex === 3 ? b.drivingValue - a.drivingValue // sort by driving commuter count
-          : viewState.sortIndex === 4 ? b.walkingValue - a.walkingValue // sort by walking commuter count
-            : a.regionName.localeCompare(b.regionName) // sort alphabetically by region name
-  );
+  const applySort = (a: CommuterRowData, b: CommuterRowData, index: number, direction: SortDirection): number => {
+    const m = direction === 'asc' ? -1 : 1;
+    switch (index) {
+      case 1:
+        return (b.commuterValue - a.commuterValue) * m; // commuter count
+      case 2:
+        return (b.transitValue - a.transitValue) * m; // transit commuters
+      case 3:
+        return (b.drivingValue - a.drivingValue) * m; // driving commuters
+      case 4:
+        return (b.walkingValue - a.walkingValue) * m; // walking commuters
+      default:
+        return a.regionName.localeCompare(b.regionName) * m; // region name
+    }
+  };
 
-  if (viewState.sortDirection === 'asc') {
-    sorted.reverse();
-  }
+  const sorted = [...rows].sort((a, b) => {
+    let result = applySort(a, b, viewState.sortIndex, viewState.sortDirection);
+    if (result === 0) {
+      result = applySort(a, b, viewState.previousSortIndex, viewState.previousSortDirection);
+    }
+    if (result === 0) {
+      result = a.regionName.localeCompare(b.regionName);
+    }
+    return result;
+  });
+
   return sorted;
 }
 
@@ -235,6 +251,8 @@ function buildTableHeader(viewState: CommutersViewState, render: () => void): Da
     if (viewState.sortIndex === columnIndex) {
       viewState.sortDirection = viewState.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
+      viewState.previousSortIndex = viewState.sortIndex;
+      viewState.previousSortDirection = viewState.sortDirection;
       viewState.sortIndex = columnIndex;
       viewState.sortDirection = 'desc';
     }

@@ -19,11 +19,12 @@ This constant can be used as a key in the demand data maps to track the demand f
 */
 
 export const UNASSIGNED_REGION_ID = 'UNASSIGNED';
-export const UNKNOWN_VALUE_DISPLAY = '—'; // Display value for unknown / unavailable data points in the UI
+export const UNKNOWN_VALUE_DISPLAY = 'N/A'; // Display value for unknown / unavailable data points in the UI
 export const LOADING_VALUE_DISPLAY = 'Loading...'; // Display value for data points that are currently loading in the UI
 
 export const STALE_COMMUTER_DATA_THRESHOLD_SECONDS = 900; // Threshold for considering commuter data stale and in need of refresh, in seconds of in-game time (15 minutes)
 export const STALE_INFRA_DATA_THRESHOLD_SECONDS = 86400; // Threshold for considering infra data stale and in need of refresh, in seconds of in-game time (daily)
+export const DEFAULT_CHUNK_SIZE = 100; // Default loop chunk size for time-sliced data processing
 
 export const REGIONS_INFO_CONTAINER_ID = 'regions-info-container';
 export const REGIONS_INFO_UPDATE_GAME_INTERVAL = 1800; // 30 in-game minutes

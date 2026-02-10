@@ -67,6 +67,9 @@ export class RegionsMapLayers {
   }
 
   updateSelection(previousSelection: RegionSelection | null, newSelection: RegionSelection | null) {
+    if (RegionSelection.isEqual(previousSelection, newSelection)) {
+      return;
+    }
     if (previousSelection !== null) {
       const previousState = this.layerStates.get(previousSelection.datasetId);
       if (previousState) {

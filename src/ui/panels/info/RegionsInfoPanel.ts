@@ -1,6 +1,6 @@
 import { REGIONS_INFO_PANEL_ID, REGIONS_INFO_PANEL_MOD_ID, REGIONS_INFO_PANEL_TITLE, INFO_PANEL_MIN_WIDTH } from "../../../core/constants";
 import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
-import { RegionGameData, UIState } from "../../../core/types";
+import { RegionGameData, RegionSelection, UIState } from "../../../core/types";
 import { PanelHeader } from "../../elements/PanelHeader";
 import { SelectRow } from "../../elements/SelectRow";
 import { createIconElement, FileChartColumnIcon, TramFrontIcon } from "../../elements/utils/get-icon";
@@ -25,7 +25,9 @@ export class RegionsInfoPanel {
     modeShareLayout: 'transit',
     expanded: false,
     sortIndex: 1, // default to sorting by commuter count
-    sortDirection: 'desc'
+    previousSortIndex: 0, // default tiebreaker to region name
+    sortDirection: 'desc',
+    previousSortDirection: 'asc'
   }
 
   constructor(
@@ -100,13 +102,12 @@ export class RegionsInfoPanel {
     if (this.activeView === 'commuters' && forceRefresh) {
       await this.regionDataManager.ensureExistsData(this.uiState, 'commuter', { forceBuild: true });
     } else if (this.activeView === 'statistics' && forceRefresh) {
+      const selectionSnapshot = this.uiState.activeSelection;
       // Do not force rebuild infra data since it is more computationally expensive and will not change without user input
       this.regionDataManager.ensureExistsData(this.uiState, 'infra', { forceBuild: false })
         .then(() => {
-          if (token !== this.renderToken) return; // Abort if a newer render has been initialized
-          console.log('[RegionsInfoPanel] Statistics view data refresh complete.');
-          // Let computation continue async and attempt to rerender once the data is ready
-          if (this.activeView === 'statistics') {
+          // Let computation continue async and attempt to rerender once the data is ready and if the user has not changed selection / view
+          if (this.activeView === 'statistics' && RegionSelection.isEqual(selectionSnapshot, this.uiState.activeSelection)) {
             requestAnimationFrame(() => this.render());
           }
         })
