@@ -288,7 +288,7 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
 
 ## Changelog
 
-### v0.1.0 — 2026-02-09 (Initial Release)
+### v0.1.0 — 2026-02-10 (Initial Release)
 
 _Game version_ v0.12.7
 
