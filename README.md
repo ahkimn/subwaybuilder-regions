@@ -81,8 +81,8 @@ _Latest Tested Game Version:_ `v0.12.6`
 
 ### General User Installation
 
-> :warning: This mod currently does not ship prebuilt binaries.
-> General users will need to wait for a `dist/` release.
+> :warning: This mod currently does not have a prebuilt release.
+> General users will need to wait for a release package to be available.
 
 ### Dev Installation
 
