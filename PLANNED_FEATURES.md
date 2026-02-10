@@ -3,7 +3,7 @@
 [Back to README](README.md)
 
 This document contains a snapshot of features under consideration for the SubwayBuilder Regions mod, grouped by complexity and priority.
-Those with :construction: are currently under implementation
+Those with :construction: are currently under implementation.
 
 ## Major Features
 
@@ -40,7 +40,7 @@ Those with :construction: are currently under implementation
 
 ## Ideation
 
-Some additional features that will likely remain just ideas for the foreseeable future
+Some additional features that will likely remain just ideas for the foreseeable future.
 
 - **Editable / Dynamic User Regions**
   - Users should be able to define / edit region boundaries within the game UX

@@ -6,7 +6,7 @@ This document contains a list of currently known issues affecting the SubwayBuil
 
 ## Major Bugs
 
-Bugs that break core mod functionality and lead to unexpected mod state / crashes are listed here. These will be addressed in the near future
+Bugs that break core mod functionality and lead to unexpected mod state / crashes are listed here. These will be addressed in the near future.
 
 1. _Unsynced Map Layers_ (partially resolved)
    - Custom map layers are reset when:
@@ -25,7 +25,7 @@ Bugs that break core mod functionality and lead to unexpected mod state / crashe
 
 ## Minor Bugs / Issues
 
-Bugs or issues that are cosmetic / inconvenient but do not break the core mod functionality are listed here
+Bugs or issues that are cosmetic / inconvenient but do not break the core mod functionality are listed here.
 
 1. _Unassigned Regions UI_
    - These should not be clickable in any info panel as no boundary exists

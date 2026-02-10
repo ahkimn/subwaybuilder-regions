@@ -189,7 +189,61 @@ _Latest Tested Game Version:_ `v0.12.7`
 
 ## Usage
 
-TODO
+This section covers the core mod functionalities and their usage.
+
+### Toggling Map Layers
+
+Each GeoJSON installed will correspond to a single map layer for a city.
+
+Installed map layers are accessible via the game's existing `Map Layers` menu. The mod injects a new section of toggle buttons `Region Data Layers` to this dropdown panel.
+
+![Region Layer Toggles](image-4.png)
+
+Clicking on these toggles will enable/disable the display of the corresponding map layer.
+
+### Selecting A Region
+
+Once a map layer is toggled on, the boundaries of regions within the map layer will be rendered on the screen.
+
+The labels for each region are clickable, and will change color when hovered over. Click on the label to activate selection for the corresponding region.
+
+![Clickable Region Labels](image-1.png)
+
+If a region is already selected, clicking on its label will remove selection. Clicking a different region will switch the selection to that region.
+
+### Info Panel
+
+Once any new region is selected, the Regions Info panel will open in the top right corner of the screen
+
+#### Summary View
+
+![Summary View](image-2.png)
+
+The initial `Summary` panel contains overall summary statistics about the selected region.
+
+You can swap between this view and the other `Commuters` view described below by clicking on the buttons at the top of the panel.
+
+:warning: The first time a region is selected, infrastructure data is calculated asynchronously and may take some time to render on the panel.
+
+#### Commuters View
+
+The commuters view for a region contains a breakdown of commuter counts and commuter mode share. There are two views for this panel. `Residents` and `Workers`.
+
+- `Residents` refer to commuters who reside within the selected region
+- `Workers` refer to commuters who work within the selected region
+- :information_source: A commuter can be both a `Resident` and a `Worker` of the same region if both their residence and workplace are within the region's boundaries
+
+![Commuters View](image-3.png)
+
+The upper portion of the view contains statistics of `Resident` and `Worker` counts and mode share aggregated for the selected region.
+
+The lower portion of the view consists of a table breaking this information down for other regions within the same dataset.
+
+You can sort the table by clicking on column headers. If there is a tie, the previous sort column and/or the region name are used as tiebreakers.
+
+Use the footer to expand and show additional rows when available.
+
+:information_source: The `Commuters` view is automatically updated with fresh demand data if at least 15 in-game minutes have passed.
 
 ## Planned Features
 
