@@ -164,6 +164,7 @@ export class RegionsMapLayers {
       this.layerHandler = null;
       this.observedDatasets = [];
     }
+    // TODO (Bug 3): Verify that style and source handlers work when map-layering isn't overriden in game.
     if (this.styleHandler) {
       this.map.off('styledata', this.styleHandler);
       this.styleHandler = null;
@@ -193,7 +194,6 @@ export class RegionsMapLayers {
       label: dataset.displayName,
       isVisible: () => this.isVisible(dataset),
       toggle: () => this.toggleVisibility(dataset),
-      // TODO (Bug 1): On map layer reset, ensure toggle state is synced
     };
   }
 

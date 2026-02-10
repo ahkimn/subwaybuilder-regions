@@ -15,7 +15,7 @@ export class RegionDataBuilder {
     private api: ModdingAPI
   ) { }
 
-  // TODO: If an API is added to show only changed demand points, this function + the region data structure should be optimized to only update the changed demand points
+  // TODO (Future): If an API is added to show only changed demand points, this function + the region data structure should be optimized to only update the changed demand points
   buildRegionCommuteData(dataset: RegionDataset, featureId: string | number, updateTime?: number): RegionCommuterData | null {
 
     const demandData = this.api.gameState.getDemandData();
