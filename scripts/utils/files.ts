@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import readline from "readline";
 import { parse } from 'csv-parse/sync';
+import { parse as parseYaml } from 'yaml';
 import { BoundaryBox } from './geometry';
 import { DATA_INDEX_FILE } from '../../shared/consts';
 
@@ -12,6 +13,20 @@ export type Row = Record<string, string>;
 export function validateFilePath(filePath: string): void {
   if (!fs.existsSync(filePath)) {
     console.error(`Input file does not exist: ${filePath}`);
+    process.exit(1);
+  }
+}
+
+export function loadYAML<T>(filePath: string): T {
+  if (!fs.existsSync(filePath)) {
+    console.error(`YAML config not found: ${filePath}`);
+    process.exit(1);
+  }
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    return (parseYaml(raw) ?? {}) as T;
+  } catch (err: any) {
+    console.error(`Failed to load or parse YAML file: ${filePath} with error: ${err.message}`);
     process.exit(1);
   }
 }

@@ -24,7 +24,8 @@
     "maplibre-gl": "^5.16.0",
     "minimist": "^1.2.8",
     "path": "^0.12.7",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "yaml": "^2.8.2"
   },
   "name": "subwaybuilder-regions",
   "version": "0.1.0",
@@ -32,6 +33,8 @@
   "main": "index.js",
   "scripts": {
     "build": "vite build",
+    "dev": "tsx scripts/dev.ts",
+    "link": "tsx scripts/link.ts",
     "serve": "tsx scripts/serve-data.ts",
     "extract:map-features": "tsx scripts/extract-map-features.ts"
   },

@@ -33,3 +33,11 @@ export class RegistryMissingDatasetError extends Error {
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
+
+export class RegistryMissingIndexError extends Error {
+  constructor(indexFile: string, url: string) {
+    super(`Dataset index could not be fetched from ${url}/${indexFile}`);
+    this.name = 'RegistryMissingIndexError';
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
