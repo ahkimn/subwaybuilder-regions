@@ -13,13 +13,15 @@ export class RegionsMod {
 
   private registry: RegionDatasetRegistry;
   private currentCityCode: string | null = null;
-  private cityLoadToken = 0;
 
   private map: maplibregl.Map | null = null;
   private mapLayers: RegionsMapLayers | null = null;
 
-  private mapInitialized = false;
   private uiManager: RegionsUIManager | null = null;
+
+  // TODO (Bug 2): These are guards against unexpected states; however, full hot-reload support will require more robust handling of these edge cases.
+  private cityLoadToken = 0;
+  private mapInitialized = false;
 
   constructor() {
     this.registry = new RegionDatasetRegistry(INDEX_FILE, SERVE_URL);
@@ -34,7 +36,7 @@ export class RegionsMod {
     }
 
     // Build dataset registry from data index file. 
-    // TODO: replace with local mod storage
+    // TODO (Future): replace with local mod storage
     await this.registry.build();
 
     api.hooks.onCityLoad(this.onCityLoad.bind(this));

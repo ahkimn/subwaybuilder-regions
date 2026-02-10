@@ -44,7 +44,10 @@ export class RegionsMapLayers {
   private layerStyles = new Map<string, MapLayerStyle>();
 
   private observedDatasets: RegionDataset[] = [];
+
   private layerHandler: (() => void) | null = null;
+  private styleHandler: (() => void) | null = null;
+  private sourceHandler: (() => void) | null = null;
 
   private events: RegionsMapLayersEvents = {};
 
@@ -112,7 +115,7 @@ export class RegionsMapLayers {
       }
     });
 
-    if (layerState.visible && layerState.labelLayerId) {
+    if (layerState.visible && layerState.labelLayerId && this.map.getLayer(layerState.labelLayerId)) {
       this.map.moveLayer(layerState.labelLayerId);
     }
   }
@@ -162,6 +165,15 @@ export class RegionsMapLayers {
       this.layerHandler = null;
       this.observedDatasets = [];
     }
+    // TODO (Bug 3): Verify that style and source handlers work when map-layering isn't overriden in game.
+    if (this.styleHandler) {
+      this.map.off('styledata', this.styleHandler);
+      this.styleHandler = null;
+    }
+    if (this.sourceHandler) {
+      this.map.off('sourcedata', this.sourceHandler);
+      this.sourceHandler = null;
+    }
     for (const identifier of this.layerStates.keys()) {
       this.removeDatasetMapLayers(
         identifier,
@@ -183,7 +195,6 @@ export class RegionsMapLayers {
       label: dataset.displayName,
       isVisible: () => this.isVisible(dataset),
       toggle: () => this.toggleVisibility(dataset),
-      // TODO (Bug 1): On map layer reset, ensure toggle state is synced
     };
   }
 
@@ -319,6 +330,17 @@ export class RegionsMapLayers {
       return;
     }
 
+    // TODO (Bug 3): Verify that style and source handlers work when map-layering isn't overriden in game
+    this.styleHandler = () => {
+      this.moveVisibleLabelsToTop();
+    };
+    this.map.on('styledata', this.styleHandler);
+
+    this.sourceHandler = () => {
+      this.moveVisibleLabelsToTop();
+    };
+    this.map.on('sourcedata', this.sourceHandler);
+
     this.layerHandler = () => {
       let syncLayerState = false;
       for (const dataset of this.observedDatasets) {
@@ -350,6 +372,19 @@ export class RegionsMapLayers {
     };
 
     this.map.on('data', this.layerHandler);
+  }
+
+  private moveVisibleLabelsToTop(): void {
+    for (const dataset of this.observedDatasets) {
+      const identifier = RegionDataset.getIdentifier(dataset);
+      const layerState = this.layerStates.get(identifier);
+      if (!layerState || !layerState.visible) {
+        continue;
+      }
+      if (this.map.getLayer(layerState.labelLayerId)) {
+        this.map.moveLayer(layerState.labelLayerId);
+      }
+    }
   }
 
   private attachLabelHandlers(dataset: RegionDataset): void {
