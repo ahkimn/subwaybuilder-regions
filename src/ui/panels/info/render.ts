@@ -16,9 +16,9 @@ const PERCENT_DECIMALS = 2;
 
 function buildViewHeader(name: string): HTMLDivElement {
   const header = document.createElement('div');
-  header.className = 'flex justify-between items-center text-sm font-medium';
+  header.className = 'flex justify-between items-center text-sm font-medium h-8';
   const nameSpan = document.createElement('span');
-  nameSpan.className = 'font-medium';
+  nameSpan.className = 'font-medium leading-none';
   nameSpan.textContent = name;
   header.appendChild(nameSpan);
   return header;
@@ -99,7 +99,7 @@ export function renderCommutersView(
   );
 
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
-  const mayRequireScroll = rows.length > DEFAULT_TABLE_ROWS;
+  const mayRequireScroll = viewState.expanded && (rows.length > DEFAULT_TABLE_ROWS);
 
   root.appendChild(buildCommutersTable(viewState, rows, rowsToDisplay, mayRequireScroll, renderPanel));
   return root;
@@ -182,15 +182,10 @@ function buildCommutersTable(
   const tableFrame = document.createElement('div');
   tableFrame.className = 'border-t border-border/30 pt-1';
 
-  const headerWrap = document.createElement('div');
-  if (mayRequireScroll) headerWrap.style.scrollbarGutter = 'stable'; // Ensure header accounts for body scrollbar if needed to prevent data misalignment
-
   const tableOptions = new TableOptions(getColumnTemplate(viewState), 'standard');
   const tableHeaderData = buildTableHeader(viewState, renderPanel);
   const tableHeader = DataTable(tableOptions, tableHeaderData);
-  if (mayRequireScroll) tableHeader.className += ' pr-2';
-  headerWrap.appendChild(tableHeader);
-  tableFrame.appendChild(headerWrap);
+  tableFrame.appendChild(tableHeader);
 
   const rowsToRender = rows.slice(0, rowsToDisplay);
   const tableBodyData = rowsToRender.map((rowData) => buildTableRow(viewState, rowData));
