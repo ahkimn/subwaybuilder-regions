@@ -44,6 +44,7 @@ export class RegionsMapLayers {
   private layerStyles = new Map<string, MapLayerStyle>();
 
   private observedDatasets: RegionDataset[] = [];
+
   private layerHandler: (() => void) | null = null;
   private styleHandler: (() => void) | null = null;
   private sourceHandler: (() => void) | null = null;
@@ -329,17 +330,16 @@ export class RegionsMapLayers {
       return;
     }
 
-    // TODO (Bug 3): Re-enable style and source handlers when map-layering isn't overriden in game.
+    // TODO (Bug 3): Verify that style and source handlers work when map-layering isn't overriden in game
+    this.styleHandler = () => {
+      this.moveVisibleLabelsToTop();
+    };
+    this.map.on('styledata', this.styleHandler);
 
-    // this.styleHandler = () => {
-    //   this.moveVisibleLabelsToTop();
-    // };
-    // this.map.on('styledata', this.styleHandler);
-
-    // this.sourceHandler = () => {
-    //   this.moveVisibleLabelsToTop();
-    // };
-    // this.map.on('sourcedata', this.sourceHandler);
+    this.sourceHandler = () => {
+      this.moveVisibleLabelsToTop();
+    };
+    this.map.on('sourcedata', this.sourceHandler);
 
     this.layerHandler = () => {
       let syncLayerState = false;
