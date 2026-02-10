@@ -3,7 +3,7 @@ import { PanelSelect } from "./PanelSelect";
 type PanelSelectConfig = {
   label: string;
   onSelect: () => void;
-  iconHTML?: string;
+  iconSVG?: SVGElement;
 };
 
 export const MAX_SELECT_BUTTONS = 4;
@@ -36,7 +36,7 @@ export class SelectRow {
         cfg.label,
         `${id}-${index}`,
         () => this.select(index),
-        cfg.iconHTML
+        cfg.iconSVG
       );
 
       this.buttons.push(btn);

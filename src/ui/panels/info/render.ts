@@ -177,7 +177,7 @@ function buildSummaryStatistics(populationCount: number, aggregateModeShare: Mod
 }
 
 function getColumnTemplate(viewState: CommutersViewState): string {
-  const base = ['minmax(6rem,1fr)', 'minmax(4.5rem,12rem)', 'minmax(4.5rem,15rem)'];
+  const base = ['minmax(6rem,1fr)', 'minmax(4.5rem,15rem)', 'minmax(4.5rem,15rem)'];
 
   if (viewState.modeShareLayout === 'all') {
     base.push('minmax(4.5rem,9rem)', 'minmax(4.5rem,9rem)');

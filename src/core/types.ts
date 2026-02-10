@@ -44,7 +44,7 @@ export class UIState {
   activeDatasetId: string | null = null;
   activeFeatureId: string | number | null = null;
 
-  isActive(): boolean {
+  get isActive(): boolean {
     return this.cityCode !== null &&
       this.activeDatasetId !== null &&
       this.activeFeatureId !== null;

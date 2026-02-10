@@ -1,4 +1,4 @@
-import { CloseIconHTML } from "./utils/get-icon";
+import { createIconElement, CloseIcon } from "./utils/get-icon";
 
 export function CloseButton(onClick: () => void) {
 
@@ -11,7 +11,8 @@ export function CloseButton(onClick: () => void) {
     'rounded-md hover:bg-accent hover:text-accent-foreground';
 
   button.setAttribute('aria-label', 'Close');
-  button.innerHTML = CloseIconHTML;
+  const iconElement = createIconElement(CloseIcon, { size: 16 });
+  button.appendChild(iconElement);
   button.addEventListener('click', onClick);
   wrapper.appendChild(button);
   return wrapper;

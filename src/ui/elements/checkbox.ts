@@ -1,6 +1,6 @@
 import { LayerToggleOptions } from "../types/LayerToggleOptions";
 import { Label } from "./Label";
-import { CheckboxIconHTML } from "./utils/get-icon";
+import { createIconElement, CheckboxIcon } from "./utils/get-icon";
 
 export function Checkbox(
   options: LayerToggleOptions,
@@ -54,7 +54,8 @@ export function buildCheckBoxIcon(): HTMLSpanElement {
     'flex items-center justify-center text-current';
   iconWrapper.style.pointerEvents = 'none';
 
-  iconWrapper.innerHTML = CheckboxIconHTML;
+  const iconElement = createIconElement(CheckboxIcon, { size: 16 });
+  iconWrapper.appendChild(iconElement);
   return iconWrapper;
 }
 

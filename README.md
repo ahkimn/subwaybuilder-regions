@@ -269,7 +269,7 @@ Bugs or issues that are inconvenient but do not break the core mod functionality
 
 ## Changelog
 
-### v0.1.0 — 2026-02-08 (Initial Release)
+### v0.1.0 — 2026-02-09 (Initial Release)
 
 _Game version_ v0.12.6
 

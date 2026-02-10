@@ -3,7 +3,7 @@ import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
 import { RegionGameData, UIState } from "../../../core/types";
 import { PanelHeader } from "../../elements/PanelHeader";
 import { SelectRow } from "../../elements/SelectRow";
-import { FileChartColumnIconHTML, TramFrontIconHTML } from "../../elements/utils/get-icon";
+import { createIconElement, FileChartColumnIcon, TramFrontIcon } from "../../elements/utils/get-icon";
 import { renderStatisticsView, renderCommutersView } from "./render";
 import { CommutersViewState, RegionsInfoPanelView } from "./types";
 
@@ -65,14 +65,14 @@ export class RegionsInfoPanel {
       `${this.rootId}-main-select`,
       [
         {
-          label: 'Statistics',
+          label: 'Summary',
           onSelect: () => { this.setView('statistics'); },
-          iconHTML: FileChartColumnIconHTML
+          iconSVG: createIconElement(FileChartColumnIcon, { size: 24 })
         },
         {
           label: 'Commuters',
           onSelect: () => { this.setView('commuters'); },
-          iconHTML: TramFrontIconHTML
+          iconSVG: createIconElement(TramFrontIcon, { size: 24 })
         }
       ]
     );
@@ -140,7 +140,7 @@ export class RegionsInfoPanel {
   }
 
   public tryRender(forceRefresh: boolean = false) {
-    if (this.uiState.isActive()) {
+    if (this.uiState.isActive) {
       this.render(forceRefresh);
     }
   }

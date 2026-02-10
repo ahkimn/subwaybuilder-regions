@@ -3,13 +3,23 @@ export function PanelSelect(
   label: string,
   id: string,
   onClick: () => void,
-  iconHTML?: string
+  iconSVG?: SVGElement
 ): {
   el: HTMLElement,
   setActive: (active: boolean) => void
 } {
 
-  const baseClass = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 border border-input px-4 w-full pl-3 pr-2 py-2 h-8 text-xs';
+  const baseClass = [
+    'inline-flex items-center justify-center gap-2',
+    'whitespace-nowrap rounded-md font-medium',
+    'transition-colors',
+    'focus-visible:outline-none',
+    'disabled:pointer-events-none disabled:opacity-50',
+    '[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+    'border border-input',
+    'px-4 w-full pl-3 pr-2 py-2 h-8',
+    'text-xs'
+  ].join(' ');
 
   // Style classes for active/inactive states.
   const activeClass = 'hover:bg-secondary-foreground/90 hover:text-secondary bg-secondary-foreground text-secondary'
@@ -23,10 +33,10 @@ export function PanelSelect(
     button.className = `${baseClass} ${active ? activeClass : inactiveClass}`;
   }
 
-  if (iconHTML) {
+  if (iconSVG) {
     const span = document.createElement('span');
     span.className = 'mr-2';
-    span.innerHTML = iconHTML;
+    span.appendChild(iconSVG);
     button.appendChild(span);
   }
 

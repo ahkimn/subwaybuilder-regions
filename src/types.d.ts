@@ -4,8 +4,6 @@
 
 
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import bbox from '@turf/bbox';
-
 
 // =============================================================================
 // COORDINATE & GEOMETRY TYPES

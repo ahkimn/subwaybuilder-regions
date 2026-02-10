@@ -9,9 +9,12 @@ export function RouteBullet(opts: {
   wrap.style.height = '1rem';
 
   const inner = document.createElement('div');
-  inner.className =
-    'flex items-center justify-center font-bold select-none overflow-hidden ' +
-    'font-mta cursor-pointer hover:opacity-80';
+  inner.className = [
+    'flex items-center justify-center font-bold',
+    'select-none overflow-hidden',
+    'font-mta',
+    'cursor-pointer hover:opacity-80'
+  ].join(' ');
 
   inner.style.backgroundColor = opts.color;
   inner.style.minWidth = '1rem';
