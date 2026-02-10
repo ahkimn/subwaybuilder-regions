@@ -33,6 +33,7 @@
   "main": "index.js",
   "scripts": {
     "build": "vite build",
+    "build-dev": "npm run build && npm run dev",
     "dev": "tsx scripts/dev.ts",
     "link": "tsx scripts/link.ts",
     "serve": "tsx scripts/serve-data.ts",
