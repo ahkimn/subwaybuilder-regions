@@ -51,7 +51,7 @@ export class RegionsUIManager {
       this.datasetRegistry,
       () => this.state.cityCode,
       () => this.state.activeSelection,
-      this.onOverviewRegionSelect.bind(this)
+      (selection) => this.setActiveSelection(selection, { toggleIfSame: false, showInfo: true })
     );
 
     this.initialized = false;
@@ -116,11 +116,6 @@ export class RegionsUIManager {
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {
     const nextSelection = { datasetId: RegionDataset.getIdentifier(payload.dataset), featureId: payload.featureId };
     this.setActiveSelection(nextSelection, { toggleIfSame: true, showInfo: true });
-  }
-
-  private onOverviewRegionSelect(selection: RegionSelection, source: "overview-click") {
-    const showInfo = source === "overview-click";
-    this.setActiveSelection(selection, { toggleIfSame: false, showInfo });
   }
 
   private setActiveSelection(

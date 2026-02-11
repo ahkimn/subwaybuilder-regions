@@ -1,13 +1,13 @@
-import { DataRowOptions, SortState, TableOptions } from "./DataTable";
+import { createElement, ReactNode } from "react";
+import { DataRowOptions, SortState, TableOptions } from "../DataTable";
 
-export type ReactDataTableCellValue = string | number | HTMLElement | unknown;
+export type ReactDataTableCellValue = React.ReactNode | HTMLElement;
 
 export type ReactDataTableRow = {
   rowValues: ReactDataTableCellValue[];
   options?: DataRowOptions;
 };
 
-type CreateElement = (...args: unknown[]) => unknown;
 
 const TABLE_DENSITY_SETTINGS: Record<"compact" | "standard" | "relaxed", string> = {
   compact: "gap-y-0.5 text-xs leading-4",
@@ -16,11 +16,11 @@ const TABLE_DENSITY_SETTINGS: Record<"compact" | "standard" | "relaxed", string>
 };
 
 export function ReactDataTable(
-  h: CreateElement,
+  h: typeof createElement,
   tableOptions: TableOptions,
   tableValues: Array<ReactDataTableRow>,
-): unknown {
-  const cells: unknown[] = [];
+): ReactNode {
+  const cells: ReactNode[] = [];
 
   tableValues.forEach(({ rowValues, options }, rowIndex) => {
     const rowOptions = options ?? {};
@@ -51,13 +51,13 @@ export function ReactDataTable(
 }
 
 function buildReactCell(
-  h: CreateElement,
+  h: typeof createElement,
   cellValue: ReactDataTableCellValue,
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,
   key: string
-): unknown {
+): ReactNode {
   const span = rowOptions.colSpan?.[index];
   const isSelectedSort = rowOptions.sortState?.index === index;
   const align = rowOptions.align?.[index] ?? "left";
@@ -104,18 +104,18 @@ function buildReactCell(
 }
 
 function buildCellChildren(
-  h: CreateElement,
+  h: typeof createElement,
   value: ReactDataTableCellValue,
   sortState: SortState | undefined,
   index: number
-): unknown[] {
+): ReactNode[] {
   const indicator =
     sortState && sortState.index === index && sortState.directionLabel
       ? ` ${sortState.directionLabel}`
       : "";
 
   if (value instanceof HTMLElement) {
-    return [
+    const children: ReactNode[] = [
       h("span", {
         key: "host",
         ref: (node: HTMLElement | null) => {
@@ -124,15 +124,20 @@ function buildCellChildren(
           node.replaceChildren(value);
         },
       }),
-      indicator ? h("span", { key: "sort-indicator" }, indicator) : null,
-    ].filter(Boolean);
+    ];
+    if (indicator) {
+      children.push(h("span", { key: "sort-indicator" }, indicator));
+    }
+    return children;
   }
 
   if (typeof value === "string" || typeof value === "number") {
     return [`${value}${indicator}`];
   }
 
-  return indicator ? [value, h("span", { key: "sort-indicator" }, indicator)] : [value];
+  return indicator
+    ? [value as ReactNode, h("span", { key: "sort-indicator" }, indicator)]
+    : [value as ReactNode];
 }
 
 function getCellAlignmentClass(align: "left" | "right" | "center"): string {

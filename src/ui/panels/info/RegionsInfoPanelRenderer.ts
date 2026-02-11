@@ -5,7 +5,6 @@ import { RegionsInfoPanel } from "./RegionsInfoPanel";
 
 export class RegionsInfoPanelRenderer {
   private root: HTMLElement | null = null;
-
   private infoPanel: RegionsInfoPanel | null = null;
 
   constructor(

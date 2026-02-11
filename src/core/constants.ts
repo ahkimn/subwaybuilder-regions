@@ -35,5 +35,9 @@ export const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
 export const REGIONS_INFO_PANEL_TITLE = 'Region Info';
 export const REGIONS_INFO_PANEL_MOD_ID = 'regions-info-panel';
 
-export const INFO_PANEL_MIN_WIDTH = 80;
+export const REGIONS_OVERVIEW_PANEL_ID = "regions-overview-toolbar-panel";
+export const REGIONS_OVERVIEW_PANEL_TITLE = "Regions Overview";
+export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
+export const REGIONS_OVERVIEW_PANEL_CONTENT_ID = "regions-overview-panel-content";
 
+export const INFO_PANEL_MIN_WIDTH = 80;

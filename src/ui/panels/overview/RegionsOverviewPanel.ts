@@ -1,11 +1,21 @@
 import { RegionSelection as RegionSelectionUtils, type RegionSelection } from "../../../core/types";
 import { RegionDataset } from "../../../core/datasets/RegionDataset";
+import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from "../../../core/constants";
 import { formatFixedNumber } from "../../../core/utils";
 import type { ModdingAPI } from "../../../types/modding-api-v1";
 import { DataRowOptions, TableOptions } from "../../elements/DataTable";
-import { ReactDataTable, ReactDataTableRow } from "../../elements/ReactDataTable";
-import { ReactSelectRow, ReactSelectRowOption } from "../../elements/ReactSelectRow";
+import { ReactDataTable, ReactDataTableRow } from "../../elements/react/ReactDataTable";
+import { ReactPanelSelect, ReactSelectRowOption } from "../../elements/react/ReactPanelSelect";
 import type { RegionsOverviewRow, RegionsOverviewSortState, RegionsOverviewTab } from "./types";
+import type React from "react";
+import { createElement } from "react";
+
+type GameInputProps = {
+  value?: string;
+  placeholder?: string;
+  onChange?: (e: Event) => void;
+  className?: string;
+};
 
 type RegionsOverviewPanelOptions = {
   api: ModdingAPI;
@@ -55,9 +65,9 @@ export class RegionsOverviewPanel {
     };
   }
 
-  render(): unknown {
-    const h = this.api.utils.React.createElement;
-    const components = this.api.utils.components;
+  render(): React.ReactNode {
+    const h = this.api.utils.React.createElement as typeof createElement;
+    const Input = this.api.utils.components.Input as React.ComponentType<GameInputProps>;
 
     const cityCode = this.getCurrentCityCode();
     const datasets = cityCode ? this.getCityDatasets(cityCode) : [];
@@ -66,18 +76,18 @@ export class RegionsOverviewPanel {
 
     return h(
       "div",
-      { className: "p-3 flex flex-col gap-3 h-full min-h-0" },
+      { id: REGIONS_OVERVIEW_PANEL_CONTENT_ID, className: "p-3 flex flex-col gap-3 h-full min-h-0" },
       this.renderLayerRow(h, selected, datasets),
       this.renderTabs(h),
-      this.renderTabContent(h, components, selected, activeSelection)
+      this.renderTabContent(h, Input, selected, activeSelection)
     );
   }
 
   private renderLayerRow(
-    h: (...args: unknown[]) => unknown,
+    h: typeof createElement,
     selected: RegionDataset | null,
     datasets: RegionDataset[]
-  ): unknown {
+  ): React.ReactNode {
     if (datasets.length === 0) {
       return h(
         "div",
@@ -101,12 +111,7 @@ export class RegionsOverviewPanel {
         "div",
         { className: "flex flex-col gap-1.5" },
         h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-        ReactSelectRow({
-          h,
-          id: "regions-overview-layer-select",
-          options: layerOptions,
-          activeId: selected?.id ?? null,
-        })
+        ReactPanelSelect(h, layerOptions, selected?.id ?? null, "regions-overview-layer-select")
       );
     }
 
@@ -120,7 +125,7 @@ export class RegionsOverviewPanel {
           className:
             "h-9 rounded-md border border-border/60 bg-background px-2 text-sm outline-none focus:border-ring",
           value: selected?.id ?? "",
-          onChange: (e: Event) => {
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
             const target = e.target as HTMLSelectElement;
             this.selectedDatasetId = target.value || null;
             this.requestRender();
@@ -137,31 +142,25 @@ export class RegionsOverviewPanel {
     );
   }
 
-  private renderTabs(h: (...args: unknown[]) => unknown): unknown {
+  private renderTabs(h: typeof createElement): React.ReactNode {
     const tabOptions: ReactSelectRowOption[] = [
       { id: "overview", label: "Overview", onSelect: () => this.setTab("overview") },
       { id: "commuter-flows", label: "Commuter Flows", onSelect: () => this.setTab("commuter-flows") },
       { id: "ridership", label: "Ridership", onSelect: () => this.setTab("ridership") },
     ];
 
-    return ReactSelectRow({
-      h,
-      id: "regions-overview-tab-select",
-      options: tabOptions,
-      activeId: this.activeTab,
-      fullWidth: true,
-    });
+    return ReactPanelSelect(h, tabOptions, this.activeTab, "regions-overview-tab-select", true);
   }
 
   private renderTabContent(
-    h: (...args: unknown[]) => unknown,
-    components: ModdingAPI["utils"]["components"],
+    h: typeof createElement,
+    Input: React.ComponentType<GameInputProps>,
     dataset: RegionDataset | null,
     activeSelection: RegionSelection | null
-  ): unknown {
+  ): React.ReactNode {
     switch (this.activeTab) {
       case "overview":
-        return this.renderOverviewTab(h, components, dataset, activeSelection);
+        return this.renderOverviewTab(h, Input, dataset, activeSelection);
       case "commuter-flows":
         return this.renderPlaceholderTab(h, "Commuter flow analysis is under construction.");
       case "ridership":
@@ -170,11 +169,11 @@ export class RegionsOverviewPanel {
   }
 
   private renderOverviewTab(
-    h: (...args: unknown[]) => unknown,
-    components: ModdingAPI["utils"]["components"],
+    h: typeof createElement,
+    Input: React.ComponentType<GameInputProps>,
     dataset: RegionDataset | null,
     activeSelection: RegionSelection | null
-  ): unknown {
+  ): React.ReactNode {
     const rows = this.sortRows(
       this.filterRows(this.buildRows(dataset), this.searchTerm),
       this.sortState
@@ -183,7 +182,7 @@ export class RegionsOverviewPanel {
     return h(
       "div",
       { className: "flex flex-col gap-2 min-h-0" },
-      h(components.Input, {
+      h(Input, {
         value: this.searchTerm,
         placeholder: "Search by name...",
         onChange: (e: Event) => {
@@ -197,10 +196,10 @@ export class RegionsOverviewPanel {
   }
 
   private renderTable(
-    h: (...args: unknown[]) => unknown,
+    h: typeof createElement,
     rows: RegionsOverviewRow[],
     activeSelection: RegionSelection | null
-  ): unknown {
+  ): React.ReactNode {
     const tableOptions = new TableOptions(
       "minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(6rem,0.8fr)",
       "compact"
@@ -281,9 +280,9 @@ export class RegionsOverviewPanel {
   }
 
   private renderPlaceholderTab(
-    h: (...args: unknown[]) => unknown,
+    h: typeof createElement,
     description: string
-  ): unknown {
+  ): React.ReactNode {
     return h(
       "div",
       { className: "rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground" },
