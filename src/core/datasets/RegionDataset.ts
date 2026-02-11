@@ -1,5 +1,5 @@
 import { Feature, MultiPolygon, Polygon } from "geojson";
-import { DemandData } from "../../types";
+import type { DemandData } from "../../types/modding-api-v1";
 import { isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
 import { DatasetSource, DatasetStatus, RegionCommuterData, RegionDemandData, RegionGameData, RegionInfraData } from "../types";
 import { DEFAULT_UNIT_LABELS, LAYER_PREFIX, PRESET_UNIT_LABELS, SOURCE_PREFIX, UNASSIGNED_REGION_ID, UNKNOWN_VALUE_DISPLAY } from "../constants";

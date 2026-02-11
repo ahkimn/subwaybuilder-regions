@@ -6,6 +6,7 @@ source_data/*
 
 # Ignore dependencies / build outputs
 dist/
+tmp/
 node_modules/
 package-lock.json
 

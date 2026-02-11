@@ -44,7 +44,6 @@ export class RegionsInfoPanelRenderer {
     this.infoPanel = null;
   }
 
-  // Unmount container from DOM
   unmount() {
     // Guard against duplicate panel container creation on hot-reload
     const existing = document.getElementById(REGIONS_INFO_CONTAINER_ID);
