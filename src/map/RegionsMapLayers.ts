@@ -58,6 +58,18 @@ export class RegionsMapLayers {
     this.map = map;
   }
 
+  setMap(map: maplibregl.Map) {
+    if (this.map === map) {
+      return;
+    }
+
+    // Fully detach handlers and clear rendered layer state from the previous map instance
+    // before rebinding to a new map (e.g. during city transitions).
+    this.reset();
+    this.map = map;
+    console.log("[Regions] Rebound RegionsMapLayers to a new map instance");
+  }
+
   setEvents(events: RegionsMapLayersEvents) {
     this.events = events;
   }

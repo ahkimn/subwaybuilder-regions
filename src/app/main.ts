@@ -52,29 +52,31 @@ export class RegionsMod {
   }
 
   private onMapReady = (map: maplibregl.Map) => {
-    if (this.mapInitialized) {
-      console.warn("[Regions] onMapReady called more than once; skipping re-initialization");
+    this.map = map;
+    if (!this.mapInitialized) {
+      this.mapInitialized = true;
+      this.mapLayers = new RegionsMapLayers(map);
+      this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
+
+      console.log("[Regions] Map Layers and UI Manager initialized");
+
+      this.uiManager.initialize();
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key !== REGIONS_DESELECT_KEY) return;
+        this.uiManager?.handleDeselect();
+      });
+
+      if (this.currentCityCode) {
+        this.activateCity(this.currentCityCode);
+      }
       return;
     }
 
-    this.mapInitialized = true;
-    this.mapLayers = new RegionsMapLayers(map);
-    this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
-
-    console.log("[Regions] Map Layers and UI Manager initialized");
-
-    this.uiManager.initialize();
-
-    window.addEventListener('keydown', (event) => {
-      if (event.key !== REGIONS_DESELECT_KEY) return;
-      this.uiManager?.handleDeselect();
-    });
-
-    this.map = map;
-
-    if (this.currentCityCode) {
-      this.activateCity(this.currentCityCode);
-    }
+    // City transitions can provide a new map instance in onMapReady.
+    // Rebind existing map-layer manager without creating new manager instances.
+    this.mapLayers?.setMap(map);
+    console.warn("[Regions] onMapReady called with a new map instance; rebound map references");
   }
 
   private onCityLoad = async (cityCode: string) => {
@@ -134,6 +136,7 @@ export class RegionsMod {
     this.mapLayers?.reset();
     this.uiManager?.reset();
 
+    console.warn(`[Regions] Deactivated previous city data for: ${this.currentCityCode}`);
     this.currentCityCode = null;
   }
 
