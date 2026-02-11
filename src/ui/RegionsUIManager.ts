@@ -5,7 +5,7 @@ import { RegionDataset } from "../core/datasets/RegionDataset";
 import { RegionDatasetRegistry } from "../core/registry/RegionDatasetRegistry";
 import { RegionSelection, UIState } from "../core/types";
 import { RegionsMapLayers } from "../map/RegionsMapLayers";
-import { ModdingAPI } from "../types";
+import type { ModdingAPI } from "../types/modding-api-v1";
 import { observeInfoPanelsRoot, observeMapLayersPanel } from "./observers/observers";
 import { RegionsInfoPanelRenderer } from "./panels/info/RegionsInfoPanelRenderer";
 import { injectRegionToggles } from "./map-layers/toggles";

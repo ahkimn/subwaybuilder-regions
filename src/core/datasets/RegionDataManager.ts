@@ -1,4 +1,4 @@
-import { ModdingAPI } from "../../types";
+import type { ModdingAPI } from "../../types/modding-api-v1";
 import { RegionDatasetRegistry } from "../registry/RegionDatasetRegistry";
 import { STALE_COMMUTER_DATA_THRESHOLD_SECONDS, STALE_INFRA_DATA_THRESHOLD_SECONDS } from "../constants";
 import { RegionDataBuilder } from "./RegionDataBuilder";

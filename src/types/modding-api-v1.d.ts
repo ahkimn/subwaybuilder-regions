@@ -1,5 +1,5 @@
 /**
- * Subway Builder v0.12.0-rc
+ * Subway Builder API v1.0.0 (vendored local copy)
  */
 
 
@@ -19,6 +19,7 @@ export type BoundingBox = [minLon: number, minLat: number, maxLon: number, maxLa
 export interface City {
   name: string;
   code: string;
+  population?: number;
   country?: string;
   description?: string;
   initialViewState: {
@@ -386,6 +387,32 @@ export interface RouteRidership {
   ridersPerHour: number;
 }
 
+export interface StationRidershipRouteStats {
+  routeId: string;
+  popCount: number;
+}
+
+export interface StationRidershipDetails {
+  stationId: string;
+  total: number;
+  transfers: number;
+  byRoute: StationRidershipRouteStats[];
+}
+
+export interface StationRidershipSummary {
+  total: number;
+}
+
+export interface RouteRidershipStationStats {
+  stationId: string;
+  popCount: number;
+}
+
+export interface RouteRidershipDetails {
+  routeId: string;
+  byStation: RouteRidershipStationStats[];
+}
+
 // =============================================================================
 // TIME & SPEED TYPES
 // =============================================================================
@@ -483,8 +510,9 @@ export interface UIToolbarButtonOptions {
   id: string;
   icon: string;
   tooltip?: string;
-  render: () => unknown;
+  render?: () => unknown;
   onClick?: () => void;
+  isActive?: () => boolean;
 }
 
 export interface UIToolbarPanelOptions {
@@ -492,17 +520,51 @@ export interface UIToolbarPanelOptions {
   icon: string;
   tooltip?: string;
   title?: string;
-  content: () => unknown;
+  width?: number;
+  content?: () => unknown;
+  render?: () => unknown;
 }
 
 export interface UIFloatingPanelOptions {
   id: string;
   title?: string;
   icon?: string;
+  width?: number;
+  height?: number;
   defaultWidth?: number;
   defaultHeight?: number;
   defaultPosition?: { x: number; y: number };
   render: () => unknown;
+}
+
+export interface UIMainMenuButtonOptions {
+  id: string;
+  text: string;
+  onClick: () => void;
+  description?: string;
+  arrowBearing?: 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315;
+}
+
+export type StyledButtonVariant =
+  | 'default'
+  | 'destructive'
+  | 'outline'
+  | 'secondary'
+  | 'ghost'
+  | 'link';
+
+export type StyledButtonSize = 'default' | 'sm' | 'lg' | 'icon';
+
+export interface UIStyledButtonOptions extends UIButtonOptions {
+  variant?: StyledButtonVariant;
+  size?: StyledButtonSize;
+}
+
+export interface UIStyledToggleOptions extends UIToggleOptions { }
+
+export interface UIStyledSliderOptions extends UISliderOptions {
+  showValue?: boolean;
+  unit?: string;
 }
 
 export type UIPlacement =
@@ -859,6 +921,10 @@ export interface ModdingAPI {
     addToolbarButton(poptions: UIToolbarButtonOptions): void;
     addToolbarPanel(options: UIToolbarPanelOptions): void;
     addFloatingPanel(options: UIFloatingPanelOptions): void;
+    addMainMenuButton(options: UIMainMenuButtonOptions): void;
+    addStyledButton(placement: UIPlacement, options: UIStyledButtonOptions): void;
+    addStyledToggle(placement: UIPlacement, options: UIStyledToggleOptions): void;
+    addStyledSlider(placement: UIPlacement, options: UIStyledSliderOptions): void;
     // Layer visibility methods (UNDOCUMENTED)
     getAvailableLayers(): string[];
     getLayerVisibility(layerId: string): boolean;
@@ -938,8 +1004,8 @@ export interface ModdingAPI {
     // Methods (UNDOCUMENTED)
     getModeChoiceStats(): ModeChoiceStats;
     getCompletedCommutes(): CompletedCommute[];
-    getStationRidership(stationId?: string | null): StationRidership[];
-    getRouteRidership(routeId?: string | null): RouteRidership[];
+    getStationRidership(stationId?: string | null): StationRidership[] | StationRidershipDetails | StationRidershipSummary;
+    getRouteRidership(routeId?: string | null): RouteRidership[] | RouteRidershipDetails;
   };
 
   // Pop timing
@@ -961,7 +1027,7 @@ export interface ModdingAPI {
   utils: {
     getCities(): City[];
     getConstants(): GameConstants;
-    getMap(): unknown | null;
+    getMap(): MapLibreMap | null;
     React: typeof import('react');
     icons: Record<string, React.ComponentType<{ className?: string }>>;
     components: {
@@ -1036,26 +1102,4 @@ export interface ChanceInstance {
   [key: string]: unknown;
 }
 
-// =============================================================================
-// GLOBAL WINDOW DECLARATIONS
-// =============================================================================
 
-declare global {
-  interface Window {
-    SubwayBuilderAPI: ModdingAPI;
-    electron?: ElectronAPI;
-    electronAPI?: ElectronAPIExtended;
-    // Internal state (use with caution)
-    __subwayBuilder_storeCallbacks__?: unknown;
-    // Third-party libraries exposed globally
-    Chance?: new (seed?: number | string) => ChanceInstance;
-    chance?: ChanceInstance;
-    Hammer?: unknown;
-    deck?: DeckGLNamespace;
-    luma?: unknown;
-    mathgl?: unknown;
-    loaders?: unknown;
-  }
-}
-
-export { };

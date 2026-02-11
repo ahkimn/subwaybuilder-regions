@@ -1,5 +1,5 @@
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
-import { ModdingAPI, Route, Station, Track } from "../../types";
+import type { ModdingAPI, Route, Station, Track } from "../../types/modding-api-v1";
 import { Coordinate, isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
 import { prepareBoundaryParams } from '../geometry/arc-length';
 import { geodesicArcLengthInsideBoundary, planarArcLengthInsideBoundary } from '../geometry/arc-length';
