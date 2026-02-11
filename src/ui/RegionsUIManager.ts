@@ -8,11 +8,13 @@ import { RegionsMapLayers } from "../map/RegionsMapLayers";
 import type { ModdingAPI } from "../types/modding-api-v1";
 import { observeInfoPanelsRoot, observeMapLayersPanel } from "./observers/observers";
 import { RegionsInfoPanelRenderer } from "./panels/info/RegionsInfoPanelRenderer";
+import { RegionsOverviewPanelRenderer } from "./panels/overview/RegionsOverviewPanelRenderer";
 import { injectRegionToggles } from "./map-layers/toggles";
 import { resolveInfoPanelRoot } from "./resolve/resolve-info-panel";
 
 export class RegionsUIManager {
   private infoPanelRenderer: RegionsInfoPanelRenderer;
+  private overviewPanelRenderer: RegionsOverviewPanelRenderer;
 
   private regionDataBuilder: RegionDataBuilder;
   private regionDataManager: RegionDataManager;
@@ -44,6 +46,13 @@ export class RegionsUIManager {
       this.getInfoPanelRoot.bind(this),
       () => this.clearSelection()
     );
+    this.overviewPanelRenderer = new RegionsOverviewPanelRenderer(
+      this.api,
+      this.datasetRegistry,
+      () => this.state.cityCode,
+      () => this.state.activeSelection,
+      this.onOverviewRegionSelect.bind(this)
+    );
 
     this.initialized = false;
   }
@@ -72,6 +81,8 @@ export class RegionsUIManager {
       () => this.infoPanelRenderer.rootElement,
       () => this.infoPanelRenderer.tearDown()
     );
+
+    this.overviewPanelRenderer.initialize();
   }
 
   getInfoPanelRoot(): HTMLElement | null {
@@ -104,16 +115,34 @@ export class RegionsUIManager {
 
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {
     const nextSelection = { datasetId: RegionDataset.getIdentifier(payload.dataset), featureId: payload.featureId };
+    this.setActiveSelection(nextSelection, { toggleIfSame: true, showInfo: true });
+  }
+
+  private onOverviewRegionSelect(selection: RegionSelection, source: "overview-click") {
+    const showInfo = source === "overview-click";
+    this.setActiveSelection(selection, { toggleIfSame: false, showInfo });
+  }
+
+  private setActiveSelection(
+    nextSelection: RegionSelection,
+    options: { toggleIfSame: boolean; showInfo: boolean }
+  ) {
     const previousSelection = this.state.activeSelection;
 
     if (RegionSelection.isEqual(previousSelection, nextSelection)) {
-      this.clearSelection();
+      if (options.toggleIfSame) {
+        this.clearSelection();
+      }
       return;
     }
 
     this.state.activeSelection = nextSelection;
     this.mapLayers.updateSelection(previousSelection, this.state.activeSelection);
-    this.infoPanelRenderer.showFeatureData();
+
+    if (options.showInfo) {
+      this.infoPanelRenderer.showFeatureData();
+    }
+    this.overviewPanelRenderer.tryUpdatePanel();
   }
 
   get activeSelection(): RegionSelection | null {
@@ -128,21 +157,29 @@ export class RegionsUIManager {
     this.state.cityCode = cityCode;
     this.startCommutersUpdateLoop();
     this.tryInjectLayerPanel();
+    this.overviewPanelRenderer.tryUpdatePanel();
   }
 
   reset() {
     this.stopCommutersUpdateLoop();
 
     this.clearSelection();
+    this.overviewPanelRenderer.tearDown();
   }
 
   private clearSelection() {
     const previousSelection = this.state.activeSelection;
+    if (previousSelection === null) {
+      this.infoPanelRenderer.tearDown();
+      this.overviewPanelRenderer.tryUpdatePanel();
+      return;
+    }
 
     this.state.activeSelection = null;
 
     this.mapLayers.updateSelection(previousSelection, this.state.activeSelection);
     this.infoPanelRenderer.tearDown();
+    this.overviewPanelRenderer.tryUpdatePanel();
   }
 
   public handleDeselect() {

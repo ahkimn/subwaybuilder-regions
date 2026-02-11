@@ -7,6 +7,7 @@ export type SortState = {
 export type DataRowOptions = {
   header?: boolean;
   borderBottom?: boolean;
+  rowClassName?: string;
   colSpan?: number[];
   onClick?: (() => void)[];
   sortState?: SortState;
@@ -89,6 +90,9 @@ function buildCell(
 
   if (rowOptions.borderBottom) {
     cell.className += ' border-b border-border/30';
+  }
+  if (rowOptions.rowClassName) {
+    cell.className += ` ${rowOptions.rowClassName}`;
   }
 
   if (rowOptions.onClick && rowOptions.onClick[index]) {
