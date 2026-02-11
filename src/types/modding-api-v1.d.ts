@@ -136,7 +136,6 @@ export interface Track {
   buildType?: BuildType;
   displayType?: DisplayType;
   type?: TrackType;
-  reversible?: boolean;
   reversable?: boolean;
   interactable?: boolean;
   length?: number;
