@@ -197,7 +197,7 @@ Each GeoJSON installed will correspond to a single map layer for a city.
 
 Installed map layers are accessible via the game's existing `Map Layers` menu. The mod injects a new section of toggle buttons `Region Data Layers` to this dropdown panel.
 
-![Region Layer Toggles](image-4.png)
+![Region Layer Toggles](img/usage-map-layers.png)
 
 Clicking on these toggles will enable/disable the display of the corresponding map layer.
 
@@ -207,7 +207,7 @@ Once a map layer is toggled on, the boundaries of regions within the map layer w
 
 The labels for each region are clickable, and will change color when hovered over. Click on the label to activate selection for the corresponding region.
 
-![Clickable Region Labels](image-1.png)
+![Clickable Region Labels](img/usage-select-region.png)
 
 If a region is already selected, clicking on its label will remove selection. Clicking a different region will switch the selection to that region.
 
@@ -217,7 +217,7 @@ Once any new region is selected, the Regions Info panel will open in the top rig
 
 #### Summary View
 
-![Summary View](image-2.png)
+![Summary View](img/usage-summary-view.png)
 
 The initial `Summary` panel contains overall summary statistics about the selected region.
 
@@ -233,7 +233,7 @@ The commuters view for a region contains a breakdown of commuter counts and comm
 - `Workers` refer to commuters who work within the selected region
 - :information_source: A commuter can be both a `Resident` and a `Worker` of the same region if both their residence and workplace are within the region's boundaries
 
-![Commuters View](image-3.png)
+![Commuters View](img/usage-commuters-view.png)
 
 The upper portion of the view contains statistics of `Resident` and `Worker` counts and mode share aggregated for the selected region.
 
