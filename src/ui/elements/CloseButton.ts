@@ -1,7 +1,6 @@
-import { createIconElement, CloseIcon } from "./utils/get-icon";
+import { CloseIcon, createIconElement } from './utils/get-icon';
 
 export function CloseButton(onClick: () => void) {
-
   const wrapper = document.createElement('div');
   wrapper.className = 'flex items-center h-full w-fit';
 

@@ -1,8 +1,18 @@
-import { ReactNode } from "react";
-import type { ModdingAPI, UIFloatingPanelOptions } from "../../../types/modding-api-v1";
-import { FLOATING_PANEL_OFFSET_X, FLOATING_PANEL_OFFSET_Y } from "../../../core/constants";
+import type { ReactNode } from 'react';
 
-type ToolbarPanelHostOptions = Pick<UIFloatingPanelOptions, "id" | "icon" | "title" | "width" | "defaultPosition">;
+import {
+  FLOATING_PANEL_OFFSET_X,
+  FLOATING_PANEL_OFFSET_Y,
+} from '../../../core/constants';
+import type {
+  ModdingAPI,
+  UIFloatingPanelOptions,
+} from '../../../types/modding-api-v1';
+
+type ToolbarPanelHostOptions = Pick<
+  UIFloatingPanelOptions,
+  'id' | 'icon' | 'title' | 'width' | 'defaultPosition'
+>;
 
 export class ReactToolbarPanelHost {
   private initialized = false;
@@ -13,8 +23,8 @@ export class ReactToolbarPanelHost {
 
   constructor(
     private readonly api: ModdingAPI,
-    private readonly options: ToolbarPanelHostOptions
-  ) { }
+    private readonly options: ToolbarPanelHostOptions,
+  ) {}
 
   initialize(): void {
     if (this.initialized) {

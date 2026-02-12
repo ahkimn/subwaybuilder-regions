@@ -1,7 +1,7 @@
 import type { NumberDisplay, SortDirection } from '../types';
 
 export type RegionsInfoPanelView = 'statistics' | 'commuters';
-export type CommuterDirection = 'outbound' | 'inbound'
+export type CommuterDirection = 'outbound' | 'inbound';
 export type ModeLayout = 'transit' | 'all';
 export type { NumberDisplay, SortDirection } from '../types';
 

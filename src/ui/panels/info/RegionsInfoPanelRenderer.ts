@@ -1,8 +1,8 @@
-import { REGIONS_INFO_CONTAINER_ID } from "../../../core/constants";
-import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
-import { UIState } from "../../../core/types";
-import { RegionsPanelRenderer } from "../types";
-import { RegionsInfoPanel } from "./RegionsInfoPanel";
+import { REGIONS_INFO_CONTAINER_ID } from '../../../core/constants';
+import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
+import type { UIState } from '../../../core/types';
+import type { RegionsPanelRenderer } from '../types';
+import { RegionsInfoPanel } from './RegionsInfoPanel';
 
 export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
   private root: HTMLElement | null = null;
@@ -12,9 +12,8 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     private readonly state: Readonly<UIState>,
     private dataManager: RegionDataManager,
     private getParentContainer: () => HTMLElement | null,
-    private onClose: () => void
-  ) {
-  };
+    private onClose: () => void,
+  ) {}
 
   initialize(): void {
     // No-op for parity with other panel renderers.
@@ -23,7 +22,7 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
   show() {
     const parentContainer = this.getParentContainer();
     if (!parentContainer || !this.infoPanel) {
-      console.warn("[Regions] Unable to show info panel");
+      console.warn('[Regions] Unable to show info panel');
       return;
     }
 
@@ -72,16 +71,15 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     this.infoPanel?.tryRender();
   }
 
-  showFeatureData(
-  ) {
+  showFeatureData() {
     if (!this.infoPanel) {
       this.infoPanel = new RegionsInfoPanel(
         this.dataManager,
         this.state,
-        this.onClose
-      )
+        this.onClose,
+      );
     }
-    this.infoPanel.tryRender(true)
+    this.infoPanel.tryRender(true);
     this.show();
   }
 }

@@ -1,11 +1,11 @@
-import { LayerToggleOptions } from "../types/LayerToggleOptions";
-import { Label } from "./Label";
-import { createIconElement, CheckboxIcon } from "./utils/get-icon";
+import type { LayerToggleOptions } from '../types/LayerToggleOptions';
+import { Label } from './Label';
+import { CheckboxIcon, createIconElement } from './utils/get-icon';
 
 export function Checkbox(
   options: LayerToggleOptions,
   attributeName: string,
-  attributeValue: string = "true",
+  attributeValue: string = 'true',
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'flex items-center gap-2';
@@ -27,12 +27,14 @@ export function Checkbox(
     } else if (!visible && button.contains(icon)) {
       icon.remove();
     } else {
-      console.warn("[Regions] Unexpected state in toggle button with id: ", button.id);
+      console.warn(
+        '[Regions] Unexpected state in toggle button with id: ',
+        button.id,
+      );
     }
 
     icon.dataset.state = visible ? 'checked' : 'unchecked';
-  }
-
+  };
 
   // Initial state
   syncState();
@@ -51,8 +53,7 @@ export function Checkbox(
 
 export function buildCheckBoxIcon(): HTMLSpanElement {
   const iconWrapper = document.createElement('span');
-  iconWrapper.className =
-    'flex items-center justify-center text-current';
+  iconWrapper.className = 'flex items-center justify-center text-current';
   iconWrapper.style.pointerEvents = 'none';
 
   const iconElement = createIconElement(CheckboxIcon, { size: 12 });

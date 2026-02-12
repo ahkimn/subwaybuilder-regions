@@ -1,25 +1,47 @@
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
-import type { ModdingAPI, Route, Station, Track } from "../../types/modding-api-v1";
-import { Coordinate, isCoordinateWithinFeature, isPolygonFeature } from "../geometry/helpers";
-import { prepareBoundaryParams } from '../geometry/arc-length';
-import { geodesicArcLengthInsideBoundary, planarArcLengthInsideBoundary } from '../geometry/arc-length';
-import { DatasetInvalidFeatureTypeError, DatasetMissingFeatureError } from "../errors";
-import { RegionDataset } from "./RegionDataset";
-import { ModeShare, RegionCommuterData, RegionInfraData, RouteBulletType, RouteDisplayParams } from "../types";
 import * as turf from '@turf/turf';
-import { DEFAULT_CHUNK_SIZE } from "../constants";
-import { processInChunks } from "../utils";
+import type { Feature, MultiPolygon, Polygon } from 'geojson';
+
+import type {
+  ModdingAPI,
+  Route,
+  Station,
+  Track,
+} from '../../types/modding-api-v1';
+import { DEFAULT_CHUNK_SIZE } from '../constants';
+import {
+  DatasetInvalidFeatureTypeError,
+  DatasetMissingFeatureError,
+} from '../errors';
+import { prepareBoundaryParams } from '../geometry/arc-length';
+import {
+  geodesicArcLengthInsideBoundary,
+  planarArcLengthInsideBoundary,
+} from '../geometry/arc-length';
+import type { Coordinate } from '../geometry/helpers';
+import {
+  isCoordinateWithinFeature,
+  isPolygonFeature,
+} from '../geometry/helpers';
+import type {
+  RegionCommuterData,
+  RegionInfraData,
+  RouteBulletType,
+  RouteDisplayParams,
+} from '../types';
+import { ModeShare } from '../types';
+import { processInChunks } from '../utils';
+import type { RegionDataset } from './RegionDataset';
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
-
-  constructor(
-    private api: ModdingAPI
-  ) { }
+  constructor(private api: ModdingAPI) {}
 
   // TODO (Future): If an API is added to show only changed demand points, this function + the region data structure should be optimized to only update the changed demand points
-  buildRegionCommuteData(dataset: RegionDataset, featureId: string | number, updateTime?: number): RegionCommuterData | null {
-
+  buildRegionCommuteData(
+    dataset: RegionDataset,
+    featureId: string | number,
+    updateTime?: number,
+  ): RegionCommuterData | null {
     const demandData = this.api.gameState.getDemandData();
 
     let residentModeShare: ModeShare = {
@@ -38,13 +60,15 @@ export class RegionDataBuilder {
     const workerModeShares = new Map<string, ModeShare>();
 
     if (!demandData) {
-      console.error("[Regions] Demand data not available");
+      console.error('[Regions] Demand data not available');
       return null;
     }
 
     const currentGameData = dataset.getRegionGameData(featureId);
     if (!currentGameData || !currentGameData.demandData) {
-      console.error(`[Regions] No game data or demand data found for feature ${featureId} in dataset ${dataset.id}`);
+      console.error(
+        `[Regions] No game data or demand data found for feature ${featureId} in dataset ${dataset.id}`,
+      );
       return null;
     }
 
@@ -52,7 +76,9 @@ export class RegionDataBuilder {
     for (const popId of currentGameData.demandData.populationIds) {
       const popData = demandData.popsMap.get(popId);
       if (!popData) {
-        console.error(`[Regions] No demand data found for population ID ${popId}`);
+        console.error(
+          `[Regions] No demand data found for population ID ${popId}`,
+        );
         continue;
       }
 
@@ -62,24 +88,29 @@ export class RegionDataBuilder {
       const isWorker = demandPointIds.has(popData.jobId);
 
       if (!isResident && !isWorker) {
-        console.error(`[Regions] Population ID ${popId} in region ${featureId} of dataset ${dataset.id} is not associated with a region demand point.`);
+        console.error(
+          `[Regions] Population ID ${popId} in region ${featureId} of dataset ${dataset.id} is not associated with a region demand point.`,
+        );
         continue;
       }
 
       // If no lastCommute data is available for the population, the first day has likely not been completed yet.
       // We can assign all of its commuters to the unknown mode choice
-      const popModeShare: ModeShare =
-        popData.lastCommute?.modeChoice ??
-        { transit: 0, driving: 0, walking: 0, unknown: popData.size };
+      const popModeShare: ModeShare = popData.lastCommute?.modeChoice ?? {
+        transit: 0,
+        driving: 0,
+        walking: 0,
+        unknown: popData.size,
+      };
 
       let homeRegion: string | undefined; // Defined if the population works in this region
       let workRegion: string | undefined; // Defined if the population lives in this region
 
       const resolveRegion = (demandPointId: string): string | undefined => {
         return dataset.regionNameMap.get(
-          dataset.regionDemandPointMap.get(demandPointId)!
+          dataset.regionDemandPointMap.get(demandPointId)!,
         );
-      }
+      };
 
       // Population both lives and works in region
       if (isResident && isWorker) {
@@ -92,7 +123,9 @@ export class RegionDataBuilder {
       else if (isResident) {
         workRegion = resolveRegion(popData.jobId);
         if (!workRegion) {
-          console.error(`[Regions] Unable to find work region for population ID ${popId}`);
+          console.error(
+            `[Regions] Unable to find work region for population ID ${popId}`,
+          );
           continue;
         }
         residentModeShare = ModeShare.add(residentModeShare, popModeShare);
@@ -101,7 +134,9 @@ export class RegionDataBuilder {
       else {
         homeRegion = resolveRegion(popData.residenceId);
         if (!homeRegion) {
-          console.error(`[Regions] Unable to find home region for population ID ${popId}`);
+          console.error(
+            `[Regions] Unable to find home region for population ID ${popId}`,
+          );
           continue;
         }
         workerModeShare = ModeShare.add(workerModeShare, popModeShare);
@@ -112,18 +147,28 @@ export class RegionDataBuilder {
         workerModeShares.set(
           homeRegion,
           ModeShare.add(
-            workerModeShares.get(homeRegion) ?? { transit: 0, driving: 0, walking: 0, unknown: 0 },
-            popModeShare
-          )
+            workerModeShares.get(homeRegion) ?? {
+              transit: 0,
+              driving: 0,
+              walking: 0,
+              unknown: 0,
+            },
+            popModeShare,
+          ),
         );
       }
       if (workRegion) {
         residentModeShares.set(
           workRegion,
           ModeShare.add(
-            residentModeShares.get(workRegion) ?? { transit: 0, driving: 0, walking: 0, unknown: 0 },
-            popModeShare
-          )
+            residentModeShares.get(workRegion) ?? {
+              transit: 0,
+              driving: 0,
+              walking: 0,
+              unknown: 0,
+            },
+            popModeShare,
+          ),
         );
       }
     }
@@ -135,40 +180,62 @@ export class RegionDataBuilder {
       workerModeShareByRegion: workerModeShares,
       metadata: {
         lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
-        dirty: false
-      }
-    }
+        dirty: false,
+      },
+    };
   }
 
   async buildRegionInfraData(
     dataset: RegionDataset,
     featureId: string | number,
     updateTime?: number,
-    chunkSize: number = DEFAULT_CHUNK_SIZE
+    chunkSize: number = DEFAULT_CHUNK_SIZE,
   ): Promise<RegionInfraData | null> {
-
     const allStations: Station[] = this.api.gameState.getStations();
     const allTracks: Track[] = this.api.gameState.getTracks();
     const allRoutes: Route[] = this.api.gameState.getRoutes();
 
     if (!dataset.boundaryData) {
-      console.error(`[Regions] No boundary data found for dataset ${dataset.id}`);
-      return null
-    }
-
-    const feature = dataset.boundaryData.features.find(f => f.properties?.ID! === featureId);
-    if (!feature) throw new DatasetMissingFeatureError(dataset.id, 'boundaryData', featureId)
-    if (!isPolygonFeature(feature)) throw new DatasetInvalidFeatureTypeError(dataset.id, feature);
-
-    const currentGameData = dataset.getRegionGameData(featureId);
-    if (!currentGameData) {
-      console.error(`[Regions] No game data found for feature ${featureId} in dataset ${dataset.id}`);
+      console.error(
+        `[Regions] No boundary data found for dataset ${dataset.id}`,
+      );
       return null;
     }
 
-    const { stationNames, stationNodes } = this.getStationDataWithinRegion(feature, allStations);
-    const { trackIds, trackLengths } = await this.getTracksWithinRegionAsync(feature, allTracks, true, chunkSize);
-    const { routes, routeDisplayParams } = this.getRoutesWithinRegion(allRoutes, stationNodes);
+    const feature = dataset.boundaryData.features.find(
+      (f) => f.properties?.ID! === featureId,
+    );
+    if (!feature)
+      throw new DatasetMissingFeatureError(
+        dataset.id,
+        'boundaryData',
+        featureId,
+      );
+    if (!isPolygonFeature(feature))
+      throw new DatasetInvalidFeatureTypeError(dataset.id, feature);
+
+    const currentGameData = dataset.getRegionGameData(featureId);
+    if (!currentGameData) {
+      console.error(
+        `[Regions] No game data found for feature ${featureId} in dataset ${dataset.id}`,
+      );
+      return null;
+    }
+
+    const { stationNames, stationNodes } = this.getStationDataWithinRegion(
+      feature,
+      allStations,
+    );
+    const { trackIds, trackLengths } = await this.getTracksWithinRegionAsync(
+      feature,
+      allTracks,
+      true,
+      chunkSize,
+    );
+    const { routes, routeDisplayParams } = this.getRoutesWithinRegion(
+      allRoutes,
+      stationNodes,
+    );
 
     return {
       stations: stationNames,
@@ -178,14 +245,17 @@ export class RegionDataBuilder {
       routeDisplayParams: routeDisplayParams,
       metadata: {
         lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
-        dirty: false
-      }
+        dirty: false,
+      },
     };
   }
 
-  private getStationDataWithinRegion(feature: Feature<Polygon | MultiPolygon>, stations: Station[]): {
-    stationNames: Map<string, string>,
-    stationNodes: Set<string>
+  private getStationDataWithinRegion(
+    feature: Feature<Polygon | MultiPolygon>,
+    stations: Station[],
+  ): {
+    stationNames: Map<string, string>;
+    stationNodes: Set<string>;
   } {
     const stationNames = new Map<string, string>();
     const stationNodes = new Set<string>();
@@ -196,9 +266,9 @@ export class RegionDataBuilder {
       const [lng, lat] = station.coords;
       if (isCoordinateWithinFeature(lat, lng, feature, featureBBox)) {
         stationNames.set(station.id, station.name);
-        station.stNodeIds?.forEach(nodeId => stationNodes.add(nodeId));
+        station.stNodeIds?.forEach((nodeId) => stationNodes.add(nodeId));
       }
-    };
+    }
     return { stationNames, stationNodes };
   }
 
@@ -208,16 +278,19 @@ export class RegionDataBuilder {
    * - A map of track types to total length of tracks of that type within the region (in kilometers)
    *
    * This function allows for both geodesic and planar approximations of track length within the region, with planar being the default due to its much lower computational cost.
-   * The geodesic calculation is more accurate but takes significantly more time (up to 50x), especially for larger regions in games with many track segments. 
-   * 
+   * The geodesic calculation is more accurate but takes significantly more time (up to 50x), especially for larger regions in games with many track segments.
+   *
    * TODO: (Performance) Allow optional override of planar approximation for tracks if the region is small enough OR there are few track nodes OR if the user overrides through settings
    */
   private async getTracksWithinRegionAsync(
     feature: Feature<Polygon | MultiPolygon>,
     tracks: Track[],
     forcePlanar: boolean,
-    chunkSize: number
-  ): Promise<{ trackIds: Map<string, number>, trackLengths: Map<string, number> }> {
+    chunkSize: number,
+  ): Promise<{
+    trackIds: Map<string, number>;
+    trackLengths: Map<string, number>;
+  }> {
     const trackIds = new Map<string, number>();
     const trackLengths = new Map<string, number>();
 
@@ -230,15 +303,28 @@ export class RegionDataBuilder {
       const knownTrackLength = track.length; // Game track length should be geodesic
 
       if (forcePlanar) {
-        trackLengthInRegion = planarArcLengthInsideBoundary(track.coords as Array<Coordinate>, knownTrackLength, boundaryParams ??= prepareBoundaryParams(feature));
+        trackLengthInRegion = planarArcLengthInsideBoundary(
+          track.coords as Array<Coordinate>,
+          knownTrackLength,
+          (boundaryParams ??= prepareBoundaryParams(feature)),
+        );
       } else {
-        trackLengthInRegion = geodesicArcLengthInsideBoundary(track.coords as Array<Coordinate>, feature, featureBBox, knownTrackLength);
+        trackLengthInRegion = geodesicArcLengthInsideBoundary(
+          track.coords as Array<Coordinate>,
+          feature,
+          featureBBox,
+          knownTrackLength,
+        );
       }
 
       if (trackLengthInRegion > 0) {
         trackIds.set(track.id, trackLengthInRegion);
-        trackLengths.has(track.trackType!) ? trackLengths.set(track.trackType!, trackLengths.get(track.trackType!)! + trackLengthInRegion) :
-          trackLengths.set(track.trackType!, trackLengthInRegion);
+        trackLengths.has(track.trackType!)
+          ? trackLengths.set(
+              track.trackType!,
+              trackLengths.get(track.trackType!)! + trackLengthInRegion,
+            )
+          : trackLengths.set(track.trackType!, trackLengthInRegion);
       }
     });
     return { trackIds, trackLengths };
@@ -254,15 +340,12 @@ export class RegionDataBuilder {
     };
   }
 
-  private getRoutesWithinRegion(
-    routes: Route[],
-    stationNodes: Set<string>
-  ) {
+  private getRoutesWithinRegion(routes: Route[], stationNodes: Set<string>) {
     const routesWithinRegion = new Set<string>();
     const routeDisplayParams = new Map<string, RouteDisplayParams>();
 
     for (const route of routes) {
-      if (!route.stNodes?.some(n => stationNodes.has(n.id))) {
+      if (!route.stNodes?.some((n) => stationNodes.has(n.id))) {
         continue;
       }
       routesWithinRegion.add(route.id);
@@ -272,4 +355,3 @@ export class RegionDataBuilder {
     return { routes: routesWithinRegion, routeDisplayParams };
   }
 }
-

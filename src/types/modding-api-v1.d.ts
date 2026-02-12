@@ -2,7 +2,6 @@
  * Subway Builder API v1.0.0 (vendored local copy)
  */
 
-
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
 // =============================================================================
@@ -10,7 +9,12 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 // =============================================================================
 
 export type Coordinate = [longitude: number, latitude: number];
-export type BoundingBox = [minLon: number, minLat: number, maxLon: number, maxLat: number];
+export type BoundingBox = [
+  minLon: number,
+  minLat: number,
+  maxLon: number,
+  maxLat: number,
+];
 
 // =============================================================================
 // CITY TYPES
@@ -72,7 +76,12 @@ export interface TrainTypeStats {
   scissorsCrossoverCost: number;
 }
 
-export type ElevationType = 'DEEP_BORE' | 'STANDARD_TUNNEL' | 'CUT_AND_COVER' | 'AT_GRADE' | 'ELEVATED';
+export type ElevationType =
+  | 'DEEP_BORE'
+  | 'STANDARD_TUNNEL'
+  | 'CUT_AND_COVER'
+  | 'AT_GRADE'
+  | 'ELEVATED';
 
 export interface TrainType {
   id: string;
@@ -354,26 +363,25 @@ export interface CompletedCommute {
   size: number;
   journeyEnd: number;
   journeyStart: number;
-  origin: "work" | "home";
+  origin: 'work' | 'home';
   stationRoutes: StationRoute[];
 }
 
 export interface CompletedPopCommute {
   modeChoice: ModeChoiceStats;
-  transitPaths: unknown[]
-  walking: WalkingCommute
+  transitPaths: unknown[];
+  walking: WalkingCommute;
 }
 
 export interface WalkingCommute {
-  time: number,
-  distance: number
+  time: number;
+  distance: number;
 }
 
 export interface StationRoute {
   stationIds: string[];
   routeId: string;
 }
-
 
 export interface StationRidership {
   stationId: string;
@@ -560,7 +568,7 @@ export interface UIStyledButtonOptions extends UIButtonOptions {
   size?: StyledButtonSize;
 }
 
-export interface UIStyledToggleOptions extends UIToggleOptions { }
+export interface UIStyledToggleOptions extends UIToggleOptions {}
 
 export interface UIStyledSliderOptions extends UISliderOptions {
   showValue?: boolean;
@@ -861,10 +869,21 @@ export interface ModdingAPI {
     setTileURLOverride(override: TileURLOverride): void;
     setLayerOverride(override: LayerOverride): void;
     setRoutingServiceOverride(override: RoutingServiceOverride): void;
-    getRoutingServiceOverride(cityCode: string): RoutingServiceOverride | undefined;
-    queryRoute(cityCode: string, origin: Coordinate, destination: Coordinate): Promise<RouteResult | null>;
-    setDefaultLayerVisibility(cityCode: string, visibility: DefaultLayerVisibility): void;
-    getDefaultLayerVisibility(cityCode: string): DefaultLayerVisibility | undefined;
+    getRoutingServiceOverride(
+      cityCode: string,
+    ): RoutingServiceOverride | undefined;
+    queryRoute(
+      cityCode: string,
+      origin: Coordinate,
+      destination: Coordinate,
+    ): Promise<RouteResult | null>;
+    setDefaultLayerVisibility(
+      cityCode: string,
+      visibility: DefaultLayerVisibility,
+    ): void;
+    getDefaultLayerVisibility(
+      cityCode: string,
+    ): DefaultLayerVisibility | undefined;
   };
 
   // Game constants
@@ -914,7 +933,10 @@ export interface ModdingAPI {
     setPrimaryColor(color: string): void;
     setCSSVariable(name: string, value: string): void;
     resetColors(): void;
-    registerComponent(placement: UIPlacement, options: UIComponentOptions): void;
+    registerComponent(
+      placement: UIPlacement,
+      options: UIComponentOptions,
+    ): void;
     unregisterComponent(placement: UIPlacement, id: string): void;
     getComponents(placement: UIPlacement): UIComponentOptions[];
     // Toolbar/Panel methods (UNDOCUMENTED)
@@ -922,9 +944,18 @@ export interface ModdingAPI {
     addToolbarPanel(options: UIToolbarPanelOptions): void;
     addFloatingPanel(options: UIFloatingPanelOptions): void;
     addMainMenuButton(options: UIMainMenuButtonOptions): void;
-    addStyledButton(placement: UIPlacement, options: UIStyledButtonOptions): void;
-    addStyledToggle(placement: UIPlacement, options: UIStyledToggleOptions): void;
-    addStyledSlider(placement: UIPlacement, options: UIStyledSliderOptions): void;
+    addStyledButton(
+      placement: UIPlacement,
+      options: UIStyledButtonOptions,
+    ): void;
+    addStyledToggle(
+      placement: UIPlacement,
+      options: UIStyledToggleOptions,
+    ): void;
+    addStyledSlider(
+      placement: UIPlacement,
+      options: UIStyledSliderOptions,
+    ): void;
     // Layer visibility methods (UNDOCUMENTED)
     getAvailableLayers(): string[];
     getLayerVisibility(layerId: string): boolean;
@@ -948,16 +979,27 @@ export interface ModdingAPI {
     onStationBuilt(callback: (station: Station) => void): void;
     onStationDeleted(callback: (stationId: string) => void): void;
     onRouteCreated(callback: (route: Route) => void): void;
-    onRouteDeleted(callback: (routeId: string, routeBullet: string) => void): void;
+    onRouteDeleted(
+      callback: (routeId: string, routeBullet: string) => void,
+    ): void;
     onTrackBuilt(callback: (tracks: Track[]) => void): void;
     onBlueprintPlaced(callback: (tracks: Track[]) => void): void;
     onDemandChange(callback: (popCount: number) => void): void;
-    onTrackChange(callback: (changeType: 'add' | 'delete', count: number) => void): void;
+    onTrackChange(
+      callback: (changeType: 'add' | 'delete', count: number) => void,
+    ): void;
     onTrainSpawned(callback: (train: Train) => void): void;
     onTrainDeleted(callback: (trainId: string, routeId: string) => void): void;
     onPauseChanged(callback: (isPaused: boolean) => void): void;
     onSpeedChanged(callback: (newSpeed: GameSpeed) => void): void;
-    onMoneyChanged(callback: (newBalance: number, change: number, type: 'revenue' | 'expense', category?: string) => void): void;
+    onMoneyChanged(
+      callback: (
+        newBalance: number,
+        change: number,
+        type: 'revenue' | 'expense',
+        category?: string,
+      ) => void,
+    ): void;
     onGameSaved(callback: (saveName: string) => void): void;
     onGameLoaded(callback: (saveName: string) => void): void;
     // Hooks (UNDOCUMENTED)
@@ -1004,8 +1046,12 @@ export interface ModdingAPI {
     // Methods (UNDOCUMENTED)
     getModeChoiceStats(): ModeChoiceStats;
     getCompletedCommutes(): CompletedCommute[];
-    getStationRidership(stationId?: string | null): StationRidership[] | StationRidershipDetails | StationRidershipSummary;
-    getRouteRidership(routeId?: string | null): RouteRidership[] | RouteRidershipDetails;
+    getStationRidership(
+      stationId?: string | null,
+    ): StationRidership[] | StationRidershipDetails | StationRidershipSummary;
+    getRouteRidership(
+      routeId?: string | null,
+    ): RouteRidership[] | RouteRidershipDetails;
   };
 
   // Pop timing
@@ -1092,7 +1138,12 @@ export interface ChanceInstance {
   integer(options?: { min?: number; max?: number }): number;
   floating(options?: { min?: number; max?: number; fixed?: number }): number;
   string(options?: { length?: number; pool?: string }): string;
-  name(options?: { middle?: boolean; middle_initial?: boolean; prefix?: boolean; suffix?: boolean }): string;
+  name(options?: {
+    middle?: boolean;
+    middle_initial?: boolean;
+    prefix?: boolean;
+    suffix?: boolean;
+  }): string;
   sentence(options?: { words?: number }): string;
   paragraph(options?: { sentences?: number }): string;
   pick<T>(arr: T[]): T;
@@ -1101,5 +1152,3 @@ export interface ChanceInstance {
   // ... many more methods available
   [key: string]: unknown;
 }
-
-

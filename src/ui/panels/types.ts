@@ -1,5 +1,5 @@
-export type NumberDisplay = "absolute" | "percentage";
-export type SortDirection = "asc" | "desc";
+export type NumberDisplay = 'absolute' | 'percentage';
+export type SortDirection = 'asc' | 'desc';
 
 export interface RegionsPanelRenderer {
   initialize(): void;

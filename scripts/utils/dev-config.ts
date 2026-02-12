@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+
 import { loadYAML } from './files';
 
 type RawConfig = {
@@ -23,7 +24,9 @@ function normalizeConfig(rawConfig: RawConfig): DevConfig {
   const modDirName = rawConfig.modDirName ?? 'regions'; // Default to regions
 
   if (!gamePath || !baseModsDir || !modDirName) {
-    console.error('Missing required config. Set gamePath, baseModsDir, and modDirName in config.yaml.');
+    console.error(
+      'Missing required config. Set gamePath, baseModsDir, and modDirName in config.yaml.',
+    );
     process.exit(1);
   }
 

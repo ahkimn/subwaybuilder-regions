@@ -8,7 +8,7 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.2.0`  
+_Latest Mod Version:_ `v0.2.1`  
 _Latest Tested Game Version:_ `v1.0.2`
 
 ## Table of Contents
@@ -21,8 +21,9 @@ _Latest Tested Game Version:_ `v1.0.2`
 - [Usage](#usage)
 - [Planned Features](PLANNED_FEATURES.md#planned-features)
 - [Known Issues](KNOWN_ISSUES.md#known-issues)
-- [Changelog](#changelog)
+- [Changelog](CHANGELOG.md#changelog)
 - [Contributing](#contributing)
+  - [Developer Commands](#developer-commands)
 - [Credits](#credits)
 
 ## Features
@@ -69,7 +70,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 ### GeoJSON Feature Requirements
 
 - **Required**
-  - `ID` – unique identifier
+  - `ID` - unique identifier
   - `NAME`
 
 - **Optional**
@@ -160,7 +161,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
 6. Install
 
-   Move or the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
+   Move the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
    Alternatively, use the following command (requires `config.yaml`) to create symlinks between the dev folder and the mod directory:
 
@@ -170,12 +171,23 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
 
-7. Dev Launch (Optional)
+7. Validate Behavior
 
    Configure `config.yaml`. Then, use the following command to run the game from terminal with the Console enabled.
 
    ```
    npm run dev
+
+   ```
+
+8. Contribute
+
+   Once new behavior is verified, run code quality checks before opening a PR:
+
+   ```
+   npx tsc --noEmit
+   npm run lint
+   npm run format:check
    ```
 
 ### Disclaimer
@@ -255,46 +267,7 @@ See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for the current list of major/minor issue
 
 ## Changelog
 
-### v0.2.0 - 2026-02-12
-
-_Game version_ v1.0.2
-
-#### New Features
-
-- Added initial **Aggregate Data View** panel (`Regions Overview`) using the fixed floating panel API provided in the game's v1.0.0 update
-- Added initial overview panel UX structure:
-  - Tabbed layout (`Overview` + placeholder tabs)
-  - `Overview` contains search + sortable table for viewing game data across multiple regions
-- Added state sync between overview panel and existing mod UI:
-  - `Overview` row selection updates map highlight + region info panel
-  - Active selection state is reflected across map/info/overview surfaces
-
-#### Other Updates
-
-- Refactored commuter refresh handling into a reusable loop handler class with support for fixed `onDemandChange` game hook
-- Refactored DataTable / SelectRow files to support both React and DOM-only implementations
-- More robust map/panel lifecycle management during city/map transitions
-- Improved map-layer toggle injection/reinjection, standardized `data-mod-id` / `data-mod-role` selectors
-
-#### Bugfixes
-
-- Fixed intermittent map rebind errors during map instance replacement on new city load
-- Fixed `Region Info` observer teardown behavior to clear active selection + map highlight when non-mod panels are rendered
-
-#### New Issues
-
-- Active selection via `Regions Overview` is made even if map layer is not visible
-
-### v0.1.0 — 2026-02-10 (Initial Release)
-
-_Game version_ v1.0.0
-
-#### New Features
-
-- Added visualization for preset region boundaries + labels
-- Added information panel when a user selects a region within the game
-  - Panel contains region summary statistics as well as commuter / infrastructure data
-- Added initial dev scripts to fetch/process data for preset cities
+See [CHANGELOG.md](CHANGELOG.md#changelog) for full release notes.
 
 ## Contributing
 
@@ -304,6 +277,30 @@ Issues and Pull Requests are welcome. Please include:
 - Mod version
 - Platform
 - Other Relevant Details
+
+### Developer Commands
+
+The following are developer commands available within the repository, grouped by purpose:
+
+#### Quality Checks
+
+- `npm run lint`: Runs ESLint checks for `src/` and `scripts/`.
+- `npm run lint:fix`: Applies auto-fixable ESLint changes (import ordering, etc.).
+- `npm run format`: Applies Prettier formatting for repository files.
+- `npm run format:check`: Verifies Prettier formatting without modifying files.
+- `npx tsc --noEmit`: Runs TypeScript checks.
+
+#### Build / Run
+
+- `npm run build`: Builds and packages `src/` into `dist/index.js`.
+- `npm run build:dev`: Builds `dist/index.js` then launches the game.
+- `npm run dev`: Launches SubwayBuilder with debug mode enabled.
+- `npm run link`: Creates a symlink for `dist/index.js` in the game's mod directory.
+
+#### Data Extraction / Serving
+
+- `npm run extract:map-features`: Extracts boundary GeoJSONs for a city for use by the mod.
+- `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
 
 ## Credits
 

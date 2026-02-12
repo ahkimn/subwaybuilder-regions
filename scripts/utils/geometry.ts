@@ -1,9 +1,20 @@
-import type { Feature, Point, Polygon, MultiPolygon, Geometry, GeoJsonProperties } from 'geojson';
-import * as turf from '@turf/turf';
 import { cleanCoords } from '@turf/clean-coords';
+import * as turf from '@turf/turf';
+import type {
+  Feature,
+  GeoJsonProperties,
+  Geometry,
+  MultiPolygon,
+  Point,
+  Polygon,
+} from 'geojson';
 import polylabel from 'polylabel';
-import { isPolygonFeature, isFullyWithinBBox } from '../../src/core/geometry/helpers';
-import { DataConfig } from '../extract/handler-types';
+
+import {
+  isFullyWithinBBox,
+  isPolygonFeature,
+} from '../../src/core/geometry/helpers';
+import type { DataConfig } from '../extract/handler-types';
 import { parseNumber } from './cli';
 
 // --- Basic Geometry & Helpers --- //
@@ -15,7 +26,7 @@ export type BoundaryBox = {
 };
 
 export function isFeatureCollection(
-  geoJson: GeoJSON.GeoJSON
+  geoJson: GeoJSON.GeoJSON,
 ): geoJson is GeoJSON.FeatureCollection {
   return geoJson.type === 'FeatureCollection';
 }
@@ -24,7 +35,10 @@ export function bboxToGeometryString(bbox: BoundaryBox): string {
   return `${bbox.west},${bbox.south},${bbox.east},${bbox.north}`;
 }
 
-export function expandBBox(bbox: BoundaryBox, paddingDegrees: number): BoundaryBox {
+export function expandBBox(
+  bbox: BoundaryBox,
+  paddingDegrees: number,
+): BoundaryBox {
   return {
     west: bbox.west - paddingDegrees,
     south: bbox.south - paddingDegrees,
@@ -40,12 +54,9 @@ type LabelCandidate = {
   lng: number;
   method: string;
   withinPolygon: boolean;
-}
+};
 
-function getLargestPolygon(
-  feature: Feature<MultiPolygon>
-): Polygon {
-
+function getLargestPolygon(feature: Feature<MultiPolygon>): Polygon {
   let maxArea = -Infinity;
   let largestPolygon: Polygon | null = null;
 
@@ -68,13 +79,15 @@ function getLargestPolygon(
   return largestPolygon;
 }
 
-function getLabelCandidates(feature: Feature<Polygon | MultiPolygon>): LabelCandidate[] {
+function getLabelCandidates(
+  feature: Feature<Polygon | MultiPolygon>,
+): LabelCandidate[] {
+  const candidates: Array<{ method: string; point: Feature<Point> }> = [];
 
-  const candidates: Array<{ method: string, point: Feature<Point> }> = [];
-
-  const coords = feature.geometry.type === 'Polygon' ?
-    feature.geometry.coordinates :
-    getLargestPolygon(feature as Feature<MultiPolygon>).coordinates;
+  const coords =
+    feature.geometry.type === 'Polygon'
+      ? feature.geometry.coordinates
+      : getLargestPolygon(feature as Feature<MultiPolygon>).coordinates;
 
   if (!coords || coords.length === 0) {
     throw new Error('Feature has no valid coordinates');
@@ -83,8 +96,8 @@ function getLabelCandidates(feature: Feature<Polygon | MultiPolygon>): LabelCand
   try {
     candidates.push({
       method: 'polylabel',
-      point: turf.point(polylabel(coords, 1e-6))
-    })
+      point: turf.point(polylabel(coords, 1e-6)),
+    });
   } catch (err) {
     console.warn('\tFailed to compute polylabel for feature:', feature.id, err);
   }
@@ -92,40 +105,49 @@ function getLabelCandidates(feature: Feature<Polygon | MultiPolygon>): LabelCand
   try {
     candidates.push({
       method: 'pointOnFeature',
-      point: turf.pointOnFeature(feature)
-    })
+      point: turf.pointOnFeature(feature),
+    });
   } catch (err) {
-    console.warn('\tFailed to compute pointOnFeature for feature:', feature.id, err);
+    console.warn(
+      '\tFailed to compute pointOnFeature for feature:',
+      feature.id,
+      err,
+    );
   }
 
   try {
     candidates.push({
       method: 'centerOfMass',
-      point: turf.centerOfMass(feature)
-    })
+      point: turf.centerOfMass(feature),
+    });
   } catch (err) {
-    console.warn('\tFailed to compute centerOfMass for feature:', feature.id, err);
+    console.warn(
+      '\tFailed to compute centerOfMass for feature:',
+      feature.id,
+      err,
+    );
   }
 
   try {
     candidates.push({
       method: 'centroid',
-      point: turf.centroid(feature)
-    })
+      point: turf.centroid(feature),
+    });
   } catch (err) {
     console.warn('\tFailed to compute centroid for feature:', feature.id, err);
   }
 
-
   if (candidates.length === 0) {
-    throw new Error('Unable to determine label point for feature: ' + feature.id);
+    throw new Error(
+      'Unable to determine label point for feature: ' + feature.id,
+    );
   }
 
   return candidates.map(({ method, point }) => ({
     method: method,
     lat: point.geometry.coordinates[1],
     lng: point.geometry.coordinates[0],
-    withinPolygon: turf.booleanPointInPolygon(point, feature)
+    withinPolygon: turf.booleanPointInPolygon(point, feature),
   }));
 }
 
@@ -134,15 +156,14 @@ function getLabelCandidates(feature: Feature<Polygon | MultiPolygon>): LabelCand
 export function filterAndClipRegionsToBoundary(
   shapeJSON: GeoJSON.FeatureCollection,
   bbox: BoundaryBox,
-  dataConfig: DataConfig
+  dataConfig: DataConfig,
 ): Array<Feature<Geometry, GeoJsonProperties>> {
-
   const bboxPolygon = turf.bboxPolygon([
     bbox.west,
     bbox.south,
     bbox.east,
     bbox.north,
-  ])
+  ]);
 
   const results = new Array<Feature<Geometry, GeoJsonProperties>>();
 
@@ -150,19 +171,19 @@ export function filterAndClipRegionsToBoundary(
     if (!isPolygonFeature(feature)) {
       continue;
     }
-    if (!turf.booleanIntersects(
-      bboxPolygon,
-      feature
-    )) {
+    if (!turf.booleanIntersects(bboxPolygon, feature)) {
       continue;
     }
 
     const intersection = turf.intersect(
-      turf.featureCollection([feature, bboxPolygon])
+      turf.featureCollection([feature, bboxPolygon]),
     );
     const cleanedIntersection = cleanCoords(intersection);
 
-    if (!cleanedIntersection || cleanedIntersection.geometry.coordinates.length === 0) {
+    if (
+      !cleanedIntersection ||
+      cleanedIntersection.geometry.coordinates.length === 0
+    ) {
       // Handle edge case of touching/malformed geometry
       console.warn('No valid intersection geometry for feature:', feature.id);
       continue;
@@ -172,38 +193,46 @@ export function filterAndClipRegionsToBoundary(
     const clippedRegion = fullyWithinBoundary ? feature : cleanedIntersection;
 
     // Try label with the original (unclipped) geometry if it is fully within the boundary
-    const labelCandidates: LabelCandidate[] = getLabelCandidates(fullyWithinBoundary ? feature : clippedRegion);
+    const labelCandidates: LabelCandidate[] = getLabelCandidates(
+      fullyWithinBoundary ? feature : clippedRegion,
+    );
 
     // Input GeoJSON should include properties
     const featureProperties: GeoJsonProperties = feature.properties!;
 
     // Find first label candidate that is within the polygon, otherwise default to the first candidate
-    const primaryLabel = labelCandidates.find(c => c.withinPolygon) || labelCandidates[0];
+    const primaryLabel =
+      labelCandidates.find((c) => c.withinPolygon) || labelCandidates[0];
 
     let regionProperties: GeoJsonProperties = {
       ID: featureProperties[dataConfig.idProperty]!,
       NAME: featureProperties[dataConfig.nameProperty]!,
       DISPLAY_NAME: dataConfig.applicableNameProperties
         ?.map((key) => featureProperties[key])
-        .find((v): v is string => typeof v === 'string' && v.trim().length > 0)!,
+        .find(
+          (v): v is string => typeof v === 'string' && v.trim().length > 0,
+        )!,
       LAT: primaryLabel.lat,
       LNG: primaryLabel.lng,
       LABEL_POINTS: {
         primary: { lat: primaryLabel.lat, lng: primaryLabel.lng },
-        candidates: labelCandidates
+        candidates: labelCandidates,
       },
       WITHIN_BBOX: fullyWithinBoundary,
       AREA_WITHIN_BBOX: turf.area(clippedRegion) / 1_000_000,
-      TOTAL_AREA: turf.area(feature) / 1_000_000
-    }
+      TOTAL_AREA: turf.area(feature) / 1_000_000,
+    };
 
-    if (dataConfig.populationProperty && featureProperties[dataConfig.populationProperty]) {
+    if (
+      dataConfig.populationProperty &&
+      featureProperties[dataConfig.populationProperty]
+    ) {
       const populationValue = featureProperties[dataConfig.populationProperty]!;
       regionProperties = {
         ...regionProperties,
-        POPULATION: parseNumber(populationValue)
-      }
-    };
+        POPULATION: parseNumber(populationValue),
+      };
+    }
 
     clippedRegion.properties = regionProperties;
     clippedRegion.id = feature.id;

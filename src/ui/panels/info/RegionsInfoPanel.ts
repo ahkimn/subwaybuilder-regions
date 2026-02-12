@@ -1,11 +1,21 @@
-import { REGIONS_INFO_PANEL_ID, REGIONS_INFO_PANEL_MOD_ID, REGIONS_INFO_PANEL_TITLE, INFO_PANEL_MIN_WIDTH } from "../../../core/constants";
-import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
-import { RegionGameData, RegionSelection, UIState } from "../../../core/types";
-import { PanelHeader } from "../../elements/PanelHeader";
-import { SelectRow } from "../../elements/SelectRow";
-import { createIconElement, FileChartColumnIcon, TramFrontIcon } from "../../elements/utils/get-icon";
-import { renderStatisticsView, renderCommutersView } from "./render";
-import { CommutersViewState, RegionsInfoPanelView } from "./types";
+import {
+  INFO_PANEL_MIN_WIDTH,
+  REGIONS_INFO_PANEL_ID,
+  REGIONS_INFO_PANEL_MOD_ID,
+  REGIONS_INFO_PANEL_TITLE,
+} from '../../../core/constants';
+import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
+import type { RegionGameData, UIState } from '../../../core/types';
+import { RegionSelection } from '../../../core/types';
+import { PanelHeader } from '../../elements/PanelHeader';
+import { SelectRow } from '../../elements/SelectRow';
+import {
+  createIconElement,
+  FileChartColumnIcon,
+  TramFrontIcon,
+} from '../../elements/utils/get-icon';
+import { renderCommutersView, renderStatisticsView } from './render';
+import type { CommutersViewState, RegionsInfoPanelView } from './types';
 
 export class RegionsInfoPanel {
   private rootId: string;
@@ -27,15 +37,14 @@ export class RegionsInfoPanel {
     sortIndex: 1, // default to sorting by commuter count
     previousSortIndex: 0, // default tiebreaker to region name
     sortDirection: 'desc',
-    previousSortDirection: 'asc'
-  }
+    previousSortDirection: 'asc',
+  };
 
   constructor(
     private regionDataManager: RegionDataManager,
     private readonly uiState: Readonly<UIState>,
-    onClose: () => void
+    onClose: () => void,
   ) {
-
     this.rootId = REGIONS_INFO_PANEL_ID;
 
     this.root = document.createElement('div');
@@ -47,10 +56,10 @@ export class RegionsInfoPanel {
       'border border-border/50',
       'h-fit rounded-lg',
       'text-sm shadow-lg overflow-hidden',
-      'w-full max-h-full flex flex-col min-h-0'
+      'w-full max-h-full flex flex-col min-h-0',
     ].join(' ');
 
-    const { el: header, } = PanelHeader(REGIONS_INFO_PANEL_TITLE, onClose);
+    const { el: header } = PanelHeader(REGIONS_INFO_PANEL_TITLE, onClose);
     this.root.appendChild(header);
 
     // Wrappers around main content
@@ -62,26 +71,26 @@ export class RegionsInfoPanel {
     b2.className = `p-2 flex flex-1 min-h-0 bg-primary-foreground/60 backdrop-blur-sm min-w-${INFO_PANEL_MIN_WIDTH} justify-center overflow-hidden`;
     b1.appendChild(b2);
 
-
     const b3 = document.createElement('div');
     b3.className = `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`;
     b2.appendChild(b3);
 
-    this.mainSelectRow = new SelectRow(
-      `${this.rootId}-main-select`,
-      [
-        {
-          label: 'Summary',
-          onSelect: () => { this.setView('statistics'); },
-          icon: createIconElement(FileChartColumnIcon, { size: 24 })
+    this.mainSelectRow = new SelectRow(`${this.rootId}-main-select`, [
+      {
+        label: 'Summary',
+        onSelect: () => {
+          this.setView('statistics');
         },
-        {
-          label: 'Commuters',
-          onSelect: () => { this.setView('commuters'); },
-          icon: createIconElement(TramFrontIcon, { size: 24 })
-        }
-      ]
-    );
+        icon: createIconElement(FileChartColumnIcon, { size: 24 }),
+      },
+      {
+        label: 'Commuters',
+        onSelect: () => {
+          this.setView('commuters');
+        },
+        icon: createIconElement(TramFrontIcon, { size: 24 }),
+      },
+    ]);
     b3.appendChild(this.mainSelectRow.element);
 
     this.contentPanel = document.createElement('div');
@@ -96,19 +105,31 @@ export class RegionsInfoPanel {
     this.tryRender(true);
   }
 
-  private async prepareData(forceRefresh: boolean, token: number): Promise<void> {
+  private async prepareData(
+    forceRefresh: boolean,
+    token: number,
+  ): Promise<void> {
     if (this.activeView === 'commuters' && forceRefresh) {
-      await this.regionDataManager.ensureExistsData(this.uiState, 'commuter', { forceBuild: true });
+      await this.regionDataManager.ensureExistsData(this.uiState, 'commuter', {
+        forceBuild: true,
+      });
       return;
     }
 
     if (this.activeView === 'statistics' && forceRefresh) {
       const selectionSnapshot = this.uiState.activeSelection;
       // Do not force rebuild infra data since it is more computationally expensive and will not change without user input
-      void this.regionDataManager.ensureExistsData(this.uiState, 'infra', { forceBuild: false })
+      void this.regionDataManager
+        .ensureExistsData(this.uiState, 'infra', { forceBuild: false })
         .then(() => {
           // Let computation continue async and attempt to rerender once the data is ready and if the user has not changed selection / view
-          if (this.activeView === 'statistics' && RegionSelection.isEqual(selectionSnapshot, this.uiState.activeSelection)) {
+          if (
+            this.activeView === 'statistics' &&
+            RegionSelection.isEqual(
+              selectionSnapshot,
+              this.uiState.activeSelection,
+            )
+          ) {
             requestAnimationFrame(() => this.tryRender());
           }
         });
@@ -119,7 +140,7 @@ export class RegionsInfoPanel {
     this.gameData = this.regionDataManager.getGameData(this.uiState);
 
     if (!this.gameData) {
-      console.warn("[Regions] No game data set for info panel rendering");
+      console.warn('[Regions] No game data set for info panel rendering');
       return;
     }
 
@@ -129,11 +150,15 @@ export class RegionsInfoPanel {
         viewNode = renderStatisticsView(this.gameData);
         break;
       case 'commuters':
-        viewNode =
-          renderCommutersView(this.gameData, this.commutersViewState, direction => {
+        viewNode = renderCommutersView(
+          this.gameData,
+          this.commutersViewState,
+          (direction) => {
             if (this.commutersViewState.direction === direction) return;
-            this.commutersViewState.direction = direction; requestAnimationFrame(() => this.tryRender());
-          })
+            this.commutersViewState.direction = direction;
+            requestAnimationFrame(() => this.tryRender());
+          },
+        );
         break;
     }
 
@@ -141,11 +166,13 @@ export class RegionsInfoPanel {
   }
 
   private async render(forceRefresh: boolean = false) {
-    const token = ++this.renderToken
+    const token = ++this.renderToken;
     await this.prepareData(forceRefresh, token);
 
     if (token !== this.renderToken) {
-      console.warn(`Aborting render due to newer render token. Current: ${this.renderToken}. Required: ${token}`);
+      console.warn(
+        `Aborting render due to newer render token. Current: ${this.renderToken}. Required: ${token}`,
+      );
       return;
     }
     this.renderView();

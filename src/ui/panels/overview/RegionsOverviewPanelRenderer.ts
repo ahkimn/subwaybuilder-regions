@@ -1,14 +1,17 @@
-import { REGIONS_OVERVIEW_PANEL_ID, REGIONS_OVERVIEW_PANEL_TITLE } from "../../../core/constants";
-import type { RegionSelection, UIState } from "../../../core/types";
-import type { ModdingAPI } from "../../../types/modding-api-v1";
-import { ReactToolbarPanelHost } from "../shared/ReactToolbarPanelHost";
-import { RegionsPanelRenderer } from "../types";
-import { RegionsOverviewPanel } from "./RegionsOverviewPanel";
-import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
+import {
+  REGIONS_OVERVIEW_PANEL_ID,
+  REGIONS_OVERVIEW_PANEL_TITLE,
+} from '../../../core/constants';
+import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
+import type { RegionSelection, UIState } from '../../../core/types';
+import type { ModdingAPI } from '../../../types/modding-api-v1';
+import { ReactToolbarPanelHost } from '../shared/ReactToolbarPanelHost';
+import type { RegionsPanelRenderer } from '../types';
+import { RegionsOverviewPanel } from './RegionsOverviewPanel';
 
 export type RegionsOverviewPanelEvents = {
   onRegionSelect?: (payload: RegionSelection) => void;
-}
+};
 
 export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
@@ -19,12 +22,11 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   constructor(
     private readonly api: ModdingAPI,
     private readonly state: Readonly<UIState>,
-    private readonly dataManager: RegionDataManager
+    private readonly dataManager: RegionDataManager,
   ) {
-
     this.host = new ReactToolbarPanelHost(api, {
       id: REGIONS_OVERVIEW_PANEL_ID,
-      icon: "Table2",
+      icon: 'Table2',
       title: REGIONS_OVERVIEW_PANEL_TITLE,
       width: 720,
     });
@@ -38,9 +40,13 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
     if (this.overviewPanel !== null) return;
     if (!this.state.cityCode) return;
 
-    const currentDatasetIds = this.dataManager.getCityDatasetIds(this.state.cityCode);
+    const currentDatasetIds = this.dataManager.getCityDatasetIds(
+      this.state.cityCode,
+    );
     if (currentDatasetIds.length === 0) {
-      console.warn("[Regions] No region datasets available for current city, no overview panel will be shown.");
+      console.warn(
+        '[Regions] No region datasets available for current city, no overview panel will be shown.',
+      );
       return;
     }
 
@@ -49,7 +55,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
       this.state,
       this.dataManager,
       currentDatasetIds,
-      this.events.onRegionSelect ?? (() => { }),
+      this.events.onRegionSelect ?? (() => {}),
       () => this.host.requestRender(),
     );
 

@@ -1,7 +1,8 @@
 // --- Argument Validation --- //
 
-import minimist from "minimist";
-import { BoundaryBox } from "./geometry";
+import minimist from 'minimist';
+
+import type { BoundaryBox } from './geometry';
 
 const AVAILABLE_COUNTRY_CODES = new Set(['GB', 'US']);
 
@@ -16,10 +17,7 @@ export type ExtractMapFeaturesArgs = {
   useLocalData?: boolean;
 };
 
-export function requireString(
-  value: any,
-  name: string
-): string {
+export function requireString(value: any, name: string): string {
   if (typeof value !== 'string' || value.length === 0) {
     console.error(`Missing or invalid argument: --${name}`);
     process.exit(1);
@@ -27,10 +25,7 @@ export function requireString(
   return value;
 }
 
-export function requireNumber(
-  value: any,
-  name: string
-): number {
+export function requireNumber(value: any, name: string): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
@@ -38,18 +33,14 @@ export function requireNumber(
   process.exit(1);
 }
 
-export function parseNumber(
-  value: string
-): number | undefined {
+export function parseNumber(value: string): number | undefined {
   const normalizedValue = value.replace(/,/g, '').trim();
   const parsedNumber = Number(normalizedValue);
 
   return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
 }
 
-
 export function parseArgs(): ExtractMapFeaturesArgs {
-
   let argv = minimist(process.argv.slice(2), {
     string: ['data-type', 'city-code', 'country-code'],
     boolean: ['use-local-data'],
@@ -64,7 +55,9 @@ export function parseArgs(): ExtractMapFeaturesArgs {
   const countryCode: string = requireString(argv.countryCode, 'country-code');
 
   if (!AVAILABLE_COUNTRY_CODES.has(countryCode)) {
-    console.error(`Unsupported country code: ${countryCode}, supported codes are: ${Array.from(AVAILABLE_COUNTRY_CODES).join(', ')}`);
+    console.error(
+      `Unsupported country code: ${countryCode}, supported codes are: ${Array.from(AVAILABLE_COUNTRY_CODES).join(', ')}`,
+    );
     process.exit(1);
   }
 
@@ -75,7 +68,16 @@ export function parseArgs(): ExtractMapFeaturesArgs {
 
   const useLocalData = argv['use-local-data'] as boolean | undefined;
 
-  console.log('Parsed arguments:', { "data-type": dataType, countryCode: countryCode, cityCode: cityCode, south: south, west: west, north: north, east: east, useLocalData: useLocalData });
+  console.log('Parsed arguments:', {
+    'data-type': dataType,
+    countryCode: countryCode,
+    cityCode: cityCode,
+    south: south,
+    west: west,
+    north: north,
+    east: east,
+    useLocalData: useLocalData,
+  });
 
   return {
     dataType: dataType!,
@@ -85,13 +87,17 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     west: west,
     north: north,
     east: east,
-    useLocalData: useLocalData
-  }
+    useLocalData: useLocalData,
+  };
 }
 
 // --- Argument Helpers --- //
-export function hasExplicitBBox(args: ExtractMapFeaturesArgs): args is ExtractMapFeaturesArgs & BoundaryBox {
-  return [args.south, args.west, args.north, args.east].every(v => typeof v === 'number');
+export function hasExplicitBBox(
+  args: ExtractMapFeaturesArgs,
+): args is ExtractMapFeaturesArgs & BoundaryBox {
+  return [args.south, args.west, args.north, args.east].every(
+    (v) => typeof v === 'number',
+  );
 }
 
 export function getBBoxFromArgs(args: ExtractMapFeaturesArgs): BoundaryBox {

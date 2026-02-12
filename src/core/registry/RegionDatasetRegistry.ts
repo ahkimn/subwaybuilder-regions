@@ -1,5 +1,8 @@
-import { RegionDataset } from "../datasets/RegionDataset";
-import { RegistryMissingDatasetError, RegistryMissingIndexError } from "../errors";
+import { RegionDataset } from '../datasets/RegionDataset';
+import {
+  RegistryMissingDatasetError,
+  RegistryMissingIndexError,
+} from '../errors';
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
@@ -20,12 +23,14 @@ export class RegionDatasetRegistry {
   // -- Dataset Getters --
   getCityDatasets(cityCode: string): RegionDataset[] {
     return Array.from(this.datasets.values()).filter(
-      (dataset) => dataset.cityCode === cityCode
+      (dataset) => dataset.cityCode === cityCode,
     );
   }
 
   getCityDatasetIds(cityCode: string): string[] {
-    return this.getCityDatasets(cityCode).map(dataset => RegionDataset.getIdentifier(dataset));
+    return this.getCityDatasets(cityCode).map((dataset) =>
+      RegionDataset.getIdentifier(dataset),
+    );
   }
 
   getDatasetByIdentifier(identifier: string): RegionDataset {
@@ -43,9 +48,7 @@ export class RegionDatasetRegistry {
   // -- Dataset Mutations --
   async loadCityDatasets(cityCode: string, onComplete: () => void) {
     const datasets = this.getCityDatasets(cityCode);
-    await Promise.all(
-      datasets.map((dataset) => dataset.load())
-    );
+    await Promise.all(datasets.map((dataset) => dataset.load()));
     onComplete();
   }
 
@@ -56,14 +59,15 @@ export class RegionDatasetRegistry {
     // Expected format of index.json is { [cityCode: string]: { id: string; displayName: string }[] }
     let index: Record<string, { id: string; name: string }[]> = {};
     try {
-      index = await fetch(`${this.serveUrl}/${this.indexFile}`).then(res => res.json());
+      index = await fetch(`${this.serveUrl}/${this.indexFile}`).then((res) =>
+        res.json(),
+      );
     } catch (e) {
       onFetchError();
       throw new RegistryMissingIndexError(this.indexFile, this.serveUrl);
     }
 
     for (const [cityCode, datasets] of Object.entries(index)) {
-
       for (const record of datasets) {
         const { id, name } = record;
         this.registerDataset(
@@ -73,11 +77,11 @@ export class RegionDatasetRegistry {
             {
               type: 'static',
               dataPath: `${this.serveUrl}/${cityCode}/${id}.geojson`,
-              writable: false
+              writable: false,
             },
-            name
-          )
-        )
+            name,
+          ),
+        );
       }
     }
   }
@@ -88,9 +92,11 @@ export class RegionDatasetRegistry {
 
   // -- Debugging --
   printIndex(): void {
-    console.log("Registered Region Datasets:");
+    console.log('Registered Region Datasets:');
     for (const [key, dataset] of this.datasets.entries()) {
-      console.log(` - ${key} (status: ${dataset.status}, writable: ${dataset.isWritable})`);
+      console.log(
+        ` - ${key} (status: ${dataset.status}, writable: ${dataset.isWritable})`,
+      );
     }
   }
 }

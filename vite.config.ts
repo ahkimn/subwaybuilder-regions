@@ -6,26 +6,26 @@ const sourceDirectory = resolve(__dirname, 'src');
 export default {
   resolve: {
     alias: {
-      '@shared': resolve(__dirname, 'shared')
-    }
+      '@shared': resolve(__dirname, 'shared'),
+    },
   },
   build: {
     lib: {
       entry: resolve(sourceDirectory, 'app', 'main.ts'),
       formats: ['iife'],
       name: 'SubwayBuilderRegions',
-      fileName: () => 'index.js'
+      fileName: () => 'index.js',
     },
     rollupOptions: {
       external: ['maplibre-gl'],
       output: {
         globals: {
-          'maplibre-gl': 'maplibregl'
-        }
-      }
+          'maplibre-gl': 'maplibregl',
+        },
+      },
     },
     outDir: 'dist',
     sourcemap: true,
-    minify: false
-  }
+    minify: false,
+  },
 } satisfies UserConfig;

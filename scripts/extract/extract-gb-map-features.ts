@@ -1,11 +1,24 @@
-import path from "path";
-import { ExtractMapFeaturesArgs } from "../utils/cli";
-import { loadGeoJSONFromNDJSON, loadGeoJSON, Row, loadCSV, buildCSVIndex } from "../utils/files";
-import { BoundaryBox, expandBBox } from "../utils/geometry";
-import { BoundaryDataHandler, DataConfig } from "./handler-types";
-import { processAndSaveBoundaries } from "./process";
-import { SOURCE_DATA_DIR } from "../../shared/consts";
-import { fetchGeoJSONFromArcGIS, getBUAONSQuery, getDistrictONSQuery, getWardONSQuery } from "../utils/queries";
+import path from 'path';
+
+import { SOURCE_DATA_DIR } from '../../shared/consts';
+import type { ExtractMapFeaturesArgs } from '../utils/cli';
+import type { Row } from '../utils/files';
+import {
+  buildCSVIndex,
+  loadCSV,
+  loadGeoJSON,
+  loadGeoJSONFromNDJSON,
+} from '../utils/files';
+import type { BoundaryBox } from '../utils/geometry';
+import { expandBBox } from '../utils/geometry';
+import {
+  fetchGeoJSONFromArcGIS,
+  getBUAONSQuery,
+  getDistrictONSQuery,
+  getWardONSQuery,
+} from '../utils/queries';
+import type { BoundaryDataHandler, DataConfig } from './handler-types';
+import { processAndSaveBoundaries } from './process';
 
 /* --- Local Authority Districts (LAD) ---
   Source: https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-may-2025-boundaries-uk-bfc-v2/about
@@ -43,74 +56,123 @@ const WARD_NAME_PROPERTY = 'WD25NM';
 const WARD_WELSH_NAME_PROPERTY = 'WD25NMW';
 
 const GB_DATA_CONFIGS: Record<string, DataConfig> = {
-  'districts': {
-    displayName: "Districts",
+  districts: {
+    displayName: 'Districts',
     idProperty: DISTRICT_CODE_PROPERTY,
     nameProperty: DISTRICT_NAME_PROPERTY,
-    applicableNameProperties: [DISTRICT_WELSH_NAME_PROPERTY, DISTRICT_NAME_PROPERTY],
-    populationProperty: 'Population'
+    applicableNameProperties: [
+      DISTRICT_WELSH_NAME_PROPERTY,
+      DISTRICT_NAME_PROPERTY,
+    ],
+    populationProperty: 'Population',
   },
-  'bua': {
-    displayName: "Built-Up Areas",
+  bua: {
+    displayName: 'Built-Up Areas',
     idProperty: BUA_CODE_PROPERTY,
     nameProperty: BUA_NAME_PROPERTY,
-    applicableNameProperties: [BUA_WELSH_NAME_PROPERTY, BUA_GAELIC_NAME_PROPERTY, BUA_NAME_PROPERTY],
-    populationProperty: 'Population'
+    applicableNameProperties: [
+      BUA_WELSH_NAME_PROPERTY,
+      BUA_GAELIC_NAME_PROPERTY,
+      BUA_NAME_PROPERTY,
+    ],
+    populationProperty: 'Population',
   },
-  'wards': {
-    displayName: "Electoral Wards",
+  wards: {
+    displayName: 'Electoral Wards',
     idProperty: WARD_CODE_PROPERTY,
     nameProperty: WARD_NAME_PROPERTY,
     applicableNameProperties: [WARD_WELSH_NAME_PROPERTY, WARD_NAME_PROPERTY],
-    populationProperty: 'Population'
-  }
-}
-
+    populationProperty: 'Population',
+  },
+};
 
 const GB_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
-  'districts': {
+  districts: {
     dataConfig: GB_DATA_CONFIGS['districts'],
-    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) => extractDistrictBoundaries(bbox, useLocalData)
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
+      extractDistrictBoundaries(bbox, useLocalData),
   },
-  'bua': {
+  bua: {
     dataConfig: GB_DATA_CONFIGS['bua'],
-    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) => extractBUABoundaries(bbox, useLocalData)
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
+      extractBUABoundaries(bbox, useLocalData),
   },
-  'wards': {
+  wards: {
     dataConfig: GB_DATA_CONFIGS['wards'],
-    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) => extractWardBoundaries(bbox, useLocalData)
-  }
-}
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
+      extractWardBoundaries(bbox, useLocalData),
+  },
+};
 
-async function extractDistrictBoundaries(bbox: BoundaryBox, useLocal: boolean = false) {
-  const boundaries: GeoJSON.FeatureCollection = useLocal ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_BOUNDARIES)) : await fetchGeoJSONFromArcGIS(getDistrictONSQuery(bbox));
-  const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS));
-  const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
+async function extractDistrictBoundaries(
+  bbox: BoundaryBox,
+  useLocal: boolean = false,
+) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal
+    ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_BOUNDARIES))
+    : await fetchGeoJSONFromArcGIS(getDistrictONSQuery(bbox));
+  const populationCharacteristics: Row[] = loadCSV(
+    path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS),
+  );
+  const populationIndex: Map<string, string> = buildCSVIndex(
+    populationCharacteristics,
+    'Code',
+    'Population',
+  );
   return { geoJson: boundaries, populationMap: populationIndex };
 }
 
-async function extractBUABoundaries(bbox: BoundaryBox, useLocal: boolean = false) {
-  const boundaries: GeoJSON.FeatureCollection = useLocal ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_BUA_BOUNDARIES)) : await fetchGeoJSONFromArcGIS(getBUAONSQuery(bbox));
-  const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS));
-  const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
+async function extractBUABoundaries(
+  bbox: BoundaryBox,
+  useLocal: boolean = false,
+) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal
+    ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_BUA_BOUNDARIES))
+    : await fetchGeoJSONFromArcGIS(getBUAONSQuery(bbox));
+  const populationCharacteristics: Row[] = loadCSV(
+    path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS),
+  );
+  const populationIndex: Map<string, string> = buildCSVIndex(
+    populationCharacteristics,
+    'Code',
+    'Population',
+  );
   return { geoJson: boundaries, populationMap: populationIndex };
 }
 
-async function extractWardBoundaries(bbox: BoundaryBox, useLocal: boolean = false) {
-  const boundaries: GeoJSON.FeatureCollection = useLocal ? await loadGeoJSONFromNDJSON(path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES)) : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox));
+async function extractWardBoundaries(
+  bbox: BoundaryBox,
+  useLocal: boolean = false,
+) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal
+    ? await loadGeoJSONFromNDJSON(
+        path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES),
+      )
+    : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox));
   console.log(boundaries.features[0]);
-  const populationCharacteristics: Row[] = loadCSV(path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS));
-  const populationIndex: Map<string, string> = buildCSVIndex(populationCharacteristics, 'Code', 'Population');
+  const populationCharacteristics: Row[] = loadCSV(
+    path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS),
+  );
+  const populationIndex: Map<string, string> = buildCSVIndex(
+    populationCharacteristics,
+    'Code',
+    'Population',
+  );
   return { geoJson: boundaries, populationMap: populationIndex };
 }
 
-export async function extractGBBoundaries(args: ExtractMapFeaturesArgs, bbox: BoundaryBox): Promise<void> {
-
+export async function extractGBBoundaries(
+  args: ExtractMapFeaturesArgs,
+  bbox: BoundaryBox,
+): Promise<void> {
   const handler = GB_BOUNDARY_DATA_HANDLERS[args.dataType];
   if (!handler) {
     throw new Error(`Unsupported data type for GB: ${args.dataType}`);
   }
-  const { geoJson, populationMap } = await handler.extractBoundaries(expandBBox(bbox, 0.01), args.useLocalData);
+  const { geoJson, populationMap } = await handler.extractBoundaries(
+    expandBBox(bbox, 0.01),
+    args.useLocalData,
+  );
 
   processAndSaveBoundaries(
     geoJson,
@@ -118,6 +180,6 @@ export async function extractGBBoundaries(args: ExtractMapFeaturesArgs, bbox: Bo
     bbox,
     args,
     handler.dataConfig,
-    'GB'
+    'GB',
   );
 }

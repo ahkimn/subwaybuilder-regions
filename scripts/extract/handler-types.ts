@@ -1,4 +1,4 @@
-import { BoundaryBox } from "../utils/geometry";
+import type { BoundaryBox } from '../utils/geometry';
 
 export type DataConfig = {
   displayName: string;
@@ -11,9 +11,11 @@ export type DataConfig = {
 
 export type BoundaryDataHandler = {
   dataConfig: DataConfig;
-  extractBoundaries(bbox: BoundaryBox, useLocalData?: boolean): Promise<{
+  extractBoundaries(
+    bbox: BoundaryBox,
+    useLocalData?: boolean,
+  ): Promise<{
     geoJson: GeoJSON.FeatureCollection;
     populationMap?: Map<string, string>;
   }>;
 };
-

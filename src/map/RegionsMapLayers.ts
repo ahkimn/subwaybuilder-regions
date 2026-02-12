@@ -1,13 +1,23 @@
-import { RegionDataset } from "../core/datasets/RegionDataset";
-import { RegionSelection } from "../core/types";
-import { DisplayColor, PRIMARY_FILL_COLORS } from "../ui/types/DisplayColor";
-import { LayerToggleOptions } from "../ui/types/LayerToggleOptions";
-import { BASE_FILL_OPACITY, DEFAULT_DARK_MODE_BOUNDARY_SETTINGS, DEFAULT_DARK_MODE_LABEL_SETTINGS, DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS, DEFAULT_LIGHT_MODE_LABEL_SETTINGS, HOVER_FILL_OPACITY, LightMode, stateBoolean } from "./styles";
+import { RegionDataset } from '../core/datasets/RegionDataset';
+import { RegionSelection } from '../core/types';
+import type { DisplayColor } from '../ui/types/DisplayColor';
+import { PRIMARY_FILL_COLORS } from '../ui/types/DisplayColor';
+import type { LayerToggleOptions } from '../ui/types/LayerToggleOptions';
+import type { LightMode } from './styles';
+import {
+  BASE_FILL_OPACITY,
+  DEFAULT_DARK_MODE_BOUNDARY_SETTINGS,
+  DEFAULT_DARK_MODE_LABEL_SETTINGS,
+  DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS,
+  DEFAULT_LIGHT_MODE_LABEL_SETTINGS,
+  HOVER_FILL_OPACITY,
+  stateBoolean,
+} from './styles';
 
 const FORCE_HIDE_LAYERS_ON_DROP = false; // TODO: Expose via mod settings.
 
 type MapLayerState = {
-  datasetIdentifier: string,
+  datasetIdentifier: string;
   sourceId: string;
   labelSourceId: string;
   boundaryLayerId: string;
@@ -15,11 +25,11 @@ type MapLayerState = {
   labelLayerId: string;
   visible: boolean;
   handlers?: LayerHandlers;
-}
+};
 
 type MapLayerStyle = {
-  fillColor: DisplayColor
-}
+  fillColor: DisplayColor;
+};
 
 type LayerHandlers = {
   hoveredId?: string | number;
@@ -31,12 +41,12 @@ type LayerHandlers = {
 type RegionSelectPayload = {
   dataset: RegionDataset;
   featureId: string | number;
-}
+};
 
 export type RegionsMapLayersEvents = {
   onRegionSelect?: (payload: RegionSelectPayload) => void;
   onLayerStateSync?: () => void;
-}
+};
 
 export class RegionsMapLayers {
   private map: maplibregl.Map;
@@ -67,7 +77,9 @@ export class RegionsMapLayers {
   private tryGetLayer(layerId: string): maplibregl.StyleLayer | undefined {
     const mapRef = this.getMapReference();
     if (!mapRef) {
-      console.warn(`[Regions] Cannot get layer ${layerId}: map reference is null`);
+      console.warn(
+        `[Regions] Cannot get layer ${layerId}: map reference is null`,
+      );
       return undefined;
     }
 
@@ -83,15 +95,17 @@ export class RegionsMapLayers {
     const oldMap = this.getMapReference();
     // Best effot attempt to detach existing handlers from old map instance (if it exists)
     if (oldMap) {
-      [this.layerHandler, this.styleHandler, this.sourceHandler].forEach((handler) => {
-        if (handler) {
-          try {
-            oldMap.off('data', handler);
-          } catch (e) {
-            // Ignore detach errors from disposed map instances
+      [this.layerHandler, this.styleHandler, this.sourceHandler].forEach(
+        (handler) => {
+          if (handler) {
+            try {
+              oldMap.off('data', handler);
+            } catch (e) {
+              // Ignore detach errors from disposed map instances
+            }
           }
-        }
-      });
+        },
+      );
 
       for (const layerState of this.layerStates.values()) {
         if (!layerState.handlers) {
@@ -123,13 +137,15 @@ export class RegionsMapLayers {
 
   setMap(map: maplibregl.Map | null | undefined) {
     if (!map) {
-      console.error("[Regions] Cannot rebind RegionsMapLayers: map instance is null or undefined");
+      console.error(
+        '[Regions] Cannot rebind RegionsMapLayers: map instance is null or undefined',
+      );
       return;
     }
 
     if (this.map === map) return;
     this.rebindMap(map);
-    console.log("[Regions] Rebound RegionsMapLayers to a new map instance");
+    console.log('[Regions] Rebound RegionsMapLayers to a new map instance');
   }
 
   setEvents(events: RegionsMapLayersEvents) {
@@ -140,14 +156,23 @@ export class RegionsMapLayers {
     this.selectionProvider = provider;
   }
 
-  updateSelection(previousSelection: RegionSelection | null, newSelection: RegionSelection | null) {
+  updateSelection(
+    previousSelection: RegionSelection | null,
+    newSelection: RegionSelection | null,
+  ) {
     if (RegionSelection.isEqual(previousSelection, newSelection)) {
       return;
     }
     if (previousSelection !== null) {
-      const previousState = this.layerStates.get(previousSelection.datasetIdentifier);
+      const previousState = this.layerStates.get(
+        previousSelection.datasetIdentifier,
+      );
       if (previousState) {
-        this.setSelectedState(previousState, previousSelection.featureId, false);
+        this.setSelectedState(
+          previousState,
+          previousSelection.featureId,
+          false,
+        );
       }
     }
 
@@ -161,13 +186,19 @@ export class RegionsMapLayers {
 
   ensureDatasetRendered(dataset: RegionDataset) {
     if (!dataset.isLoaded) {
-      console.warn(`[Regions] Cannot render dataset ${dataset.id}: data not loaded`);
+      console.warn(
+        `[Regions] Cannot render dataset ${dataset.id}: data not loaded`,
+      );
       return;
     }
 
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     if (this.layerStates.has(datasetIdentifier)) {
-      this.updateMapLayers(dataset, this.layerStates.get(datasetIdentifier)!, 'dark');
+      this.updateMapLayers(
+        dataset,
+        this.layerStates.get(datasetIdentifier)!,
+        'dark',
+      );
       return;
     }
 
@@ -187,38 +218,46 @@ export class RegionsMapLayers {
       visible: false,
     };
     this.updateMapLayers(dataset, state, 'dark');
-    this.layerStates.set(datasetIdentifier, state)
+    this.layerStates.set(datasetIdentifier, state);
   }
 
   toggleVisibility(dataset: RegionDataset) {
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     const layerState = this.layerStates.get(datasetIdentifier);
     if (!layerState) {
-      console.warn(`[Regions] Cannot toggle visibility for unknown dataset ${datasetIdentifier}`);
+      console.warn(
+        `[Regions] Cannot toggle visibility for unknown dataset ${datasetIdentifier}`,
+      );
       return;
     }
     this.ensureDatasetRendered(dataset);
     layerState.visible = !layerState.visible;
     this.applyVisibility(layerState);
-    console.log(`[Regions] Toggled visibility for dataset ${dataset.displayName} to ${layerState.visible}`);
+    console.log(
+      `[Regions] Toggled visibility for dataset ${dataset.displayName} to ${layerState.visible}`,
+    );
   }
 
   private applyVisibility(layerState: MapLayerState) {
     const mapRef = this.getMapReference();
     if (!mapRef) return;
 
-    const visibility = layerState.visible ? "visible" : "none";
+    const visibility = layerState.visible ? 'visible' : 'none';
     [
       layerState.boundaryLayerId,
       layerState.boundaryLineLayerId,
       layerState.labelLayerId,
     ].forEach((layerId) => {
       if (this.tryGetLayer(layerId)) {
-        mapRef.setLayoutProperty(layerId, "visibility", visibility);
+        mapRef.setLayoutProperty(layerId, 'visibility', visibility);
       }
     });
 
-    if (layerState.visible && layerState.labelLayerId && this.tryGetLayer(layerState.labelLayerId)) {
+    if (
+      layerState.visible &&
+      layerState.labelLayerId &&
+      this.tryGetLayer(layerState.labelLayerId)
+    ) {
       mapRef.moveLayer(layerState.labelLayerId);
     }
   }
@@ -233,7 +272,9 @@ export class RegionsMapLayers {
 
     const layerState = this.layerStates.get(identifier);
     if (!layerState) {
-      console.warn(`[Regions] Cannot remove map layers for unknown dataset ${identifier}`);
+      console.warn(
+        `[Regions] Cannot remove map layers for unknown dataset ${identifier}`,
+      );
       return;
     }
 
@@ -254,10 +295,7 @@ export class RegionsMapLayers {
     });
 
     // Remove sources after corresponding layers are removed
-    const sourcesToRemove = [
-      layerState.sourceId,
-      layerState.labelSourceId,
-    ];
+    const sourcesToRemove = [layerState.sourceId, layerState.labelSourceId];
 
     sourcesToRemove.forEach((sourceId) => {
       if (mapRef.getSource(sourceId)) {
@@ -298,18 +336,17 @@ export class RegionsMapLayers {
       this.sourceHandler = null;
     }
     for (const identifier of this.layerStates.keys()) {
-      this.removeDatasetMapLayers(
-        identifier,
-      );
-    };
+      this.removeDatasetMapLayers(identifier);
+    }
     this.nextColorIndex = 0;
   }
 
-
-
   // --- Minor Helpers --- //
   isVisible(dataset: RegionDataset): boolean {
-    return this.layerStates.get(RegionDataset.getIdentifier(dataset))?.visible ?? false;
+    return (
+      this.layerStates.get(RegionDataset.getIdentifier(dataset))?.visible ??
+      false
+    );
   }
 
   getDatasetToggleOptions(dataset: RegionDataset): LayerToggleOptions {
@@ -334,7 +371,11 @@ export class RegionsMapLayers {
   }
 
   // --- Layer Render Helpers --- //
-  private updateMapLayers(dataset: RegionDataset, layerState: MapLayerState, lightMode: LightMode) {
+  private updateMapLayers(
+    dataset: RegionDataset,
+    layerState: MapLayerState,
+    lightMode: LightMode,
+  ) {
     this.updateSource(layerState.sourceId, dataset.boundaryData!);
     this.updateSource(layerState.labelSourceId, dataset.labelData!);
 
@@ -344,14 +385,11 @@ export class RegionsMapLayers {
 
   private updateSource(sourceId: string, data: GeoJSON.FeatureCollection) {
     if (!this.map.getSource(sourceId)) {
-      this.map.addSource(
-        sourceId,
-        {
-          type: 'geojson',
-          data: data,
-          promoteId: 'ID'
-        }
-      )
+      this.map.addSource(sourceId, {
+        type: 'geojson',
+        data: data,
+        promoteId: 'ID',
+      });
     } else {
       // TODO: (Future) if map layer source already exists, update data if region data has been mutated
       // console.log(`[Regions] Updating data for source: ${sourceId}`);
@@ -364,7 +402,8 @@ export class RegionsMapLayers {
       return this.layerStyles.get(datasetIdentifier)!;
     }
 
-    const color = PRIMARY_FILL_COLORS[this.nextColorIndex % PRIMARY_FILL_COLORS.length];
+    const color =
+      PRIMARY_FILL_COLORS[this.nextColorIndex % PRIMARY_FILL_COLORS.length];
     this.nextColorIndex++;
 
     const style: MapLayerStyle = { fillColor: color };
@@ -373,7 +412,10 @@ export class RegionsMapLayers {
   }
 
   private addBoundaryLayers(layerState: MapLayerState, lightMode: LightMode) {
-    const boundarySettings = lightMode === 'light' ? DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS : DEFAULT_DARK_MODE_BOUNDARY_SETTINGS;
+    const boundarySettings =
+      lightMode === 'light'
+        ? DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS
+        : DEFAULT_DARK_MODE_BOUNDARY_SETTINGS;
     const style = this.determineStyle(layerState.datasetIdentifier);
     if (!this.tryGetLayer(layerState.boundaryLayerId)) {
       this.map.addLayer({
@@ -387,23 +429,15 @@ export class RegionsMapLayers {
           'fill-color': stateBoolean(
             'selected',
             style.fillColor.hover,
-            stateBoolean(
-              'hover',
-              style.fillColor.hover,
-              style.fillColor.hex
-            )
+            stateBoolean('hover', style.fillColor.hover, style.fillColor.hex),
           ),
           'fill-opacity': stateBoolean(
             'selected',
             HOVER_FILL_OPACITY,
-            stateBoolean(
-              'hover',
-              HOVER_FILL_OPACITY,
-              BASE_FILL_OPACITY
-            )
-          )
-        }
-      })
+            stateBoolean('hover', HOVER_FILL_OPACITY, BASE_FILL_OPACITY),
+          ),
+        },
+      });
     }
 
     if (!this.tryGetLayer(layerState.boundaryLineLayerId)) {
@@ -415,16 +449,19 @@ export class RegionsMapLayers {
           visibility: 'none',
         },
         paint: {
-          "line-color": boundarySettings["line-color"],
-          "line-width": boundarySettings["line-width"],
-          "line-opacity": boundarySettings["line-opacity"]
-        }
-      })
-    };
+          'line-color': boundarySettings['line-color'],
+          'line-width': boundarySettings['line-width'],
+          'line-opacity': boundarySettings['line-opacity'],
+        },
+      });
+    }
   }
 
   private addLabelLayer(layerState: MapLayerState, lightMode: LightMode) {
-    const labelSettings = lightMode === 'light' ? DEFAULT_LIGHT_MODE_LABEL_SETTINGS : DEFAULT_DARK_MODE_LABEL_SETTINGS;
+    const labelSettings =
+      lightMode === 'light'
+        ? DEFAULT_LIGHT_MODE_LABEL_SETTINGS
+        : DEFAULT_DARK_MODE_LABEL_SETTINGS;
     if (!this.tryGetLayer(layerState.labelLayerId)) {
       this.map.addLayer({
         id: layerState.labelLayerId,
@@ -432,27 +469,27 @@ export class RegionsMapLayers {
         source: layerState.labelSourceId,
         layout: {
           'text-field': ['get', 'NAME'],
-          'text-size': labelSettings["text-size"],
+          'text-size': labelSettings['text-size'],
           'text-font': ['Noto Sans Regular'],
           'text-anchor': 'center',
           'text-allow-overlap': false,
           'text-ignore-placement': false,
-          visibility: 'none'
+          visibility: 'none',
         },
         paint: {
-          "text-color": stateBoolean(
+          'text-color': stateBoolean(
             'hover',
-            labelSettings["hover-text-color"],
-            labelSettings["text-color"]
+            labelSettings['hover-text-color'],
+            labelSettings['text-color'],
           ),
-          "text-halo-color": labelSettings["text-halo-color"],
-          "text-halo-width": stateBoolean(
+          'text-halo-color': labelSettings['text-halo-color'],
+          'text-halo-width': stateBoolean(
             'hover',
-            labelSettings["hover-halo-width"],
-            labelSettings["text-halo-width"]
+            labelSettings['hover-halo-width'],
+            labelSettings['text-halo-width'],
           ),
-          "text-halo-blur": labelSettings["text-halo-blur"]
-        }
+          'text-halo-blur': labelSettings['text-halo-blur'],
+        },
       });
     }
   }
@@ -498,7 +535,9 @@ export class RegionsMapLayers {
           this.applyVisibility(layerState);
           this.applySelectionFromProvider(layerState);
           this.attachLabelHandlers(dataset);
-          console.log(`[Regions] Re-attached label handlers for dataset ${identifier} after layer re-addition`);
+          console.log(
+            `[Regions] Re-attached label handlers for dataset ${identifier} after layer re-addition`,
+          );
           syncLayerState = true;
         }
 
@@ -507,7 +546,9 @@ export class RegionsMapLayers {
             layerState.visible = false;
           }
           this.detachLabelHandlers(dataset);
-          console.log(`[Regions] Detached label handlers for dataset ${identifier} due to layer removal`);
+          console.log(
+            `[Regions] Detached label handlers for dataset ${identifier} due to layer removal`,
+          );
           syncLayerState = true;
         }
       }
@@ -544,13 +585,17 @@ export class RegionsMapLayers {
     this.setSelectedState(layerState, selection.featureId, true);
   }
 
-  private setSelectedState(layerState: MapLayerState, featureId: string | number, selected: boolean) {
+  private setSelectedState(
+    layerState: MapLayerState,
+    featureId: string | number,
+    selected: boolean,
+  ) {
     const sources = [layerState.sourceId, layerState.labelSourceId];
-    sources.forEach(sourceId => {
+    sources.forEach((sourceId) => {
       if (this.map.getSource(sourceId)) {
         this.map.setFeatureState(
           { source: sourceId, id: featureId },
-          { selected }
+          { selected },
         );
       }
     });
@@ -563,7 +608,9 @@ export class RegionsMapLayers {
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     const layerState = this.layerStates.get(datasetIdentifier);
     if (!layerState) {
-      console.warn(`[Regions] Cannot attach label handlers ${datasetIdentifier}`);
+      console.warn(
+        `[Regions] Cannot attach label handlers ${datasetIdentifier}`,
+      );
       return;
     }
 
@@ -571,7 +618,9 @@ export class RegionsMapLayers {
     const sources = [layerState.sourceId, layerState.labelSourceId];
 
     if (this.tryGetLayer(layerState.labelLayerId) == null) {
-      console.warn(`[Regions] Cannot attach label handlers for dataset ${datasetIdentifier}. Label layer: ${layerState.labelLayerId} is not attached`);
+      console.warn(
+        `[Regions] Cannot attach label handlers for dataset ${datasetIdentifier}. Label layer: ${layerState.labelLayerId} is not attached`,
+      );
       return;
     } else if (layerState.handlers) {
       // Handlers already attached
@@ -586,32 +635,36 @@ export class RegionsMapLayers {
       if (featureId == null) return;
 
       if (hoveredId !== undefined && hoveredId !== featureId) {
-        sources.forEach(sourceId =>
+        sources.forEach((sourceId) =>
           mapRef.setFeatureState(
             { source: sourceId, id: hoveredId },
-            { hover: false }
-          ));
+            { hover: false },
+          ),
+        );
       }
       hoveredId = featureId;
-      sources.forEach(sourceId =>
+      sources.forEach((sourceId) =>
         mapRef.setFeatureState(
           { source: sourceId, id: featureId },
-          { hover: true }));
+          { hover: true },
+        ),
+      );
       mapRef.getCanvas().style.cursor = 'pointer';
     };
 
     const onMouseLeave = (e: maplibregl.MapLayerMouseEvent) => {
       if (!this.tryGetLayer(labelLayerId)) return;
       if (hoveredId !== undefined) {
-        sources.forEach(sourceId =>
+        sources.forEach((sourceId) =>
           mapRef.setFeatureState(
             { source: sourceId, id: hoveredId },
-            { hover: false }
-          ));
+            { hover: false },
+          ),
+        );
       }
       hoveredId = undefined;
       mapRef.getCanvas().style.cursor = '';
-    }
+    };
 
     const onClick = (e: maplibregl.MapLayerMouseEvent) => {
       if (!this.tryGetLayer(labelLayerId)) return;
@@ -626,7 +679,9 @@ export class RegionsMapLayers {
     mapRef.on('mouseleave', labelLayerId, onMouseLeave);
     mapRef.on('click', labelLayerId, onClick);
 
-    console.log(`[Regions] Attached label handlers for dataset ${datasetIdentifier}`);
+    console.log(
+      `[Regions] Attached label handlers for dataset ${datasetIdentifier}`,
+    );
 
     layerState.handlers = {
       hoveredId,
@@ -650,7 +705,9 @@ export class RegionsMapLayers {
     }
 
     if (!layerState.handlers) {
-      console.warn(`[Regions] Cannot detach label handlers for dataset ${layerState.datasetIdentifier}`);
+      console.warn(
+        `[Regions] Cannot detach label handlers for dataset ${layerState.datasetIdentifier}`,
+      );
       return;
     }
 
@@ -666,7 +723,10 @@ export class RegionsMapLayers {
 
   // --- External Event Handlers --- //
 
-  private handleRegionSelect(dataset: RegionDataset, featureId: string | number) {
+  private handleRegionSelect(
+    dataset: RegionDataset,
+    featureId: string | number,
+  ) {
     if (this.events.onRegionSelect) {
       this.events.onRegionSelect({ dataset, featureId });
     }

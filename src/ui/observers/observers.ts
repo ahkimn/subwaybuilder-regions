@@ -1,8 +1,8 @@
-import { LAYERS_PANEL_MOD_ID, modIdSelector } from "../../core/constants";
+import { LAYERS_PANEL_MOD_ID, modIdSelector } from '../../core/constants';
 
 export function observeInfoPanelsRoot(
   root: HTMLElement,
-  onNodeAdded: (node: HTMLElement) => void
+  onNodeAdded: (node: HTMLElement) => void,
 ): MutationObserver {
   const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
@@ -21,7 +21,7 @@ export function observeInfoPanelsRoot(
 export function observeMapLayersPanel(onFound: (panel: HTMLElement) => void) {
   const observer = new MutationObserver(() => {
     const panel = document.querySelector(
-      modIdSelector(LAYERS_PANEL_MOD_ID)
+      modIdSelector(LAYERS_PANEL_MOD_ID),
     ) as HTMLElement | null;
 
     if (panel) {

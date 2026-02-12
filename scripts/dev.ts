@@ -1,4 +1,5 @@
-import { spawn, execFileSync } from 'child_process';
+import { execFileSync, spawn } from 'child_process';
+
 import { loadDevConfig } from './utils/dev-config';
 
 function closeRunningGame() {
