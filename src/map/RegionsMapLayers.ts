@@ -58,51 +58,42 @@ export class RegionsMapLayers {
     this.map = map;
   }
 
+  // --- Map Lifecyle & Binding Methods --- //
+
+  // The game may dispose and recreate map instances during city transitions.
   private getMapReference(): maplibregl.Map | null {
     const mapRef = this.map as maplibregl.Map | undefined;
     return mapRef ?? null;
   }
 
-  private getLayerSafe(layerId: string, _context?: string): maplibregl.StyleLayer | undefined {
+  private tryGetLayer(layerId: string): maplibregl.StyleLayer | undefined {
     const mapRef = this.getMapReference();
     if (!mapRef) {
+      console.warn(`[Regions] Cannot get layer ${layerId}: map reference is null`);
       return undefined;
     }
 
     try {
       return mapRef.getLayer(layerId);
-    } catch {
+    } catch (e) {
+      console.error(`[Regions] Error retrieving layer ${layerId} from map.`, e);
       return undefined;
     }
   }
 
-  private clearStateForMapSwap() {
+  private rebindMap(map: maplibregl.Map) {
     const oldMap = this.getMapReference();
+    // Best effot attempt to detach existing handlers from old map instance (if it exists)
     if (oldMap) {
-      if (this.layerHandler) {
-        try {
-          oldMap.off('data', this.layerHandler);
-        } catch {
-          // Ignore detach errors from disposed map instances
+      [this.layerHandler, this.styleHandler, this.sourceHandler].forEach((handler) => {
+        if (handler) {
+          try {
+            oldMap.off('data', handler);
+          } catch (e) {
+            // Ignore detach errors from disposed map instances
+          }
         }
-        this.layerHandler = null;
-      }
-      if (this.styleHandler) {
-        try {
-          oldMap.off('styledata', this.styleHandler);
-        } catch {
-          // Ignore detach errors from disposed map instances
-        }
-        this.styleHandler = null;
-      }
-      if (this.sourceHandler) {
-        try {
-          oldMap.off('sourcedata', this.sourceHandler);
-        } catch {
-          // Ignore detach errors from disposed map instances
-        }
-        this.sourceHandler = null;
-      }
+      });
 
       for (const layerState of this.layerStates.values()) {
         if (!layerState.handlers) {
@@ -114,7 +105,7 @@ export class RegionsMapLayers {
           oldMap.off('mousemove', labelLayerId, onMouseMove);
           oldMap.off('mouseleave', labelLayerId, onMouseLeave);
           oldMap.off('click', labelLayerId, onClick);
-        } catch {
+        } catch (e) {
           // Ignore detach errors from disposed map instances
         }
         layerState.handlers = undefined;
@@ -124,11 +115,12 @@ export class RegionsMapLayers {
       this.styleHandler = null;
       this.sourceHandler = null;
     }
-
+    // Clear in-memory layers state
     this.layerStates.clear();
     this.layerStyles.clear();
     this.observedDatasets = [];
     this.nextColorIndex = 0;
+    this.map = map;
   }
 
   setMap(map: maplibregl.Map | null | undefined) {
@@ -138,13 +130,7 @@ export class RegionsMapLayers {
     }
 
     if (this.map === map) return;
-
-    // Rebind lifecycle:
-    // 1) detach observers/handlers from the previous map best-effort,
-    // 2) clear in-memory layer state without touching old map layers/sources.
-    // Old map instances may already be disposed by the game during transitions.
-    this.clearStateForMapSwap();
-    this.map = map;
+    this.rebindMap(map);
     console.log("[Regions] Rebound RegionsMapLayers to a new map instance");
   }
 
@@ -231,12 +217,12 @@ export class RegionsMapLayers {
       layerState.boundaryLineLayerId,
       layerState.labelLayerId,
     ].forEach((layerId) => {
-      if (layerId && this.getLayerSafe(layerId, "applyVisibility:setLayoutProperty")) {
+      if (this.tryGetLayer(layerId)) {
         mapRef.setLayoutProperty(layerId, "visibility", visibility);
       }
     });
 
-    if (layerState.visible && layerState.labelLayerId && this.getLayerSafe(layerState.labelLayerId, "applyVisibility:moveLayer")) {
+    if (layerState.visible && layerState.labelLayerId && this.tryGetLayer(layerState.labelLayerId)) {
       mapRef.moveLayer(layerState.labelLayerId);
     }
   }
@@ -266,7 +252,7 @@ export class RegionsMapLayers {
     ];
 
     layersToRemove.forEach((layerId) => {
-      if (layerId && this.getLayerSafe(layerId, "removeDatasetMapLayers:removeLayer")) {
+      if (this.tryGetLayer(layerId)) {
         mapRef.removeLayer(layerId);
       }
     });
@@ -399,7 +385,7 @@ export class RegionsMapLayers {
   private addBoundaryLayers(layerState: MapLayerState, lightMode: LightMode) {
     const boundarySettings = lightMode === 'light' ? DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS : DEFAULT_DARK_MODE_BOUNDARY_SETTINGS;
     const style = this.determineStyle(layerState.datasetIdentifier);
-    if (!this.getLayerSafe(layerState.boundaryLayerId, "addBoundaryLayers:fillLayerCheck")) {
+    if (!this.tryGetLayer(layerState.boundaryLayerId)) {
       this.map.addLayer({
         id: layerState.boundaryLayerId,
         type: 'fill',
@@ -430,7 +416,7 @@ export class RegionsMapLayers {
       })
     }
 
-    if (!this.getLayerSafe(layerState.boundaryLineLayerId, "addBoundaryLayers:outlineLayerCheck")) {
+    if (!this.tryGetLayer(layerState.boundaryLineLayerId)) {
       this.map.addLayer({
         id: layerState.boundaryLineLayerId,
         type: 'line',
@@ -449,7 +435,7 @@ export class RegionsMapLayers {
 
   private addLabelLayer(layerState: MapLayerState, lightMode: LightMode) {
     const labelSettings = lightMode === 'light' ? DEFAULT_LIGHT_MODE_LABEL_SETTINGS : DEFAULT_DARK_MODE_LABEL_SETTINGS;
-    if (!this.getLayerSafe(layerState.labelLayerId, "addLabelLayer:labelLayerCheck")) {
+    if (!this.tryGetLayer(layerState.labelLayerId)) {
       this.map.addLayer({
         id: layerState.labelLayerId,
         type: 'symbol',
@@ -520,7 +506,7 @@ export class RegionsMapLayers {
         if (!layerState) {
           continue;
         }
-        const hasLayer = this.getLayerSafe(layerState.labelLayerId, "observeMapLayersForDatasets:dataHandler");
+        const hasLayer = this.tryGetLayer(layerState.labelLayerId);
 
         if (hasLayer && !layerState.handlers) {
           this.applyVisibility(layerState);
@@ -560,7 +546,7 @@ export class RegionsMapLayers {
       if (!layerState || !layerState.visible) {
         continue;
       }
-      if (this.getLayerSafe(layerState.labelLayerId, "moveVisibleLabelsToTop:moveLayer")) {
+      if (this.tryGetLayer(layerState.labelLayerId)) {
         mapRef.moveLayer(layerState.labelLayerId);
       }
     }
@@ -602,7 +588,7 @@ export class RegionsMapLayers {
     const labelLayerId = layerState.labelLayerId;
     const sources = [layerState.sourceId, layerState.labelSourceId];
 
-    if (this.getLayerSafe(layerState.labelLayerId, "attachLabelHandlers:initialLayerCheck") == null) {
+    if (this.tryGetLayer(layerState.labelLayerId) == null) {
       console.warn(`[Regions] Cannot attach label handlers for dataset ${datasetIdentifier}. Label layer: ${layerState.labelLayerId} is not attached`);
       return;
     } else if (layerState.handlers) {
@@ -613,7 +599,7 @@ export class RegionsMapLayers {
     let hoveredId: string | number | undefined = undefined;
 
     const onMouseMove = (e: maplibregl.MapLayerMouseEvent) => {
-      if (!e.features?.length || !this.getLayerSafe(labelLayerId, "attachLabelHandlers:onMouseMove")) return;
+      if (!e.features?.length || !this.tryGetLayer(labelLayerId)) return;
       const featureId = e.features[0].id;
       if (featureId == null) return;
 
@@ -633,7 +619,7 @@ export class RegionsMapLayers {
     };
 
     const onMouseLeave = (e: maplibregl.MapLayerMouseEvent) => {
-      if (!this.getLayerSafe(labelLayerId, "attachLabelHandlers:onMouseLeave")) return;
+      if (!this.tryGetLayer(labelLayerId)) return;
       if (hoveredId !== undefined) {
         sources.forEach(sourceId =>
           mapRef.setFeatureState(
@@ -646,7 +632,7 @@ export class RegionsMapLayers {
     }
 
     const onClick = (e: maplibregl.MapLayerMouseEvent) => {
-      if (!this.getLayerSafe(labelLayerId, "attachLabelHandlers:onClick")) return;
+      if (!this.tryGetLayer(labelLayerId)) return;
       if (!e.features?.length) return;
       const feature = e.features[0];
       const featureId = feature.id;
