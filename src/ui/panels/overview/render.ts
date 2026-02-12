@@ -20,54 +20,19 @@ export function renderLayerSelectorRow(
   getDatasetLabel: (datasetIdentifier: string) => string,
   onSelectDataset: (datasetIdentifier: string) => void,
 ): React.ReactNode {
-  if (datasetIdentifiers.length === 0) {
-    return h(
-      "div",
-      { className: "rounded-md border border-border/60 px-2 py-2 text-xs text-muted-foreground" },
-      "Load a city with region datasets to enable layer and table controls."
-    );
-  }
-
-  if (datasetIdentifiers.length <= 5) {
-    const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
-    datasetIdentifiers.forEach((datasetIdentifier) => {
-      buttonConfigs.set(datasetIdentifier, {
-        label: getDatasetLabel(datasetIdentifier),
-        onSelect: () => onSelectDataset(datasetIdentifier),
-      });
+  const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
+  datasetIdentifiers.forEach((datasetIdentifier) => {
+    buttonConfigs.set(datasetIdentifier, {
+      label: getDatasetLabel(datasetIdentifier),
+      onSelect: () => onSelectDataset(datasetIdentifier),
     });
-
-    return h(
-      "div",
-      { className: "flex flex-col gap-1.5" },
-      h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-      ReactSelectRow(h, buttonConfigs, selectedDatasetIdentifier, "regions-overview-layer-select")
-    );
-  }
+  });
 
   return h(
     "div",
     { className: "flex flex-col gap-1.5" },
     h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-    h(
-      "select",
-      {
-        className:
-          "h-9 rounded-md border border-border/60 bg-background px-2 text-sm outline-none focus:border-ring",
-        value: selectedDatasetIdentifier,
-        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
-          const target = e.target as HTMLSelectElement;
-          onSelectDataset(target.value || "");
-        },
-      },
-      ...datasetIdentifiers.map((datasetIdentifier) =>
-        h(
-          "option",
-          { key: datasetIdentifier, value: datasetIdentifier },
-          getDatasetLabel(datasetIdentifier)
-        )
-      )
-    )
+    ReactSelectRow(h, buttonConfigs, selectedDatasetIdentifier, "regions-overview-layer-select")
   );
 }
 
@@ -149,7 +114,7 @@ export function renderOverviewTable(
 
   if (rows.length === 0) {
     tableRows.push({
-      rowValues: ["No rows match the current filters."],
+      rowValues: ["No regions match the current filters."],
       options: {
         colSpan: [5],
         align: ["left"],
