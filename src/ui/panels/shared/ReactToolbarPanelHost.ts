@@ -1,13 +1,13 @@
+import { ReactNode } from "react";
 import type { ModdingAPI, UIToolbarPanelOptions } from "../../../types/modding-api-v1";
-import type { ReactNode } from "react";
 
-type ToolbarPanelHostOptions = Pick<UIToolbarPanelOptions, "id" | "icon" | "tooltip" | "title" | "width"> & {
-  panelContentRootId: string;
-};
+type ToolbarPanelHostOptions = Pick<UIToolbarPanelOptions, "id" | "icon" | "tooltip" | "title" | "width">;
 
 export class ReactToolbarPanelHost {
   private initialized = false;
-  private renderFn: (() => ReactNode) | null = null;
+
+  private renderPanel: (() => ReactNode) | null = null;
+
   private hasContent = false;
   private domObserver: MutationObserver | null = null;
   private passthroughOverlay: HTMLElement | null = null;
@@ -18,7 +18,8 @@ export class ReactToolbarPanelHost {
 
   constructor(
     private readonly api: ModdingAPI,
-    private readonly options: ToolbarPanelHostOptions
+    private readonly options: ToolbarPanelHostOptions,
+    private readonly panelContentRootId: string
   ) { }
 
   initialize(): void {
@@ -28,7 +29,7 @@ export class ReactToolbarPanelHost {
 
     const panelOptions: UIToolbarPanelOptions = {
       ...this.options,
-      render: () => (this.renderFn ? this.renderFn() : null),
+      render: () => (this.renderPanel ? this.renderPanel() : null),
     };
 
     this.api.ui.addToolbarPanel(panelOptions);
@@ -38,13 +39,13 @@ export class ReactToolbarPanelHost {
   }
 
   setRender(renderFn: () => ReactNode): void {
-    this.renderFn = renderFn;
+    this.renderPanel = renderFn;
     this.hasContent = true;
     this.requestRender();
   }
 
   clear(): void {
-    this.renderFn = null;
+    this.renderPanel = null;
     this.hasContent = false;
     this.restorePointerPassthrough();
     this.stopClickCaptureGuard();
@@ -65,20 +66,16 @@ export class ReactToolbarPanelHost {
   }
 
   private applyPointerPassthrough(): void {
-    const contentRoot = document.getElementById(this.options.panelContentRootId);
-    if (!contentRoot) {
-      return;
-    }
+    const contentRoot = this.panelContentRootId
+      ? document.getElementById(this.panelContentRootId)
+      : null;
+    if (!contentRoot) return;
 
     const panel = this.findPanelContainerFromContent(contentRoot);
-    if (!panel) {
-      return;
-    }
+    if (!panel) return;
 
     const overlay = this.findViewportOverlay(panel);
-    if (!overlay) {
-      return;
-    }
+    if (!overlay) return;
 
     if (this.passthroughOverlay !== overlay) {
       this.restorePointerPassthrough();
@@ -195,7 +192,9 @@ export class ReactToolbarPanelHost {
   }
 
   private resolvePanelContainer(): HTMLElement | null {
-    const contentRoot = document.getElementById(this.options.panelContentRootId);
+    const contentRoot = this.panelContentRootId
+      ? document.getElementById(this.panelContentRootId)
+      : null;
     if (!contentRoot) {
       return null;
     }

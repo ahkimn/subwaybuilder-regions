@@ -1,52 +1,63 @@
 import { REGIONS_OVERVIEW_PANEL_CONTENT_ID, REGIONS_OVERVIEW_PANEL_ID, REGIONS_OVERVIEW_PANEL_TITLE } from "../../../core/constants";
-import { RegionDatasetRegistry } from "../../../core/registry/RegionDatasetRegistry";
-import type { RegionSelection } from "../../../core/types";
+import type { RegionSelection, UIState } from "../../../core/types";
 import type { ModdingAPI } from "../../../types/modding-api-v1";
 import { ReactToolbarPanelHost } from "../shared/ReactToolbarPanelHost";
 import { RegionsOverviewPanel } from "./RegionsOverviewPanel";
+import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
+
+export type RegionsOverviewPanelEvents = {
+  onRegionSelect?: (payload: RegionSelection) => void;
+}
 
 export class RegionsOverviewPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
-  private overviewPanel: RegionsOverviewPanel;
-  private initialized = false;
+  private overviewPanel: RegionsOverviewPanel | null = null;
+
+  private events: RegionsOverviewPanelEvents = {};
 
   constructor(
     private readonly api: ModdingAPI,
-    private readonly registry: RegionDatasetRegistry,
-    private readonly getCurrentCityCode: () => string | null,
-    private readonly getActiveSelection: () => RegionSelection | null,
-    private readonly onSelectRegion: (selection: RegionSelection, source: "overview-click") => void
+    private readonly state: Readonly<UIState>,
+    private readonly dataManager: RegionDataManager
   ) {
-    this.host = new ReactToolbarPanelHost(this.api, {
+
+    this.host = new ReactToolbarPanelHost(api, {
       id: REGIONS_OVERVIEW_PANEL_ID,
       icon: "Table2",
       title: REGIONS_OVERVIEW_PANEL_TITLE,
       tooltip: "Regions Overview",
       width: 720,
-      panelContentRootId: REGIONS_OVERVIEW_PANEL_CONTENT_ID,
-    });
+    },
+      REGIONS_OVERVIEW_PANEL_CONTENT_ID);
+  }
 
-    this.overviewPanel = new RegionsOverviewPanel({
-      api: this.api,
-      getCurrentCityCode: this.getCurrentCityCode,
-      getCityDatasets: (cityCode: string) => this.registry.getCityDatasets(cityCode),
-      getActiveSelection: this.getActiveSelection,
-      onSelectRegion: this.onSelectRegion,
-      requestRender: () => this.host.requestRender(),
-    });
+  setEvents(events: RegionsOverviewPanelEvents) {
+    this.events = events;
   }
 
   initialize(): void {
-    if (this.initialized) {
+    if (this.overviewPanel !== null) return;
+
+    const currentDatasetIds = this.dataManager.getCityDatasetIds(this.state.cityCode!);
+    if (currentDatasetIds.length === 0) {
+      console.warn("[Regions] No region datasets available for current city, no overview panel will be shown.");
       return;
     }
+    this.overviewPanel = new RegionsOverviewPanel(
+      this.api,
+      this.state,
+      this.dataManager,
+      currentDatasetIds,
+      this.events.onRegionSelect ?? (() => { }),
+      () => this.host.requestRender(),
+    );
+
     this.host.initialize();
-    this.host.setRender(() => this.overviewPanel.render());
-    this.initialized = true;
+    this.host.setRender(() => this.overviewPanel?.render());
   }
 
   tearDown(): void {
-    this.overviewPanel.reset();
+    this.overviewPanel?.reset();
     this.host.clear();
   }
 
@@ -55,6 +66,6 @@ export class RegionsOverviewPanelRenderer {
   }
 
   tryUpdatePanel(): void {
-    this.host.setRender(() => this.overviewPanel.render());
+    this.host.setRender(() => this.overviewPanel?.render());
   }
 }

@@ -69,7 +69,6 @@ export class RegionDataManager {
     }
   }
 
-
   getGameData(uiState: Readonly<UIState>): RegionGameData | null {
     if (!uiState.isActive) {
       console.error("[Regions] UI State not active: ", uiState);
@@ -77,6 +76,19 @@ export class RegionDataManager {
     }
     const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetId!);
     return dataset.getRegionGameData(uiState.activeSelection!.featureId!);
+  }
+
+  getCityDatasetIds(cityCode: string): string[] {
+    return this.registry.getCityDatasetIds(cityCode);
+  }
+
+  requestGameDataByDataset(datasetId: string): Map<string | number, RegionGameData> {
+    const dataset = this.registry.getDatasetByIdentifier(datasetId);
+    // TODO: Async request for all current game data for the dataset, including commuter and (potentially) infra data
+    // TODO: Add callback so that the UI can be updated with the loaded data...!!!
+
+    // Return immediately available game data map for the dataset
+    return dataset.gameData;
   }
 }
 

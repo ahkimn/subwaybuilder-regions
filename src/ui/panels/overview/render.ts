@@ -2,12 +2,12 @@ import type React from "react";
 import { createElement } from "react";
 import { RegionSelection as RegionSelectionUtils, type RegionSelection } from "../../../core/types";
 import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from "../../../core/constants";
-import { RegionDataset } from "../../../core/datasets/RegionDataset";
 import { DataRowOptions, DataTableRow, ReactDataTable, TableOptions } from "../../elements/DataTable";
 import { ReactSelectButtonConfig, ReactSelectRow } from "../../elements/SelectRow";
 import type { RegionsOverviewRow, RegionsOverviewSortState, RegionsOverviewTab } from "./types";
+import { formatFixedNumber } from "../../../core/utils";
 
-export type GameInputProps = {
+export type InputFieldProperties = {
   value?: string;
   placeholder?: string;
   onChange?: (e: Event) => void;
@@ -16,9 +16,9 @@ export type GameInputProps = {
 
 type RenderOverviewPanelArgs = {
   h: typeof createElement;
-  Input: React.ComponentType<GameInputProps>;
-  datasets: RegionDataset[];
-  selectedDataset: RegionDataset | null;
+  Input: React.ComponentType<InputFieldProperties>;
+  datasetIds: string[];
+  selectedDatasetId: string;
   activeSelection: RegionSelection | null;
   activeTab: RegionsOverviewTab;
   searchTerm: string;
@@ -28,8 +28,7 @@ type RenderOverviewPanelArgs = {
   onSetTab: (tab: RegionsOverviewTab) => void;
   onSearchTermChange: (value: string) => void;
   onSortChange: (columnIndex: number) => void;
-  onSelectRow: (selection: RegionSelection) => void;
-  formatNullableNumber: (value: number | null | undefined, decimals?: number) => string;
+  onSelectRow: (selection: RegionSelection) => void
 };
 
 export function renderOverviewPanelContent(args: RenderOverviewPanelArgs): React.ReactNode {
@@ -43,9 +42,9 @@ export function renderOverviewPanelContent(args: RenderOverviewPanelArgs): React
 }
 
 function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
-  const { h, datasets, selectedDataset } = args;
+  const { h, datasetIds, selectedDatasetId } = args;
 
-  if (datasets.length === 0) {
+  if (datasetIds.length === 0) {
     return h(
       "div",
       { className: "rounded-md border border-border/60 px-2 py-2 text-xs text-muted-foreground" },
@@ -53,12 +52,12 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
     );
   }
 
-  if (datasets.length <= 5) {
+  if (datasetIds.length <= 5) {
     const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
-    datasets.forEach((dataset) => {
-      buttonConfigs.set(dataset.id, {
-        label: dataset.displayName,
-        onSelect: () => args.onSelectDataset(dataset.id),
+    datasetIds.forEach((datasetId) => {
+      buttonConfigs.set(datasetId, {
+        label: datasetId,
+        onSelect: () => args.onSelectDataset(datasetId),
       });
     });
 
@@ -66,7 +65,7 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
       "div",
       { className: "flex flex-col gap-1.5" },
       h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-      ReactSelectRow(h, buttonConfigs, selectedDataset?.id ?? null, "regions-overview-layer-select")
+      ReactSelectRow(h, buttonConfigs, selectedDatasetId, "regions-overview-layer-select")
     );
   }
 
@@ -79,17 +78,17 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
       {
         className:
           "h-9 rounded-md border border-border/60 bg-background px-2 text-sm outline-none focus:border-ring",
-        value: selectedDataset?.id ?? "",
+        value: selectedDatasetId,
         onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
           const target = e.target as HTMLSelectElement;
           args.onSelectDataset(target.value || "");
         },
       },
-      ...datasets.map((dataset) =>
+      ...datasetIds.map((datasetId) =>
         h(
           "option",
-          { key: dataset.id, value: dataset.id },
-          dataset.displayName
+          { key: datasetId, value: datasetId },
+          datasetId
         )
       )
     )
@@ -161,12 +160,12 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
 
   const tableRows: DataTableRow[] = [
     {
-      rowValues: ["Region", "Real Pop", "Residents", "Workers", "Area", "Density", "Infra"],
+      rowValues: ["Region", "Real Pop", "Residents", "Workers", "Area"],
       options: {
         header: true,
         borderBottom: true,
         onClick: sortHandlers,
-        align: ["left", "right", "right", "right", "right", "right", "right"],
+        align: ["left", "right", "right", "right", "right"],
         sortState: {
           index: sortState.sortIndex,
           directionLabel: sortState.sortDirection === "asc" ? "^" : "v",
@@ -200,10 +199,10 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
       tableRows.push({
         rowValues: [
           row.gameData.displayName,
-          args.formatNullableNumber(row.gameData.realPopulation),
-          args.formatNullableNumber(row.gameData.demandData?.residents ?? null),
-          args.formatNullableNumber(row.gameData.demandData?.workers ?? null),
-          args.formatNullableNumber(row.gameData.area, 2),
+          row.gameData.realPopulation ? formatFixedNumber(row.gameData.realPopulation) : "N/A",
+          row.gameData.demandData?.residents ? formatFixedNumber(row.gameData.demandData.residents) : "N/A",
+          row.gameData.demandData?.workers ? formatFixedNumber(row.gameData.demandData.workers) : "N/A",
+          row.gameData.area ? formatFixedNumber(row.gameData.area, 2) : "N/A",
         ],
         options: rowOptions,
       });

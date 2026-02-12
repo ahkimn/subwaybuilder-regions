@@ -24,6 +24,10 @@ export class RegionDatasetRegistry {
     );
   }
 
+  getCityDatasetIds(cityCode: string): string[] {
+    return this.getCityDatasets(cityCode).map(dataset => RegionDataset.getIdentifier(dataset));
+  }
+
   getDatasetByIdentifier(identifier: string): RegionDataset {
     const dataset = this.datasets.get(identifier) || null;
     if (!dataset) {

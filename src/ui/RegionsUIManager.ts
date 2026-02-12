@@ -46,12 +46,11 @@ export class RegionsUIManager {
       this.getInfoPanelRoot.bind(this),
       () => this.clearSelection()
     );
+
     this.overviewPanelRenderer = new RegionsOverviewPanelRenderer(
-      this.api,
-      this.datasetRegistry,
-      () => this.state.cityCode,
-      () => this.state.activeSelection,
-      (selection) => this.setActiveSelection(selection, { toggleIfSame: false, showInfo: true })
+      api,
+      this.state,
+      this.regionDataManager
     );
 
     this.initialized = false;
@@ -68,6 +67,10 @@ export class RegionsUIManager {
     this.mapLayers.setEvents({
       onRegionSelect: this.onRegionSelect.bind(this),
       onLayerStateSync: () => this.tryInjectLayerPanel(true),
+    });
+
+    this.overviewPanelRenderer.setEvents({
+      onRegionSelect: (selection: RegionSelection) => this.onOverviewSelect(selection)
     })
 
     this.mapLayers.setSelectionProvider((): RegionSelection | null => this.state.activeSelection);
@@ -118,6 +121,10 @@ export class RegionsUIManager {
     this.setActiveSelection(nextSelection, { toggleIfSame: true, showInfo: true });
   }
 
+  private onOverviewSelect(selection: RegionSelection) {
+    this.setActiveSelection(selection, { toggleIfSame: false, showInfo: true });
+  }
+
   private setActiveSelection(
     nextSelection: RegionSelection,
     options: { toggleIfSame: boolean; showInfo: boolean }
@@ -137,14 +144,13 @@ export class RegionsUIManager {
     if (options.showInfo) {
       this.infoPanelRenderer.showFeatureData();
     }
+
     this.overviewPanelRenderer.tryUpdatePanel();
   }
 
   get activeSelection(): RegionSelection | null {
     return this.state.activeSelection;
   }
-
-  // TODO (Feature): Add setter for entry point into data / chart element
 
   // --- State Mutations --- //
   onCityChange(cityCode: string, datasets: RegionDataset[] = []) {
@@ -157,19 +163,12 @@ export class RegionsUIManager {
 
   reset() {
     this.stopCommutersUpdateLoop();
-
     this.clearSelection();
     this.overviewPanelRenderer.tearDown();
   }
 
   private clearSelection() {
     const previousSelection = this.state.activeSelection;
-    if (previousSelection === null) {
-      this.infoPanelRenderer.tearDown();
-      this.overviewPanelRenderer.tryUpdatePanel();
-      return;
-    }
-
     this.state.activeSelection = null;
 
     this.mapLayers.updateSelection(previousSelection, this.state.activeSelection);
