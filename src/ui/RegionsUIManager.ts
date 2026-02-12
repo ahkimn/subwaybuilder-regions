@@ -1,4 +1,11 @@
-import { REGIONS_INFO_PANEL_MOD_ID } from "../core/constants";
+import {
+  LAYERS_PANEL_MOD_ID,
+  REGIONS_INFO_PANEL_MOD_ID,
+  REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID,
+  REGIONS_LAYER_TOGGLE_MOD_ROLE,
+  modIdSelector,
+  modRoleSelector
+} from "../core/constants";
 import { RegionDataBuilder } from "../core/datasets/RegionDataBuilder";
 import { RegionDataManager } from "../core/datasets/RegionDataManager";
 import { RegionDataset } from "../core/datasets/RegionDataset";
@@ -109,7 +116,7 @@ export class RegionsUIManager {
 
     this.infoPanelObserver?.disconnect();
     this.infoPanelObserver = observeInfoPanelRoot(root, (node: HTMLElement) => {
-      const infoPanelSelector = `[data-mod-id="${REGIONS_INFO_PANEL_MOD_ID}"]`;
+      const infoPanelSelector = modIdSelector(REGIONS_INFO_PANEL_MOD_ID);
       // Ignore mutations to the info panel itself
       if (node.matches(infoPanelSelector) || node.querySelector(infoPanelSelector) !== null) {
         return;
@@ -133,7 +140,7 @@ export class RegionsUIManager {
       this.tryInjectLayerPanel(rootChanged);
     });
 
-    const existingPanel = document.querySelector('[data-mod-id="layers-panel"]') as HTMLElement | null;
+    const existingPanel = document.querySelector(modIdSelector(LAYERS_PANEL_MOD_ID)) as HTMLElement | null;
     if (existingPanel) {
       this.layerPanelRoot = existingPanel;
       this.tryInjectLayerPanel(true);
@@ -178,9 +185,9 @@ export class RegionsUIManager {
   }
 
   private hasInjectedRegionToggles(panel: HTMLElement): boolean {
-    const regionSegment = panel.querySelector('div[data-regions-mod]');
+    const regionSegment = panel.querySelector(modIdSelector(REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID));
     if (!regionSegment) return false;
-    return regionSegment.querySelector('[data-regions-toggle]') !== null;
+    return regionSegment.querySelector(modRoleSelector(REGIONS_LAYER_TOGGLE_MOD_ROLE)) !== null;
   }
 
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {

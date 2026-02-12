@@ -35,6 +35,21 @@ export const REGIONS_DESELECT_KEY = 'Escape';
 export const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
 export const REGIONS_INFO_PANEL_TITLE = 'Region Info';
 export const REGIONS_INFO_PANEL_MOD_ID = 'regions-info-panel';
+export const LAYERS_PANEL_MOD_ID = "layers-panel";
+
+export const MOD_ID_ATTR = "data-mod-id";
+export const MOD_ROLE_ATTR = "data-mod-role";
+
+export function modIdSelector(modId: string): string {
+  return `[${MOD_ID_ATTR}="${modId}"]`;
+}
+
+export function modRoleSelector(modRole: string): string {
+  return `[${MOD_ROLE_ATTR}="${modRole}"]`;
+}
+
+export const REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID = "regions-layer-toggles";
+export const REGIONS_LAYER_TOGGLE_MOD_ROLE = "regions-layer-toggle";
 
 export const REGIONS_OVERVIEW_PANEL_ID = "regions-overview-toolbar-panel";
 export const REGIONS_OVERVIEW_PANEL_TITLE = "Regions Overview";

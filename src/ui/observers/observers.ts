@@ -1,3 +1,5 @@
+import { LAYERS_PANEL_MOD_ID, modIdSelector } from "../../core/constants";
+
 // TODO: (Issue 5) - Make sure the info panel clears when a default data panel is opened
 export function observeInfoPanelsRoot(
   root: HTMLElement,
@@ -20,7 +22,7 @@ export function observeInfoPanelsRoot(
 export function observeMapLayersPanel(onFound: (panel: HTMLElement) => void) {
   const observer = new MutationObserver(() => {
     const panel = document.querySelector(
-      '[data-mod-id="layers-panel"]'
+      modIdSelector(LAYERS_PANEL_MOD_ID)
     ) as HTMLElement | null;
 
     if (panel) {
