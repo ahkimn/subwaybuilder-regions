@@ -1,11 +1,17 @@
-export const PRESET_UNIT_LABELS: Record<string, { singular: string; plural: string }> = {
-  'districts': { singular: 'District', plural: 'Districts' }, // GB local authority districts
-  'bua': { singular: 'BUA', plural: 'BUAs' }, // GB built-up areas
-  'wards': { singular: 'Ward', plural: 'Wards' }, // GB electoral wards
-  'counties': { singular: 'County', plural: 'Counties' },
-  'county-subdivisions': { singular: 'County Subdivision', plural: 'County Subdivisions' },
-  'zctas': { singular: 'ZCTA', plural: 'ZCTAs' },
-}
+export const PRESET_UNIT_LABELS: Record<
+  string,
+  { singular: string; plural: string }
+> = {
+  districts: { singular: 'District', plural: 'Districts' }, // GB local authority districts
+  bua: { singular: 'BUA', plural: 'BUAs' }, // GB built-up areas
+  wards: { singular: 'Ward', plural: 'Wards' }, // GB electoral wards
+  counties: { singular: 'County', plural: 'Counties' },
+  'county-subdivisions': {
+    singular: 'County Subdivision',
+    plural: 'County Subdivisions',
+  },
+  zctas: { singular: 'ZCTA', plural: 'ZCTAs' },
+};
 
 // For non-preset datasets or custom user datasets
 export const DEFAULT_UNIT_LABELS = { singular: 'Region', plural: 'Regions' };
@@ -36,10 +42,10 @@ export const REGIONS_DESELECT_KEY = 'Escape';
 export const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
 export const REGIONS_INFO_PANEL_TITLE = 'Region Info';
 export const REGIONS_INFO_PANEL_MOD_ID = 'regions-info-panel';
-export const LAYERS_PANEL_MOD_ID = "layers-panel";
+export const LAYERS_PANEL_MOD_ID = 'layers-panel';
 
-export const MOD_ID_ATTR = "data-mod-id";
-export const MOD_ROLE_ATTR = "data-mod-role";
+export const MOD_ID_ATTR = 'data-mod-id';
+export const MOD_ROLE_ATTR = 'data-mod-role';
 
 export function modIdSelector(modId: string): string {
   return `[${MOD_ID_ATTR}="${modId}"]`;
@@ -49,13 +55,14 @@ export function modRoleSelector(modRole: string): string {
   return `[${MOD_ROLE_ATTR}="${modRole}"]`;
 }
 
-export const REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID = "regions-layer-toggles";
-export const REGIONS_LAYER_TOGGLE_MOD_ROLE = "regions-layer-toggle";
+export const REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID = 'regions-layer-toggles';
+export const REGIONS_LAYER_TOGGLE_MOD_ROLE = 'regions-layer-toggle';
 
-export const REGIONS_OVERVIEW_PANEL_ID = "regions-overview-toolbar-panel";
-export const REGIONS_OVERVIEW_PANEL_TITLE = "Regions Overview [WIP]";
+export const REGIONS_OVERVIEW_PANEL_ID = 'regions-overview-toolbar-panel';
+export const REGIONS_OVERVIEW_PANEL_TITLE = 'Regions Overview [WIP]';
 export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
-export const REGIONS_OVERVIEW_PANEL_CONTENT_ID = "regions-overview-panel-content";
+export const REGIONS_OVERVIEW_PANEL_CONTENT_ID =
+  'regions-overview-panel-content';
 
 export const FLOATING_PANEL_OFFSET_X = 80;
 export const FLOATING_PANEL_OFFSET_Y = 80;

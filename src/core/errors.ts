@@ -10,16 +10,27 @@ export class DatasetMissingDataLayerError extends Error {
 }
 
 export class DatasetMissingFeatureError extends Error {
-  constructor(datasetId: string, layerType: string, featureId: string | number) {
-    super(`Dataset ${datasetId} is missing required data for feature ${featureId} in ${layerType}`);
+  constructor(
+    datasetId: string,
+    layerType: string,
+    featureId: string | number,
+  ) {
+    super(
+      `Dataset ${datasetId} is missing required data for feature ${featureId} in ${layerType}`,
+    );
     this.name = 'DatasetMissingFeatureError';
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
 export class DatasetInvalidFeatureTypeError extends Error {
-  constructor(datasetId: string, feature: Feature<Geometry, GeoJsonProperties>) {
-    super(`Feature ${feature.id} in dataset ${datasetId} is invalid. Feature type: ${feature.geometry.type} is not supported.`);
+  constructor(
+    datasetId: string,
+    feature: Feature<Geometry, GeoJsonProperties>,
+  ) {
+    super(
+      `Feature ${feature.id} in dataset ${datasetId} is invalid. Feature type: ${feature.geometry.type} is not supported.`,
+    );
     this.name = 'DatasetInvalidFeatureTypeError';
     Object.setPrototypeOf(this, new.target.prototype);
   }

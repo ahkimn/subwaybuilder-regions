@@ -10,9 +10,6 @@ tmp/
 node_modules/
 package-lock.json
 
-# Misc
-MODDING.md
-
-.prettierrc.js
-.eslintrc.js
+# User configuration
+.vscode/
 config.yaml

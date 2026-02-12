@@ -1,4 +1,4 @@
-import { RouteDisplayParams } from "../../core/types";
+import type { RouteDisplayParams } from '../../core/types';
 
 // Unused for now
 export function RouteBullet(display: RouteDisplayParams) {
@@ -11,7 +11,7 @@ export function RouteBullet(display: RouteDisplayParams) {
     'flex items-center justify-center font-bold',
     'select-none overflow-hidden',
     'font-mta',
-    'cursor-pointer hover:opacity-80'
+    'cursor-pointer hover:opacity-80',
   ].join(' ');
 
   inner.style.backgroundColor = display.color;

@@ -1,15 +1,36 @@
-import { arcgisToGeoJSON } from "@terraformer/arcgis";
-import { bboxToGeometryString, BoundaryBox, isFeatureCollection } from "./geometry";
+import { arcgisToGeoJSON } from '@terraformer/arcgis';
 
-const TIGERWEB_API_BASE_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb';
+import type { BoundaryBox } from './geometry';
+import { bboxToGeometryString, isFeatureCollection } from './geometry';
+
+const TIGERWEB_API_BASE_URL =
+  'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb';
 const ACS_API_URL = 'https://api.census.gov/data/2022/acs/acs5';
-const ONS_API_BASE_URL = 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services';
+const ONS_API_BASE_URL =
+  'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services';
 
 // List of states (by FIPS code) where cities or towns are used as county subdivisions in Census data, rather than minor civil divisions.
 export const STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS = new Set([
-  '09', '23', '25', '33', '44', '50', // New England
-  '34', '42', // NJ, PA
-  '17', '18', '19', '20', '26', '27', '29', '31', '38', '39', '46', '55', // Midwest
+  '09',
+  '23',
+  '25',
+  '33',
+  '44',
+  '50', // New England
+  '34',
+  '42', // NJ, PA
+  '17',
+  '18',
+  '19',
+  '20',
+  '26',
+  '27',
+  '29',
+  '31',
+  '38',
+  '39',
+  '46',
+  '55', // Midwest
 ]);
 
 // Neighborhood data is queried from OpenStreetMap Overpass API based on admin level
@@ -24,16 +45,14 @@ export type ArcGisQueryRequest = {
 
 export function isValidCountySubdivision(
   name: string,
-  cousubfp?: string
+  cousubfp?: string,
 ): boolean {
   if (cousubfp === '00000') return false;
-  if (name &&
-    name.toLowerCase() === 'county subdivisions not defined') {
+  if (name && name.toLowerCase() === 'county subdivisions not defined') {
     return false;
   }
   return true;
 }
-
 
 // --- Census Boundary Queries --- //
 
@@ -48,12 +67,14 @@ export function buildCountyUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
       outSR: '4326',
       outFields: 'GEOID,NAME',
       returnGeometry: 'true',
-      f: 'json'
-    })
+      f: 'json',
+    }),
   };
 }
 
-export function buildCountySubdivisionUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
+export function buildCountySubdivisionUrl(
+  queryBBox: BoundaryBox,
+): ArcGisQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/1/query`,
     params: new URLSearchParams({
@@ -66,11 +87,14 @@ export function buildCountySubdivisionUrl(queryBBox: BoundaryBox): ArcGisQueryRe
       outFields: '*',
       returnGeometry: 'true',
       f: 'json',
-    })
+    }),
   };
 }
 
-export function buildPlacesQuery(queryBBox: BoundaryBox, layerId: number): ArcGisQueryRequest {
+export function buildPlacesQuery(
+  queryBBox: BoundaryBox,
+  layerId: number,
+): ArcGisQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/${layerId}/query`,
     params: new URLSearchParams({
@@ -89,7 +113,8 @@ export function buildPlacesQuery(queryBBox: BoundaryBox, layerId: number): ArcGi
 
 export function buildZctaUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
   return {
-    url: `${TIGERWEB_API_BASE_URL}/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query`, params: new URLSearchParams({
+    url: `${TIGERWEB_API_BASE_URL}/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query`,
+    params: new URLSearchParams({
       where: '1=1',
       geometry: `${queryBBox.west},${queryBBox.south},${queryBBox.east},${queryBBox.north}`,
       geometryType: 'esriGeometryEnvelope',
@@ -98,33 +123,43 @@ export function buildZctaUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
       outSR: '4326',
       outFields: '*',
       returnGeometry: 'true',
-      f: 'json'
-    })
+      f: 'json',
+    }),
   };
 }
 
-export async function fetchCouSubFeatures(bbox: BoundaryBox): Promise<GeoJSON.Feature[]> {
-
-  const couSubGeoJson = await fetchGeoJSONFromArcGIS(buildCountySubdivisionUrl(bbox))
+export async function fetchCouSubFeatures(
+  bbox: BoundaryBox,
+): Promise<GeoJSON.Feature[]> {
+  const couSubGeoJson = await fetchGeoJSONFromArcGIS(
+    buildCountySubdivisionUrl(bbox),
+  );
 
   return couSubGeoJson.features.filter(
-    f => isValidCountySubdivision(f.properties!.NAME!, f.properties!.COUSUBFP)
-      && STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS.has(f.properties!.STATE!)
+    (f) =>
+      isValidCountySubdivision(f.properties!.NAME!, f.properties!.COUSUBFP) &&
+      STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS.has(f.properties!.STATE!),
   );
 }
 
-export async function fetchPlaceFeatures(bbox: BoundaryBox): Promise<GeoJSON.Feature[]> {
-  let cdpGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 5))
-  let citiesGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 4))
-  let consolidatedCitiesGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 3))
+export async function fetchPlaceFeatures(
+  bbox: BoundaryBox,
+): Promise<GeoJSON.Feature[]> {
+  let cdpGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 5));
+  let citiesGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 4));
+  let consolidatedCitiesGeoJson = await fetchGeoJSONFromArcGIS(
+    buildPlacesQuery(bbox, 3),
+  );
 
   let concatenatedFeatures = [
     ...cdpGeoJson.features,
     ...citiesGeoJson.features,
-    ...consolidatedCitiesGeoJson.features
-  ]
-  return concatenatedFeatures.filter(f => {
-    return !STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS.has(f.properties!.STATE!)
+    ...consolidatedCitiesGeoJson.features,
+  ];
+  return concatenatedFeatures.filter((f) => {
+    return !STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS.has(
+      f.properties!.STATE!,
+    );
   });
 }
 
@@ -141,7 +176,9 @@ function normalizeArcGisResponse(data: any): GeoJSON.GeoJSON {
   throw new Error('Unknown ArcGIS response format');
 }
 
-export async function fetchGeoJSONFromArcGIS(request: ArcGisQueryRequest): Promise<GeoJSON.FeatureCollection> {
+export async function fetchGeoJSONFromArcGIS(
+  request: ArcGisQueryRequest,
+): Promise<GeoJSON.FeatureCollection> {
   console.log('Querying ArcGIS API:', request.url);
   const res = await fetch(request.url, {
     method: 'POST',
@@ -156,9 +193,7 @@ export async function fetchGeoJSONFromArcGIS(request: ArcGisQueryRequest): Promi
 
   const arcgisJson = await res.json();
   if (arcgisJson.error) {
-    throw new Error(
-      `ArcGIS query failed: ${arcgisJson.error.message}`
-    );
+    throw new Error(`ArcGIS query failed: ${arcgisJson.error.message}`);
   }
 
   console.log(`Fetched ${arcgisJson.features.length} features from ArcGIS.`);
@@ -171,27 +206,27 @@ export async function fetchGeoJSONFromArcGIS(request: ArcGisQueryRequest): Promi
 
 // --- Census Population Queries --- //
 
-export async function fetchCountyPopulations(states: Set<string>): Promise<Map<string, string>> {
-
-  const populationMap = new Map<string, string>()
+export async function fetchCountyPopulations(
+  states: Set<string>,
+): Promise<Map<string, string>> {
+  const populationMap = new Map<string, string>();
   for (const state of states) {
-    const statePopMap = await fetchCountyPopulationsByState(state)
-    statePopMap.forEach((v, k) => populationMap.set(k, v))
-
-
+    const statePopMap = await fetchCountyPopulationsByState(state);
+    statePopMap.forEach((v, k) => populationMap.set(k, v));
   }
   return populationMap;
 }
 
-async function fetchCountyPopulationsByState(state: string): Promise<Map<string, string>> {
-
+async function fetchCountyPopulationsByState(
+  state: string,
+): Promise<Map<string, string>> {
   // Use 2022 ACS data as prior to that date, there were no county-equivalent population data available for the state
   const url = new URL(ACS_API_URL);
 
   url.search = new URLSearchParams({
     get: 'B01003_001E',
     for: 'county:*',
-    in: `state:${state}`
+    in: `state:${state}`,
   }).toString();
 
   const res = await fetch(url);
@@ -211,14 +246,13 @@ async function fetchCountyPopulationsByState(state: string): Promise<Map<string,
 }
 
 export async function fetchCountySubdivisionPopulations(
-  state: string
+  state: string,
 ): Promise<Map<string, string>> {
-
   const url = new URL(ACS_API_URL);
   url.search = new URLSearchParams({
     get: 'B01003_001E',
     for: 'county subdivision:*',
-    in: `state:${state}`
+    in: `state:${state}`,
   }).toString();
 
   const res = await fetch(url);
@@ -236,14 +270,13 @@ export async function fetchCountySubdivisionPopulations(
 }
 
 export async function fetchPlacePopulations(
-  state: string
+  state: string,
 ): Promise<Map<string, string>> {
-
   const url = new URL(ACS_API_URL);
   url.search = new URLSearchParams({
     get: 'B01003_001E',
     for: 'place:*',
-    in: `state:${state}`
+    in: `state:${state}`,
   }).toString();
 
   const res = await fetch(url);
@@ -264,7 +297,7 @@ export async function fetchZctaPopulations(): Promise<Map<string, string>> {
   const url = new URL(ACS_API_URL);
   url.search = new URLSearchParams({
     get: 'B01003_001E',
-    for: 'zip code tabulation area:*'
+    for: 'zip code tabulation area:*',
   }).toString();
 
   const res = await fetch(url);
@@ -282,17 +315,18 @@ export async function fetchZctaPopulations(): Promise<Map<string, string>> {
 
 // --- Census Data Helpers --- //
 
-export function extractStateCodesFromGeoIDs(features: GeoJSON.Feature[]): Set<string> {
+export function extractStateCodesFromGeoIDs(
+  features: GeoJSON.Feature[],
+): Set<string> {
   const states = new Set<string>();
   for (const feature of features) {
-    const geoid = feature.properties!.GEOID!
+    const geoid = feature.properties!.GEOID!;
     if (typeof geoid === 'string' && geoid.length >= 2) {
-      states.add(geoid.slice(0, 2))
+      states.add(geoid.slice(0, 2));
     }
   }
   return states;
 }
-
 
 // --- Overpass API --- //
 
@@ -310,19 +344,20 @@ export async function fetchOverpassData(query: string): Promise<any> {
   console.log('Querying Overpass API...');
   const response = await fetch(OVERPASS_API_URL, {
     method: 'POST',
-    body: query
+    body: query,
   });
   if (!response.ok) {
     throw new Error(`Overpass API query failed: ${response.statusText}`);
   }
   return await response.json();
-} export const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
+}
+export const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 
 // --- GB ONS Queries --- //
 export function buildONSArcGisQuery(
   baseServiceUrl: string,
   layerId: number,
-  queryBBox: BoundaryBox
+  queryBBox: BoundaryBox,
 ): ArcGisQueryRequest {
   return {
     url: `${baseServiceUrl}/${layerId}/query`,
@@ -340,18 +375,28 @@ export function buildONSArcGisQuery(
   };
 }
 
-export function getDistrictONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/LAD_MAY_2025_UK_BFC_V2/FeatureServer`, 0, queryBBox);
+export function getDistrictONSQuery(
+  queryBBox: BoundaryBox,
+): ArcGisQueryRequest {
+  return buildONSArcGisQuery(
+    `${ONS_API_BASE_URL}/LAD_MAY_2025_UK_BFC_V2/FeatureServer`,
+    0,
+    queryBBox,
+  );
 }
 
 export function getBUAONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/BUA_2022_GB/FeatureServer`, 0, queryBBox);
+  return buildONSArcGisQuery(
+    `${ONS_API_BASE_URL}/BUA_2022_GB/FeatureServer`,
+    0,
+    queryBBox,
+  );
 }
 
 export function getWardONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(`${ONS_API_BASE_URL}/WD_MAY_2025_UK_BFC_V2/FeatureServer`, 0, queryBBox);
+  return buildONSArcGisQuery(
+    `${ONS_API_BASE_URL}/WD_MAY_2025_UK_BFC_V2/FeatureServer`,
+    0,
+    queryBBox,
+  );
 }
-
-
-
-

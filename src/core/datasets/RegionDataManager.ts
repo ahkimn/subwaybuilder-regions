@@ -1,50 +1,67 @@
-import type { ModdingAPI } from "../../types/modding-api-v1";
-import { RegionDatasetRegistry } from "../registry/RegionDatasetRegistry";
-import { STALE_COMMUTER_DATA_THRESHOLD_SECONDS, STALE_INFRA_DATA_THRESHOLD_SECONDS } from "../constants";
-import { RegionDataBuilder } from "./RegionDataBuilder";
-import { RegionCommuterData, RegionGameData, RegionInfraData, UIState } from "../types";
-import { yieldToEventLoop } from "../utils";
+import type { ModdingAPI } from '../../types/modding-api-v1';
+import {
+  STALE_COMMUTER_DATA_THRESHOLD_SECONDS,
+  STALE_INFRA_DATA_THRESHOLD_SECONDS,
+} from '../constants';
+import type { RegionDatasetRegistry } from '../registry/RegionDatasetRegistry';
+import type {
+  RegionCommuterData,
+  RegionGameData,
+  RegionInfraData,
+  UIState,
+} from '../types';
+import { yieldToEventLoop } from '../utils';
+import type { RegionDataBuilder } from './RegionDataBuilder';
 
 export class RegionDataManager {
-
   constructor(
     private builder: RegionDataBuilder,
     private registry: RegionDatasetRegistry,
-    private api: ModdingAPI
-  ) { }
-
+    private api: ModdingAPI,
+  ) {}
 
   async ensureExistsData(
     uiState: Readonly<UIState>,
     datatype: 'commuter' | 'infra',
     options?: {
-      forceBuild?: boolean
-    }
+      forceBuild?: boolean;
+    },
   ): Promise<RegionCommuterData | RegionInfraData | null> {
-
     if (!uiState.isActive) {
-      console.error("[Regions] UI State not active: ", uiState);
+      console.error('[Regions] UI State not active: ', uiState);
       return null;
     }
 
-    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetIdentifier!);
+    const dataset = this.registry.getDatasetByIdentifier(
+      uiState.activeSelection!.datasetIdentifier!,
+    );
 
-    const gameData = dataset.getRegionGameData(uiState.activeSelection!.featureId!);
+    const gameData = dataset.getRegionGameData(
+      uiState.activeSelection!.featureId!,
+    );
     if (!gameData) {
       return null;
     }
 
     const currentTime = this.api.gameState.getElapsedSeconds();
-    const existingData = datatype === 'infra' ? gameData.infraData : gameData.commuterData;
+    const existingData =
+      datatype === 'infra' ? gameData.infraData : gameData.commuterData;
     const metadata = existingData?.metadata;
-    const stalenessThreshold = datatype === 'commuter'
-      ? STALE_COMMUTER_DATA_THRESHOLD_SECONDS
-      : STALE_INFRA_DATA_THRESHOLD_SECONDS;
+    const stalenessThreshold =
+      datatype === 'commuter'
+        ? STALE_COMMUTER_DATA_THRESHOLD_SECONDS
+        : STALE_INFRA_DATA_THRESHOLD_SECONDS;
 
-    if (!options?.forceBuild
-      && existingData && gameData && !metadata?.dirty && currentTime - metadata!.lastUpdate < stalenessThreshold
+    if (
+      !options?.forceBuild &&
+      existingData &&
+      gameData &&
+      !metadata?.dirty &&
+      currentTime - metadata!.lastUpdate < stalenessThreshold
     ) {
-      console.log(`[Regions] Existing ${datatype === 'infra' ? 'infra' : 'commuter'} data is fresh, skipping rebuild. Last update was ${currentTime - metadata!.lastUpdate} seconds ago.`);
+      console.log(
+        `[Regions] Existing ${datatype === 'infra' ? 'infra' : 'commuter'} data is fresh, skipping rebuild. Last update was ${currentTime - metadata!.lastUpdate} seconds ago.`,
+      );
       return existingData;
     }
 
@@ -52,29 +69,49 @@ export class RegionDataManager {
 
     switch (datatype) {
       case 'commuter':
-        // TODO: (Performance) If commuter data calculation becomes more complex, we may need to perform chunked processing 
-        const updatedCommuterData = this.builder.buildRegionCommuteData(dataset, uiState.activeSelection!.featureId!, currentTime);
+        // TODO: (Performance) If commuter data calculation becomes more complex, we may need to perform chunked processing
+        const updatedCommuterData = this.builder.buildRegionCommuteData(
+          dataset,
+          uiState.activeSelection!.featureId!,
+          currentTime,
+        );
         if (updatedCommuterData) {
-          dataset.updateWithCommuterData(uiState.activeSelection!.featureId!, updatedCommuterData!);
+          dataset.updateWithCommuterData(
+            uiState.activeSelection!.featureId!,
+            updatedCommuterData!,
+          );
         }
-        console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetIdentifier}:`);
+        console.log(
+          `[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetIdentifier}:`,
+        );
         return updatedCommuterData;
       case 'infra':
-        const updatedInfraData = await this.builder.buildRegionInfraData(dataset, uiState.activeSelection!.featureId!, currentTime);
+        const updatedInfraData = await this.builder.buildRegionInfraData(
+          dataset,
+          uiState.activeSelection!.featureId!,
+          currentTime,
+        );
         if (updatedInfraData) {
-          dataset.updateWithInfraData(uiState.activeSelection!.featureId!, updatedInfraData);
+          dataset.updateWithInfraData(
+            uiState.activeSelection!.featureId!,
+            updatedInfraData,
+          );
         }
-        console.log(`[Regions] Infra data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetIdentifier}:`);
+        console.log(
+          `[Regions] Infra data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetIdentifier}:`,
+        );
         return updatedInfraData;
     }
   }
 
   getGameData(uiState: Readonly<UIState>): RegionGameData | null {
     if (!uiState.isActive) {
-      console.error("[Regions] UI State not active: ", uiState);
+      console.error('[Regions] UI State not active: ', uiState);
       return null;
     }
-    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetIdentifier!);
+    const dataset = this.registry.getDatasetByIdentifier(
+      uiState.activeSelection!.datasetIdentifier!,
+    );
     return dataset.getRegionGameData(uiState.activeSelection!.featureId!);
   }
 
@@ -86,7 +123,9 @@ export class RegionDataManager {
     return this.registry.getDatasetDisplayNameByIdentifier(datasetIdentifier);
   }
 
-  requestGameDataByDataset(datasetIdentifier: string): Map<string | number, RegionGameData> {
+  requestGameDataByDataset(
+    datasetIdentifier: string,
+  ): Map<string | number, RegionGameData> {
     const dataset = this.registry.getDatasetByIdentifier(datasetIdentifier);
     // TODO: Async request for all current game data for the dataset, including commuter and (potentially) infra data
     // TODO: Add callback so that the UI can be updated with the loaded data...!!!
@@ -95,4 +134,3 @@ export class RegionDataManager {
     return dataset.gameData;
   }
 }
-

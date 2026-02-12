@@ -1,4 +1,4 @@
-import { createElement, CSSProperties, ReactNode } from "react";
+import type { createElement, CSSProperties, ReactNode } from 'react';
 
 export type SortState = {
   index: number;
@@ -19,9 +19,9 @@ export type DataRowOptions = {
 export type DataTableValue = string | number | HTMLElement;
 
 export type DataTableRow = {
-  rowValues: DataTableValue[],
-  options?: DataRowOptions
-}
+  rowValues: DataTableValue[];
+  options?: DataRowOptions;
+};
 
 export type TableDensity = 'compact' | 'standard' | 'relaxed';
 
@@ -35,7 +35,7 @@ const TABLE_DENSITY_SETTINGS: Record<TableDensity, string> = {
 export type TableOptions = {
   columnTemplate: string;
   density: TableDensity;
-}
+};
 
 // --- DOM Implementation ---
 
@@ -43,7 +43,6 @@ export function DataTable(
   tableOptions: TableOptions,
   tableValues: DataTableRow[],
 ): HTMLElement {
-
   const table = document.createElement('div');
   table.className = `grid min-w-0 ${TABLE_DENSITY_SETTINGS[tableOptions.density]}`;
   table.style.gridTemplateColumns = tableOptions.columnTemplate;
@@ -65,11 +64,16 @@ function buildDOMCell(
   cellValue: DataTableValue,
   rowOptions: DataRowOptions,
   index: number,
-  isHeader: boolean
+  isHeader: boolean,
 ): HTMLDivElement {
   const cell = document.createElement('div');
 
-  const presentation = computeCellPresentation(cellValue, rowOptions, index, isHeader);
+  const presentation = computeCellPresentation(
+    cellValue,
+    rowOptions,
+    index,
+    isHeader,
+  );
 
   if (rowOptions.onClick?.[index]) {
     cell.addEventListener('click', rowOptions.onClick?.[index]);
@@ -83,9 +87,10 @@ function buildDOMCell(
 
   if (cellValue instanceof HTMLElement) {
     cell.appendChild(cellValue);
-    if (presentation.indicator) cell.appendChild(document.createTextNode(presentation.indicator!));
+    if (presentation.indicator)
+      cell.appendChild(document.createTextNode(presentation.indicator!));
   } else {
-    cell.textContent = String(cellValue) + (presentation.indicator ?? "");
+    cell.textContent = String(cellValue) + (presentation.indicator ?? '');
   }
 
   return cell;
@@ -112,19 +117,19 @@ export function ReactDataTable(
           rowOptions,
           colIndex,
           isHeader,
-          `${rowIndex}:${colIndex}`
-        )
+          `${rowIndex}:${colIndex}`,
+        ),
       );
     });
   });
 
   return h(
-    "div",
+    'div',
     {
       className: `grid min-w-0 ${TABLE_DENSITY_SETTINGS[tableOptions.density]}`,
       style: { gridTemplateColumns: tableOptions.columnTemplate },
     },
-    cells
+    cells,
   );
 }
 
@@ -134,16 +139,20 @@ function buildReactCell(
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,
-  key: string
+  key: string,
 ): ReactNode {
-
-  const presentation = computeCellPresentation(cellValue, rowOptions, index, isHeader);
+  const presentation = computeCellPresentation(
+    cellValue,
+    rowOptions,
+    index,
+    isHeader,
+  );
 
   if (cellValue instanceof HTMLElement) {
     const children: ReactNode[] = [
-      h("span", {
-        key: "host",
-        className: "contents",
+      h('span', {
+        key: 'host',
+        className: 'contents',
         ref: (node: HTMLElement | null) => {
           if (!node) return;
           if (node.firstChild === cellValue) return;
@@ -153,19 +162,18 @@ function buildReactCell(
     ];
 
     if (presentation.indicator) children.push(presentation.indicator!);
-    return h("div", { key, className: presentation.className }, ...children);
-
+    return h('div', { key, className: presentation.className }, ...children);
   } else {
     return h(
-      "div",
+      'div',
       {
         key,
         className: presentation.className,
         style: presentation.style,
         onClick: rowOptions.onClick?.[index],
       },
-      String(cellValue) + (presentation.indicator ?? "")
-    )
+      String(cellValue) + (presentation.indicator ?? ''),
+    );
   }
 }
 
@@ -183,7 +191,7 @@ function getCellAlignmentClass(align: 'left' | 'right' | 'center'): string {
 
 function getCellBaseClass(
   shouldTruncate: boolean,
-  align: 'left' | 'right' | 'center'
+  align: 'left' | 'right' | 'center',
 ): string {
   return [
     'min-w-0',
@@ -193,10 +201,7 @@ function getCellBaseClass(
   ].join(' ');
 }
 
-function getCellTextClass(
-  isHeader: boolean,
-  isDataCol: boolean
-): string {
+function getCellTextClass(isHeader: boolean, isDataCol: boolean): string {
   if (isHeader) {
     return 'text-[0.72rem] text-muted-foreground font-semibold pb-1.5 tracking-wide whitespace-nowrap';
   }
@@ -206,8 +211,12 @@ function getCellTextClass(
   return 'font-medium text-foreground/90';
 }
 
-function getSortIndicator(sortState: SortState | undefined, index: number): string {
-  if (!sortState || sortState.index !== index || !sortState.directionLabel) return "";
+function getSortIndicator(
+  sortState: SortState | undefined,
+  index: number,
+): string {
+  if (!sortState || sortState.index !== index || !sortState.directionLabel)
+    return '';
   return `${sortState.directionLabel}`;
 }
 
@@ -215,22 +224,24 @@ function computeCellPresentation(
   cellValue: DataTableValue,
   rowOptions: DataRowOptions,
   index: number,
-  isHeader: boolean
+  isHeader: boolean,
 ): {
   className: string;
   indicator?: string;
   style?: CSSProperties;
 } {
-
   let indicator = getSortIndicator(rowOptions.sortState, index);
 
   const span = rowOptions.colSpan?.[index];
-  const align = rowOptions.align?.[index] ?? "left";
+  const align = rowOptions.align?.[index] ?? 'left';
   const isSelectedSort = rowOptions.sortState?.index === index;
 
   // Truncate cell text if it's not a header, or if it's a string/number with content
   const shouldTruncate =
-    !isHeader || (typeof cellValue === 'string' && (cellValue.length > 0 || indicator.length > 0)) || typeof cellValue === 'number';
+    !isHeader ||
+    (typeof cellValue === 'string' &&
+      (cellValue.length > 0 || indicator.length > 0)) ||
+    typeof cellValue === 'number';
 
   const classNames = [
     getCellBaseClass(shouldTruncate, align),
@@ -242,22 +253,21 @@ function computeCellPresentation(
   }
 
   if (rowOptions.borderBottom) {
-    classNames.push("border-b border-border/30");
+    classNames.push('border-b border-border/30');
   }
   if (rowOptions.rowClassName) {
     classNames.push(rowOptions.rowClassName);
   }
 
   if (rowOptions.onClick?.[index]) {
-    classNames.push("cursor-pointer hover:text-foreground");
+    classNames.push('cursor-pointer hover:text-foreground');
   }
 
   const style = span && span > 1 ? { gridColumn: `span ${span}` } : undefined;
 
   return {
-    className: classNames.join(" "),
+    className: classNames.join(' '),
     indicator: indicator,
-    style: style
+    style: style,
   };
 }
-

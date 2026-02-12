@@ -1,5 +1,5 @@
 import * as turf from '@turf/turf';
-import type { Feature, Polygon, MultiPolygon, BBox, Position } from 'geojson';
+import type { BBox, Feature, MultiPolygon, Polygon, Position } from 'geojson';
 
 export type Coordinate = [number, number]; // [lng, lat]
 export type RingCoordinate = Coordinate[]; // Closed loop of coordinates
@@ -13,11 +13,11 @@ function toCoordinate(p: Position): Coordinate {
 }
 
 export function toPolyCoordinates(p: Position[][]): PolygonCoordinates {
-  return p.map(ring => ring.map(toCoordinate));
+  return p.map((ring) => ring.map(toCoordinate));
 }
 
 export function isPolygonFeature(
-  feature: Feature
+  feature: Feature,
 ): feature is Feature<Polygon | MultiPolygon> {
   return (
     feature.geometry.type === 'Polygon' ||
@@ -27,7 +27,7 @@ export function isPolygonFeature(
 
 export function isFullyWithinBBox(
   feature: Feature<Polygon | MultiPolygon>,
-  bboxPolygon: Feature<Polygon>
+  bboxPolygon: Feature<Polygon>,
 ): boolean {
   if (feature.geometry.type === 'Polygon') {
     return turf.booleanWithin(feature, bboxPolygon);
@@ -41,9 +41,17 @@ export function isFullyWithinBBox(
       }
     }
   } catch (err) {
-    console.warn('Error validating MultiPolygon within bbox for feature:', feature.id, ' Error:', err);
+    console.warn(
+      'Error validating MultiPolygon within bbox for feature:',
+      feature.id,
+      ' Error:',
+      err,
+    );
     // Fallback check for complex/malformed MultiPolygon geometries
-    return turf.booleanContains(bboxPolygon, turf.bboxPolygon(turf.bbox(feature)));
+    return turf.booleanContains(
+      bboxPolygon,
+      turf.bboxPolygon(turf.bbox(feature)),
+    );
   }
 
   return true;
@@ -55,8 +63,10 @@ export function isCoordinateWithinFeature(
   feature: Feature<Polygon | MultiPolygon>,
   bbox?: BBox,
 ) {
-
-  if (bbox && (lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3])) {
+  if (
+    bbox &&
+    (lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3])
+  ) {
     return false;
   }
 
@@ -64,14 +74,13 @@ export function isCoordinateWithinFeature(
   return turf.booleanPointInPolygon(point, feature, { ignoreBoundary: false });
 }
 
-
 // BBox is [west, south, east, north] => [minLng, minLat, maxLng, maxLat]
 export function bboxIntersects(a: BBox, b: BBox): boolean {
   return !(
     a[2] < b[0] || // a.maxX < b.minX
     a[0] > b[2] || // a.minX > b.maxX
     a[3] < b[1] || // a.maxY < b.minY
-    a[1] > b[3]    // a.minY > b.maxY
+    a[1] > b[3] // a.minY > b.maxY
   );
 }
 
@@ -86,7 +95,10 @@ export function segmentBBox(a: Coordinate, b: Coordinate): BBox {
 }
 
 export function polygonBBox(polygon: PolygonCoordinates): BBox {
-  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+  let minLng = Infinity,
+    minLat = Infinity,
+    maxLng = -Infinity,
+    maxLat = -Infinity;
   for (const ring of polygon) {
     for (const [lng, lat] of ring) {
       minLng = Math.min(minLng, lng);
@@ -99,7 +111,10 @@ export function polygonBBox(polygon: PolygonCoordinates): BBox {
 }
 
 export function multiPolyBBox(bboxes: BBox[]): BBox {
-  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+  let minLng = Infinity,
+    minLat = Infinity,
+    maxLng = -Infinity,
+    maxLat = -Infinity;
   for (const bbox of bboxes) {
     minLng = Math.min(minLng, bbox[0]);
     minLat = Math.min(minLat, bbox[1]);
@@ -112,35 +127,32 @@ export function multiPolyBBox(bboxes: BBox[]): BBox {
 // Project geographic coordinate to meter-based coordinate using a base latitude for scaling (equirectangular approximation)
 export function projectCoordinate(
   [lng, lat]: Coordinate,
-  baseLatitude: number // Latitude at which to project
+  baseLatitude: number, // Latitude at which to project
 ): Coordinate {
-  return [
-    R_E * lng * DEG * Math.cos(baseLatitude * DEG),
-    R_E * lat * DEG
-  ];
+  return [R_E * lng * DEG * Math.cos(baseLatitude * DEG), R_E * lat * DEG];
 }
 
 export function projectPolygon(
   polygon: PolygonCoordinates,
-  baseLatitude: number
+  baseLatitude: number,
 ): PolygonCoordinates {
-  return polygon.map(ring =>
-    ring.map(coord => projectCoordinate(coord, baseLatitude))
+  return polygon.map((ring) =>
+    ring.map((coord) => projectCoordinate(coord, baseLatitude)),
   );
 }
-
 
 function pointInRing(point: Coordinate, ring: RingCoordinate): boolean {
   let insidePolygon = false;
   const [x, y] = point;
 
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i][0], yi = ring[i][1];
-    const xj = ring[j][0], yj = ring[j][1];
+    const xi = ring[i][0],
+      yi = ring[i][1];
+    const xj = ring[j][0],
+      yj = ring[j][1];
 
     const intersect =
-      yi > y !== yj > y &&
-      x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
 
     if (intersect) insidePolygon = !insidePolygon;
   }
@@ -148,10 +160,7 @@ function pointInRing(point: Coordinate, ring: RingCoordinate): boolean {
   return insidePolygon;
 }
 
-function pointInPolygon(
-  point: Coordinate,
-  rings: RingCoordinate[]
-): boolean {
+function pointInPolygon(point: Coordinate, rings: RingCoordinate[]): boolean {
   // In GeoJSON, the first ring is the outer boundary of the polygon
   if (!pointInRing(point, rings[0])) return false;
 
@@ -165,7 +174,7 @@ function pointInPolygon(
 
 export function pointInMultiPolygon(
   point: Coordinate,
-  polygons: RingCoordinate[][]
+  polygons: RingCoordinate[][],
 ): boolean {
   for (const polygon of polygons) {
     if (pointInPolygon(point, polygon)) {
@@ -179,18 +188,16 @@ function segmentIntersectionT(
   a: Coordinate,
   b: Coordinate,
   c: Coordinate,
-  d: Coordinate
+  d: Coordinate,
 ): number | null {
   const r = [b[0] - a[0], b[1] - a[1]]; // Direction vector of segment AB
   const s = [d[0] - c[0], d[1] - c[1]]; // Direction vector of segment CD
 
-  const denom = (r[0] * s[1]) - (r[1] * s[0]); // Cross product of r and s
+  const denom = r[0] * s[1] - r[1] * s[0]; // Cross product of r and s
   if (denom === 0) return null; // parallel
 
-  const u =
-    ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / denom; // Relative position on CD
-  const t =
-    ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / denom; // Relative position on AB
+  const u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / denom; // Relative position on CD
+  const t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / denom; // Relative position on AB
 
   // Validate interersection is within both segments
   if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
@@ -203,7 +210,7 @@ function segmentIntersectionT(
 export function segmentPolygonIntersections(
   a: Coordinate,
   b: Coordinate,
-  polygons: RingCoordinate[]
+  polygons: RingCoordinate[],
 ): number[] {
   const ts: number[] = [];
 
@@ -222,15 +229,20 @@ export function segmentLength(a: Coordinate, b: Coordinate): number {
 }
 
 // Linear interpolation between two coordinates
-export function interpolatePoint(a: Coordinate, b: Coordinate, t: number): Coordinate {
-  return [
-    a[0] + t * (b[0] - a[0]),
-    a[1] + t * (b[1] - a[1]),
-  ];
+export function interpolatePoint(
+  a: Coordinate,
+  b: Coordinate,
+  t: number,
+): Coordinate {
+  return [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
 }
 
-export function segmentMidpoint(a: Coordinate, b: Coordinate, t0: number, t1: number): Coordinate {
+export function segmentMidpoint(
+  a: Coordinate,
+  b: Coordinate,
+  t0: number,
+  t1: number,
+): Coordinate {
   const t = (t0 + t1) * 0.5;
   return interpolatePoint(a, b, t);
 }
-

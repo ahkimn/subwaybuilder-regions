@@ -4,23 +4,24 @@
  * Local server for serving data from a specific directory. Default behavior is to serve ./data/ at http://127.0.0.1:8080
  *
  * Converted from Template: https://github.com/ejfox/subwaybuilder-mod/blob/main/scripts/serve-data.js
- * 
+ *
  * Usage:
  *   tsx scripts/serve-data.ts
  *   tsx scripts/serve-data.ts --port 8080
  *   tsx scripts/serve-data.ts --dir /path/to/data
  */
 
-import http, { IncomingMessage, ServerResponse } from 'http';
 import fs from 'fs';
+import type { IncomingMessage, ServerResponse } from 'http';
+import http from 'http';
+import minimist from 'minimist';
 import path from 'path';
 import process from 'process';
-import minimist from 'minimist';
-import { requireNumber } from './utils/cli';
+
 import { DATA_DIR, DEFAULT_PORT, DEFAULT_URL } from '../shared/consts';
+import { requireNumber } from './utils/cli';
 
 const DEFAULT_DATA_DIR = path.join(__dirname, '..', DATA_DIR);
-
 
 const argv = minimist(process.argv.slice(2), {
   string: ['dir'],
@@ -28,7 +29,7 @@ const argv = minimist(process.argv.slice(2), {
   default: { port: DEFAULT_PORT },
 });
 
-const port: number = requireNumber(argv.port, 'port')
+const port: number = requireNumber(argv.port, 'port');
 const dir: string = argv.dir
   ? path.join(__dirname, '..', argv.dir)
   : DEFAULT_DATA_DIR;
@@ -102,7 +103,7 @@ const server = http.createServer(
 
       serveFile(filePath, res);
     });
-  }
+  },
 );
 
 // --------------------

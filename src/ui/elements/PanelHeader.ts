@@ -1,16 +1,17 @@
-import { CloseButton } from "./CloseButton";
+import { CloseButton } from './CloseButton';
 
 export function PanelHeader(
   title: string,
-  onClose: () => void
+  onClose: () => void,
 ): {
-  el: HTMLElement,
-  setTitle: (newTitle: string) => void
+  el: HTMLElement;
+  setTitle: (newTitle: string) => void;
 } {
   const header = document.createElement('div');
-  header.className = ['flex h-9 min-h-9 w-full p-1',
+  header.className = [
+    'flex h-9 min-h-9 w-full p-1',
     'border-b border-primary/15',
-    'items-center justify-between bg-primary-foreground'
+    'items-center justify-between bg-primary-foreground',
   ].join(' ');
 
   const left = document.createElement('div');
@@ -37,6 +38,6 @@ export function PanelHeader(
   setTitle(title);
   return {
     el: header,
-    setTitle
+    setTitle,
   };
 }

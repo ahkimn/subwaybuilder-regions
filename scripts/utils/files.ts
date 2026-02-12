@@ -1,10 +1,11 @@
+import { parse } from 'csv-parse/sync';
 import fs from 'fs-extra';
 import path from 'path';
-import readline from "readline";
-import { parse } from 'csv-parse/sync';
+import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
-import { BoundaryBox } from './geometry';
+
 import { DATA_INDEX_FILE } from '../../shared/consts';
+import type { BoundaryBox } from './geometry';
 
 export type Row = Record<string, string>;
 
@@ -26,7 +27,9 @@ export function loadYAML<T>(filePath: string): T {
     const raw = fs.readFileSync(filePath, 'utf8');
     return (parseYaml(raw) ?? {}) as T;
   } catch (err: any) {
-    console.error(`Failed to load or parse YAML file: ${filePath} with error: ${err.message}`);
+    console.error(
+      `Failed to load or parse YAML file: ${filePath} with error: ${err.message}`,
+    );
     process.exit(1);
   }
 }
@@ -38,7 +41,9 @@ export function loadGeoJSON(filePath: string): GeoJSON.FeatureCollection {
     const loadedJson = fs.readJsonSync(filePath);
     geoJson = loadedJson as GeoJSON.FeatureCollection;
   } catch (err: any) {
-    console.error(`Failed to load or parse GeoJSON file: ${filePath} with error: ${err.message}`);
+    console.error(
+      `Failed to load or parse GeoJSON file: ${filePath} with error: ${err.message}`,
+    );
     process.exit(1);
   }
 
@@ -46,7 +51,7 @@ export function loadGeoJSON(filePath: string): GeoJSON.FeatureCollection {
 }
 
 export async function loadGeoJSONFromNDJSON(
-  filePath: string
+  filePath: string,
 ): Promise<GeoJSON.FeatureCollection> {
   validateFilePath(filePath);
 
@@ -54,14 +59,14 @@ export async function loadGeoJSONFromNDJSON(
   await loadFeatureFromNDJSON(filePath, (f) => features.push(f));
 
   return {
-    type: "FeatureCollection",
-    features: features
+    type: 'FeatureCollection',
+    features: features,
   };
 }
 
 async function loadFeatureFromNDJSON(
   filePath: string,
-  onFeature: (f: GeoJSON.Feature) => void
+  onFeature: (f: GeoJSON.Feature) => void,
 ): Promise<void> {
   const rl = readline.createInterface({
     input: fs.createReadStream(filePath),
@@ -76,7 +81,7 @@ async function loadFeatureFromNDJSON(
 
 export function saveGeoJSON(
   filePath: string,
-  featureCollection: GeoJSON.FeatureCollection
+  featureCollection: GeoJSON.FeatureCollection,
 ): void {
   try {
     console.info(`Saving GeoJSON to: ${filePath}`);
@@ -100,12 +105,14 @@ export function loadCSV(filePath: string): Array<Row> {
   const records: Row[] = parse(csvContent, {
     columns: true,
     skip_empty_lines: true,
-    trim: true
+    trim: true,
   });
   return records;
 }
 
-export function loadBoundariesFromCSV(inputPath: string): Map<string, BoundaryBox> {
+export function loadBoundariesFromCSV(
+  inputPath: string,
+): Map<string, BoundaryBox> {
   const boundaries = new Map<string, BoundaryBox>();
   const rows = loadCSV(inputPath);
 
@@ -116,7 +123,13 @@ export function loadBoundariesFromCSV(inputPath: string): Map<string, BoundaryBo
     const north = parseFloat(row['North']);
     const east = parseFloat(row['East']);
 
-    if (code && !isNaN(south) && !isNaN(west) && !isNaN(north) && !isNaN(east)) {
+    if (
+      code &&
+      !isNaN(south) &&
+      !isNaN(west) &&
+      !isNaN(north) &&
+      !isNaN(east)
+    ) {
       boundaries.set(code, { south, west, north, east });
     }
   }
@@ -124,7 +137,11 @@ export function loadBoundariesFromCSV(inputPath: string): Map<string, BoundaryBo
   return boundaries;
 }
 
-export function buildCSVIndex(rows: Row[], keyColumn: string, valueColumn: string): Map<string, string> {
+export function buildCSVIndex(
+  rows: Row[],
+  keyColumn: string,
+  valueColumn: string,
+): Map<string, string> {
   const index = new Map<string, string>();
 
   for (const row of rows) {
@@ -137,8 +154,12 @@ export function buildCSVIndex(rows: Row[], keyColumn: string, valueColumn: strin
   return index;
 }
 
-
-export function updateIndexJson(indexPath: string, cityCode: string, dataType: string, displayName: string): void {
+export function updateIndexJson(
+  indexPath: string,
+  cityCode: string,
+  dataType: string,
+  displayName: string,
+): void {
   validateFilePath(indexPath);
   const index = fs.readJsonSync(indexPath, { throws: false }) || {};
 
@@ -146,12 +167,18 @@ export function updateIndexJson(indexPath: string, cityCode: string, dataType: s
     index[cityCode] = [];
   }
 
-  const existingEntry = index[cityCode].find((entry: any) => entry.id === dataType);
+  const existingEntry = index[cityCode].find(
+    (entry: any) => entry.id === dataType,
+  );
   if (!existingEntry) {
     index[cityCode].push({ id: dataType, name: displayName });
     fs.writeJsonSync(indexPath, index, { spaces: 2 });
-    console.log(`Updated ${DATA_INDEX_FILE} for ${cityCode} with new dataset: ${displayName}`);
+    console.log(
+      `Updated ${DATA_INDEX_FILE} for ${cityCode} with new dataset: ${displayName}`,
+    );
   } else {
-    console.log(`Dataset ${displayName} already exists in ${DATA_INDEX_FILE} for ${cityCode}.`);
+    console.log(
+      `Dataset ${displayName} already exists in ${DATA_INDEX_FILE} for ${cityCode}.`,
+    );
   }
 }
