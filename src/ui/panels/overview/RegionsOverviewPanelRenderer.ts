@@ -2,6 +2,7 @@ import { REGIONS_OVERVIEW_PANEL_CONTENT_ID, REGIONS_OVERVIEW_PANEL_ID, REGIONS_O
 import type { RegionSelection, UIState } from "../../../core/types";
 import type { ModdingAPI } from "../../../types/modding-api-v1";
 import { ReactToolbarPanelHost } from "../shared/ReactToolbarPanelHost";
+import { RegionsPanelRenderer } from "../types";
 import { RegionsOverviewPanel } from "./RegionsOverviewPanel";
 import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
 
@@ -9,7 +10,7 @@ export type RegionsOverviewPanelEvents = {
   onRegionSelect?: (payload: RegionSelection) => void;
 }
 
-export class RegionsOverviewPanelRenderer {
+export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
   private overviewPanel: RegionsOverviewPanel | null = null;
 

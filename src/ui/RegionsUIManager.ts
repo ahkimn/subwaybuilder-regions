@@ -1,4 +1,4 @@
-import { REGIONS_INFO_PANEL_MOD_ID, REGIONS_INFO_UPDATE_REAL_INTERVAL, REGIONS_INFO_UPDATE_GAME_INTERVAL } from "../core/constants";
+import { REGIONS_INFO_PANEL_MOD_ID } from "../core/constants";
 import { RegionDataBuilder } from "../core/datasets/RegionDataBuilder";
 import { RegionDataManager } from "../core/datasets/RegionDataManager";
 import { RegionDataset } from "../core/datasets/RegionDataset";
@@ -8,6 +8,7 @@ import { RegionsMapLayers } from "../map/RegionsMapLayers";
 import type { ModdingAPI } from "../types/modding-api-v1";
 import { observeInfoPanelsRoot as observeInfoPanelRoot, observeMapLayersPanel } from "./observers/observers";
 import { RegionsInfoPanelRenderer } from "./panels/info/RegionsInfoPanelRenderer";
+import { CommuterRefreshLoop } from "./CommuterRefreshLoop";
 import { RegionsOverviewPanelRenderer } from "./panels/overview/RegionsOverviewPanelRenderer";
 import { injectRegionToggles } from "./map-layers/toggles";
 import { resolveInfoPanelRoot } from "./resolve/resolve-info-panel";
@@ -16,12 +17,8 @@ export class RegionsUIManager {
   private infoPanelRenderer: RegionsInfoPanelRenderer;
   private overviewPanelRenderer: RegionsOverviewPanelRenderer;
 
-  private regionDataBuilder: RegionDataBuilder;
   private regionDataManager: RegionDataManager;
-
-  private lastCheckedGameTime: number = -1; // negative value indicates unchecked
-
-  private commutersUpdateInterval: number | null = null;
+  private commuterRefreshLoop: CommuterRefreshLoop;
 
   private initialized: boolean;
 
@@ -36,20 +33,27 @@ export class RegionsUIManager {
   private state: UIState;
 
   constructor(
-    private api: ModdingAPI,
+    api: ModdingAPI,
     private mapLayers: RegionsMapLayers,
     private datasetRegistry: RegionDatasetRegistry,
   ) {
     this.state = new UIState();
 
-    this.regionDataBuilder = new RegionDataBuilder(api);
-    this.regionDataManager = new RegionDataManager(this.regionDataBuilder, this.datasetRegistry, api);
+    const regionDataBuilder = new RegionDataBuilder(api);
+    this.regionDataManager = new RegionDataManager(regionDataBuilder, this.datasetRegistry, api);
 
     this.infoPanelRenderer = new RegionsInfoPanelRenderer(
       this.state,
       this.regionDataManager,
       this.getInfoPanelRoot.bind(this),
       () => this.clearSelection()
+    );
+
+    this.commuterRefreshLoop = new CommuterRefreshLoop(
+      api,
+      this.state,
+      this.regionDataManager,
+      this.infoPanelRenderer
     );
 
     this.overviewPanelRenderer = new RegionsOverviewPanelRenderer(
@@ -63,7 +67,6 @@ export class RegionsUIManager {
 
   initialize() {
     if (this.initialized) {
-      // Unexpected state. If this happens, it means 
       console.error("[Regions] UI Manager is already initialized");
       return;
     }
@@ -80,6 +83,7 @@ export class RegionsUIManager {
 
     this.mapLayers.setSelectionProvider((): RegionSelection | null => this.state.activeSelection);
 
+    this.infoPanelRenderer.initialize();
     this.ensureLayerPanelObserver();
   }
 
@@ -97,7 +101,6 @@ export class RegionsUIManager {
 
     this.infoPanelRoot = resolveInfoPanelRoot();
     this.infoPanelRoot && this.ensureInfoPanelObserver(this.infoPanelRoot);
-
     return this.infoPanelRoot;
   }
 
@@ -197,7 +200,8 @@ export class RegionsUIManager {
   onCityChange(cityCode: string) {
     this.reset();
     this.state.cityCode = cityCode;
-    this.startCommutersUpdateLoop();
+    this.commuterRefreshLoop.start();
+    this.infoPanelRenderer.initialize();
     this.overviewPanelRenderer.initialize();
 
     this.tryInjectLayerPanel();
@@ -205,10 +209,9 @@ export class RegionsUIManager {
   }
 
   reset() {
-    this.stopCommutersUpdateLoop();
+    this.commuterRefreshLoop.stop();
     this.disconnectObservers();
     this.clearSelection();
-    this.lastCheckedGameTime = -1;
     this.overviewPanelRenderer.tearDown();
   }
 
@@ -233,51 +236,6 @@ export class RegionsUIManager {
   public handleDeselect() {
     if (this.state.isActive) {
       this.clearSelection();
-    }
-  }
-
-  // --- Commuter Updates --- //
-  private startCommutersUpdateLoop() {
-    if (this.commutersUpdateInterval !== null) {
-      return;
-    }
-    console.log('[Regions] Starting commuter data update loop...');
-    this.tryUpdateCommutersData();
-
-    this.commutersUpdateInterval = window.setInterval(() => {
-      try {
-        this.tryUpdateCommutersData();
-      } catch (error) {
-        console.error('[Regions] Error during commuter data update:', error);
-      }
-    }, REGIONS_INFO_UPDATE_REAL_INTERVAL * 1000);
-  }
-
-  private stopCommutersUpdateLoop() {
-    if (this.commutersUpdateInterval !== null) {
-      console.log('[Regions] Stopping commuter data update loop...');
-      clearInterval(this.commutersUpdateInterval);
-      this.commutersUpdateInterval = null;
-    }
-  }
-
-  private tryUpdateCommutersData() {
-
-    if (!this.infoPanelRenderer?.isVisible()) return;
-
-    const elapsedSeconds = this.api.gameState.getElapsedSeconds();
-    if (elapsedSeconds - this.lastCheckedGameTime < REGIONS_INFO_UPDATE_GAME_INTERVAL) {
-      return;
-    }
-
-    this.updateCommutersData()
-    this.lastCheckedGameTime = elapsedSeconds;
-  }
-
-  private async updateCommutersData() {
-
-    if (await this.regionDataManager.ensureExistsData(this.state, 'commuter')) {
-      this.infoPanelRenderer.tryUpdatePanel();
     }
   }
 };
