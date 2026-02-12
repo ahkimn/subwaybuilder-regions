@@ -52,6 +52,7 @@ export class RegionsMod {
 
   private onMapReady = (map: maplibregl.Map | null) => {
     const resolvedMap = map ?? api.utils.getMap();
+
     if (!resolvedMap) {
       console.warn("[Regions] onMapReady called without a map instance");
       return;

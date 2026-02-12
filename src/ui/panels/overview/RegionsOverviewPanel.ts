@@ -3,8 +3,16 @@ import type { ModdingAPI } from "../../../types/modding-api-v1";
 import type { RegionsOverviewRow, RegionsOverviewSortState, RegionsOverviewTab } from "./types";
 import type React from "react";
 import { createElement } from "react";
-import { InputFieldProperties, renderOverviewPanelContent } from "./render";
+import {
+  InputFieldProperties,
+  renderLayerSelectorRow,
+  renderOverviewSearchField,
+  renderOverviewTable,
+  renderOverviewTabs,
+  renderPlaceholderTab
+} from "./render";
 import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
+import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from "../../../core/constants";
 
 
 
@@ -53,7 +61,7 @@ export class RegionsOverviewPanel {
   render(): React.ReactNode {
     const h = this.api.utils.React.createElement as typeof createElement;
     const Input = this.api.utils.components.Input as React.ComponentType<InputFieldProperties>;
-    const datasetGameData = this.regionDataManager.requestGameDataByDataset(this.selectedDatasetIdentifier!);
+    const datasetGameData = this.regionDataManager.requestGameDataByDataset(this.selectedDatasetIdentifier);
     const activeSelection = this.uiState.activeSelection;
 
     const rows = this.sortRows(
@@ -61,30 +69,48 @@ export class RegionsOverviewPanel {
       this.sortState
     );
 
-    return renderOverviewPanelContent({
+    const datasetSelectorRow = renderLayerSelectorRow(
       h,
-      Input,
-      datasetIdentifiers: this.availableDatasetIdentifiers,
-      selectedDatasetIdentifier: this.selectedDatasetIdentifier!,
-      getDatasetLabel: (datasetIdentifier: string) => this.regionDataManager.getDatasetDisplayName(datasetIdentifier),
-      activeSelection,
-      activeTab: this.activeTab,
-      searchTerm: this.searchTerm,
-      sortState: this.sortState,
-      rows,
-      onSelectDataset: (datasetIdentifier: string) => {
-        if (!datasetIdentifier || this.selectedDatasetIdentifier === datasetIdentifier) return;
-        this.selectedDatasetIdentifier = datasetIdentifier;
-        this.requestRender();
-      },
-      onSetTab: (tab: RegionsOverviewTab) => this.setTab(tab),
-      onSearchTermChange: (value: string) => {
-        this.searchTerm = value;
-        this.requestRender();
-      },
-      onSortChange: (columnIndex: number) => this.changeSort(columnIndex),
-      onSelectRow: (selection: RegionSelection) => this.onRegionSelect(selection)
-    });
+      this.availableDatasetIdentifiers,
+      this.selectedDatasetIdentifier,
+      (datasetIdentifier: string) => this.regionDataManager.getDatasetDisplayName(datasetIdentifier),
+      (datasetIdentifier: string) => this.handleSelectDataset(datasetIdentifier),
+    );
+
+    const tabSelectorRow = renderOverviewTabs(h, this.activeTab, (tab: RegionsOverviewTab) => this.setTab(tab));
+
+    let tabContent: React.ReactNode;
+    switch (this.activeTab) {
+      case "overview":
+        tabContent = h(
+          "div",
+          { className: "flex flex-col gap-2 min-h-0" },
+          renderOverviewSearchField(h, Input, this.searchTerm, (value: string) => this.handleSearchTermChange(value)),
+          renderOverviewTable(
+            h,
+            rows,
+            activeSelection,
+            this.sortState,
+            (columnIndex: number) => this.changeSort(columnIndex),
+            (selection: RegionSelection) => this.onRegionSelect(selection),
+          )
+        );
+        break;
+      case "commuter-flows":
+        tabContent = renderPlaceholderTab(h, "Commuter flow analysis is under construction.");
+        break;
+      case "ridership":
+        tabContent = renderPlaceholderTab(h, "Ridership analysis is under construction.");
+        break;
+    }
+
+    return h(
+      "div",
+      { id: REGIONS_OVERVIEW_PANEL_CONTENT_ID, className: "p-3 flex flex-col gap-3 h-full min-h-0" },
+      datasetSelectorRow,
+      tabSelectorRow,
+      tabContent,
+    );
   }
 
   private buildRows(datasetGameData: Map<string | number, RegionGameData>): RegionsOverviewRow[] {
@@ -160,6 +186,17 @@ export class RegionsOverviewPanel {
       return;
     }
     this.activeTab = tab;
+    this.requestRender();
+  }
+
+  private handleSelectDataset(datasetIdentifier: string): void {
+    if (!datasetIdentifier || this.selectedDatasetIdentifier === datasetIdentifier) return;
+    this.selectedDatasetIdentifier = datasetIdentifier;
+    this.requestRender();
+  }
+
+  private handleSearchTermChange(value: string): void {
+    this.searchTerm = value;
     this.requestRender();
   }
 }

@@ -21,6 +21,7 @@ This constant can be used as a key in the demand data maps to track the demand f
 export const UNASSIGNED_REGION_ID = 'UNASSIGNED';
 export const UNKNOWN_VALUE_DISPLAY = 'N/A'; // Display value for unknown / unavailable data points in the UI
 export const LOADING_VALUE_DISPLAY = 'Loading...'; // Display value for data points that are currently loading in the UI
+export const PERCENT_DECIMALS = 2; // Default number of decimal places for percentage values in the UI
 
 export const STALE_COMMUTER_DATA_THRESHOLD_SECONDS = 900; // Threshold for considering commuter data stale and in need of refresh, in seconds of in-game time (15 minutes)
 export const STALE_INFRA_DATA_THRESHOLD_SECONDS = 86400; // Threshold for considering infra data stale and in need of refresh, in seconds of in-game time (daily)

@@ -1,11 +1,10 @@
 import type React from "react";
 import { createElement } from "react";
 import { RegionSelection as RegionSelectionUtils, type RegionSelection } from "../../../core/types";
-import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from "../../../core/constants";
 import { DataRowOptions, DataTableRow, ReactDataTable, TableOptions } from "../../elements/DataTable";
 import { ReactSelectButtonConfig, ReactSelectRow } from "../../elements/SelectRow";
 import type { RegionsOverviewRow, RegionsOverviewSortState, RegionsOverviewTab } from "./types";
-import { formatFixedNumber } from "../../../core/utils";
+import { formatNumberOrDefault } from "../../../core/utils";
 
 export type InputFieldProperties = {
   value?: string;
@@ -14,37 +13,13 @@ export type InputFieldProperties = {
   className?: string;
 };
 
-type RenderOverviewPanelArgs = {
-  h: typeof createElement;
-  Input: React.ComponentType<InputFieldProperties>;
-  datasetIdentifiers: string[];
-  selectedDatasetIdentifier: string;
-  getDatasetLabel: (datasetIdentifier: string) => string;
-  activeSelection: RegionSelection | null;
-  activeTab: RegionsOverviewTab;
-  searchTerm: string;
-  sortState: RegionsOverviewSortState;
-  rows: RegionsOverviewRow[];
-  onSelectDataset: (datasetIdentifier: string) => void;
-  onSetTab: (tab: RegionsOverviewTab) => void;
-  onSearchTermChange: (value: string) => void;
-  onSortChange: (columnIndex: number) => void;
-  onSelectRow: (selection: RegionSelection) => void
-};
-
-export function renderOverviewPanelContent(args: RenderOverviewPanelArgs): React.ReactNode {
-  return args.h(
-    "div",
-    { id: REGIONS_OVERVIEW_PANEL_CONTENT_ID, className: "p-3 flex flex-col gap-3 h-full min-h-0" },
-    renderLayerRow(args),
-    renderTabs(args),
-    renderTabContent(args)
-  );
-}
-
-function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
-  const { h, datasetIdentifiers, selectedDatasetIdentifier } = args;
-
+export function renderLayerSelectorRow(
+  h: typeof createElement,
+  datasetIdentifiers: string[],
+  selectedDatasetIdentifier: string,
+  getDatasetLabel: (datasetIdentifier: string) => string,
+  onSelectDataset: (datasetIdentifier: string) => void,
+): React.ReactNode {
   if (datasetIdentifiers.length === 0) {
     return h(
       "div",
@@ -57,8 +32,8 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
     const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
     datasetIdentifiers.forEach((datasetIdentifier) => {
       buttonConfigs.set(datasetIdentifier, {
-        label: args.getDatasetLabel(datasetIdentifier),
-        onSelect: () => args.onSelectDataset(datasetIdentifier),
+        label: getDatasetLabel(datasetIdentifier),
+        onSelect: () => onSelectDataset(datasetIdentifier),
       });
     });
 
@@ -82,81 +57,77 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
         value: selectedDatasetIdentifier,
         onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
           const target = e.target as HTMLSelectElement;
-          args.onSelectDataset(target.value || "");
+          onSelectDataset(target.value || "");
         },
       },
       ...datasetIdentifiers.map((datasetIdentifier) =>
         h(
           "option",
           { key: datasetIdentifier, value: datasetIdentifier },
-          args.getDatasetLabel(datasetIdentifier)
+          getDatasetLabel(datasetIdentifier)
         )
       )
     )
   );
 }
 
-function renderTabs(args: RenderOverviewPanelArgs): React.ReactNode {
+export function renderOverviewTabs(
+  h: typeof createElement,
+  activeTab: RegionsOverviewTab,
+  onSetTab: (tab: RegionsOverviewTab) => void,
+): React.ReactNode {
   const tabOptions: Map<string, ReactSelectButtonConfig> = new Map();
   tabOptions.set("overview", {
     label: "Overview",
-    onSelect: () => args.onSetTab("overview"),
+    onSelect: () => onSetTab("overview"),
   });
   tabOptions.set("commuter-flows", {
     label: "Commuter Flows",
-    onSelect: () => args.onSetTab("commuter-flows"),
+    onSelect: () => onSetTab("commuter-flows"),
   });
   tabOptions.set("ridership", {
     label: "Ridership",
-    onSelect: () => args.onSetTab("ridership"),
+    onSelect: () => onSetTab("ridership"),
   });
 
-  return ReactSelectRow(args.h, tabOptions, args.activeTab, "regions-overview-tab-select", true);
+  return ReactSelectRow(h, tabOptions, activeTab, "regions-overview-tab-select", true);
 }
 
-function renderTabContent(args: RenderOverviewPanelArgs): React.ReactNode {
-  switch (args.activeTab) {
-    case "overview":
-      return renderOverviewTab(args);
-    case "commuter-flows":
-      return renderPlaceholderTab(args.h, "Commuter flow analysis is under construction.");
-    case "ridership":
-      return renderPlaceholderTab(args.h, "Ridership analysis is under construction.");
-  }
+export function renderOverviewSearchField(
+  h: typeof createElement,
+  Input: React.ComponentType<InputFieldProperties>,
+  searchTerm: string,
+  onSearchTermChange: (value: string) => void,
+): React.ReactNode {
+  return h(Input, {
+    value: searchTerm,
+    placeholder: "Search by name...",
+    onChange: (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      onSearchTermChange(target.value);
+    },
+  });
 }
 
-function renderOverviewTab(args: RenderOverviewPanelArgs): React.ReactNode {
-  const { h, Input } = args;
-
-  return h(
-    "div",
-    { className: "flex flex-col gap-2 min-h-0" },
-    h(Input, {
-      value: args.searchTerm,
-      placeholder: "Search by name...",
-      onChange: (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        args.onSearchTermChange(target.value);
-      },
-    }),
-    renderTable(args)
-  );
-}
-
-function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
-  const { h, rows, activeSelection, sortState } = args;
-
+export function renderOverviewTable(
+  h: typeof createElement,
+  rows: RegionsOverviewRow[],
+  activeSelection: RegionSelection | null,
+  sortState: RegionsOverviewSortState,
+  onSortChange: (columnIndex: number) => void,
+  onSelectRow: (selection: RegionSelection) => void,
+): React.ReactNode {
   const tableOptions: TableOptions = {
     columnTemplate: "minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr)",
     density: "compact"
   };
 
   const sortHandlers = [
-    () => args.onSortChange(0),
-    () => args.onSortChange(1),
-    () => args.onSortChange(2),
-    () => args.onSortChange(3),
-    () => args.onSortChange(4),
+    () => onSortChange(0),
+    () => onSortChange(1),
+    () => onSortChange(2),
+    () => onSortChange(3),
+    () => onSortChange(4),
   ];
 
   const tableRows: DataTableRow[] = [
@@ -188,7 +159,7 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
   } else {
     rows.forEach((row) => {
       const isActive = activeSelection !== null && RegionSelectionUtils.isEqual(activeSelection, row.selection);
-      const rowAction = () => args.onSelectRow(row.selection);
+      const rowAction = () => onSelectRow(row.selection);
       const rowOptions: DataRowOptions = {
         onClick: [rowAction, rowAction, rowAction, rowAction, rowAction],
         align: ["left", "right", "right", "right", "right"],
@@ -200,10 +171,10 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
       tableRows.push({
         rowValues: [
           row.gameData.displayName,
-          row.gameData.realPopulation ? formatFixedNumber(row.gameData.realPopulation) : "N/A",
-          row.gameData.demandData?.residents ? formatFixedNumber(row.gameData.demandData.residents) : "N/A",
-          row.gameData.demandData?.workers ? formatFixedNumber(row.gameData.demandData.workers) : "N/A",
-          row.gameData.area ? formatFixedNumber(row.gameData.area, 2) : "N/A",
+          formatNumberOrDefault(row.gameData.realPopulation),
+          formatNumberOrDefault(row.gameData.demandData?.residents ?? null),
+          formatNumberOrDefault(row.gameData.demandData?.workers ?? null),
+          formatNumberOrDefault(row.gameData.area, 2),
         ],
         options: rowOptions,
       });
@@ -221,7 +192,7 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
   );
 }
 
-function renderPlaceholderTab(
+export function renderPlaceholderTab(
   h: typeof createElement,
   description: string
 ): React.ReactNode {
