@@ -49,14 +49,15 @@ export class UIState {
 }
 
 export type RegionSelection = {
-  datasetId: string;
+  datasetIdentifier: string;
   featureId: string | number;
 }
 
 export const RegionSelection = {
   isEqual(a: RegionSelection | null, b: RegionSelection | null): boolean {
-    if (!a || !b) return false;
-    return a.datasetId === b.datasetId && a.featureId === b.featureId;
+    if (a === null && b === null) return true;
+    if (a === null || b === null) return false;
+    return a.datasetIdentifier === b.datasetIdentifier && a.featureId === b.featureId;
   }
 };
 

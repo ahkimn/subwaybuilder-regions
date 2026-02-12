@@ -27,7 +27,7 @@ export class RegionDataManager {
       return null;
     }
 
-    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetId!);
+    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetIdentifier!);
 
     const gameData = dataset.getRegionGameData(uiState.activeSelection!.featureId!);
     if (!gameData) {
@@ -57,26 +57,42 @@ export class RegionDataManager {
         if (updatedCommuterData) {
           dataset.updateWithCommuterData(uiState.activeSelection!.featureId!, updatedCommuterData!);
         }
-        console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetId}:`);
+        console.log(`[Regions] Commuter data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetIdentifier}:`);
         return updatedCommuterData;
       case 'infra':
         const updatedInfraData = await this.builder.buildRegionInfraData(dataset, uiState.activeSelection!.featureId!, currentTime);
         if (updatedInfraData) {
           dataset.updateWithInfraData(uiState.activeSelection!.featureId!, updatedInfraData);
         }
-        console.log(`[Regions] Infra data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetId}:`);
+        console.log(`[Regions] Infra data ${options?.forceBuild ? 'forcefully ' : ''}updated for feature ${uiState.activeSelection!.featureId} in dataset ${uiState.activeSelection!.datasetIdentifier}:`);
         return updatedInfraData;
     }
   }
-
 
   getGameData(uiState: Readonly<UIState>): RegionGameData | null {
     if (!uiState.isActive) {
       console.error("[Regions] UI State not active: ", uiState);
       return null;
     }
-    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetId!);
+    const dataset = this.registry.getDatasetByIdentifier(uiState.activeSelection!.datasetIdentifier!);
     return dataset.getRegionGameData(uiState.activeSelection!.featureId!);
+  }
+
+  getCityDatasetIds(cityCode: string): string[] {
+    return this.registry.getCityDatasetIds(cityCode);
+  }
+
+  getDatasetDisplayName(datasetIdentifier: string): string {
+    return this.registry.getDatasetDisplayNameByIdentifier(datasetIdentifier);
+  }
+
+  requestGameDataByDataset(datasetIdentifier: string): Map<string | number, RegionGameData> {
+    const dataset = this.registry.getDatasetByIdentifier(datasetIdentifier);
+    // TODO: Async request for all current game data for the dataset, including commuter and (potentially) infra data
+    // TODO: Add callback so that the UI can be updated with the loaded data...!!!
+
+    // Return immediately available game data map for the dataset
+    return dataset.gameData;
   }
 }
 

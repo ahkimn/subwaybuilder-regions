@@ -21,19 +21,43 @@ This constant can be used as a key in the demand data maps to track the demand f
 export const UNASSIGNED_REGION_ID = 'UNASSIGNED';
 export const UNKNOWN_VALUE_DISPLAY = 'N/A'; // Display value for unknown / unavailable data points in the UI
 export const LOADING_VALUE_DISPLAY = 'Loading...'; // Display value for data points that are currently loading in the UI
+export const PERCENT_DECIMALS = 2; // Default number of decimal places for percentage values in the UI
 
 export const STALE_COMMUTER_DATA_THRESHOLD_SECONDS = 900; // Threshold for considering commuter data stale and in need of refresh, in seconds of in-game time (15 minutes)
 export const STALE_INFRA_DATA_THRESHOLD_SECONDS = 86400; // Threshold for considering infra data stale and in need of refresh, in seconds of in-game time (daily)
 export const DEFAULT_CHUNK_SIZE = 100; // Default loop chunk size for time-sliced data processing
 
 export const REGIONS_INFO_CONTAINER_ID = 'regions-info-container';
-export const REGIONS_INFO_UPDATE_GAME_INTERVAL = 1800; // 30 in-game minutes
+export const REGIONS_INFO_UPDATE_GAME_INTERVAL = 900; // 15 in-game minutes
 export const REGIONS_INFO_UPDATE_REAL_INTERVAL = 3; // 3 real-world seconds
+export const UPDATE_ON_DEMAND_CHANGE = true; // If true, commuter refresh checks are triggered by onDemandChange instead of polling
 export const REGIONS_DESELECT_KEY = 'Escape';
 
 export const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
 export const REGIONS_INFO_PANEL_TITLE = 'Region Info';
 export const REGIONS_INFO_PANEL_MOD_ID = 'regions-info-panel';
+export const LAYERS_PANEL_MOD_ID = "layers-panel";
+
+export const MOD_ID_ATTR = "data-mod-id";
+export const MOD_ROLE_ATTR = "data-mod-role";
+
+export function modIdSelector(modId: string): string {
+  return `[${MOD_ID_ATTR}="${modId}"]`;
+}
+
+export function modRoleSelector(modRole: string): string {
+  return `[${MOD_ROLE_ATTR}="${modRole}"]`;
+}
+
+export const REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID = "regions-layer-toggles";
+export const REGIONS_LAYER_TOGGLE_MOD_ROLE = "regions-layer-toggle";
+
+export const REGIONS_OVERVIEW_PANEL_ID = "regions-overview-toolbar-panel";
+export const REGIONS_OVERVIEW_PANEL_TITLE = "Regions Overview";
+export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
+export const REGIONS_OVERVIEW_PANEL_CONTENT_ID = "regions-overview-panel-content";
+
+export const FLOATING_PANEL_OFFSET_X = 80;
+export const FLOATING_PANEL_OFFSET_Y = 80;
 
 export const INFO_PANEL_MIN_WIDTH = 80;
-

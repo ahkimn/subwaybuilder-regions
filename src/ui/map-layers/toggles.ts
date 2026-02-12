@@ -1,13 +1,18 @@
+import {
+  MOD_ID_ATTR,
+  MOD_ROLE_ATTR,
+  REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID,
+  REGIONS_LAYER_TOGGLE_MOD_ROLE,
+  modIdSelector,
+  modRoleSelector
+} from "../../core/constants";
 import { Checkbox } from "../elements/Checkbox";
 import { LayerToggleOptions } from "../types/LayerToggleOptions";
-
-const REGIONS_CONTAINER_ATTR = 'data-regions-mod';
-const REGIONS_TOGGLE_ATTR = 'data-regions-toggle';
 
 function createToggleRow(
   options: LayerToggleOptions
 ): HTMLElement {
-  return Checkbox(options, REGIONS_TOGGLE_ATTR);
+  return Checkbox(options, MOD_ROLE_ATTR, REGIONS_LAYER_TOGGLE_MOD_ROLE);
 }
 
 export function injectRegionToggles(panel: HTMLElement, datasetsToggleOptions: LayerToggleOptions[]) {
@@ -36,13 +41,13 @@ export function injectRegionToggles(panel: HTMLElement, datasetsToggleOptions: L
   }
 
   let regionSegment = segmentsContainer!.querySelector(
-    `div[${REGIONS_CONTAINER_ATTR}]`
+    modIdSelector(REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID)
   ) as HTMLElement | null;
 
   if (!regionSegment) {
 
     regionSegment = document.createElement('div');
-    regionSegment.setAttribute(REGIONS_CONTAINER_ATTR, 'true');
+    regionSegment.setAttribute(MOD_ID_ATTR, REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID);
     regionSegment.className = 'space-y-1';
 
     const segmentHeader = document.createElement('h4');
@@ -53,7 +58,7 @@ export function injectRegionToggles(panel: HTMLElement, datasetsToggleOptions: L
   }
 
   const existingToggles = regionSegment.querySelectorAll(
-    `[${REGIONS_TOGGLE_ATTR}]`
+    modRoleSelector(REGIONS_LAYER_TOGGLE_MOD_ROLE)
   );
   existingToggles.forEach((toggle) => toggle.remove());
 

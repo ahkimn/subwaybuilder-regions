@@ -4,11 +4,12 @@ import { createIconElement, CheckboxIcon } from "./utils/get-icon";
 
 export function Checkbox(
   options: LayerToggleOptions,
-  attribute: string
+  attributeName: string,
+  attributeValue: string = "true",
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'flex items-center gap-2';
-  row.setAttribute(attribute, 'true');
+  row.setAttribute(attributeName, attributeValue);
 
   const buttonElementId = `regions-toggle-${options.id}`;
   const icon = buildCheckBoxIcon();

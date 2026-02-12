@@ -73,12 +73,12 @@ export class RegionsInfoPanel {
         {
           label: 'Summary',
           onSelect: () => { this.setView('statistics'); },
-          iconSVG: createIconElement(FileChartColumnIcon, { size: 24 })
+          icon: createIconElement(FileChartColumnIcon, { size: 24 })
         },
         {
           label: 'Commuters',
           onSelect: () => { this.setView('commuters'); },
-          iconSVG: createIconElement(TramFrontIcon, { size: 24 })
+          icon: createIconElement(TramFrontIcon, { size: 24 })
         }
       ]
     );
@@ -93,30 +93,29 @@ export class RegionsInfoPanel {
     if (this.activeView === view) return;
 
     this.activeView = view;
-    this.render(true);
+    this.tryRender(true);
   }
 
-  private async render(forceRefresh: boolean = false) {
-    const token = ++this.renderToken
-
+  private async prepareData(forceRefresh: boolean, token: number): Promise<void> {
     if (this.activeView === 'commuters' && forceRefresh) {
       await this.regionDataManager.ensureExistsData(this.uiState, 'commuter', { forceBuild: true });
-    } else if (this.activeView === 'statistics' && forceRefresh) {
+      return;
+    }
+
+    if (this.activeView === 'statistics' && forceRefresh) {
       const selectionSnapshot = this.uiState.activeSelection;
       // Do not force rebuild infra data since it is more computationally expensive and will not change without user input
-      this.regionDataManager.ensureExistsData(this.uiState, 'infra', { forceBuild: false })
+      void this.regionDataManager.ensureExistsData(this.uiState, 'infra', { forceBuild: false })
         .then(() => {
           // Let computation continue async and attempt to rerender once the data is ready and if the user has not changed selection / view
           if (this.activeView === 'statistics' && RegionSelection.isEqual(selectionSnapshot, this.uiState.activeSelection)) {
-            requestAnimationFrame(() => this.render());
+            requestAnimationFrame(() => this.tryRender());
           }
-        })
+        });
     }
+  }
 
-    if (token !== this.renderToken) {
-      console.warn(`Aborting render due to newer render token. Current: ${this.renderToken}. Required: ${token}`);
-      return;
-    }
+  private renderView() {
     this.gameData = this.regionDataManager.getGameData(this.uiState);
 
     if (!this.gameData) {
@@ -125,18 +124,15 @@ export class RegionsInfoPanel {
     }
 
     let viewNode: HTMLElement;
-
-    this.contentPanel.replaceChildren();
     switch (this.activeView) {
       case 'statistics':
-        viewNode = renderStatisticsView(this.gameData!);
+        viewNode = renderStatisticsView(this.gameData);
         break;
       case 'commuters':
         viewNode =
-          renderCommutersView(this.gameData!, this.commutersViewState, direction => {
+          renderCommutersView(this.gameData, this.commutersViewState, direction => {
             if (this.commutersViewState.direction === direction) return;
-            this.commutersViewState.direction = direction;
-            requestAnimationFrame(() => this.render());
+            this.commutersViewState.direction = direction; requestAnimationFrame(() => this.tryRender());
           })
         break;
     }
@@ -144,9 +140,20 @@ export class RegionsInfoPanel {
     this.contentPanel.replaceChildren(viewNode);
   }
 
+  private async render(forceRefresh: boolean = false) {
+    const token = ++this.renderToken
+    await this.prepareData(forceRefresh, token);
+
+    if (token !== this.renderToken) {
+      console.warn(`Aborting render due to newer render token. Current: ${this.renderToken}. Required: ${token}`);
+      return;
+    }
+    this.renderView();
+  }
+
   public tryRender(forceRefresh: boolean = false) {
     if (this.uiState.isActive) {
-      this.render(forceRefresh);
+      void this.render(forceRefresh);
     }
   }
 

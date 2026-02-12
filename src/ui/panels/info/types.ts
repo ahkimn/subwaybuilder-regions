@@ -1,8 +1,9 @@
+import type { NumberDisplay, SortDirection } from '../types';
+
 export type RegionsInfoPanelView = 'statistics' | 'commuters';
 export type CommuterDirection = 'outbound' | 'inbound'
-export type NumberDisplay = 'absolute' | 'percentage';
 export type ModeLayout = 'transit' | 'all';
-export type SortDirection = 'asc' | 'desc';
+export type { NumberDisplay, SortDirection } from '../types';
 
 export type CommutersViewState = {
   direction: CommuterDirection;

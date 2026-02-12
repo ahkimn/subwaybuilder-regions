@@ -15,7 +15,6 @@ export class RegionsMod {
   private registry: RegionDatasetRegistry;
   private currentCityCode: string | null = null;
 
-  private map: maplibregl.Map | null = null;
   private mapLayers: RegionsMapLayers | null = null;
 
   private uiManager: RegionsUIManager | null = null;
@@ -51,11 +50,17 @@ export class RegionsMod {
     console.log("[Regions] Mod Initialized");
   }
 
-  private onMapReady = (map: maplibregl.Map) => {
-    this.map = map;
+  private onMapReady = (map: maplibregl.Map | null) => {
+    const resolvedMap = map ?? api.utils.getMap();
+
+    if (!resolvedMap) {
+      console.warn("[Regions] onMapReady called without a map instance");
+      return;
+    }
+
     if (!this.mapInitialized) {
       this.mapInitialized = true;
-      this.mapLayers = new RegionsMapLayers(map);
+      this.mapLayers = new RegionsMapLayers(resolvedMap);
       this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
 
       console.log("[Regions] Map Layers and UI Manager initialized");
@@ -71,11 +76,22 @@ export class RegionsMod {
         this.activateCity(this.currentCityCode);
       }
       return;
+    } else if (!this.mapLayers || !this.uiManager) {
+
+      console.error("[Regions] Rebuilding map and UI managers after unexpected missing state");
+      this.mapLayers = new RegionsMapLayers(resolvedMap);
+      this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
+      this.uiManager.initialize();
+
+      if (this.currentCityCode) {
+        this.activateCity(this.currentCityCode);
+      }
+      return;
     }
 
     // City transitions can provide a new map instance in onMapReady.
     // Rebind existing map-layer manager without creating new manager instances.
-    this.mapLayers?.setMap(map);
+    this.mapLayers.setMap(resolvedMap);
     console.warn("[Regions] onMapReady called with a new map instance; rebound map references");
   }
 
@@ -93,7 +109,7 @@ export class RegionsMod {
       }
       api.ui.showNotification(`[Regions] City data loaded for: ${this.registry.getCityDatasets(cityCode).map(d => d.displayName).join(', ')}`, "success");
       this.currentCityCode = cityCode;
-      if (this.map) {
+      if (this.mapLayers) {
         this.activateCity(cityCode);
       }
     });
@@ -122,7 +138,7 @@ export class RegionsMod {
 
     datasets.forEach(dataset => dataset.updateWithDemandData(demandData));
 
-    this.uiManager!.onCityChange(cityCode, datasets);
+    this.uiManager!.onCityChange(cityCode);
     this.mapLayers!.observeMapLayersForDatasets(datasets);
   }
 
@@ -153,20 +169,16 @@ export class RegionsMod {
     return this.uiManager?.activeSelection;
   }
 
+  tearDownUIManager() {
+    this.uiManager?.tearDown();
+  }
+
   logMapStyle() {
-    if (!this.map) {
-      console.warn("[Regions] Map not initialized");
-      return;
-    }
-    console.log(this.map.getStyle());
+    console.log(this.mapLayers ? this.mapLayers.getMapStyle() : "Map layers not initialized");
   }
 
   logLayerOrder() {
-    if (!this.map) {
-      console.warn("[Regions] Map not initialized");
-      return;
-    }
-    console.log(this.map.getStyle().layers?.map((layer) => layer.id));
+    console.log(this.mapLayers ? this.mapLayers.getMapLayerOrder() : "Map layers not initialized");
   }
 }
 
@@ -177,6 +189,7 @@ const mod = new RegionsMod();
     printRegistry: () => mod.printRegistry(),
     getCurrentCityCode: () => mod.getCurrentCityCode(),
     getActiveSelection: () => mod.getActiveSelection(),
+    tearDownUIManager: () => mod.tearDownUIManager(),
     logMapStyle: () => mod.logMapStyle(),
     logLayerOrder: () => mod.logLayerOrder(),
   }

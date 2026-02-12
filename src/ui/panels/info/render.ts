@@ -1,4 +1,4 @@
-import { formatFixedNumber } from "../../../core/utils";
+import { formatNumberOrDefault, formatPercentOrDefault } from "../../../core/utils";
 import { DEFAULT_UNIT_LABELS, LOADING_VALUE_DISPLAY, UNKNOWN_VALUE_DISPLAY } from "../../../core/constants";
 import { ModeShare, RegionGameData } from "../../../core/types";
 import { DataRowOptions, DataTable, DataTableRow, TableOptions } from "../../elements/DataTable";
@@ -10,7 +10,6 @@ import { CommutersViewState, SortDirection } from "./types";
 import { InlineToggle } from "../../elements/InlineToggle";
 
 const DEFAULT_TABLE_ROWS = 10; // Max number of rows to show in commuters by region table before truncation
-const PERCENT_DECIMALS = 2;
 
 // --- Shared Elements --- //
 
@@ -33,9 +32,9 @@ export function renderStatisticsView(
   root.className = 'flex flex-col gap-2';
 
   const realPopulation = gameData.realPopulation;
-  const demandPoints = gameData.demandData?.demandPoints;
-  const residents = gameData.demandData?.residents;
-  const workers = gameData.demandData?.workers;
+  const demandPoints = gameData.demandData?.demandPoints ?? 0;
+  const residents = gameData.demandData?.residents ?? 0;
+  const workers = gameData.demandData?.workers ?? 0;
 
   const unitLabel = gameData.unitNames?.singular;
 
@@ -46,19 +45,19 @@ export function renderStatisticsView(
     buildViewHeader(gameData.displayName),
     DetailRow('Full Name', gameData.fullName),
     DetailRow('Type', unitLabel ? unitLabel : DEFAULT_UNIT_LABELS.singular),
-    DetailRow('Real Population', realPopulation ? formatFixedNumber(realPopulation) : UNKNOWN_VALUE_DISPLAY),
+    DetailRow('Real Population', formatNumberOrDefault(realPopulation)),
     Divider(),
-    DetailRow('Demand Point Count', demandPoints ? formatFixedNumber(demandPoints) : UNKNOWN_VALUE_DISPLAY),
-    DetailRow('Residents', residents ? formatFixedNumber(residents) : UNKNOWN_VALUE_DISPLAY),
-    DetailRow('Jobs', workers ? formatFixedNumber(workers) : UNKNOWN_VALUE_DISPLAY),
+    DetailRow('Demand Point Count', formatNumberOrDefault(demandPoints)),
+    DetailRow('Residents', formatNumberOrDefault(residents)),
+    DetailRow('Jobs', formatNumberOrDefault(workers)),
     Divider(),
-    DetailRow('Total Area', gameData.area ? `${formatFixedNumber(gameData.area, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
-    DetailRow('Playable Area', gameData.gameArea ? `${formatFixedNumber(gameData.gameArea, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
+    DetailRow('Total Area', gameData.area ? `${formatNumberOrDefault(gameData.area, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
+    DetailRow('Playable Area', gameData.gameArea ? `${formatNumberOrDefault(gameData.gameArea, 2)} km²` : UNKNOWN_VALUE_DISPLAY),
     Divider(),
-    DetailRow('Station Count', existsInfraData ? `${formatFixedNumber(infraData!.stations.size)}` : LOADING_VALUE_DISPLAY), // TODO: (Feature): Pull from game state
-    DetailRow('Total Track Length', existsInfraData ? `${formatFixedNumber(Array.from(infraData!.trackLengths.values()).reduce((a, b) => a + b, 0), 2)} km` : LOADING_VALUE_DISPLAY),
+    DetailRow('Station Count', existsInfraData ? `${formatNumberOrDefault(infraData!.stations.size)}` : LOADING_VALUE_DISPLAY), // TODO: (Feature): Pull from game state
+    DetailRow('Total Track Length', existsInfraData ? `${formatNumberOrDefault(Array.from(infraData!.trackLengths.values()).reduce((a, b) => a + b, 0), 2)} km` : LOADING_VALUE_DISPLAY),
     // TODO: Show Route bullets, but this requires allowing overflow and likely a different base component structure than DetailRow
-    DetailRow('Routes Serving Region', existsInfraData ? `${formatFixedNumber(infraData!.routes.size)}` : LOADING_VALUE_DISPLAY),
+    DetailRow('Routes Serving Region', existsInfraData ? `${formatNumberOrDefault(infraData!.routes.size)}` : LOADING_VALUE_DISPLAY),
   );
   return root;
 }
@@ -125,10 +124,10 @@ function buildCommutersHeader(
 
 function buildSummaryStatistics(populationCount: number, aggregateModeShare: ModeShare): HTMLElement[] {
   return [
-    DetailRow('Total Commuters', formatFixedNumber(populationCount)),
-    DetailRow('Transit Mode Share', `${formatFixedNumber(aggregateModeShare.transit / populationCount * 100, PERCENT_DECIMALS)}%`),
-    DetailRow('Driving Mode Share', `${formatFixedNumber(aggregateModeShare.driving / populationCount * 100, PERCENT_DECIMALS)}%`),
-    DetailRow('Walking Mode Share', `${formatFixedNumber(aggregateModeShare.walking / populationCount * 100, PERCENT_DECIMALS)}%`),
+    DetailRow('Total Commuters', formatNumberOrDefault(populationCount)),
+    DetailRow('Transit Mode Share', formatPercentOrDefault(aggregateModeShare.transit / populationCount * 100)),
+    DetailRow('Driving Mode Share', formatPercentOrDefault(aggregateModeShare.driving / populationCount * 100)),
+    DetailRow('Walking Mode Share', formatPercentOrDefault(aggregateModeShare.walking / populationCount * 100)),
     Divider(2),
   ]
 }
@@ -198,7 +197,7 @@ function buildCommutersTable(
   const tableFrame = document.createElement('div');
   tableFrame.className = 'border-t border-border/30 pt-1';
 
-  const tableOptions = new TableOptions(getColumnTemplate(viewState), 'standard');
+  const tableOptions: TableOptions = { columnTemplate: getColumnTemplate(viewState), density: 'standard' };
   const tableHeaderData = buildTableHeader(viewState, renderPanel);
   const tableHeader = DataTable(tableOptions, tableHeaderData);
   tableFrame.appendChild(tableHeader);
@@ -289,7 +288,7 @@ function buildTableHeader(viewState: CommutersViewState, render: () => void): Da
       align: ['left', 'right', 'right', 'right', 'right'],
       sortState: {
         index: viewState.sortIndex,
-        directionLabel: viewState.sortDirection === 'asc' ? '▲' : '▼',
+        directionLabel: viewState.sortDirection === 'asc' ? ' ▲' : ' ▼',
         sortSelectedClass: 'text-foreground'
       }
     }
@@ -353,8 +352,8 @@ function buildTableRow(viewState: CommutersViewState, rowData: CommuterRowData):
   const { regionName, commuterValue, transitValue, drivingValue, walkingValue } = rowData;
   const rowValues: Array<string | number> = [
     regionName,
-    viewState.commuterCountDisplay === 'absolute' ? formatFixedNumber(commuterValue) : `${formatFixedNumber(commuterValue, PERCENT_DECIMALS)}%`,
-    viewState.modeShareDisplay === 'absolute' ? formatFixedNumber(transitValue) : `${formatFixedNumber(transitValue, PERCENT_DECIMALS)}%`
+    viewState.commuterCountDisplay === 'absolute' ? formatNumberOrDefault(commuterValue) : formatPercentOrDefault(commuterValue),
+    viewState.modeShareDisplay === 'absolute' ? formatNumberOrDefault(transitValue) : formatPercentOrDefault(transitValue)
   ];
   const options: DataRowOptions = {
     align: ['left', 'right', 'right']
@@ -362,8 +361,8 @@ function buildTableRow(viewState: CommutersViewState, rowData: CommuterRowData):
 
   if (viewState.modeShareLayout === 'all') {
     rowValues.push(
-      viewState.modeShareDisplay === 'absolute' ? formatFixedNumber(drivingValue) : `${formatFixedNumber(drivingValue, PERCENT_DECIMALS)}%`,
-      viewState.modeShareDisplay === 'absolute' ? formatFixedNumber(walkingValue) : `${formatFixedNumber(walkingValue, PERCENT_DECIMALS)}%`
+      viewState.modeShareDisplay === 'absolute' ? formatNumberOrDefault(drivingValue) : formatPercentOrDefault(drivingValue),
+      viewState.modeShareDisplay === 'absolute' ? formatNumberOrDefault(walkingValue) : formatPercentOrDefault(walkingValue)
     );
     options.align?.push('right', 'right');
   }

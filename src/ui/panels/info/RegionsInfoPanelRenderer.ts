@@ -1,11 +1,11 @@
 import { REGIONS_INFO_CONTAINER_ID } from "../../../core/constants";
 import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
 import { UIState } from "../../../core/types";
+import { RegionsPanelRenderer } from "../types";
 import { RegionsInfoPanel } from "./RegionsInfoPanel";
 
-export class RegionsInfoPanelRenderer {
+export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
   private root: HTMLElement | null = null;
-
   private infoPanel: RegionsInfoPanel | null = null;
 
   constructor(
@@ -15,6 +15,10 @@ export class RegionsInfoPanelRenderer {
     private onClose: () => void
   ) {
   };
+
+  initialize(): void {
+    // No-op for parity with other panel renderers.
+  }
 
   show() {
     const parentContainer = this.getParentContainer();
@@ -65,7 +69,6 @@ export class RegionsInfoPanelRenderer {
   }
 
   tryUpdatePanel() {
-    console.log("[RegionsInfoPanelRenderer] tryUpdatePanel called. Current panel:", this.infoPanel ? "exists" : "null");
     this.infoPanel?.tryRender();
   }
 

@@ -1,3 +1,4 @@
+import { PERCENT_DECIMALS, UNKNOWN_VALUE_DISPLAY } from "./constants";
 
 export function formatFixedNumber(
   n: number,
@@ -8,6 +9,28 @@ export function formatFixedNumber(
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
+}
+
+export function formatNumberOrDefault(
+  value: number | null,
+  decimals = 0,
+  fallback = UNKNOWN_VALUE_DISPLAY
+): string {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+  return formatFixedNumber(value, decimals);
+}
+
+export function formatPercentOrDefault(
+  value: number | null,
+  decimals = PERCENT_DECIMALS,
+  fallback = UNKNOWN_VALUE_DISPLAY
+): string {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+  return `${formatFixedNumber(value, decimals)}%`;
 }
 
 
@@ -40,3 +63,4 @@ export async function processInChunks<T>(
     }
   }
 }
+
