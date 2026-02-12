@@ -1,14 +1,13 @@
 import type { ModdingAPI, UIToolbarPanelOptions } from "../../../types/modding-api-v1";
+import type { ReactNode } from "react";
 
 type ToolbarPanelHostOptions = Pick<UIToolbarPanelOptions, "id" | "icon" | "tooltip" | "title" | "width"> & {
-  allowPointerPassthrough?: boolean;
-  persistOnOutsideClick?: boolean;
-  panelContentRootId?: string;
+  panelContentRootId: string;
 };
 
 export class ReactToolbarPanelHost {
   private initialized = false;
-  private renderFn: (() => unknown) | null = null;
+  private renderFn: (() => ReactNode) | null = null;
   private hasContent = false;
   private domObserver: MutationObserver | null = null;
   private passthroughOverlay: HTMLElement | null = null;
@@ -38,7 +37,7 @@ export class ReactToolbarPanelHost {
     this.startDomObserver();
   }
 
-  setRender(renderFn: () => unknown): void {
+  setRender(renderFn: () => ReactNode): void {
     this.renderFn = renderFn;
     this.hasContent = true;
     this.requestRender();
@@ -62,15 +61,11 @@ export class ReactToolbarPanelHost {
       return;
     }
     this.api.ui.forceUpdate();
-    if (this.options.allowPointerPassthrough) {
-      requestAnimationFrame(() => this.applyPointerPassthrough());
-    }
+    requestAnimationFrame(() => this.applyPointerPassthrough());
   }
 
   private applyPointerPassthrough(): void {
-    const contentRoot = this.options.panelContentRootId
-      ? document.getElementById(this.options.panelContentRootId)
-      : null;
+    const contentRoot = document.getElementById(this.options.panelContentRootId);
     if (!contentRoot) {
       return;
     }
@@ -151,9 +146,7 @@ export class ReactToolbarPanelHost {
     }
 
     this.domObserver = new MutationObserver(() => {
-      if (this.options.allowPointerPassthrough) {
-        this.applyPointerPassthrough();
-      }
+      this.applyPointerPassthrough();
     });
     this.domObserver.observe(document.body, { subtree: true, childList: true, attributes: true });
   }
@@ -167,7 +160,7 @@ export class ReactToolbarPanelHost {
   }
 
   private startClickCaptureGuard(): void {
-    if (!this.options.persistOnOutsideClick || this.clickCaptureHandler) {
+    if (this.clickCaptureHandler) {
       return;
     }
 
@@ -202,9 +195,7 @@ export class ReactToolbarPanelHost {
   }
 
   private resolvePanelContainer(): HTMLElement | null {
-    const contentRoot = this.options.panelContentRootId
-      ? document.getElementById(this.options.panelContentRootId)
-      : null;
+    const contentRoot = document.getElementById(this.options.panelContentRootId);
     if (!contentRoot) {
       return null;
     }

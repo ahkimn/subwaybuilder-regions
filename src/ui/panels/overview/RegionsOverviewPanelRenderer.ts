@@ -23,8 +23,6 @@ export class RegionsOverviewPanelRenderer {
       title: REGIONS_OVERVIEW_PANEL_TITLE,
       tooltip: "Regions Overview",
       width: 720,
-      allowPointerPassthrough: true,
-      persistOnOutsideClick: true,
       panelContentRootId: REGIONS_OVERVIEW_PANEL_CONTENT_ID,
     });
 

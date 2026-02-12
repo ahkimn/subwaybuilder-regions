@@ -1,20 +1,11 @@
-import { RegionSelection as RegionSelectionUtils, type RegionSelection } from "../../../core/types";
+import type { RegionSelection } from "../../../core/types";
 import { RegionDataset } from "../../../core/datasets/RegionDataset";
-import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from "../../../core/constants";
 import { formatFixedNumber } from "../../../core/utils";
 import type { ModdingAPI } from "../../../types/modding-api-v1";
 import type { RegionsOverviewRow, RegionsOverviewSortState, RegionsOverviewTab } from "./types";
 import type React from "react";
 import { createElement } from "react";
-import { DataRowOptions, DataTableRow, ReactDataTable, TableOptions } from "../../elements/DataTable";
-import { ReactSelectButtonConfig, ReactSelectRow } from "../../elements/SelectRow";
-
-type GameInputProps = {
-  value?: string;
-  placeholder?: string;
-  onChange?: (e: Event) => void;
-  className?: string;
-};
+import { GameInputProps, renderOverviewPanelContent } from "./render";
 
 type RegionsOverviewPanelOptions = {
   api: ModdingAPI;
@@ -73,230 +64,36 @@ export class RegionsOverviewPanel {
     const selected = this.resolveSelectedDataset(datasets);
     const activeSelection = this.getActiveSelection();
 
-    return h(
-      "div",
-      { id: REGIONS_OVERVIEW_PANEL_CONTENT_ID, className: "p-3 flex flex-col gap-3 h-full min-h-0" },
-      this.renderLayerRow(h, selected, datasets),
-      this.renderTabs(h),
-      this.renderTabContent(h, Input, selected, activeSelection)
-    );
-  }
-
-  private renderLayerRow(
-    h: typeof createElement,
-    selected: RegionDataset | null,
-    datasets: RegionDataset[]
-  ): React.ReactNode {
-    if (datasets.length === 0) {
-      return h(
-        "div",
-        { className: "rounded-md border border-border/60 px-2 py-2 text-xs text-muted-foreground" },
-        "Load a city with region datasets to enable layer and table controls."
-      );
-    }
-
-    if (datasets.length <= 5) {
-      const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
-      datasets.forEach((dataset) => {
-        buttonConfigs.set(dataset.id, {
-          label: dataset.displayName,
-          onSelect: () => {
-            if (this.selectedDatasetId === dataset.id) return;
-            this.selectedDatasetId = dataset.id;
-            this.requestRender();
-          },
-        })
-      });
-
-      return h(
-        "div",
-        { className: "flex flex-col gap-1.5" },
-        h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-        ReactSelectRow(h, buttonConfigs, selected?.id ?? null, "regions-overview-layer-select")
-      );
-    }
-
-    return h(
-      "div",
-      { className: "flex flex-col gap-1.5" },
-      h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-      h(
-        "select",
-        {
-          className:
-            "h-9 rounded-md border border-border/60 bg-background px-2 text-sm outline-none focus:border-ring",
-          value: selected?.id ?? "",
-          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const target = e.target as HTMLSelectElement;
-            this.selectedDatasetId = target.value || null;
-            this.requestRender();
-          },
-        },
-        ...datasets.map((dataset) =>
-          h(
-            "option",
-            { key: dataset.id, value: dataset.id },
-            dataset.displayName
-          )
-        )
-      )
-    );
-  }
-
-  private renderTabs(h: typeof createElement): React.ReactNode {
-    const tabOptions: Map<string, ReactSelectButtonConfig> = new Map();
-    tabOptions.set("overview", {
-      label: "Overview",
-      onSelect: () => this.setTab("overview"),
-    });
-    tabOptions.set("commuter-flows", {
-      label: "Commuter Flows",
-      onSelect: () => this.setTab("commuter-flows"),
-    });
-    tabOptions.set("ridership", {
-      label: "Ridership",
-      onSelect: () => this.setTab("ridership"),
-    });
-
-    return ReactSelectRow(h, tabOptions, this.activeTab, "regions-overview-tab-select", true);
-  }
-
-  private renderTabContent(
-    h: typeof createElement,
-    Input: React.ComponentType<GameInputProps>,
-    dataset: RegionDataset | null,
-    activeSelection: RegionSelection | null
-  ): React.ReactNode {
-    switch (this.activeTab) {
-      case "overview":
-        return this.renderOverviewTab(h, Input, dataset, activeSelection);
-      case "commuter-flows":
-        return this.renderPlaceholderTab(h, "Commuter flow analysis is under construction.");
-      case "ridership":
-        return this.renderPlaceholderTab(h, "Ridership analysis is under construction.");
-    }
-  }
-
-  private renderOverviewTab(
-    h: typeof createElement,
-    Input: React.ComponentType<GameInputProps>,
-    dataset: RegionDataset | null,
-    activeSelection: RegionSelection | null
-  ): React.ReactNode {
     const rows = this.sortRows(
-      this.filterRows(this.buildRows(dataset), this.searchTerm),
+      this.filterRows(this.buildRows(selected), this.searchTerm),
       this.sortState
     );
 
-    return h(
-      "div",
-      { className: "flex flex-col gap-2 min-h-0" },
-      h(Input, {
-        value: this.searchTerm,
-        placeholder: "Search by name...",
-        onChange: (e: Event) => {
-          const target = e.target as HTMLInputElement;
-          this.searchTerm = target.value;
-          this.requestRender();
-        },
-      }),
-      this.renderTable(h, rows, activeSelection)
-    );
-  }
-
-  private renderTable(
-    h: typeof createElement,
-    rows: RegionsOverviewRow[],
-    activeSelection: RegionSelection | null
-  ): React.ReactNode {
-    const tableOptions: TableOptions = {
-      columnTemplate: "minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(6rem,0.8fr)",
-      density: "compact"
-    };
-
-    const sortHandlers = [
-      () => this.changeSort(0),
-      () => this.changeSort(1),
-      () => this.changeSort(2),
-      () => this.changeSort(3),
-      () => this.changeSort(4),
-      () => this.changeSort(5),
-      () => this.changeSort(6),
-    ];
-
-    const tableRows: DataTableRow[] = [
-      {
-        rowValues: ["Region", "Real Pop", "Residents", "Workers", "Area", "Density", "Infra"],
-        options: {
-          header: true,
-          borderBottom: true,
-          onClick: sortHandlers,
-          align: ["left", "right", "right", "right", "right", "right", "right"],
-          sortState: {
-            index: this.sortState.sortIndex,
-            directionLabel: this.sortState.sortDirection === "asc" ? "^" : "v",
-            sortSelectedClass: "text-foreground",
-          },
-        },
+    return renderOverviewPanelContent({
+      h,
+      Input,
+      datasets,
+      selectedDataset: selected,
+      activeSelection,
+      activeTab: this.activeTab,
+      searchTerm: this.searchTerm,
+      sortState: this.sortState,
+      rows,
+      onSelectDataset: (datasetId: string) => {
+        if (!datasetId || this.selectedDatasetId === datasetId) return;
+        this.selectedDatasetId = datasetId;
+        this.requestRender();
       },
-    ];
-
-    if (rows.length === 0) {
-      tableRows.push({
-        rowValues: ["No rows match the current filters."],
-        options: {
-          colSpan: [7],
-          align: ["left"],
-          rowClassName: "text-xs text-muted-foreground",
-        },
-      });
-    } else {
-      rows.forEach((row) => {
-        const isActive = activeSelection !== null && RegionSelectionUtils.isEqual(activeSelection, row.selection);
-        const rowAction = () => this.onSelectRegion(row.selection, "overview-click");
-        const rowOptions: DataRowOptions = {
-          onClick: [rowAction, rowAction, rowAction, rowAction, rowAction, rowAction, rowAction],
-          align: ["left", "right", "right", "right", "right", "right", "right"],
-          rowClassName: isActive
-            ? "bg-secondary-foreground/15 text-foreground cursor-pointer"
-            : "hover:bg-accent/60 cursor-pointer",
-        };
-
-        tableRows.push({
-          rowValues: [
-            row.gameData.displayName,
-            this.formatNullableNumber(row.gameData.realPopulation),
-            this.formatNullableNumber(row.gameData.demandData?.residents ?? null),
-            this.formatNullableNumber(row.gameData.demandData?.workers ?? null),
-            this.formatNullableNumber(row.gameData.area, 2),
-            this.formatNullableNumber(row.density, 1),
-            row.infraSummary ?? "--",
-          ],
-          options: rowOptions,
-        });
-      });
-    }
-
-    return h(
-      "div",
-      { className: "rounded-md border border-border/60 overflow-hidden min-h-0" },
-      h(
-        "div",
-        { className: "overflow-auto max-h-[60vh] px-1.5 py-1" },
-        ReactDataTable(h, tableOptions, tableRows)
-      )
-    );
-  }
-
-  private renderPlaceholderTab(
-    h: typeof createElement,
-    description: string
-  ): React.ReactNode {
-    return h(
-      "div",
-      { className: "rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground" },
-      description
-    );
+      onSetTab: (tab: RegionsOverviewTab) => this.setTab(tab),
+      onSearchTermChange: (value: string) => {
+        this.searchTerm = value;
+        this.requestRender();
+      },
+      onSortChange: (columnIndex: number) => this.changeSort(columnIndex),
+      onSelectRow: (selection: RegionSelection) => this.onSelectRegion(selection, "overview-click"),
+      formatNullableNumber: (value: number | null | undefined, decimals = 0) =>
+        value !== null && value !== undefined ? formatFixedNumber(value, decimals) : "N/A",
+    });
   }
 
   private buildRows(dataset: RegionDataset | null): RegionsOverviewRow[] {
@@ -343,17 +140,13 @@ export class RegionsOverviewPanel {
       const multiplier = direction === "asc" ? 1 : -1;
       switch (index) {
         case 1:
-          return this.compareNullableNumber(a.gameData.realPopulation, b.gameData.realPopulation) * multiplier;
+          return (a.gameData.realPopulation ?? 0) - (b.gameData.realPopulation ?? 0) * multiplier;
         case 2:
-          return this.compareNullableNumber(a.gameData.demandData?.residents ?? null, b.gameData.demandData?.residents ?? null) * multiplier;
+          return (a.gameData.demandData?.residents ?? 0) - (b.gameData.demandData?.residents ?? 0) * multiplier;
         case 3:
-          return this.compareNullableNumber(a.gameData.demandData?.workers ?? null, b.gameData.demandData?.workers ?? null) * multiplier;
+          return (a.gameData.demandData?.workers ?? 0) - (b.gameData.demandData?.workers ?? 0) * multiplier;
         case 4:
-          return this.compareNullableNumber(a.gameData.area, b.gameData.area) * multiplier;
-        case 5:
-          return this.compareNullableNumber(a.density, b.density) * multiplier;
-        case 6:
-          return (a.infraSummary ?? "").localeCompare(b.infraSummary ?? "") * multiplier;
+          return (a.gameData.area ?? 0) - (b.gameData.area ?? 0) * multiplier;
         case 0:
         default:
           return a.gameData.displayName.localeCompare(b.gameData.displayName) * multiplier;
@@ -370,23 +163,6 @@ export class RegionsOverviewPanel {
       }
       return result;
     });
-  }
-
-  private compareNullableNumber(a: number | null | undefined, b: number | null | undefined): number {
-    const aMissing = a === null || a === undefined;
-    const bMissing = b === null || b === undefined;
-
-    if (aMissing && bMissing) return 0;
-    if (aMissing) return 1;
-    if (bMissing) return -1;
-    return a - b;
-  }
-
-  private formatNullableNumber(value: number | null | undefined, decimals = 0): string {
-    if (value === null || value === undefined) {
-      return "--";
-    }
-    return formatFixedNumber(value, decimals);
   }
 
   private changeSort(columnIndex: number): void {

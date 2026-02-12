@@ -13,6 +13,4 @@ export type RegionsOverviewSortState = {
 export type RegionsOverviewRow = {
   selection: RegionSelection;
   gameData: RegionGameData;
-  density: number | null;
-  infraSummary: string | null;
 };
