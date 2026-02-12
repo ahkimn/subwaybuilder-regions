@@ -58,6 +58,7 @@ export class RegionsOverviewPanelRenderer {
 
   tearDown(): void {
     this.overviewPanel?.reset();
+    this.overviewPanel = null;
     this.host.clear();
   }
 
@@ -66,6 +67,10 @@ export class RegionsOverviewPanelRenderer {
   }
 
   tryUpdatePanel(): void {
+    if (!this.overviewPanel) {
+      this.initialize();
+      return;
+    }
     this.host.setRender(() => this.overviewPanel?.render());
   }
 }

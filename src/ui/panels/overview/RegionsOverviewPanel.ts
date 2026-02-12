@@ -11,7 +11,7 @@ import { RegionDataManager } from "../../../core/datasets/RegionDataManager";
 
 
 export class RegionsOverviewPanel {
-  private selectedDatasetId: string;
+  private selectedDatasetIdentifier: string;
 
   private searchTerm = "";
 
@@ -28,15 +28,15 @@ export class RegionsOverviewPanel {
     private readonly uiState: Readonly<UIState>,
     // For now keep as readonly; eventually, we will need to support dynamic changes to the set of loaded datasets
     private readonly regionDataManager: RegionDataManager,
-    private readonly availableDatasetIds: string[],
+    private readonly availableDatasetIdentifiers: string[],
     private readonly onRegionSelect: (selection: RegionSelection) => void,
     private readonly requestRender: () => void
   ) {
-    if (availableDatasetIds.length === 0) {
+    if (availableDatasetIdentifiers.length === 0) {
       throw new Error("[Regions] Overview panel requires at least one dataset on construction.");
     }
     // Default to the first dataset
-    this.selectedDatasetId = availableDatasetIds[0];
+    this.selectedDatasetIdentifier = availableDatasetIdentifiers[0];
   }
 
   reset(): void {
@@ -53,7 +53,7 @@ export class RegionsOverviewPanel {
   render(): React.ReactNode {
     const h = this.api.utils.React.createElement as typeof createElement;
     const Input = this.api.utils.components.Input as React.ComponentType<InputFieldProperties>;
-    const datasetGameData = this.regionDataManager.requestGameDataByDataset(this.selectedDatasetId!);
+    const datasetGameData = this.regionDataManager.requestGameDataByDataset(this.selectedDatasetIdentifier!);
     const activeSelection = this.uiState.activeSelection;
 
     const rows = this.sortRows(
@@ -64,16 +64,17 @@ export class RegionsOverviewPanel {
     return renderOverviewPanelContent({
       h,
       Input,
-      datasetIds: this.availableDatasetIds,
-      selectedDatasetId: this.selectedDatasetId!,
+      datasetIdentifiers: this.availableDatasetIdentifiers,
+      selectedDatasetIdentifier: this.selectedDatasetIdentifier!,
+      getDatasetLabel: (datasetIdentifier: string) => this.regionDataManager.getDatasetDisplayName(datasetIdentifier),
       activeSelection,
       activeTab: this.activeTab,
       searchTerm: this.searchTerm,
       sortState: this.sortState,
       rows,
-      onSelectDataset: (datasetId: string) => {
-        if (!datasetId || this.selectedDatasetId === datasetId) return;
-        this.selectedDatasetId = datasetId;
+      onSelectDataset: (datasetIdentifier: string) => {
+        if (!datasetIdentifier || this.selectedDatasetIdentifier === datasetIdentifier) return;
+        this.selectedDatasetIdentifier = datasetIdentifier;
         this.requestRender();
       },
       onSetTab: (tab: RegionsOverviewTab) => this.setTab(tab),
@@ -92,7 +93,7 @@ export class RegionsOverviewPanel {
     return Array.from(datasetGameData.values()).map((gameData) => {
       return {
         selection: {
-          datasetId: this.selectedDatasetId,
+          datasetIdentifier: this.selectedDatasetIdentifier,
           featureId: gameData.featureId,
         },
         gameData
@@ -117,13 +118,13 @@ export class RegionsOverviewPanel {
       const multiplier = direction === "asc" ? 1 : -1;
       switch (index) {
         case 1:
-          return (a.gameData.realPopulation ?? 0) - (b.gameData.realPopulation ?? 0) * multiplier;
+          return ((a.gameData.realPopulation ?? 0) - (b.gameData.realPopulation ?? 0)) * multiplier;
         case 2:
-          return (a.gameData.demandData?.residents ?? 0) - (b.gameData.demandData?.residents ?? 0) * multiplier;
+          return ((a.gameData.demandData?.residents ?? 0) - (b.gameData.demandData?.residents ?? 0)) * multiplier;
         case 3:
-          return (a.gameData.demandData?.workers ?? 0) - (b.gameData.demandData?.workers ?? 0) * multiplier;
+          return ((a.gameData.demandData?.workers ?? 0) - (b.gameData.demandData?.workers ?? 0)) * multiplier;
         case 4:
-          return (a.gameData.area ?? 0) - (b.gameData.area ?? 0) * multiplier;
+          return ((a.gameData.area ?? 0) - (b.gameData.area ?? 0)) * multiplier;
         case 0:
         default:
           return a.gameData.displayName.localeCompare(b.gameData.displayName) * multiplier;

@@ -117,7 +117,7 @@ export class RegionsUIManager {
   }
 
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {
-    const nextSelection = { datasetId: RegionDataset.getIdentifier(payload.dataset), featureId: payload.featureId };
+    const nextSelection = { datasetIdentifier: RegionDataset.getIdentifier(payload.dataset), featureId: payload.featureId };
     this.setActiveSelection(nextSelection, { toggleIfSame: true, showInfo: true });
   }
 
@@ -153,12 +153,12 @@ export class RegionsUIManager {
   }
 
   // --- State Mutations --- //
-  onCityChange(cityCode: string, datasets: RegionDataset[] = []) {
+  onCityChange(cityCode: string) {
     this.reset();
     this.state.cityCode = cityCode;
     this.startCommutersUpdateLoop();
+    this.overviewPanelRenderer.initialize();
     this.tryInjectLayerPanel();
-    this.overviewPanelRenderer.tryUpdatePanel();
   }
 
   reset() {

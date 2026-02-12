@@ -122,7 +122,7 @@ export class RegionsMod {
 
     datasets.forEach(dataset => dataset.updateWithDemandData(demandData));
 
-    this.uiManager!.onCityChange(cityCode, datasets);
+    this.uiManager!.onCityChange(cityCode);
     this.mapLayers!.observeMapLayersForDatasets(datasets);
   }
 

@@ -24,6 +24,8 @@ export class ReactToolbarPanelHost {
 
   initialize(): void {
     if (this.initialized) {
+      this.startClickCaptureGuard();
+      this.startDomObserver();
       return;
     }
 

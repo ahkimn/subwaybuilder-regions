@@ -74,6 +74,7 @@ export class SelectRow {
         fullWidth
       );
 
+      rowButton.element.addEventListener('click', () => this.select(index));
       this.buttons.push(rowButton);
       this.container.appendChild(rowButton.element);
     });
@@ -167,7 +168,6 @@ function buildSelectRowButton(
   }
 
 
-  button.addEventListener('click', options.onSelect);
   setActive(false);
 
   return {

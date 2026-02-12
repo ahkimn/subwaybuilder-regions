@@ -36,6 +36,10 @@ export class RegionDatasetRegistry {
     return dataset;
   }
 
+  getDatasetDisplayNameByIdentifier(identifier: string): string {
+    return this.getDatasetByIdentifier(identifier).displayName;
+  }
+
   // -- Dataset Mutations --
   async loadCityDatasets(cityCode: string, onComplete: () => void) {
     const datasets = this.getCityDatasets(cityCode);

@@ -17,14 +17,15 @@ export type InputFieldProperties = {
 type RenderOverviewPanelArgs = {
   h: typeof createElement;
   Input: React.ComponentType<InputFieldProperties>;
-  datasetIds: string[];
-  selectedDatasetId: string;
+  datasetIdentifiers: string[];
+  selectedDatasetIdentifier: string;
+  getDatasetLabel: (datasetIdentifier: string) => string;
   activeSelection: RegionSelection | null;
   activeTab: RegionsOverviewTab;
   searchTerm: string;
   sortState: RegionsOverviewSortState;
   rows: RegionsOverviewRow[];
-  onSelectDataset: (datasetId: string) => void;
+  onSelectDataset: (datasetIdentifier: string) => void;
   onSetTab: (tab: RegionsOverviewTab) => void;
   onSearchTermChange: (value: string) => void;
   onSortChange: (columnIndex: number) => void;
@@ -42,9 +43,9 @@ export function renderOverviewPanelContent(args: RenderOverviewPanelArgs): React
 }
 
 function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
-  const { h, datasetIds, selectedDatasetId } = args;
+  const { h, datasetIdentifiers, selectedDatasetIdentifier } = args;
 
-  if (datasetIds.length === 0) {
+  if (datasetIdentifiers.length === 0) {
     return h(
       "div",
       { className: "rounded-md border border-border/60 px-2 py-2 text-xs text-muted-foreground" },
@@ -52,12 +53,12 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
     );
   }
 
-  if (datasetIds.length <= 5) {
+  if (datasetIdentifiers.length <= 5) {
     const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
-    datasetIds.forEach((datasetId) => {
-      buttonConfigs.set(datasetId, {
-        label: datasetId,
-        onSelect: () => args.onSelectDataset(datasetId),
+    datasetIdentifiers.forEach((datasetIdentifier) => {
+      buttonConfigs.set(datasetIdentifier, {
+        label: args.getDatasetLabel(datasetIdentifier),
+        onSelect: () => args.onSelectDataset(datasetIdentifier),
       });
     });
 
@@ -65,7 +66,7 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
       "div",
       { className: "flex flex-col gap-1.5" },
       h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-      ReactSelectRow(h, buttonConfigs, selectedDatasetId, "regions-overview-layer-select")
+      ReactSelectRow(h, buttonConfigs, selectedDatasetIdentifier, "regions-overview-layer-select")
     );
   }
 
@@ -78,17 +79,17 @@ function renderLayerRow(args: RenderOverviewPanelArgs): React.ReactNode {
       {
         className:
           "h-9 rounded-md border border-border/60 bg-background px-2 text-sm outline-none focus:border-ring",
-        value: selectedDatasetId,
+        value: selectedDatasetIdentifier,
         onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
           const target = e.target as HTMLSelectElement;
           args.onSelectDataset(target.value || "");
         },
       },
-      ...datasetIds.map((datasetId) =>
+      ...datasetIdentifiers.map((datasetIdentifier) =>
         h(
           "option",
-          { key: datasetId, value: datasetId },
-          datasetId
+          { key: datasetIdentifier, value: datasetIdentifier },
+          args.getDatasetLabel(datasetIdentifier)
         )
       )
     )
@@ -146,7 +147,7 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
   const { h, rows, activeSelection, sortState } = args;
 
   const tableOptions: TableOptions = {
-    columnTemplate: "minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(6rem,0.8fr)",
+    columnTemplate: "minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr)",
     density: "compact"
   };
 
@@ -179,7 +180,7 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
     tableRows.push({
       rowValues: ["No rows match the current filters."],
       options: {
-        colSpan: [7],
+        colSpan: [5],
         align: ["left"],
         rowClassName: "text-xs text-muted-foreground",
       },
@@ -189,8 +190,8 @@ function renderTable(args: RenderOverviewPanelArgs): React.ReactNode {
       const isActive = activeSelection !== null && RegionSelectionUtils.isEqual(activeSelection, row.selection);
       const rowAction = () => args.onSelectRow(row.selection);
       const rowOptions: DataRowOptions = {
-        onClick: [rowAction, rowAction, rowAction, rowAction, rowAction, rowAction, rowAction],
-        align: ["left", "right", "right", "right", "right", "right", "right"],
+        onClick: [rowAction, rowAction, rowAction, rowAction, rowAction],
+        align: ["left", "right", "right", "right", "right"],
         rowClassName: isActive
           ? "bg-secondary-foreground/15 text-foreground cursor-pointer"
           : "hover:bg-accent/60 cursor-pointer",

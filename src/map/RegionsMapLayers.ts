@@ -83,14 +83,14 @@ export class RegionsMapLayers {
       return;
     }
     if (previousSelection !== null) {
-      const previousState = this.layerStates.get(previousSelection.datasetId);
+      const previousState = this.layerStates.get(previousSelection.datasetIdentifier);
       if (previousState) {
         this.setSelectedState(previousState, previousSelection.featureId, false);
       }
     }
 
     if (newSelection !== null) {
-      const nextState = this.layerStates.get(newSelection.datasetId);
+      const nextState = this.layerStates.get(newSelection.datasetIdentifier);
       if (nextState) {
         this.setSelectedState(nextState, newSelection.featureId, true);
       }
@@ -437,7 +437,7 @@ export class RegionsMapLayers {
     if (!this.selectionProvider) return;
     const selection = this.selectionProvider();
     if (selection === null) return;
-    if (selection.datasetId !== layerState.datasetIdentifier) return;
+    if (selection.datasetIdentifier !== layerState.datasetIdentifier) return;
     this.setSelectedState(layerState, selection.featureId, true);
   }
 
