@@ -1,4 +1,4 @@
-import { createIconElement, RefreshIcon } from "../utils/get-icon";
+import { createIconElement, RefreshIcon } from "./utils/get-icon";
 
 type CreateElement = (...args: unknown[]) => unknown;
 

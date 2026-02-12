@@ -73,12 +73,12 @@ export class RegionsInfoPanel {
         {
           label: 'Summary',
           onSelect: () => { this.setView('statistics'); },
-          iconSVG: createIconElement(FileChartColumnIcon, { size: 24 })
+          icon: createIconElement(FileChartColumnIcon, { size: 24 })
         },
         {
           label: 'Commuters',
           onSelect: () => { this.setView('commuters'); },
-          iconSVG: createIconElement(TramFrontIcon, { size: 24 })
+          icon: createIconElement(TramFrontIcon, { size: 24 })
         }
       ]
     );

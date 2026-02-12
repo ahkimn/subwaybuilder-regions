@@ -198,7 +198,7 @@ function buildCommutersTable(
   const tableFrame = document.createElement('div');
   tableFrame.className = 'border-t border-border/30 pt-1';
 
-  const tableOptions = new TableOptions(getColumnTemplate(viewState), 'standard');
+  const tableOptions: TableOptions = { columnTemplate: getColumnTemplate(viewState), density: 'standard' };
   const tableHeaderData = buildTableHeader(viewState, renderPanel);
   const tableHeader = DataTable(tableOptions, tableHeaderData);
   tableFrame.appendChild(tableHeader);

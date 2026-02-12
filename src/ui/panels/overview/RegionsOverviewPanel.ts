@@ -3,12 +3,11 @@ import { RegionDataset } from "../../../core/datasets/RegionDataset";
 import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from "../../../core/constants";
 import { formatFixedNumber } from "../../../core/utils";
 import type { ModdingAPI } from "../../../types/modding-api-v1";
-import { DataRowOptions, TableOptions } from "../../elements/DataTable";
-import { ReactDataTable, ReactDataTableRow } from "../../elements/react/ReactDataTable";
-import { ReactPanelSelect, ReactSelectRowOption } from "../../elements/react/ReactPanelSelect";
 import type { RegionsOverviewRow, RegionsOverviewSortState, RegionsOverviewTab } from "./types";
 import type React from "react";
 import { createElement } from "react";
+import { DataRowOptions, DataTableRow, ReactDataTable, TableOptions } from "../../elements/DataTable";
+import { ReactSelectButtonConfig, ReactSelectRow } from "../../elements/SelectRow";
 
 type GameInputProps = {
   value?: string;
@@ -97,21 +96,23 @@ export class RegionsOverviewPanel {
     }
 
     if (datasets.length <= 5) {
-      const layerOptions: ReactSelectRowOption[] = datasets.map((dataset) => ({
-        id: dataset.id,
-        label: dataset.displayName,
-        onSelect: () => {
-          if (this.selectedDatasetId === dataset.id) return;
-          this.selectedDatasetId = dataset.id;
-          this.requestRender();
-        },
-      }));
+      const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
+      datasets.forEach((dataset) => {
+        buttonConfigs.set(dataset.id, {
+          label: dataset.displayName,
+          onSelect: () => {
+            if (this.selectedDatasetId === dataset.id) return;
+            this.selectedDatasetId = dataset.id;
+            this.requestRender();
+          },
+        })
+      });
 
       return h(
         "div",
         { className: "flex flex-col gap-1.5" },
         h("div", { className: "text-xs font-medium text-muted-foreground" }, "Region Layer"),
-        ReactPanelSelect(h, layerOptions, selected?.id ?? null, "regions-overview-layer-select")
+        ReactSelectRow(h, buttonConfigs, selected?.id ?? null, "regions-overview-layer-select")
       );
     }
 
@@ -143,13 +144,21 @@ export class RegionsOverviewPanel {
   }
 
   private renderTabs(h: typeof createElement): React.ReactNode {
-    const tabOptions: ReactSelectRowOption[] = [
-      { id: "overview", label: "Overview", onSelect: () => this.setTab("overview") },
-      { id: "commuter-flows", label: "Commuter Flows", onSelect: () => this.setTab("commuter-flows") },
-      { id: "ridership", label: "Ridership", onSelect: () => this.setTab("ridership") },
-    ];
+    const tabOptions: Map<string, ReactSelectButtonConfig> = new Map();
+    tabOptions.set("overview", {
+      label: "Overview",
+      onSelect: () => this.setTab("overview"),
+    });
+    tabOptions.set("commuter-flows", {
+      label: "Commuter Flows",
+      onSelect: () => this.setTab("commuter-flows"),
+    });
+    tabOptions.set("ridership", {
+      label: "Ridership",
+      onSelect: () => this.setTab("ridership"),
+    });
 
-    return ReactPanelSelect(h, tabOptions, this.activeTab, "regions-overview-tab-select", true);
+    return ReactSelectRow(h, tabOptions, this.activeTab, "regions-overview-tab-select", true);
   }
 
   private renderTabContent(
@@ -200,10 +209,10 @@ export class RegionsOverviewPanel {
     rows: RegionsOverviewRow[],
     activeSelection: RegionSelection | null
   ): React.ReactNode {
-    const tableOptions = new TableOptions(
-      "minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(6rem,0.8fr)",
-      "compact"
-    );
+    const tableOptions: TableOptions = {
+      columnTemplate: "minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(6rem,0.8fr)",
+      density: "compact"
+    };
 
     const sortHandlers = [
       () => this.changeSort(0),
@@ -215,7 +224,7 @@ export class RegionsOverviewPanel {
       () => this.changeSort(6),
     ];
 
-    const tableRows: ReactDataTableRow[] = [
+    const tableRows: DataTableRow[] = [
       {
         rowValues: ["Region", "Real Pop", "Residents", "Workers", "Area", "Density", "Infra"],
         options: {
