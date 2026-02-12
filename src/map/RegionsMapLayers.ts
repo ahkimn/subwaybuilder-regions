@@ -58,10 +58,13 @@ export class RegionsMapLayers {
     this.map = map;
   }
 
-  setMap(map: maplibregl.Map) {
-    if (this.map === map) {
+  setMap(map: maplibregl.Map | null | undefined) {
+    if (!map) {
+      console.error("[Regions] Cannot rebind RegionsMapLayers: map instance is null or undefined");
       return;
     }
+
+    if (this.map === map) return;
 
     // Fully detach handlers and clear rendered layer state from the previous map instance
     // before rebinding to a new map (e.g. during city transitions).
@@ -234,6 +237,14 @@ export class RegionsMapLayers {
       isVisible: () => this.isVisible(dataset),
       toggle: () => this.toggleVisibility(dataset),
     };
+  }
+
+  getMapStyle() {
+    return this.map.getStyle();
+  }
+
+  getMapLayerOrder(): string[] {
+    return this.map.getStyle().layers?.map((layer) => layer.id) ?? [];
   }
 
   // --- Layer Render Helpers --- //

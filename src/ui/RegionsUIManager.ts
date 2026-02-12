@@ -53,7 +53,7 @@ export class RegionsUIManager {
       api,
       this.state,
       this.regionDataManager,
-      this.infoPanelRenderer
+      [this.infoPanelRenderer]
     );
 
     this.overviewPanelRenderer = new RegionsOverviewPanelRenderer(
@@ -128,9 +128,16 @@ export class RegionsUIManager {
     if (this.mapLayersPanelObserver) return
 
     this.mapLayersPanelObserver = observeMapLayersPanel((panel) => {
+      const rootChanged = this.layerPanelRoot !== panel;
       this.layerPanelRoot = panel;
-      this.tryInjectLayerPanel();
+      this.tryInjectLayerPanel(rootChanged);
     });
+
+    const existingPanel = document.querySelector('[data-mod-id="layers-panel"]') as HTMLElement | null;
+    if (existingPanel) {
+      this.layerPanelRoot = existingPanel;
+      this.tryInjectLayerPanel(true);
+    }
   }
 
   private disconnectObservers(): void {
@@ -142,9 +149,19 @@ export class RegionsUIManager {
   }
 
   tryInjectLayerPanel(force: boolean = false) {
-
     if (!this.layerPanelRoot || !this.state.cityCode) return;
-    if (!force && this.state.lastInjectedCity === this.state.cityCode) return;
+    if (!document.contains(this.layerPanelRoot)) {
+      this.layerPanelRoot = null;
+      return;
+    }
+
+    const hasRegionToggles = this.hasInjectedRegionToggles(this.layerPanelRoot);
+    const shouldInject =
+      force
+      || this.state.lastInjectedCity !== this.state.cityCode
+      || !hasRegionToggles;
+
+    if (!shouldInject) return;
 
     if (this.state.lastInjectedCity !== this.state.cityCode) {
       this.state.lastInjectedCity = this.state.cityCode;
@@ -158,6 +175,12 @@ export class RegionsUIManager {
 
     injectRegionToggles(this.layerPanelRoot, toggleOptions);
     console.log('[Regions] Layer panel UI injected');
+  }
+
+  private hasInjectedRegionToggles(panel: HTMLElement): boolean {
+    const regionSegment = panel.querySelector('div[data-regions-mod]');
+    if (!regionSegment) return false;
+    return regionSegment.querySelector('[data-regions-toggle]') !== null;
   }
 
   private onRegionSelect(payload: { dataset: RegionDataset; featureId: string | number }) {

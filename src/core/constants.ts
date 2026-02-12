@@ -27,8 +27,9 @@ export const STALE_INFRA_DATA_THRESHOLD_SECONDS = 86400; // Threshold for consid
 export const DEFAULT_CHUNK_SIZE = 100; // Default loop chunk size for time-sliced data processing
 
 export const REGIONS_INFO_CONTAINER_ID = 'regions-info-container';
-export const REGIONS_INFO_UPDATE_GAME_INTERVAL = 1800; // 30 in-game minutes
+export const REGIONS_INFO_UPDATE_GAME_INTERVAL = 900; // 15 in-game minutes
 export const REGIONS_INFO_UPDATE_REAL_INTERVAL = 3; // 3 real-world seconds
+export const UPDATE_ON_DEMAND_CHANGE = true; // If true, commuter refresh checks are triggered by onDemandChange instead of polling
 export const REGIONS_DESELECT_KEY = 'Escape';
 
 export const REGIONS_INFO_PANEL_ID = 'regions-info-panel';

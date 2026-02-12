@@ -96,7 +96,7 @@ export class RegionsInfoPanel {
     this.tryRender(true);
   }
 
-  private async prepareDataForCurrentView(forceRefresh: boolean, token: number): Promise<void> {
+  private async prepareData(forceRefresh: boolean, token: number): Promise<void> {
     if (this.activeView === 'commuters' && forceRefresh) {
       await this.regionDataManager.ensureExistsData(this.uiState, 'commuter', { forceBuild: true });
       return;
@@ -108,11 +108,7 @@ export class RegionsInfoPanel {
       void this.regionDataManager.ensureExistsData(this.uiState, 'infra', { forceBuild: false })
         .then(() => {
           // Let computation continue async and attempt to rerender once the data is ready and if the user has not changed selection / view
-          if (
-            token === this.renderToken
-            && this.activeView === 'statistics'
-            && RegionSelection.isEqual(selectionSnapshot, this.uiState.activeSelection)
-          ) {
+          if (this.activeView === 'statistics' && RegionSelection.isEqual(selectionSnapshot, this.uiState.activeSelection)) {
             requestAnimationFrame(() => this.tryRender());
           }
         });
@@ -136,8 +132,7 @@ export class RegionsInfoPanel {
         viewNode =
           renderCommutersView(this.gameData, this.commutersViewState, direction => {
             if (this.commutersViewState.direction === direction) return;
-            this.commutersViewState.direction = direction;
-            requestAnimationFrame(() => this.tryRender());
+            this.commutersViewState.direction = direction; requestAnimationFrame(() => this.tryRender());
           })
         break;
     }
@@ -147,7 +142,7 @@ export class RegionsInfoPanel {
 
   private async render(forceRefresh: boolean = false) {
     const token = ++this.renderToken
-    await this.prepareDataForCurrentView(forceRefresh, token);
+    await this.prepareData(forceRefresh, token);
 
     if (token !== this.renderToken) {
       console.warn(`Aborting render due to newer render token. Current: ${this.renderToken}. Required: ${token}`);
