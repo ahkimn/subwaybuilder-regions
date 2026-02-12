@@ -26,7 +26,6 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
       id: REGIONS_OVERVIEW_PANEL_ID,
       icon: "Table2",
       title: REGIONS_OVERVIEW_PANEL_TITLE,
-      tooltip: "Regions Overview",
       width: 720,
     },
       REGIONS_OVERVIEW_PANEL_CONTENT_ID);

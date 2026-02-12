@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
-import type { ModdingAPI, UIToolbarPanelOptions } from "../../../types/modding-api-v1";
+import type { ModdingAPI, UIFloatingPanelOptions } from "../../../types/modding-api-v1";
+import { FLOATING_PANEL_OFFSET_X, FLOATING_PANEL_OFFSET_Y } from "../../../core/constants";
 
-type ToolbarPanelHostOptions = Pick<UIToolbarPanelOptions, "id" | "icon" | "tooltip" | "title" | "width">;
+type ToolbarPanelHostOptions = Pick<UIFloatingPanelOptions, "id" | "icon" | "title" | "width" | "defaultPosition">;
 
 export class ReactToolbarPanelHost {
   private initialized = false;
@@ -9,11 +10,6 @@ export class ReactToolbarPanelHost {
   private renderPanel: (() => ReactNode) | null = null;
 
   private hasContent = false;
-  private domObserver: MutationObserver | null = null;
-  private passthroughOverlay: HTMLElement | null = null;
-  private passthroughPanel: HTMLElement | null = null;
-  private passthroughOverlayPointerEvents = "";
-  private passthroughPanelPointerEvents = "";
   private clickCaptureHandler: ((event: MouseEvent) => void) | null = null;
 
   constructor(
@@ -25,19 +21,24 @@ export class ReactToolbarPanelHost {
   initialize(): void {
     if (this.initialized) {
       this.startClickCaptureGuard();
-      this.startDomObserver();
       return;
     }
 
-    const panelOptions: UIToolbarPanelOptions = {
+    const panelWidth = this.options.width ?? 720;
+    const defaultPosition = this.options.defaultPosition ?? {
+      x: Math.max(16, window.innerWidth - panelWidth - FLOATING_PANEL_OFFSET_X),
+      y: FLOATING_PANEL_OFFSET_Y,
+    };
+
+    const panelOptions: UIFloatingPanelOptions = {
       ...this.options,
+      defaultPosition,
       render: () => (this.renderPanel ? this.renderPanel() : null),
     };
 
-    this.api.ui.addToolbarPanel(panelOptions);
+    this.api.ui.addFloatingPanel(panelOptions);
     this.initialized = true;
     this.startClickCaptureGuard();
-    this.startDomObserver();
   }
 
   setRender(renderFn: () => ReactNode): void {
@@ -49,9 +50,7 @@ export class ReactToolbarPanelHost {
   clear(): void {
     this.renderPanel = null;
     this.hasContent = false;
-    this.restorePointerPassthrough();
     this.stopClickCaptureGuard();
-    this.stopDomObserver();
     this.requestRender();
   }
 
@@ -64,46 +63,6 @@ export class ReactToolbarPanelHost {
       return;
     }
     this.api.ui.forceUpdate();
-    requestAnimationFrame(() => this.applyPointerPassthrough());
-  }
-
-  private applyPointerPassthrough(): void {
-    const contentRoot = this.panelContentRootId
-      ? document.getElementById(this.panelContentRootId)
-      : null;
-    if (!contentRoot) return;
-
-    const panel = this.findPanelContainerFromContent(contentRoot);
-    if (!panel) return;
-
-    const overlay = this.findViewportOverlay(panel);
-    if (!overlay) return;
-
-    if (this.passthroughOverlay !== overlay) {
-      this.restorePointerPassthrough();
-      this.passthroughOverlay = overlay;
-      this.passthroughOverlayPointerEvents = overlay.style.pointerEvents;
-      overlay.style.pointerEvents = "none";
-    }
-
-    if (this.passthroughPanel !== panel) {
-      this.passthroughPanel = panel;
-      this.passthroughPanelPointerEvents = panel.style.pointerEvents;
-      panel.style.pointerEvents = "auto";
-    }
-  }
-
-  private restorePointerPassthrough(): void {
-    if (this.passthroughOverlay) {
-      this.passthroughOverlay.style.pointerEvents = this.passthroughOverlayPointerEvents;
-    }
-    if (this.passthroughPanel) {
-      this.passthroughPanel.style.pointerEvents = this.passthroughPanelPointerEvents;
-    }
-    this.passthroughOverlay = null;
-    this.passthroughPanel = null;
-    this.passthroughOverlayPointerEvents = "";
-    this.passthroughPanelPointerEvents = "";
   }
 
   private findPanelContainer(headerHost: HTMLElement): HTMLElement | null {
@@ -122,40 +81,6 @@ export class ReactToolbarPanelHost {
 
   private findPanelContainerFromContent(contentRoot: HTMLElement): HTMLElement | null {
     return this.findPanelContainer(contentRoot);
-  }
-
-  private findViewportOverlay(panel: HTMLElement): HTMLElement | null {
-    let current: HTMLElement | null = panel.parentElement;
-    for (let i = 0; i < 10 && current; i += 1) {
-      const rect = current.getBoundingClientRect();
-      const coversViewport =
-        rect.width >= window.innerWidth - 2 &&
-        rect.height >= window.innerHeight - 2;
-      if (coversViewport) {
-        return current;
-      }
-      current = current.parentElement;
-    }
-    return null;
-  }
-
-  private startDomObserver(): void {
-    if (this.domObserver) {
-      return;
-    }
-
-    this.domObserver = new MutationObserver(() => {
-      this.applyPointerPassthrough();
-    });
-    this.domObserver.observe(document.body, { subtree: true, childList: true, attributes: true });
-  }
-
-  private stopDomObserver(): void {
-    if (!this.domObserver) {
-      return;
-    }
-    this.domObserver.disconnect();
-    this.domObserver = null;
   }
 
   private startClickCaptureGuard(): void {

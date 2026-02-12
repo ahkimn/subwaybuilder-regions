@@ -57,4 +57,7 @@ export const REGIONS_OVERVIEW_PANEL_TITLE = "Regions Overview";
 export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
 export const REGIONS_OVERVIEW_PANEL_CONTENT_ID = "regions-overview-panel-content";
 
+export const FLOATING_PANEL_OFFSET_X = 80;
+export const FLOATING_PANEL_OFFSET_Y = 80;
+
 export const INFO_PANEL_MIN_WIDTH = 80;

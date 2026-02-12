@@ -105,7 +105,7 @@ export function renderOverviewTable(
         align: ["left", "right", "right", "right", "right"],
         sortState: {
           index: sortState.sortIndex,
-          directionLabel: sortState.sortDirection === "asc" ? "^" : "v",
+          directionLabel: sortState.sortDirection === 'asc' ? ' ▲' : ' ▼',
           sortSelectedClass: "text-foreground",
         },
       },
