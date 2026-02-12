@@ -2,7 +2,7 @@
   "id": "com.ahkimn.regions",
   "name": "Regions",
   "description": "Add support for displaying/analyzing regional data within SubwayBuilder",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "ahkimn",
     "url": "https://github.com/ahkimn"
@@ -14,5 +14,5 @@
     "url": "https://github.com/ahkimn/subwaybuilder-regions"
   },
   "keywords": ["subway-builder", "mod", "trains"],
-  "subwayBuilderVersion": ">=0.12.5"
+  "subwayBuilderVersion": ">=1.0.0"
 }
