@@ -17,7 +17,6 @@ export class RegionsOverviewPanelRenderer {
     private readonly getActiveSelection: () => RegionSelection | null,
     private readonly onSelectRegion: (selection: RegionSelection, source: "overview-click") => void
   ) {
-
     this.host = new ReactToolbarPanelHost(this.api, {
       id: REGIONS_OVERVIEW_PANEL_ID,
       icon: "Table2",
@@ -44,12 +43,6 @@ export class RegionsOverviewPanelRenderer {
       return;
     }
     this.host.initialize();
-    this.host.setHeaderAction({
-      id: "regions-overview-refresh-action",
-      title: "Refresh table",
-      iconText: "↻",
-      onClick: () => this.host.requestRender(),
-    });
     this.host.setRender(() => this.overviewPanel.render());
     this.initialized = true;
   }
