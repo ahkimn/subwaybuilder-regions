@@ -1,6 +1,5 @@
 import { LAYERS_PANEL_MOD_ID, modIdSelector } from "../../core/constants";
 
-// TODO: (Issue 5) - Make sure the info panel clears when a default data panel is opened
 export function observeInfoPanelsRoot(
   root: HTMLElement,
   onNodeAdded: (node: HTMLElement) => void

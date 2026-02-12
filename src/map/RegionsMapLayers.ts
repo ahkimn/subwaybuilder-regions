@@ -58,8 +58,6 @@ export class RegionsMapLayers {
     this.map = map;
   }
 
-  // --- Map Lifecyle & Binding Methods --- //
-
   // The game may dispose and recreate map instances during city transitions.
   private getMapReference(): maplibregl.Map | null {
     const mapRef = this.map as maplibregl.Map | undefined;
@@ -207,9 +205,7 @@ export class RegionsMapLayers {
 
   private applyVisibility(layerState: MapLayerState) {
     const mapRef = this.getMapReference();
-    if (!mapRef) {
-      return;
-    }
+    if (!mapRef) return;
 
     const visibility = layerState.visible ? "visible" : "none";
     [
@@ -242,7 +238,7 @@ export class RegionsMapLayers {
     }
 
     if (layerState.handlers) {
-      this.detachLayerLabelhandlers(layerState);
+      this.detachLayerLabelHandlers(layerState);
     }
 
     const layersToRemove = [
@@ -327,19 +323,13 @@ export class RegionsMapLayers {
 
   getMapStyle() {
     const mapRef = this.getMapReference();
-    if (!mapRef) {
-      return null;
-    }
-
+    if (!mapRef) return null;
     return mapRef.getStyle();
   }
 
   getMapLayerOrder(): string[] {
     const mapRef = this.getMapReference();
-    if (!mapRef) {
-      return [];
-    }
-
+    if (!mapRef) return [];
     return mapRef.getStyle().layers?.map((layer) => layer.id) ?? [];
   }
 
@@ -478,14 +468,10 @@ export class RegionsMapLayers {
   */
   observeMapLayersForDatasets(datasets: RegionDataset[]) {
     const mapRef = this.getMapReference();
-    if (!mapRef) {
-      return;
-    }
+    if (!mapRef) return;
 
     this.observedDatasets = datasets;
-    if (this.layerHandler) {
-      return;
-    }
+    if (this.layerHandler) return;
 
     // TODO (Bug 3): Verify that style and source handlers work when map-layering isn't overriden in game
     this.styleHandler = () => {
@@ -536,9 +522,7 @@ export class RegionsMapLayers {
 
   private moveVisibleLabelsToTop(): void {
     const mapRef = this.getMapReference();
-    if (!mapRef) {
-      return;
-    }
+    if (!mapRef) return;
 
     for (const dataset of this.observedDatasets) {
       const identifier = RegionDataset.getIdentifier(dataset);
@@ -574,9 +558,7 @@ export class RegionsMapLayers {
 
   private attachLabelHandlers(dataset: RegionDataset): void {
     const mapRef = this.getMapReference();
-    if (!mapRef) {
-      return;
-    }
+    if (!mapRef) return;
 
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     const layerState = this.layerStates.get(datasetIdentifier);
@@ -657,10 +639,10 @@ export class RegionsMapLayers {
   private detachLabelHandlers(dataset: RegionDataset): void {
     const identifier = RegionDataset.getIdentifier(dataset);
     const layerState = this.layerStates.get(identifier)!;
-    this.detachLayerLabelhandlers(layerState);
+    this.detachLayerLabelHandlers(layerState);
   }
 
-  private detachLayerLabelhandlers(layerState: MapLayerState): void {
+  private detachLayerLabelHandlers(layerState: MapLayerState): void {
     const mapRef = this.getMapReference();
     if (!mapRef) {
       layerState.handlers = undefined;
