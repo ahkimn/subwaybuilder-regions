@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 import path from 'path';
 
-import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/consts.ts';
-import { extractGBBoundaries } from './extract/extract-gb-map-features.ts';
-import { extractUSBoundaries } from './extract/extract-us-map-features.ts';
-import type { ExtractMapFeaturesArgs } from './utils/cli.ts';
-import { getBBoxFromArgs, hasExplicitBBox, parseArgs } from './utils/cli.ts';
-import { loadBoundariesFromCSV } from './utils/files.ts';
-import type { BoundaryBox } from './utils/geometry.ts';
+import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/consts';
+import { extractGBBoundaries } from './extract/extract-gb-map-features';
+import { extractUSBoundaries } from './extract/extract-us-map-features';
+import {
+  type ExtractMapFeaturesArgs,
+  getBBoxFromArgs,
+  hasExplicitBBox,
+  parseArgs,
+} from './utils/cli';
+import { loadBoundariesFromCSV } from './utils/files';
+import type { BoundaryBox } from './utils/geometry';
 
 const BOUNDARIES_INDEX_FILE = path.resolve(
   __dirname,

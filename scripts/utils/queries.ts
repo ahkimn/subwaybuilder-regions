@@ -2,6 +2,7 @@ import { arcgisToGeoJSON } from '@terraformer/arcgis';
 
 import type { BoundaryBox } from './geometry';
 import { bboxToGeometryString, isFeatureCollection } from './geometry';
+import { fetchJsonWithRetry } from './http';
 
 const TIGERWEB_API_BASE_URL =
   'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb';
@@ -33,15 +34,74 @@ export const STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS = new Set([
   '55', // Midwest
 ]);
 
-// Neighborhood data is queried from OpenStreetMap Overpass API based on admin level
-const US_NEIGHBORHOOD_ADMIN_LEVEL = 10;
-
-export type ArcGisQueryRequest = {
+export type ArcGISQueryRequest = {
   url: string;
   params: URLSearchParams;
 };
 
+type ArcGISErrorResponse = {
+  error?: {
+    message?: string;
+  };
+};
+
+type OverpassApiResponse = {
+  elements: unknown[];
+  [key: string]: unknown;
+};
+
 // --- Helpers --- //
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isStringMatrix(value: unknown): value is string[][] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (row) =>
+        Array.isArray(row) && row.every((column) => typeof column === 'string'),
+    )
+  );
+}
+
+function isArcGISErrorResponse(value: unknown): value is ArcGISErrorResponse {
+  return isObject(value) && isObject(value.error);
+}
+
+function isArcGISFeatureResponse(
+  value: unknown,
+): value is { features: Array<{ attributes?: Record<string, unknown> }> } {
+  if (!isObject(value) || !Array.isArray(value.features)) {
+    return false;
+  }
+
+  if (value.features.length === 0) {
+    return true;
+  }
+
+  const firstFeature = value.features[0]; // Validate based on the shape of first feature
+  return isObject(firstFeature) && isObject(firstFeature.attributes);
+}
+
+function isRawFeatureCollection(
+  value: unknown,
+): value is { type: string; features: unknown[] } {
+  return isObject(value) && value.type === 'FeatureCollection' && Array.isArray(value.features);
+}
+
+function parseACSRows(rows: unknown, endpoint: string): string[][] {
+  if (!isStringMatrix(rows) || rows.length < 1) {
+    throw new Error(`[ACS] Unexpected response shape for ${endpoint}`);
+  }
+
+  return rows;
+}
+
+function isOverpassApiResponse(value: unknown): value is OverpassApiResponse {
+  return isObject(value) && Array.isArray(value.elements);
+}
 
 export function isValidCountySubdivision(
   name: string,
@@ -56,7 +116,7 @@ export function isValidCountySubdivision(
 
 // --- Census Boundary Queries --- //
 
-export function buildCountyUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
+export function buildCountyUrl(queryBBox: BoundaryBox): ArcGISQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/State_County/MapServer/1/query`,
     params: new URLSearchParams({
@@ -74,7 +134,7 @@ export function buildCountyUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
 
 export function buildCountySubdivisionUrl(
   queryBBox: BoundaryBox,
-): ArcGisQueryRequest {
+): ArcGISQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/1/query`,
     params: new URLSearchParams({
@@ -94,7 +154,7 @@ export function buildCountySubdivisionUrl(
 export function buildPlacesQuery(
   queryBBox: BoundaryBox,
   layerId: number,
-): ArcGisQueryRequest {
+): ArcGISQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/${layerId}/query`,
     params: new URLSearchParams({
@@ -111,7 +171,7 @@ export function buildPlacesQuery(
   };
 }
 
-export function buildZctaUrl(queryBBox: BoundaryBox): ArcGisQueryRequest {
+export function buildZctaUrl(queryBBox: BoundaryBox): ArcGISQueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query`,
     params: new URLSearchParams({
@@ -163,44 +223,46 @@ export async function fetchPlaceFeatures(
   });
 }
 
-function normalizeArcGisResponse(data: any): GeoJSON.GeoJSON {
+function normalizeArcGISResponse(data: unknown): GeoJSON.GeoJSON {
   // Already GeoJSON (e.g. ONS data)
-  if (data.type === 'FeatureCollection' && Array.isArray(data.features)) {
+  if (isRawFeatureCollection(data)) {
     return data as GeoJSON.GeoJSON;
   }
 
   // Esri JSON (e.g. TIGERweb data)
-  if (data?.features && data.features[0]?.attributes) {
-    return arcgisToGeoJSON(data) as GeoJSON.GeoJSON;
+  if (isArcGISFeatureResponse(data)) {
+    // @types/terraformer__arcgis only models ArcGIS.Geometry input, but ArcGIS feature query responses are also supported at runtime.
+    return arcgisToGeoJSON(data as never) as unknown as GeoJSON.GeoJSON;
   }
-  throw new Error('Unknown ArcGIS response format');
+  throw new Error('[ArcGIS] Unknown ArcGIS response format');
 }
 
 export async function fetchGeoJSONFromArcGIS(
-  request: ArcGisQueryRequest,
+  request: ArcGISQueryRequest,
 ): Promise<GeoJSON.FeatureCollection> {
-  console.log('Querying ArcGIS API:', request.url);
-  const res = await fetch(request.url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+  const arcgisJson = await fetchJsonWithRetry(
+    request.url,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: request.params.toString(),
     },
-    body: request.params.toString(),
-  });
-  if (!res.ok) {
-    throw new Error(`ArcGIS query failed: ${res.statusText}`);
+    { label: 'ArcGIS' },
+  );
+
+  if (isArcGISErrorResponse(arcgisJson)) {
+    const errorMessage = arcgisJson.error?.message ?? 'Unknown ArcGIS error';
+    throw new Error(`[ArcGIS] query failed for ${request.url}: ${errorMessage}`);
   }
 
-  const arcgisJson = await res.json();
-  if (arcgisJson.error) {
-    throw new Error(`ArcGIS query failed: ${arcgisJson.error.message}`);
-  }
-
-  console.log(`Fetched ${arcgisJson.features.length} features from ArcGIS.`);
-  const geoJson: GeoJSON.GeoJSON = normalizeArcGisResponse(arcgisJson);
+  const geoJson: GeoJSON.GeoJSON = normalizeArcGISResponse(arcgisJson);
   if (!isFeatureCollection(geoJson)) {
-    throw new Error(`Expected FeatureCollection, got ${geoJson.type}`);
+    throw new Error(`[ArcGIS] Expected FeatureCollection, got ${geoJson.type}`);
   }
+
+  console.log(`Fetched ${geoJson.features.length} features from ArcGIS.`);
   return geoJson;
 }
 
@@ -229,8 +291,10 @@ async function fetchCountyPopulationsByState(
     in: `state:${state}`,
   }).toString();
 
-  const res = await fetch(url);
-  const rows = await res.json();
+  const rows = parseACSRows(
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    url.toString(),
+  );
 
   // First row is headers
   const [, ...data] = rows;
@@ -255,8 +319,10 @@ export async function fetchCountySubdivisionPopulations(
     in: `state:${state}`,
   }).toString();
 
-  const res = await fetch(url);
-  const rows: string[][] = await res.json();
+  const rows = parseACSRows(
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    url.toString(),
+  );
 
   const [, ...data] = rows;
   const map = new Map<string, string>();
@@ -279,8 +345,10 @@ export async function fetchPlacePopulations(
     in: `state:${state}`,
   }).toString();
 
-  const res = await fetch(url);
-  const rows: string[][] = await res.json();
+  const rows = parseACSRows(
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    url.toString(),
+  );
 
   const [, ...data] = rows;
   const map = new Map<string, string>();
@@ -300,8 +368,10 @@ export async function fetchZctaPopulations(): Promise<Map<string, string>> {
     for: 'zip code tabulation area:*',
   }).toString();
 
-  const res = await fetch(url);
-  const rows: string[][] = await res.json();
+  const rows = parseACSRows(
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    url.toString(),
+  );
 
   const [, ...data] = rows;
   const map = new Map<string, string>();
@@ -330,35 +400,43 @@ export function extractStateCodesFromGeoIDs(
 
 // --- Overpass API --- //
 
-export function buildNeighborhoodOverpassQuery(bbox: BoundaryBox): string {
+export function buildOverpassQuery(bbox: BoundaryBox, admin_level: number): string {
   return `
         [out:json][timeout:60];
         (
-          relation["boundary"="administrative"]["admin_level"="${US_NEIGHBORHOOD_ADMIN_LEVEL}"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+          relation["boundary"="administrative"]["admin_level"="${admin_level}"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
         );
         out geom;
       `;
 }
 
-export async function fetchOverpassData(query: string): Promise<any> {
+export async function fetchOverpassData(
+  query: string,
+): Promise<OverpassApiResponse> {
   console.log('Querying Overpass API...');
-  const response = await fetch(OVERPASS_API_URL, {
-    method: 'POST',
-    body: query,
-  });
-  if (!response.ok) {
-    throw new Error(`Overpass API query failed: ${response.statusText}`);
+  const response = await fetchJsonWithRetry(
+    OVERPASS_API_URL,
+    {
+      method: 'POST',
+      body: query,
+    },
+    { label: 'Overpass' },
+  );
+
+  if (!isOverpassApiResponse(response)) {
+    throw new Error('[Overpass] Unexpected response shape');
   }
-  return await response.json();
+
+  return response;
 }
 export const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 
 // --- GB ONS Queries --- //
-export function buildONSArcGisQuery(
+export function buildONSArcGISQuery(
   baseServiceUrl: string,
   layerId: number,
   queryBBox: BoundaryBox,
-): ArcGisQueryRequest {
+): ArcGISQueryRequest {
   return {
     url: `${baseServiceUrl}/${layerId}/query`,
     params: new URLSearchParams({
@@ -377,24 +455,24 @@ export function buildONSArcGisQuery(
 
 export function getDistrictONSQuery(
   queryBBox: BoundaryBox,
-): ArcGisQueryRequest {
-  return buildONSArcGisQuery(
+): ArcGISQueryRequest {
+  return buildONSArcGISQuery(
     `${ONS_API_BASE_URL}/LAD_MAY_2025_UK_BFC_V2/FeatureServer`,
     0,
     queryBBox,
   );
 }
 
-export function getBUAONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(
+export function getBUAONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
+  return buildONSArcGISQuery(
     `${ONS_API_BASE_URL}/BUA_2022_GB/FeatureServer`,
     0,
     queryBBox,
   );
 }
 
-export function getWardONSQuery(queryBBox: BoundaryBox): ArcGisQueryRequest {
-  return buildONSArcGisQuery(
+export function getWardONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
+  return buildONSArcGISQuery(
     `${ONS_API_BASE_URL}/WD_MAY_2025_UK_BFC_V2/FeatureServer`,
     0,
     queryBBox,

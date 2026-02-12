@@ -5,7 +5,7 @@ import type { BoundaryBox } from '../utils/geometry';
 import { expandBBox } from '../utils/geometry';
 import {
   buildCountyUrl,
-  buildNeighborhoodOverpassQuery,
+  buildOverpassQuery,
   buildZctaUrl,
   extractStateCodesFromGeoIDs,
   fetchCountyPopulations,
@@ -70,6 +70,10 @@ const US_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
   },
 };
 
+// Neighborhood data is queried from OpenStreetMap Overpass API based on admin level
+const US_NEIGHBORHOOD_ADMIN_LEVEL = 10;
+
+
 async function extractCountyBoundaries(bbox: BoundaryBox) {
   const geoJson = await fetchGeoJSONFromArcGIS(buildCountyUrl(bbox));
   const populationMap = await fetchCountyPopulations(
@@ -121,7 +125,7 @@ async function extractZctaBoundaries(bbox: BoundaryBox) {
 }
 
 async function extractNeighborhoodBoundaries(bbox: BoundaryBox) {
-  const query = buildNeighborhoodOverpassQuery(bbox);
+  const query = buildOverpassQuery(bbox, US_NEIGHBORHOOD_ADMIN_LEVEL);
   const overpassJson = await fetchOverpassData(query);
   const geoJson = osmtogeojson(overpassJson);
   // Populations for neighborhoods should be included in the OSM data as a property (if available) so we don't need to return a separate population map
