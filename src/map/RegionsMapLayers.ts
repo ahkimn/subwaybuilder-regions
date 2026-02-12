@@ -256,9 +256,9 @@ export class RegionsMapLayers {
         }
       )
     } else {
-      // If map layer source already exists, update data
-      console.log(`[Regions] Updating data for source: ${sourceId}`);
-      (this.map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(data);
+      // TODO: (Future) if map layer source already exists, update data if region data has been mutated
+      // console.log(`[Regions] Updating data for source: ${sourceId}`);
+      // (this.map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(data);
     }
   }
 
@@ -391,7 +391,9 @@ export class RegionsMapLayers {
       for (const dataset of this.observedDatasets) {
         const identifier = RegionDataset.getIdentifier(dataset);
         const layerState = this.layerStates.get(identifier);
-        if (!layerState) return;
+        if (!layerState) {
+          continue;
+        }
         const hasLayer = this.map.getLayer(layerState.labelLayerId);
 
         if (hasLayer && !layerState.handlers) {

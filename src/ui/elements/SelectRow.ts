@@ -141,8 +141,6 @@ export function ReactSelectRow(
   );
 }
 
-
-
 function buildSelectRowButton(
   options: DOMSelectButtonConfig,
   buttonId: string,
@@ -167,7 +165,6 @@ function buildSelectRowButton(
     button.appendChild(wrap);
   }
 
-
   setActive(false);
 
   return {
@@ -176,7 +173,6 @@ function buildSelectRowButton(
     blur: () => button.blur()
   }
 }
-
 
 function getSelectButtonClassName(
   style: SelectRowStyle,

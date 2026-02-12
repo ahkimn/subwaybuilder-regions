@@ -1,4 +1,4 @@
-import { REGIONS_INFO_UPDATE_REAL_INTERVAL, REGIONS_INFO_UPDATE_GAME_INTERVAL } from "../core/constants";
+import { REGIONS_INFO_PANEL_MOD_ID, REGIONS_INFO_UPDATE_REAL_INTERVAL, REGIONS_INFO_UPDATE_GAME_INTERVAL } from "../core/constants";
 import { RegionDataBuilder } from "../core/datasets/RegionDataBuilder";
 import { RegionDataManager } from "../core/datasets/RegionDataManager";
 import { RegionDataset } from "../core/datasets/RegionDataset";
@@ -27,6 +27,9 @@ export class RegionsUIManager {
 
   layerPanelRoot: HTMLElement | null = null;
   infoPanelsRoot: HTMLElement | null = null;
+
+  private infoPanelsObserver: MutationObserver | null = null;
+  private infoPanelsObserverRoot: HTMLElement | null = null;
 
   private state: UIState;
 
@@ -80,21 +83,43 @@ export class RegionsUIManager {
       this.tryInjectLayerPanel();
     });
 
-    observeInfoPanelsRoot(
-      () => this.infoPanelRenderer.rootElement,
-      () => this.infoPanelRenderer.tearDown()
-    );
-
     this.overviewPanelRenderer.initialize();
   }
 
   getInfoPanelRoot(): HTMLElement | null {
-    if (!this.infoPanelsRoot && document.contains(this.infoPanelsRoot)) {
+    if (this.infoPanelsRoot && document.contains(this.infoPanelsRoot)) {
       return this.infoPanelsRoot;
+    } else if (this.infoPanelsRoot && !document.contains(this.infoPanelsRoot)) {
+      this.infoPanelsRoot = null;
     }
 
     this.infoPanelsRoot = resolveInfoPanelRoot();
+    if (this.infoPanelsRoot) {
+      this.ensureInfoPanelsObserverAttached(this.infoPanelsRoot);
+    }
     return this.infoPanelsRoot;
+  }
+
+  private ensureInfoPanelsObserverAttached(root: HTMLElement): void {
+    if (this.infoPanelsObserver && this.infoPanelsObserverRoot === root) {
+      return;
+    }
+
+    this.infoPanelsObserver?.disconnect();
+    this.infoPanelsObserver = observeInfoPanelsRoot(root, (node: HTMLElement) => {
+      const infoPanelSelector = `[data-mod-id="${REGIONS_INFO_PANEL_MOD_ID}"]`;
+      // Ignore mutations to the info panel itself
+      if (node.matches(infoPanelSelector) || node.querySelector(infoPanelSelector) !== null) {
+        return;
+      }
+      // If there is an active selection, clear the selection to prevent a state where the info panel is not shown but a region is still selected (and highlighted on the map)
+      if (this.state.activeSelection !== null) {
+        this.clearSelection();
+      } else {
+        this.infoPanelRenderer.tearDown();
+      }
+    });
+    this.infoPanelsObserverRoot = root;
   }
 
   tryInjectLayerPanel(force: boolean = false) {
@@ -164,6 +189,7 @@ export class RegionsUIManager {
   reset() {
     this.stopCommutersUpdateLoop();
     this.clearSelection();
+    this.lastCheckedGameTime = -1;
     this.overviewPanelRenderer.tearDown();
   }
 

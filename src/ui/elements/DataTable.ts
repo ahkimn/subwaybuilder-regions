@@ -37,8 +37,6 @@ export type TableOptions = {
   density: TableDensity;
 }
 
-
-
 // --- DOM Implementation ---
 
 export function DataTable(
