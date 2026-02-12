@@ -6,7 +6,7 @@ import { RegionDatasetRegistry } from "../core/registry/RegionDatasetRegistry";
 import { RegionSelection, UIState } from "../core/types";
 import { RegionsMapLayers } from "../map/RegionsMapLayers";
 import type { ModdingAPI } from "../types/modding-api-v1";
-import { observeInfoPanelsRoot, observeMapLayersPanel } from "./observers/observers";
+import { observeInfoPanelsRoot as observeInfoPanelRoot, observeMapLayersPanel } from "./observers/observers";
 import { RegionsInfoPanelRenderer } from "./panels/info/RegionsInfoPanelRenderer";
 import { RegionsOverviewPanelRenderer } from "./panels/overview/RegionsOverviewPanelRenderer";
 import { injectRegionToggles } from "./map-layers/toggles";
@@ -26,10 +26,12 @@ export class RegionsUIManager {
   private initialized: boolean;
 
   layerPanelRoot: HTMLElement | null = null;
-  infoPanelsRoot: HTMLElement | null = null;
+  infoPanelRoot: HTMLElement | null = null;
 
-  private infoPanelsObserver: MutationObserver | null = null;
-  private infoPanelsObserverRoot: HTMLElement | null = null;
+  private mapLayersPanelObserver: MutationObserver | null = null;
+
+  private infoPanelObserver: MutationObserver | null = null;
+  private infoPanelObserverRoot: HTMLElement | null = null;
 
   private state: UIState;
 
@@ -78,35 +80,32 @@ export class RegionsUIManager {
 
     this.mapLayers.setSelectionProvider((): RegionSelection | null => this.state.activeSelection);
 
-    observeMapLayersPanel((panel) => {
-      this.layerPanelRoot = panel;
-      this.tryInjectLayerPanel();
-    });
-
-    this.overviewPanelRenderer.initialize();
+    this.ensureLayerPanelObserver();
   }
+
+  // --- Observers Management --- //
 
   getInfoPanelRoot(): HTMLElement | null {
-    if (this.infoPanelsRoot && document.contains(this.infoPanelsRoot)) {
-      return this.infoPanelsRoot;
-    } else if (this.infoPanelsRoot && !document.contains(this.infoPanelsRoot)) {
-      this.infoPanelsRoot = null;
+    if (this.infoPanelRoot) {
+      if (document.contains(this.infoPanelRoot)) {
+        this.ensureInfoPanelObserver(this.infoPanelRoot);
+        return this.infoPanelRoot;
+      } else {
+        this.infoPanelRoot = null;
+      }
     }
 
-    this.infoPanelsRoot = resolveInfoPanelRoot();
-    if (this.infoPanelsRoot) {
-      this.ensureInfoPanelsObserverAttached(this.infoPanelsRoot);
-    }
-    return this.infoPanelsRoot;
+    this.infoPanelRoot = resolveInfoPanelRoot();
+    this.infoPanelRoot && this.ensureInfoPanelObserver(this.infoPanelRoot);
+
+    return this.infoPanelRoot;
   }
 
-  private ensureInfoPanelsObserverAttached(root: HTMLElement): void {
-    if (this.infoPanelsObserver && this.infoPanelsObserverRoot === root) {
-      return;
-    }
+  private ensureInfoPanelObserver(root: HTMLElement): void {
+    if (this.infoPanelObserver && this.infoPanelObserverRoot === root) return;
 
-    this.infoPanelsObserver?.disconnect();
-    this.infoPanelsObserver = observeInfoPanelsRoot(root, (node: HTMLElement) => {
+    this.infoPanelObserver?.disconnect();
+    this.infoPanelObserver = observeInfoPanelRoot(root, (node: HTMLElement) => {
       const infoPanelSelector = `[data-mod-id="${REGIONS_INFO_PANEL_MOD_ID}"]`;
       // Ignore mutations to the info panel itself
       if (node.matches(infoPanelSelector) || node.querySelector(infoPanelSelector) !== null) {
@@ -119,7 +118,24 @@ export class RegionsUIManager {
         this.infoPanelRenderer.tearDown();
       }
     });
-    this.infoPanelsObserverRoot = root;
+    this.infoPanelObserverRoot = root;
+  }
+
+  private ensureLayerPanelObserver(): void {
+    if (this.mapLayersPanelObserver) return
+
+    this.mapLayersPanelObserver = observeMapLayersPanel((panel) => {
+      this.layerPanelRoot = panel;
+      this.tryInjectLayerPanel();
+    });
+  }
+
+  private disconnectObservers(): void {
+    this.infoPanelObserver?.disconnect();
+    this.mapLayersPanelObserver?.disconnect();
+
+    this.infoPanelObserver = null;
+    this.mapLayersPanelObserver = null;
   }
 
   tryInjectLayerPanel(force: boolean = false) {
@@ -183,14 +199,26 @@ export class RegionsUIManager {
     this.state.cityCode = cityCode;
     this.startCommutersUpdateLoop();
     this.overviewPanelRenderer.initialize();
+
     this.tryInjectLayerPanel();
+    this.ensureLayerPanelObserver();
   }
 
   reset() {
     this.stopCommutersUpdateLoop();
+    this.disconnectObservers();
     this.clearSelection();
     this.lastCheckedGameTime = -1;
     this.overviewPanelRenderer.tearDown();
+  }
+
+  tearDown(): void {
+    this.reset();
+    this.layerPanelRoot = null;
+    this.infoPanelRoot = null;
+    this.state.cityCode = null;
+    this.state.lastInjectedCity = null;
+    this.initialized = false;
   }
 
   private clearSelection() {

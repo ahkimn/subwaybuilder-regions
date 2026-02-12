@@ -37,12 +37,14 @@ export class RegionsOverviewPanelRenderer {
 
   initialize(): void {
     if (this.overviewPanel !== null) return;
+    if (!this.state.cityCode) return;
 
-    const currentDatasetIds = this.dataManager.getCityDatasetIds(this.state.cityCode!);
+    const currentDatasetIds = this.dataManager.getCityDatasetIds(this.state.cityCode);
     if (currentDatasetIds.length === 0) {
       console.warn("[Regions] No region datasets available for current city, no overview panel will be shown.");
       return;
     }
+
     this.overviewPanel = new RegionsOverviewPanel(
       this.api,
       this.state,

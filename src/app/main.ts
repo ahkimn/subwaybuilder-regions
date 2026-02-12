@@ -153,6 +153,10 @@ export class RegionsMod {
     return this.uiManager?.activeSelection;
   }
 
+  tearDownUIManager() {
+    this.uiManager?.tearDown();
+  }
+
   logMapStyle() {
     if (!this.map) {
       console.warn("[Regions] Map not initialized");
@@ -177,6 +181,7 @@ const mod = new RegionsMod();
     printRegistry: () => mod.printRegistry(),
     getCurrentCityCode: () => mod.getCurrentCityCode(),
     getActiveSelection: () => mod.getActiveSelection(),
+    tearDownUIManager: () => mod.tearDownUIManager(),
     logMapStyle: () => mod.logMapStyle(),
     logLayerOrder: () => mod.logLayerOrder(),
   }

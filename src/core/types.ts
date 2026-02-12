@@ -55,7 +55,8 @@ export type RegionSelection = {
 
 export const RegionSelection = {
   isEqual(a: RegionSelection | null, b: RegionSelection | null): boolean {
-    if (!a || !b) return false;
+    if (a === null && b === null) return true;
+    if (a === null || b === null) return false;
     return a.datasetIdentifier === b.datasetIdentifier && a.featureId === b.featureId;
   }
 };
