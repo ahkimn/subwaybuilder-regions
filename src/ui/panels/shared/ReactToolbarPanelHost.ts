@@ -10,17 +10,14 @@ export class ReactToolbarPanelHost {
   private renderPanel: (() => ReactNode) | null = null;
 
   private hasContent = false;
-  private clickCaptureHandler: ((event: MouseEvent) => void) | null = null;
 
   constructor(
     private readonly api: ModdingAPI,
-    private readonly options: ToolbarPanelHostOptions,
-    private readonly panelContentRootId: string
+    private readonly options: ToolbarPanelHostOptions
   ) { }
 
   initialize(): void {
     if (this.initialized) {
-      this.startClickCaptureGuard();
       return;
     }
 
@@ -38,7 +35,6 @@ export class ReactToolbarPanelHost {
 
     this.api.ui.addFloatingPanel(panelOptions);
     this.initialized = true;
-    this.startClickCaptureGuard();
   }
 
   setRender(renderFn: () => ReactNode): void {
@@ -50,8 +46,9 @@ export class ReactToolbarPanelHost {
   clear(): void {
     this.renderPanel = null;
     this.hasContent = false;
-    this.stopClickCaptureGuard();
+    // Force render to clear existing content in currently registered panel.
     this.requestRender();
+    this.initialized = false;
   }
 
   isVisible(): boolean {
@@ -63,68 +60,5 @@ export class ReactToolbarPanelHost {
       return;
     }
     this.api.ui.forceUpdate();
-  }
-
-  private findPanelContainer(headerHost: HTMLElement): HTMLElement | null {
-    let current: HTMLElement | null = headerHost;
-    let candidate: HTMLElement | null = null;
-    for (let i = 0; i < 12 && current; i += 1) {
-      const parent = current.parentElement;
-      if (parent && parent.classList.contains("fixed") && parent.classList.contains("inset-0")) {
-        return current;
-      }
-      candidate = current;
-      current = current.parentElement;
-    }
-    return candidate;
-  }
-
-  private findPanelContainerFromContent(contentRoot: HTMLElement): HTMLElement | null {
-    return this.findPanelContainer(contentRoot);
-  }
-
-  private startClickCaptureGuard(): void {
-    if (this.clickCaptureHandler) {
-      return;
-    }
-
-    this.clickCaptureHandler = (event: MouseEvent) => {
-      if (!this.hasContent) {
-        return;
-      }
-
-      const panel = this.resolvePanelContainer();
-      if (!panel) {
-        return;
-      }
-
-      const target = event.target as Node | null;
-      if (target && panel.contains(target)) {
-        return;
-      }
-
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-    };
-
-    document.addEventListener("click", this.clickCaptureHandler, true);
-  }
-
-  private stopClickCaptureGuard(): void {
-    if (!this.clickCaptureHandler) {
-      return;
-    }
-    document.removeEventListener("click", this.clickCaptureHandler, true);
-    this.clickCaptureHandler = null;
-  }
-
-  private resolvePanelContainer(): HTMLElement | null {
-    const contentRoot = this.panelContentRootId
-      ? document.getElementById(this.panelContentRootId)
-      : null;
-    if (!contentRoot) {
-      return null;
-    }
-    return this.findPanelContainerFromContent(contentRoot);
   }
 }

@@ -19,6 +19,10 @@ Those with :construction: are currently under implementation.
 - :construction: **Aggregate Data View**
   - Add a new table component to show all region statistics at a glance
   - Sync data / selection state across multiple panels
+  - Current progress:
+    - Floating panel host has been implemented using the game panel API
+    - Initial overview UX is in place (layer selector, tabs, search, sortable table shell)
+    - Selection sync is wired between overview, map highlights, and info panel
 - **Hotkey Support**
   - Game panels should respond to in-game hotkeys as other parts of the existing game UI do (e.g. Esc to clear panel / selection)
 

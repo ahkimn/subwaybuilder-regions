@@ -1,4 +1,4 @@
-import { REGIONS_OVERVIEW_PANEL_CONTENT_ID, REGIONS_OVERVIEW_PANEL_ID, REGIONS_OVERVIEW_PANEL_TITLE } from "../../../core/constants";
+import { REGIONS_OVERVIEW_PANEL_ID, REGIONS_OVERVIEW_PANEL_TITLE } from "../../../core/constants";
 import type { RegionSelection, UIState } from "../../../core/types";
 import type { ModdingAPI } from "../../../types/modding-api-v1";
 import { ReactToolbarPanelHost } from "../shared/ReactToolbarPanelHost";
@@ -27,8 +27,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
       icon: "Table2",
       title: REGIONS_OVERVIEW_PANEL_TITLE,
       width: 720,
-    },
-      REGIONS_OVERVIEW_PANEL_CONTENT_ID);
+    });
   }
 
   setEvents(events: RegionsOverviewPanelEvents) {

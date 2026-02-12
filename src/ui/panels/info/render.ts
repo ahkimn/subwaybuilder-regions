@@ -288,7 +288,7 @@ function buildTableHeader(viewState: CommutersViewState, render: () => void): Da
       align: ['left', 'right', 'right', 'right', 'right'],
       sortState: {
         index: viewState.sortIndex,
-        directionLabel: viewState.sortDirection === 'asc' ? '▲' : '▼',
+        directionLabel: viewState.sortDirection === 'asc' ? ' ▲' : ' ▼',
         sortSelectedClass: 'text-foreground'
       }
     }
