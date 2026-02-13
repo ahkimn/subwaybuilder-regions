@@ -108,10 +108,19 @@ _Latest Tested Game Version:_ `v1.0.2`
    npm run extract:map-features -- -- \
      --country-code=US \
      --data-type=zctas \
-     --city-code=DEN \
+     --city-code=DEN
    ```
 
-   Or to override the boundaries set in `boundaries.csv`, manually provide a boundary box
+   Or if on Linux/MacOS
+
+   ```
+   npx tsx scripts/extract-map-features.ts \
+    --country-code=US \
+    --data-type=zctas \
+    --city-code=DEN
+   ```
+
+   To override the boundaries set in `boundaries.csv`, manually provide a boundary box
 
    ```
    npm run extract:map-features -- -- \
