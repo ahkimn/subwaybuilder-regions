@@ -4,16 +4,16 @@ import path from 'path';
 import { OSM_COUNTRY_CONFIG_FILE, SOURCE_DATA_DIR } from '../../shared/consts';
 
 export type OSMBoundaryType = {
-  adminLevels: number[];
-  datasetId: string;
-  suffixesToTrim: string[];
-  prefixesToTrim: string[];
-  unitSingular: string;
-  unitPlural: string;
+  adminLevels: number[]; // OSM admin levels to query for the administrative unit
+  datasetId: string; // Unique identifier for the dataset (e.g., 'counties', 'provinces', etc.). Corresponds to the datasetId used in the CLI for OSM countries
+  suffixesToTrim: string[]; // Common suffixes in boundary names to trim for cleaner labels (e.g., "County", "Province", "District")
+  prefixesToTrim: string[]; // Common prefixes in boundary names to trim for cleaner labels (e.g., "City of", "Municipality of")
+  unitSingular: string; // Singular form of the administrative units contained in the dataset (e.g., "County", "Province").
+  unitPlural: string; // Plural form of the administrative units contained in the dataset (e.g., "Counties", "Provinces"). Used for identifying the dataset within UI elements
 };
 
 export type OSMCountryConfig = {
-  countryCode: string;
+  countryCode: string; // ISO 3166-1 alpha-2 code
   availableBoundaryTypes: OSMBoundaryType[];
 };
 

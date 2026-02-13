@@ -104,13 +104,13 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    From the project repository root, run
 
-    ```
-   npx tsx scripts/extract-map-features.ts \
-     --country-code=US \
-     --data-type=zctas \
-     --city-code=DEN
    ```
-    
+   npx tsx scripts/extract-map-features.ts \
+    --country-code=US \
+    --data-type=zctas \
+    --city-code=DEN
+   ```
+
    Or if using Powershell
 
    ```
@@ -148,9 +148,57 @@ _Latest Tested Game Version:_ `v1.0.2`
    | **US**         | county-subdivisions | County Subdivisions (Towns/Cities/CDPs) | TIGERweb API (online) |
    | **US**         | zctas               | ZIP Code Tabulation Areas               | TIGERweb API (online) |
 
-   :warning: If boundaries are not provided, `city-code` must be in `boundaries.csv`
+   :warning: If adding boundaries for a custom city, `city-code` must be in `boundaries.csv`
 
-5. Serve Local Data
+   **Rest of the World**
+
+   For the rest of the world, the mod supports boundary fetching via OSM by admin level. Valid combinations are set in `source_data/osm-country-admin-levels.json`
+
+   Entries within this JSON parameterize the OSM query that the boundary extraction script. See `scripts/utils/osm-country-configs.ts` for additional details.
+
+   ```
+    {
+      "countryCode": "FR",
+      "availableBoundaryTypes": [
+        {
+          "adminLevels": [7],
+          "datasetId": "arrondissements",
+          "suffixesToTrim": [],
+          "prefixesToTrim": [],
+          "unitSingular": "Arrondissement",
+          "unitPlural": "Arrondissements"
+        },
+        {
+          "adminLevels": [8],
+          "datasetId": "communes",
+          "suffixesToTrim": [],
+          "prefixesToTrim": [],
+          "unitSingular": "Commune",
+          "unitPlural": "Communes"
+        }
+      ]
+    }
+   ```
+
+   Once an entry is added to this JSON, run the extraction script as follows:
+
+   ```
+   npx tsx scripts/extract-map-features.ts \
+     --country-code={countryCode} \
+     --data-type={datasetId} \
+     --city-code={ ??? }
+   ```
+
+   For example, given the example config for France and an entry for `PAR` within `boundaries.csv` you could run the following to get boundary data for Paris:
+
+   ```
+   npx tsx scripts/extract-map-features.ts \
+     --country-code=FR \
+     --data-type=communes \
+     --city-code=PAR
+   ```
+
+4. Serve Local Data
    From the repository root, run:
 
    ```
@@ -159,7 +207,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    By default this serves: http://127.0.0.1:8080.
 
-6. Build
+5. Build
    From the repository root, run:
 
    ```
@@ -168,7 +216,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    This will build the `index.js` in `dist/`
 
-7. Install
+6. Install
 
    Move the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
@@ -180,7 +228,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
 
-8. Validate Behavior
+7. Validate Behavior
 
    Configure `config.yaml`. Then, use the following command to run the game from terminal with the Console enabled.
 
@@ -189,7 +237,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    ```
 
-9. Contribute
+8. Contribute
 
    Once new behavior is verified, run code quality checks before opening a PR:
 

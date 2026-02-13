@@ -89,7 +89,7 @@
         "unitSingular": "Arrondissement",
         "unitPlural": "Arrondissements"
       },
-          {
+      {
         "adminLevels": [8],
         "datasetId": "communes",
         "suffixesToTrim": [],
