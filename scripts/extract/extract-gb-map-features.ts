@@ -11,6 +11,7 @@ import {
 } from '../utils/files';
 import type { BoundaryBox } from '../utils/geometry';
 import { expandBBox } from '../utils/geometry';
+import { renderFeaturePreview } from '../utils/preview';
 import {
   fetchGeoJSONFromArcGIS,
   getBUAONSQuery,
@@ -57,7 +58,11 @@ const WARD_WELSH_NAME_PROPERTY = 'WD25NMW';
 
 const GB_DATA_CONFIGS: Record<string, DataConfig> = {
   districts: {
+    datasetId: 'districts',
     displayName: 'Districts',
+    unitSingular: 'District',
+    unitPlural: 'Districts',
+    source: 'UK ONS',
     idProperty: DISTRICT_CODE_PROPERTY,
     nameProperty: DISTRICT_NAME_PROPERTY,
     applicableNameProperties: [
@@ -67,7 +72,11 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
     populationProperty: 'Population',
   },
   bua: {
+    datasetId: 'bua',
     displayName: 'Built-Up Areas',
+    unitSingular: 'Built-Up Area',
+    unitPlural: 'Built-Up Areas',
+    source: 'UK ONS',
     idProperty: BUA_CODE_PROPERTY,
     nameProperty: BUA_NAME_PROPERTY,
     applicableNameProperties: [
@@ -78,7 +87,11 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
     populationProperty: 'Population',
   },
   wards: {
+    datasetId: 'wards',
     displayName: 'Electoral Wards',
+    unitSingular: 'Electoral Ward',
+    unitPlural: 'Electoral Wards',
+    source: 'UK ONS',
     idProperty: WARD_CODE_PROPERTY,
     nameProperty: WARD_NAME_PROPERTY,
     applicableNameProperties: [WARD_WELSH_NAME_PROPERTY, WARD_NAME_PROPERTY],
@@ -173,6 +186,10 @@ export async function extractGBBoundaries(
     expandBBox(bbox, 0.01),
     args.useLocalData,
   );
+  if (args.preview) {
+    renderFeaturePreview(geoJson.features, args.previewCount!);
+    return;
+  }
 
   processAndSaveBoundaries(
     geoJson,

@@ -1,18 +1,3 @@
-export const PRESET_UNIT_LABELS: Record<
-  string,
-  { singular: string; plural: string }
-> = {
-  districts: { singular: 'District', plural: 'Districts' }, // GB local authority districts
-  bua: { singular: 'BUA', plural: 'BUAs' }, // GB built-up areas
-  wards: { singular: 'Ward', plural: 'Wards' }, // GB electoral wards
-  counties: { singular: 'County', plural: 'Counties' },
-  'county-subdivisions': {
-    singular: 'County Subdivision',
-    plural: 'County Subdivisions',
-  },
-  zctas: { singular: 'ZCTA', plural: 'ZCTAs' },
-};
-
 // For non-preset datasets or custom user datasets
 export const DEFAULT_UNIT_LABELS = { singular: 'Region', plural: 'Regions' };
 

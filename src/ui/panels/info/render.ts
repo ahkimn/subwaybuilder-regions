@@ -48,7 +48,7 @@ export function renderStatisticsView(gameData: RegionGameData): HTMLElement {
   const residents = gameData.demandData?.residents ?? 0;
   const workers = gameData.demandData?.workers ?? 0;
 
-  const unitLabel = gameData.unitNames?.singular;
+  const unitLabel = gameData.unitTypes?.singular;
 
   const infraData = gameData.infraData;
   const existsInfraData = infraData !== undefined;

@@ -5,6 +5,10 @@ import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
 
 import { DATA_INDEX_FILE } from '../../shared/consts';
+import type {
+  DatasetIndex,
+  DatasetIndexEntry,
+} from '../../shared/dataset-index';
 import type { BoundaryBox } from './geometry';
 
 export type Row = Record<string, string>;
@@ -157,28 +161,39 @@ export function buildCSVIndex(
 export function updateIndexJson(
   indexPath: string,
   cityCode: string,
-  dataType: string,
-  displayName: string,
+  datasetEntry: DatasetIndexEntry,
 ): void {
   validateFilePath(indexPath);
-  const index = fs.readJsonSync(indexPath, { throws: false }) || {};
+  const index = (fs.readJsonSync(indexPath, { throws: false }) ||
+    {}) as DatasetIndex;
 
   if (!index[cityCode]) {
     index[cityCode] = [];
   }
 
   const existingEntry = index[cityCode].find(
-    (entry: any) => entry.id === dataType,
+    (entry) => entry.datasetId === datasetEntry.datasetId,
   );
-  if (!existingEntry) {
-    index[cityCode].push({ id: dataType, name: displayName });
-    fs.writeJsonSync(indexPath, index, { spaces: 2 });
+  if (existingEntry) {
+    Object.assign(existingEntry, datasetEntry);
     console.log(
-      `Updated ${DATA_INDEX_FILE} for ${cityCode} with new dataset: ${displayName}`,
+      `Updated ${DATA_INDEX_FILE} for ${cityCode} with dataset: ${datasetEntry.displayName}`,
     );
   } else {
+    index[cityCode].push(datasetEntry);
     console.log(
-      `Dataset ${displayName} already exists in ${DATA_INDEX_FILE} for ${cityCode}.`,
+      `Added ${DATA_INDEX_FILE} entry for ${cityCode}: ${datasetEntry.displayName}`,
     );
   }
+
+  const sortedIndex: DatasetIndex = {};
+  const sortedCityCodes = Object.keys(index).sort((a, b) => a.localeCompare(b));
+  for (const sortedCityCode of sortedCityCodes) {
+    const sortedEntries = [...(index[sortedCityCode] || [])].sort((a, b) =>
+      a.datasetId.localeCompare(b.datasetId),
+    );
+    sortedIndex[sortedCityCode] = sortedEntries;
+  }
+
+  fs.writeJsonSync(indexPath, sortedIndex, { spaces: 2 });
 }

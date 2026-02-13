@@ -1,12 +1,17 @@
 import type { BoundaryBox } from '../utils/geometry';
 
 export type DataConfig = {
+  datasetId: string;
   displayName: string;
+  unitSingular: string;
+  unitPlural: string;
+  source: string;
   idProperty: string;
   nameProperty: string;
   applicableNameProperties: string[];
   populationProperty?: string;
   unitTypeProperty?: string;
+  unitTypeCodeMap?: Record<string, string>;
 };
 
 export type BoundaryDataHandler = {

@@ -56,6 +56,43 @@ type LabelCandidate = {
   withinPolygon: boolean;
 };
 
+type UnitTypeProperties = {
+  UNIT_TYPE: string;
+  UNIT_TYPE_CODE: string;
+};
+
+function resolveUnitTypeProperties(
+  featureProperties: GeoJsonProperties,
+  dataConfig: DataConfig,
+  unmappedUnitTypeCodes: Set<string>,
+): UnitTypeProperties | null {
+  const unitTypeProperty = dataConfig.unitTypeProperty;
+  const unitTypeCodeMap = dataConfig.unitTypeCodeMap;
+  if (!unitTypeProperty || !unitTypeCodeMap) return null;
+
+  const rawCode = featureProperties![unitTypeProperty];
+  if (rawCode == null) return null;
+
+  const code = String(rawCode).trim().toUpperCase();
+  if (!code) return null;
+
+  const unitType = unitTypeCodeMap[code];
+  if (!unitType) {
+    if (!unmappedUnitTypeCodes.has(code)) {
+      unmappedUnitTypeCodes.add(code);
+      console.warn(
+        `Unmapped ${unitTypeProperty} code "${code}" for dataset ${dataConfig.datasetId}`,
+      );
+    }
+    return null;
+  }
+
+  return {
+    UNIT_TYPE: unitType,
+    UNIT_TYPE_CODE: code,
+  };
+}
+
 function getLargestPolygon(feature: Feature<MultiPolygon>): Polygon {
   let maxArea = -Infinity;
   let largestPolygon: Polygon | null = null;
@@ -166,6 +203,7 @@ export function filterAndClipRegionsToBoundary(
   ]);
 
   const results = new Array<Feature<Geometry, GeoJsonProperties>>();
+  const unmappedUnitTypeCodes = new Set<string>();
 
   for (const feature of shapeJSON.features) {
     if (!isPolygonFeature(feature)) {
@@ -197,8 +235,8 @@ export function filterAndClipRegionsToBoundary(
       fullyWithinBoundary ? feature : clippedRegion,
     );
 
-    // Input GeoJSON should include properties
-    const featureProperties: GeoJsonProperties = feature.properties!;
+    // Input GeoJSON should include properties; assert this
+    const featureProperties = feature.properties!;
 
     // Find first label candidate that is within the polygon, otherwise default to the first candidate
     const primaryLabel =
@@ -231,6 +269,18 @@ export function filterAndClipRegionsToBoundary(
       regionProperties = {
         ...regionProperties,
         POPULATION: parseNumber(populationValue),
+      };
+    }
+
+    const unitTypeProperties = resolveUnitTypeProperties(
+      featureProperties,
+      dataConfig,
+      unmappedUnitTypeCodes,
+    );
+    if (unitTypeProperties) {
+      regionProperties = {
+        ...regionProperties,
+        ...unitTypeProperties,
       };
     }
 

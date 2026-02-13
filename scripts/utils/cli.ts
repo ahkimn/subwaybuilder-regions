@@ -3,8 +3,13 @@
 import minimist from 'minimist';
 
 import type { BoundaryBox } from './geometry';
+import { getSupportedCountryCodes } from './osm-country-config';
 
-const AVAILABLE_COUNTRY_CODES = new Set(['GB', 'US']);
+const BUILT_IN_COUNTRY_CODES = ['GB', 'US'];
+
+function getAvailableCountryCodes(): Set<string> {
+  return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);
+}
 
 export type ExtractMapFeaturesArgs = {
   dataType: string;
@@ -15,7 +20,11 @@ export type ExtractMapFeaturesArgs = {
   north?: number;
   east?: number;
   useLocalData?: boolean;
+  preview?: boolean;
+  previewCount?: number;
 };
+
+const DEFAULT_PREVIEW_COUNT = 5;
 
 export function requireString(value: any, name: string): string {
   if (typeof value !== 'string' || value.length === 0) {
@@ -25,8 +34,18 @@ export function requireString(value: any, name: string): string {
   return value;
 }
 
-export function requireNumber(value: any, name: string): number {
+export function requireNumber(
+  value: any,
+  name: string,
+  positive?: boolean,
+): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
+    if (positive && value <= 0) {
+      console.error(
+        `Missing or invalid argument: --${name}. Expected a positive number.`,
+      );
+      process.exit(1);
+    }
     return value;
   }
   console.error(`Missing or invalid argument: --${name}`);
@@ -43,33 +62,51 @@ export function parseNumber(value: string): number | undefined {
 export function parseArgs(): ExtractMapFeaturesArgs {
   let argv = minimist(process.argv.slice(2), {
     string: ['data-type', 'city-code', 'country-code'],
-    boolean: ['use-local-data'],
+    boolean: ['use-local-data', 'preview'],
     alias: {
-      dataType: 'data-type',
-      cityCode: 'city-code',
+      'data-type': 'dataType',
+      'city-code': 'cityCode',
+      'country-code': 'countryCode',
+      'use-local-data': 'useLocalData',
     },
   });
 
-  const dataType: string = requireString(argv.dataType, 'data-type');
-  const cityCode: string = requireString(argv.cityCode, 'city-code');
-  const countryCode: string = requireString(argv.countryCode, 'country-code');
+  console.log('Raw parsed arguments:', argv);
 
-  if (!AVAILABLE_COUNTRY_CODES.has(countryCode)) {
+  const dataType: string = requireString(
+    argv.dataType ?? argv['data-type'],
+    'data-type',
+  );
+  const cityCode: string = requireString(
+    argv.cityCode ?? argv['city-code'],
+    'city-code',
+  );
+  const countryCode: string = requireString(
+    argv.countryCode ?? argv['country-code'],
+    'country-code',
+  );
+  const availableCountryCodes = getAvailableCountryCodes();
+
+  if (!availableCountryCodes.has(countryCode)) {
     console.error(
-      `Unsupported country code: ${countryCode}, supported codes are: ${Array.from(AVAILABLE_COUNTRY_CODES).join(', ')}`,
+      `Unsupported country code: ${countryCode}, supported codes are: ${Array.from(availableCountryCodes).join(', ')}`,
     );
     process.exit(1);
   }
 
-  const south = argv['south'] as number | undefined;
-  const west = argv['west'] as number | undefined;
-  const north = argv['north'] as number | undefined;
-  const east = argv['east'] as number | undefined;
+  const south = argv.south != null ? Number(argv.south) : undefined;
+  const west = argv.west != null ? Number(argv.west) : undefined;
+  const north = argv.north != null ? Number(argv.north) : undefined;
+  const east = argv.east != null ? Number(argv.east) : undefined;
 
-  const useLocalData = argv['use-local-data'] as boolean | undefined;
+  const useLocalData = (argv.useLocalData ?? argv['use-local-data']) as
+    | boolean
+    | undefined;
+
+  const preview = (argv.preview ?? argv['preview']) as boolean | undefined;
 
   console.log('Parsed arguments:', {
-    'data-type': dataType,
+    dataType: dataType,
     countryCode: countryCode,
     cityCode: cityCode,
     south: south,
@@ -77,6 +114,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     north: north,
     east: east,
     useLocalData: useLocalData,
+    preview: preview,
   });
 
   return {
@@ -88,6 +126,8 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     north: north,
     east: east,
     useLocalData: useLocalData,
+    preview: preview,
+    previewCount: DEFAULT_PREVIEW_COUNT,
   };
 }
 

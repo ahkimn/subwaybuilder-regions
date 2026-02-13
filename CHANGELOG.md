@@ -2,6 +2,25 @@
 
 [Back to README](README.md)
 
+## v0.2.2 - 2026-02-13
+
+_Game version_ v1.0.2
+
+### New Features
+
+- Added support for limited boundaries outside of GB/US via `source_data/osm-country-admin-levels.json`.
+  - Statically defined with a few example configs, requires user update for use with any other countries
+- Updated shared data/`data_index.json` schema to include some metadata fields
+  - :warning: this is breaking change so old iterations of `data_index.json` will need to be cleared before using this version of the mod.
+- Added extraction preview mode for inspecting queried feature samples before writing outputs.
+
+### Other Updates
+
+- Updated extraction CLI to accept both kebab-case and camelCase argument keys (e.g. `--country-code` / `--countryCode`).
+- Added boilerplate retry/error handling helper for HTTP queries to OSM/ArcGIS/ONS/etc.
+- `data/data_index.json` now has deterministic alphabetical ordering.
+  - Cities are sorted by their city code, and each entry for a city is sorted by the dataset's ID.
+
 ## v0.2.1 - 2026-02-12
 
 _Game version_ v1.0.2
