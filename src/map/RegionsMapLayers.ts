@@ -391,9 +391,7 @@ export class RegionsMapLayers {
         promoteId: 'ID',
       });
     } else {
-      // TODO: (Future) if map layer source already exists, update data if region data has been mutated
-      // console.log(`[Regions] Updating data for source: ${sourceId}`);
-      // (this.map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(data);
+      (this.map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(data);
     }
   }
 

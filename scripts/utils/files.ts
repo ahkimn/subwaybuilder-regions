@@ -10,6 +10,7 @@ import type {
   DatasetIndexEntry,
 } from '../../shared/dataset-index';
 import type { BoundaryBox } from './geometry';
+import { findOsmCountryConfig } from './osm-country-config';
 
 export type Row = Record<string, string>;
 
@@ -162,6 +163,7 @@ export function updateIndexJson(
   indexPath: string,
   cityCode: string,
   datasetEntry: DatasetIndexEntry,
+  countryCode: string,
 ): void {
   if (!fs.existsSync(indexPath)) {
     const indexDirectory = path.dirname(indexPath);
@@ -194,10 +196,48 @@ export function updateIndexJson(
 
   const sortedIndex: DatasetIndex = {};
   const sortedCityCodes = Object.keys(index).sort((a, b) => a.localeCompare(b));
+
+  const US_DATASET_ORDER = [
+    'counties',
+    'county-subdivisions',
+    'zctas',
+    'neighborhoods',
+  ];
+  const GB_DATASET_ORDER = ['districts', 'bua', 'wards'];
+
+  function resolveDatasetOrder(country: string): string[] {
+    if (country === 'US') {
+      return US_DATASET_ORDER;
+    }
+
+    if (country === 'GB') {
+      return GB_DATASET_ORDER;
+    }
+
+    const osmCountryConfig = findOsmCountryConfig(country);
+    if (!osmCountryConfig) {
+      return [];
+    }
+
+    return osmCountryConfig.availableBoundaryTypes.map((entry) => entry.datasetId);
+  }
+
+  const preferredDatasetOrder = resolveDatasetOrder(countryCode);
+  const datasetOrderIndex = new Map<string, number>(
+    preferredDatasetOrder.map((datasetId, orderIndex) => [datasetId, orderIndex]),
+  );
+
   for (const sortedCityCode of sortedCityCodes) {
-    const sortedEntries = [...(index[sortedCityCode] || [])].sort((a, b) =>
-      a.datasetId.localeCompare(b.datasetId),
-    );
+    const sortedEntries = [...(index[sortedCityCode] || [])].sort((a, b) => {
+      const aOrder = datasetOrderIndex.get(a.datasetId);
+      const bOrder = datasetOrderIndex.get(b.datasetId);
+
+      if (aOrder != null && bOrder != null) {
+        return aOrder - bOrder;
+      }
+
+      return a.datasetId.localeCompare(b.datasetId);
+    });
     sortedIndex[sortedCityCode] = sortedEntries;
   }
 
