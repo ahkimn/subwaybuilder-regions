@@ -2,6 +2,16 @@
 
 [Back to README](README.md)
 
+## v0.2.3 - 2026-02-13
+
+_Game version_ v1.0.2
+
+### Bugfixes
+
+- Updated overview selection flow to ensure the selected dataset layer is made visible before applying active selection state.
+- Overview selections now also sync map layer toggles correctly
+- Clearing a dataset layer now clears active selection (and therefore closes `Region Info`) when the active selection belongs to that dataset.
+
 ## v0.2.2 - 2026-02-13
 
 _Game version_ v1.0.2

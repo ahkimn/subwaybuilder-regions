@@ -8,7 +8,6 @@ This document contains a list of currently known issues affecting the SubwayBuil
 
 - `🔴 Open`: Known issue with no current fix, clear mod/game degradation
 - `🟡 Partially Resolved`: Some fixes exist, limited mod/game degradation
-- `🟢 Resolved`: Fixed issue; kept for historical tracking
 
 ## Major Bugs
 
@@ -45,9 +44,5 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
 4. _Brittle DOM Injection_ (`🔴 Open`)
    - Forced DOM injection of `Map Layers` toggles should be replaced by API calls in the future
    - Class-based DOM query / injection of info panel should be replaced by API call
-5. ~~_Multiple Top Left Panels_~~ (`🟢 Resolved`)
-   - ~~The info panel should either auto-hide when an existing UI panel (e.g. Demand Details) is opened or have consistent behavior (always on top / always on bottom)~~
-   - ~~If the Info Panel is wider than the existing panel will no longer be aligned to the left-hand side of the screen; instead, it will be centered under/over the Info Panel~~
-   - Resolved by updating the observers to properly teardown the info panel and clear selection when non-mod panels are opened in the shared root between the info panel and in-game panels.
-6. _Selection Escape_ (`🔴 Open`)
+5. _Selection Escape_ (`🔴 Open`)
    - Currently, pressing `Esc` clears the selection, as expected; however, it also opens the Settings Menu if there are no active UI panels from the game itself
