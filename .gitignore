@@ -2,6 +2,7 @@
 data/
 source_data/*
 !source_data/**/*.csv
+!source_data/**/*.json
 !source_data/.gitkeep
 
 # Ignore dependencies / build outputs

@@ -1,0 +1,123 @@
+[
+  {
+    "countryCode": "CA",
+    "availableBoundaryTypes": [
+      {
+        "adminLevels": [6],
+        "datasetId": "provinces",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Province",
+        "unitPlural": "Provinces"
+      },
+      {
+        "adminLevels": [8],
+        "datasetId": "municipalities",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Municipality",
+        "unitPlural": "Municipalities"
+      },
+      {
+        "adminLevels": [9, 10],
+        "datasetId": "neighborhoods",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Neighborhood",
+        "unitPlural": "Neighborhoods"
+      }
+    ]
+  },
+  {
+    "countryCode": "DK",
+    "availableBoundaryTypes": [
+      {
+        "adminLevels": [4],
+        "datasetId": "regions",
+        "suffixesToTrim": [],
+        "prefixesToTrim": ["Region"],
+        "unitSingular": "Region",
+        "unitPlural": "Regioner"
+      },
+      {
+        "adminLevels": [7],
+        "datasetId": "communes",
+        "suffixesToTrim": ["Kommune", "Regionskommune"],
+        "prefixesToTrim": [],
+        "unitSingular": "Kommune",
+        "unitPlural": "Kommuner"
+      }
+    ]
+  },
+  {
+    "countryCode": "ES",
+    "availableBoundaryTypes": [
+      {
+        "adminLevels": [6],
+        "datasetId": "provinces",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Provincia",
+        "unitPlural": "Provincias"
+      },
+      {
+        "adminLevels": [8],
+        "datasetId": "municipalities",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Municipio",
+        "unitPlural": "Municipios"
+      }
+    ]
+  },
+  {
+    "countryCode": "FR",
+    "availableBoundaryTypes": [
+      {
+        "adminLevels": [6],
+        "datasetId": "departments",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Département",
+        "unitPlural": "Départements"
+      },
+      {
+        "adminLevels": [7],
+        "datasetId": "arrondissements",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Arrondissement",
+        "unitPlural": "Arrondissements"
+      },
+          {
+        "adminLevels": [8],
+        "datasetId": "communes",
+        "suffixesToTrim": [],
+        "prefixesToTrim": [],
+        "unitSingular": "Commune",
+        "unitPlural": "Communes"
+      }
+    ]
+  },
+  {
+    "countryCode": "JP",
+    "availableBoundaryTypes": [
+      {
+        "adminLevels": [4],
+        "datasetId": "prefectures",
+        "suffixesToTrim": ["県", "都", "府", "道"],
+        "prefixesToTrim": [],
+        "unitSingular": "Prefecture",
+        "unitPlural": "Prefectures"
+      },
+      {
+        "adminLevels": [7],
+        "datasetId": "cities",
+        "suffixesToTrim": ["市", "町", "村", "区"],
+        "prefixesToTrim": [],
+        "unitSingular": "City",
+        "unitPlural": "Cities"
+      }
+    ]
+  }
+]

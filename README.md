@@ -123,7 +123,7 @@ _Latest Tested Game Version:_ `v1.0.2`
    To override the boundaries set in `boundaries.csv`, manually provide a boundary box
 
    ```
-   npm run extract:map-features -- -- \
+   npx tsx scripts/extract-map-features.ts \
      --country-code=US \
      --data-type=zctas \
      --city-code=DEN \
@@ -310,9 +310,4 @@ The following are developer commands available within the repository, grouped by
 
 - `npm run extract:map-features`: Extracts boundary GeoJSONs for a city for use by the mod.
 - `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
-
-## Credits
-
-Mod developed by [ahkimn](https://github.com/ahkimn)
-
-MIT License
+  Details

@@ -1,5 +1,5 @@
 // Default server constants
-export const DEFAULT_PORT = 8080;
+export const DEFAULT_PORT = 8088;
 export const DEFAULT_URL = '127.0.0.1';
 
 // Default directory/file names
