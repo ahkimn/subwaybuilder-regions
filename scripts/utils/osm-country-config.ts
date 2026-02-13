@@ -27,7 +27,9 @@ const OSM_COUNTRY_CONFIG_PATH = path.resolve(
 
 let cachedOsmCountryConfigs: OSMCountryConfig[] | null = null;
 
-function assertOsmCountryConfigs(value: unknown): asserts value is OSMCountryConfig[] {
+function assertOsmCountryConfigs(
+  value: unknown,
+): asserts value is OSMCountryConfig[] {
   if (!Array.isArray(value)) {
     throw new Error(
       `[OSM Config] Expected an array in ${OSM_COUNTRY_CONFIG_PATH}`,

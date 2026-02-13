@@ -88,7 +88,11 @@ function isArcGISFeatureResponse(
 function isRawFeatureCollection(
   value: unknown,
 ): value is { type: string; features: unknown[] } {
-  return isObject(value) && value.type === 'FeatureCollection' && Array.isArray(value.features);
+  return (
+    isObject(value) &&
+    value.type === 'FeatureCollection' &&
+    Array.isArray(value.features)
+  );
 }
 
 function parseACSRows(rows: unknown, endpoint: string): string[][] {
@@ -254,7 +258,9 @@ export async function fetchGeoJSONFromArcGIS(
 
   if (isArcGISErrorResponse(arcgisJson)) {
     const errorMessage = arcgisJson.error?.message ?? 'Unknown ArcGIS error';
-    throw new Error(`[ArcGIS] query failed for ${request.url}: ${errorMessage}`);
+    throw new Error(
+      `[ArcGIS] query failed for ${request.url}: ${errorMessage}`,
+    );
   }
 
   const geoJson: GeoJSON.GeoJSON = normalizeArcGISResponse(arcgisJson);

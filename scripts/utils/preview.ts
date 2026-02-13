@@ -1,4 +1,3 @@
-
 function resolveFeatureId(feature: GeoJSON.Feature): string | number {
   if (feature.id !== undefined && feature.id !== null) {
     return feature.id as string | number;
@@ -18,7 +17,8 @@ function getPolygonCoordinateCount(
     case 'MultiPolygon':
       return geometry.coordinates.reduce(
         (count, polygon) =>
-          count + polygon.reduce((ringCount, ring) => ringCount + ring.length, 0),
+          count +
+          polygon.reduce((ringCount, ring) => ringCount + ring.length, 0),
         0,
       );
     default:

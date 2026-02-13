@@ -5,7 +5,10 @@ import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
 
 import { DATA_INDEX_FILE } from '../../shared/consts';
-import type { DatasetIndex, DatasetIndexEntry } from '../../shared/dataset-index';
+import type {
+  DatasetIndex,
+  DatasetIndexEntry,
+} from '../../shared/dataset-index';
 import type { BoundaryBox } from './geometry';
 
 export type Row = Record<string, string>;
@@ -161,7 +164,8 @@ export function updateIndexJson(
   datasetEntry: DatasetIndexEntry,
 ): void {
   validateFilePath(indexPath);
-  const index = (fs.readJsonSync(indexPath, { throws: false }) || {}) as DatasetIndex;
+  const index = (fs.readJsonSync(indexPath, { throws: false }) ||
+    {}) as DatasetIndex;
 
   if (!index[cityCode]) {
     index[cityCode] = [];

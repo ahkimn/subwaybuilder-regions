@@ -34,10 +34,16 @@ export function requireString(value: any, name: string): string {
   return value;
 }
 
-export function requireNumber(value: any, name: string, positive?: boolean): number {
+export function requireNumber(
+  value: any,
+  name: string,
+  positive?: boolean,
+): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     if (positive && value <= 0) {
-      console.error(`Missing or invalid argument: --${name}. Expected a positive number.`);
+      console.error(
+        `Missing or invalid argument: --${name}. Expected a positive number.`,
+      );
       process.exit(1);
     }
     return value;
@@ -91,8 +97,9 @@ export function parseArgs(): ExtractMapFeaturesArgs {
   const north = argv['north'] as number | undefined;
   const east = argv['east'] as number | undefined;
 
-  const useLocalData = (argv.useLocalData ??
-    argv['use-local-data']) as boolean | undefined;
+  const useLocalData = (argv.useLocalData ?? argv['use-local-data']) as
+    | boolean
+    | undefined;
 
   const preview = (argv.preview ?? argv['preview']) as boolean | undefined;
 
@@ -105,7 +112,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     north: north,
     east: east,
     useLocalData: useLocalData,
-    preview: preview
+    preview: preview,
   });
 
   return {

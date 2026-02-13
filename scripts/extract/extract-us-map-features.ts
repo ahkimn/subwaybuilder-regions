@@ -199,11 +199,7 @@ async function extractZctaBoundaries(bbox: BoundaryBox) {
 }
 
 async function extractNeighborhoodBoundaries(bbox: BoundaryBox) {
-  const query = buildOverpassQuery(
-    bbox,
-    US_NEIGHBORHOOD_ADMIN_LEVELS,
-    'US',
-  );
+  const query = buildOverpassQuery(bbox, US_NEIGHBORHOOD_ADMIN_LEVELS, 'US');
   const overpassJson = await fetchOverpassData(query);
   const geoJson = osmtogeojson(overpassJson);
   // Populations for neighborhoods should be included in the OSM data as a property (if available) so we don't need to return a separate population map

@@ -86,12 +86,12 @@ export function renderStatisticsView(gameData: RegionGameData): HTMLElement {
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-          Array.from(infraData!.trackLengths.values()).reduce(
-            (a, b) => a + b,
-            0,
-          ),
-          2,
-        )} km`
+            Array.from(infraData!.trackLengths.values()).reduce(
+              (a, b) => a + b,
+              0,
+            ),
+            2,
+          )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     // TODO: Show Route bullets, but this requires allowing overflow and likely a different base component structure than DetailRow

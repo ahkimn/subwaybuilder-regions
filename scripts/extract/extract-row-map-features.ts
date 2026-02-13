@@ -71,7 +71,11 @@ async function extractOSMBoundaries(
   bbox: BoundaryBox,
   boundaryConfig: OSMBoundaryType,
 ) {
-  const query = buildOverpassQuery(bbox, boundaryConfig.adminLevels, countryCode);
+  const query = buildOverpassQuery(
+    bbox,
+    boundaryConfig.adminLevels,
+    countryCode,
+  );
   const overpassJson = await fetchOverpassData(query);
   const geoJson = osmtogeojson(overpassJson) as GeoJSON.FeatureCollection;
   return { geoJson: preprocessTrimmedNames(geoJson, boundaryConfig) };

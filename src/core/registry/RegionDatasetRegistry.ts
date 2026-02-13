@@ -92,15 +92,11 @@ export class RegionDatasetRegistry {
       for (const record of datasets) {
         this.assertDatasetIndexEntry(cityCode, record);
         this.registerDataset(
-          new RegionDataset(
-            record,
-            cityCode,
-            {
-              type: 'static',
-              dataPath: `${this.serveUrl}/${cityCode}/${record.datasetId}.geojson`,
-              writable: false,
-            },
-          ),
+          new RegionDataset(record, cityCode, {
+            type: 'static',
+            dataPath: `${this.serveUrl}/${cityCode}/${record.datasetId}.geojson`,
+            writable: false,
+          }),
         );
       }
     }
