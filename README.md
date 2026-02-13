@@ -359,3 +359,9 @@ The following are developer commands available within the repository, grouped by
 - `npm run extract:map-features`: Extracts boundary GeoJSONs for a city for use by the mod.
 - `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
   Details
+
+## Credits
+
+Mod developed by [ahkimn](https://github.com/ahkimn)
+
+MIT License
