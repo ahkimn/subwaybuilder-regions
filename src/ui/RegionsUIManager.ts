@@ -89,6 +89,8 @@ export class RegionsUIManager {
     this.mapLayers.setEvents({
       onRegionSelect: this.onRegionSelect.bind(this),
       onLayerStateSync: () => this.tryInjectLayerPanel(true),
+      onLayerVisibilityChange: ({ datasetIdentifier, visible }) =>
+        this.onLayerVisibilityChange(datasetIdentifier, visible),
     });
 
     this.overviewPanelRenderer.setEvents({
@@ -230,7 +232,24 @@ export class RegionsUIManager {
   }
 
   private onOverviewSelect(selection: RegionSelection) {
+    const dataset = this.datasetRegistry.getDatasetByIdentifier(
+      selection.datasetIdentifier,
+    );
+    this.mapLayers.toggleOrSetVisibility(dataset, true);
     this.setActiveSelection(selection, { toggleIfSame: false, showInfo: true });
+  }
+
+  private onLayerVisibilityChange(
+    datasetIdentifier: string,
+    visible: boolean,
+  ): void {
+    if (
+      !visible &&
+      this.state.activeSelection?.datasetIdentifier === datasetIdentifier
+    ) {
+      this.clearSelection();
+    }
+    this.tryInjectLayerPanel(true);
   }
 
   private setActiveSelection(

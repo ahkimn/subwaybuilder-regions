@@ -46,6 +46,10 @@ type RegionSelectPayload = {
 export type RegionsMapLayersEvents = {
   onRegionSelect?: (payload: RegionSelectPayload) => void;
   onLayerStateSync?: () => void;
+  onLayerVisibilityChange?: (payload: {
+    datasetIdentifier: string;
+    visible: boolean;
+  }) => void;
 };
 
 export class RegionsMapLayers {
@@ -221,8 +225,10 @@ export class RegionsMapLayers {
     this.layerStates.set(datasetIdentifier, state);
   }
 
-  toggleVisibility(dataset: RegionDataset) {
+  toggleOrSetVisibility(dataset: RegionDataset, visible?: boolean): void {
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
+    this.ensureDatasetRendered(dataset);
+
     const layerState = this.layerStates.get(datasetIdentifier);
     if (!layerState) {
       console.warn(
@@ -230,9 +236,19 @@ export class RegionsMapLayers {
       );
       return;
     }
-    this.ensureDatasetRendered(dataset);
-    layerState.visible = !layerState.visible;
+
+    const nextVisible =
+      visible !== undefined ? visible : !layerState.visible;
+    if (nextVisible === layerState.visible) return;
+
+    layerState.visible = nextVisible;
     this.applyVisibility(layerState);
+
+    this.events.onLayerVisibilityChange?.({
+      datasetIdentifier,
+      visible: nextVisible,
+    });
+
     console.log(
       `[Regions] Toggled visibility for dataset ${dataset.displayName} to ${layerState.visible}`,
     );
@@ -354,7 +370,7 @@ export class RegionsMapLayers {
       id: dataset.id,
       label: dataset.displayName,
       isVisible: () => this.isVisible(dataset),
-      toggle: () => this.toggleVisibility(dataset),
+      toggle: () => this.toggleOrSetVisibility(dataset),
     };
   }
 
