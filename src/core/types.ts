@@ -123,9 +123,9 @@ export type RegionGameData = {
 
   readonly fullName: string; // full name of the region
   readonly displayName: string; // name to display for the region, equivalent to full name if no abbreviated name exists
-  readonly unitNames: {
+  readonly unitTypes: {
     singular: string; // singular form of the unit name
-    plural: string; // plural form of the unit name
+    plural?: string; // plural form of the unit name
   };
 
   readonly area: number | null; // area of the region in square kilometers

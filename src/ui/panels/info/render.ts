@@ -48,7 +48,7 @@ export function renderStatisticsView(gameData: RegionGameData): HTMLElement {
   const residents = gameData.demandData?.residents ?? 0;
   const workers = gameData.demandData?.workers ?? 0;
 
-  const unitLabel = gameData.unitNames?.singular;
+  const unitLabel = gameData.unitTypes?.singular;
 
   const infraData = gameData.infraData;
   const existsInfraData = infraData !== undefined;
@@ -86,12 +86,12 @@ export function renderStatisticsView(gameData: RegionGameData): HTMLElement {
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-            Array.from(infraData!.trackLengths.values()).reduce(
-              (a, b) => a + b,
-              0,
-            ),
-            2,
-          )} km`
+          Array.from(infraData!.trackLengths.values()).reduce(
+            (a, b) => a + b,
+            0,
+          ),
+          2,
+        )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     // TODO: Show Route bullets, but this requires allowing overflow and likely a different base component structure than DetailRow

@@ -21,6 +21,60 @@ import {
 import type { BoundaryDataHandler, DataConfig } from './handler-types';
 import { processAndSaveBoundaries } from './process';
 
+const COUNTY_LSADC_UNIT_TYPE_MAP: Record<string, string> = {
+  '00': 'County Equivalent',
+  '03': 'City and Borough',
+  '04': 'Borough',
+  '05': 'Census Area',
+  '06': 'County',
+  '07': 'District',
+  '10': 'Island',
+  '12': 'Municipality',
+  '13': 'Municipio',
+  '15': 'Parish',
+  '25': 'City',
+  PL: 'Planning Region',
+};
+
+const COUNTY_SUBDIVISION_LSADC_UNIT_TYPE_MAP: Record<string, string> = {
+  '00': 'Subdivision',
+  '20': 'Barrio',
+  '21': 'Borough',
+  '22': 'Census County Division',
+  '23': 'Census Subarea',
+  '24': 'Subdistrict',
+  '25': 'City',
+  '26': 'County',
+  '27': 'District',
+  '28': 'District',
+  '29': 'Precinct',
+  '30': 'Precinct',
+  '31': 'Gore',
+  '32': 'Grant',
+  '36': 'Location',
+  '37': 'Municipality',
+  '39': 'Plantation',
+  '41': 'Barrio-Pueblo',
+  '42': 'Purchase',
+  '43': 'Town',
+  '44': 'Township',
+  '45': 'Township',
+  '46': 'Unorganized Territory',
+  '47': 'Village',
+  '49': 'Charter Township',
+  '53': 'City and Borough',
+  '55': 'Comunidad',
+  '57': 'Census Designated Place',
+  '62': 'Zona Urbana',
+  '86': 'Reservation',
+  CG: 'Consolidated Government',
+  CN: 'Corporation',
+  MG: 'Metropolitan Government',
+  MT: 'Metro Government',
+  UC: 'Urban County',
+  UG: 'Unified Government',
+};
+
 const US_DATA_CONFIGS: Record<string, DataConfig> = {
   counties: {
     datasetId: 'counties',
@@ -31,6 +85,8 @@ const US_DATA_CONFIGS: Record<string, DataConfig> = {
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['NAME'],
+    unitTypeProperty: 'LSADC',
+    unitTypeCodeMap: COUNTY_LSADC_UNIT_TYPE_MAP,
   },
   'county-subdivisions': {
     datasetId: 'county-subdivisions',
@@ -41,6 +97,8 @@ const US_DATA_CONFIGS: Record<string, DataConfig> = {
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['BASENAME', 'NAME'],
+    unitTypeProperty: 'LSADC',
+    unitTypeCodeMap: COUNTY_SUBDIVISION_LSADC_UNIT_TYPE_MAP,
   },
   zctas: {
     datasetId: 'zctas',

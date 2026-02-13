@@ -11,6 +11,7 @@ export type DataConfig = {
   applicableNameProperties: string[];
   populationProperty?: string;
   unitTypeProperty?: string;
+  unitTypeCodeMap?: Record<string, string>;
 };
 
 export type BoundaryDataHandler = {

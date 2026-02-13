@@ -58,16 +58,25 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     string: ['data-type', 'city-code', 'country-code'],
     boolean: ['use-local-data', 'preview'],
     alias: {
-      dataType: 'data-type',
-      cityCode: 'city-code',
-      countryCode: 'country-code',
-      preview: 'preview'
+      'data-type': 'dataType',
+      'city-code': 'cityCode',
+      'country-code': 'countryCode',
+      'use-local-data': 'useLocalData',
     },
   });
 
-  const dataType: string = requireString(argv.dataType, 'data-type');
-  const cityCode: string = requireString(argv.cityCode, 'city-code');
-  const countryCode: string = requireString(argv.countryCode, 'country-code');
+  const dataType: string = requireString(
+    argv.dataType ?? argv['data-type'],
+    'data-type',
+  );
+  const cityCode: string = requireString(
+    argv.cityCode ?? argv['city-code'],
+    'city-code',
+  );
+  const countryCode: string = requireString(
+    argv.countryCode ?? argv['country-code'],
+    'country-code',
+  );
   const availableCountryCodes = getAvailableCountryCodes();
 
   if (!availableCountryCodes.has(countryCode)) {
@@ -82,9 +91,10 @@ export function parseArgs(): ExtractMapFeaturesArgs {
   const north = argv['north'] as number | undefined;
   const east = argv['east'] as number | undefined;
 
-  const useLocalData = argv['use-local-data'] as boolean | undefined;
+  const useLocalData = (argv.useLocalData ??
+    argv['use-local-data']) as boolean | undefined;
 
-  const preview = argv.preview as boolean | undefined;
+  const preview = (argv.preview ?? argv['preview']) as boolean | undefined;
 
   console.log('Parsed arguments:', {
     'data-type': dataType,

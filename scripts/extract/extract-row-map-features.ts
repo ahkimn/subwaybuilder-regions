@@ -21,9 +21,7 @@ function trimConfiguredName(
 
   for (const prefix of boundaryConfig.prefixesToTrim) {
     const normalizedPrefix = normalizeWhitespace(prefix);
-    if (!normalizedPrefix) {
-      continue;
-    }
+    if (!normalizedPrefix) continue;
 
     if (lowerTrimmed().startsWith(normalizedPrefix.toLowerCase())) {
       trimmed = normalizeWhitespace(trimmed.slice(normalizedPrefix.length));
@@ -33,9 +31,7 @@ function trimConfiguredName(
 
   for (const suffix of boundaryConfig.suffixesToTrim) {
     const normalizedSuffix = normalizeWhitespace(suffix);
-    if (!normalizedSuffix) {
-      continue;
-    }
+    if (!normalizedSuffix) continue;
 
     if (lowerTrimmed().endsWith(normalizedSuffix.toLowerCase())) {
       trimmed = normalizeWhitespace(

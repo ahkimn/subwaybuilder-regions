@@ -125,7 +125,7 @@ export function buildCountyUrl(queryBBox: BoundaryBox): ArcGISQueryRequest {
       geometryType: 'esriGeometryEnvelope',
       inSR: '4326',
       outSR: '4326',
-      outFields: 'GEOID,NAME',
+      outFields: 'GEOID,NAME,LSADC',
       returnGeometry: 'true',
       f: 'json',
     }),

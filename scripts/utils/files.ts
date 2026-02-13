@@ -182,5 +182,14 @@ export function updateIndexJson(
     );
   }
 
-  fs.writeJsonSync(indexPath, index, { spaces: 2 });
+  const sortedIndex: DatasetIndex = {};
+  const sortedCityCodes = Object.keys(index).sort((a, b) => a.localeCompare(b));
+  for (const sortedCityCode of sortedCityCodes) {
+    const sortedEntries = [...(index[sortedCityCode] || [])].sort((a, b) =>
+      a.datasetId.localeCompare(b.datasetId),
+    );
+    sortedIndex[sortedCityCode] = sortedEntries;
+  }
+
+  fs.writeJsonSync(indexPath, sortedIndex, { spaces: 2 });
 }

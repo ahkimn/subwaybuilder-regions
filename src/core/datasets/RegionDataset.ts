@@ -18,14 +18,14 @@ import {
   isCoordinateWithinFeature,
   isPolygonFeature,
 } from '../geometry/helpers';
-import {
-  type DatasetSource,
-  DatasetStatus,
-  type RegionCommuterData,
-  type RegionDemandData,
-  type RegionGameData,
-  type RegionInfraData,
+import type {
+  DatasetSource,
+  RegionCommuterData,
+  RegionDemandData,
+  RegionGameData,
+  RegionInfraData,
 } from '../types';
+import { DatasetStatus } from '../types';
 import { fetchGeoJSON } from '../utils';
 
 export class RegionDataset {
@@ -278,6 +278,7 @@ export class RegionDataset {
       const featureId: string | number = feature.properties?.ID!;
       const fullName = feature.properties?.NAME!;
       const displayName: string = feature.properties?.DISPLAY_NAME || fullName;
+      const featureUnitType: string | undefined = feature.properties?.UNIT_TYPE;
 
       this.regionNameMap.set(featureId, displayName);
       this.gameData.set(featureId, {
@@ -285,8 +286,8 @@ export class RegionDataset {
         featureId: featureId,
         fullName: fullName,
         displayName: displayName,
-        unitNames: {
-          singular: this.unitLabelSingular,
+        unitTypes: {
+          singular: featureUnitType || this.unitLabelSingular,
           plural: this.unitLabelPlural,
         },
         area: feature.properties?.TOTAL_AREA,
