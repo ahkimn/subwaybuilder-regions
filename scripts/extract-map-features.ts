@@ -3,6 +3,7 @@ import path from 'path';
 
 import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/consts';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
+import { extractWorldMapFeatures } from './extract/extract-row-map-features';
 import { extractUSBoundaries } from './extract/extract-us-map-features';
 import {
   type ExtractMapFeaturesArgs,
@@ -12,6 +13,7 @@ import {
 } from './utils/cli';
 import { loadBoundariesFromCSV } from './utils/files';
 import type { BoundaryBox } from './utils/geometry';
+import { findOsmCountryConfig } from './utils/osm-country-config';
 
 const BOUNDARIES_INDEX_FILE = path.resolve(
   __dirname,
@@ -23,6 +25,7 @@ const BOUNDARIES_INDEX_FILE = path.resolve(
 async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
   // Default map boundaries for all cities, loaded from CSV
   const cityMapBoundaries = loadBoundariesFromCSV(BOUNDARIES_INDEX_FILE);
+  const osmCountryConfig = findOsmCountryConfig(args.countryCode);
 
   const existsInputBoundaries = hasExplicitBBox(args);
 
@@ -45,6 +48,20 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
       await extractUSBoundaries(args, bbox);
       break;
     default:
+      if (osmCountryConfig) {
+        const boundaryConfig = osmCountryConfig.availableBoundaryTypes.find(
+          (entry) => entry.datasetId === args.dataType,
+        );
+
+        if (!boundaryConfig) {
+          throw new Error(
+            `Unsupported data type for ${args.countryCode}: ${args.dataType}. Supported data types: ${osmCountryConfig.availableBoundaryTypes.map((entry) => entry.datasetId).join(', ')}`,
+          );
+        }
+
+        await extractWorldMapFeatures(args, bbox, boundaryConfig);
+        break;
+      }
       throw new Error(
         `Boundary extraction for country code: ${args.countryCode} not yet implemented`,
       );

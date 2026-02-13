@@ -2,6 +2,7 @@ import type { Feature, GeoJsonProperties, Geometry } from 'geojson';
 import path from 'path';
 
 import { DATA_INDEX_FILE } from '../../shared/consts';
+import type { DatasetIndexEntry } from '../../shared/dataset-index';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import { parseNumber } from '../utils/cli';
 import { saveGeoJSON, updateIndexJson } from '../utils/files';
@@ -54,13 +55,13 @@ export function processAndSaveBoundaries(
     `Filtered to ${filteredRegions.length} features within boundary box.`,
   );
 
-  saveBoundaries(args, filteredRegions, dataConfig.displayName);
+  saveBoundaries(args, filteredRegions, dataConfig);
 }
 
 export function saveBoundaries(
   args: ExtractMapFeaturesArgs,
   filteredRegions: GeoJSON.Feature[],
-  displayName: string,
+  dataConfig: DataConfig,
 ) {
   const outputFilePath = path.resolve(
     'data',
@@ -75,7 +76,16 @@ export function saveBoundaries(
 
   saveGeoJSON(outputFilePath, outputFeatureCollection);
 
-  updateIndexJson(OUTPUT_INDEX_FILE, args.cityCode, args.dataType, displayName);
+  const indexEntry: DatasetIndexEntry = {
+    datasetId: dataConfig.datasetId,
+    displayName: dataConfig.displayName,
+    unitSingular: dataConfig.unitSingular,
+    unitPlural: dataConfig.unitPlural,
+    source: dataConfig.source,
+    size: filteredRegions.length,
+  };
+
+  updateIndexJson(OUTPUT_INDEX_FILE, args.cityCode, indexEntry);
 }
 
 function attachRegionPopulationData(

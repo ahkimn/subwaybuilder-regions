@@ -1,3 +1,4 @@
+import type { DatasetIndexEntry } from '@shared/dataset-index';
 import * as turf from '@turf/turf';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
 
@@ -5,7 +6,6 @@ import type { DemandData } from '../../types/modding-api-v1';
 import {
   DEFAULT_UNIT_LABELS,
   LAYER_PREFIX,
-  PRESET_UNIT_LABELS,
   SOURCE_PREFIX,
   UNASSIGNED_REGION_ID,
   UNKNOWN_VALUE_DISPLAY,
@@ -18,14 +18,14 @@ import {
   isCoordinateWithinFeature,
   isPolygonFeature,
 } from '../geometry/helpers';
-import type {
-  DatasetSource,
-  RegionCommuterData,
-  RegionDemandData,
-  RegionGameData,
-  RegionInfraData,
+import {
+  type DatasetSource,
+  DatasetStatus,
+  type RegionCommuterData,
+  type RegionDemandData,
+  type RegionGameData,
+  type RegionInfraData,
 } from '../types';
-import { DatasetStatus } from '../types';
 import { fetchGeoJSON } from '../utils';
 
 export class RegionDataset {
@@ -38,6 +38,8 @@ export class RegionDataset {
 
   readonly unitLabelSingular: string;
   readonly unitLabelPlural: string;
+  readonly metadataSource: string;
+  readonly expectedSize: number;
 
   // Static data store properties (boundaries / labels)
   boundaryData: GeoJSON.FeatureCollection | null = null;
@@ -55,20 +57,20 @@ export class RegionDataset {
   isUserEdited: boolean = false;
 
   constructor(
-    id: string,
+    indexEntry: DatasetIndexEntry,
     cityCode: string,
     source: DatasetSource,
-    displayName?: string,
   ) {
-    this.id = id;
+    this.id = indexEntry.datasetId;
     this.cityCode = cityCode;
     this.source = source;
-    this.displayName = displayName ? displayName : id;
+    this.displayName = indexEntry.displayName || indexEntry.datasetId;
 
     this.unitLabelSingular =
-      PRESET_UNIT_LABELS[id]?.singular || DEFAULT_UNIT_LABELS.singular;
-    this.unitLabelPlural =
-      PRESET_UNIT_LABELS[id]?.plural || DEFAULT_UNIT_LABELS.plural;
+      indexEntry.unitSingular || DEFAULT_UNIT_LABELS.singular;
+    this.unitLabelPlural = indexEntry.unitPlural || DEFAULT_UNIT_LABELS.plural;
+    this.metadataSource = indexEntry.source || 'Unknown';
+    this.expectedSize = Number.isFinite(indexEntry.size) ? indexEntry.size : 0;
   }
 
   get isWritable(): boolean {
@@ -87,6 +89,19 @@ export class RegionDataset {
     this.boundaryData = await fetchGeoJSON(this.source.dataPath);
   }
 
+  private validateBoundarySize(): void {
+    if (!this.boundaryData) {
+      return;
+    }
+
+    const loadedSize = this.boundaryData.features.length;
+    if (loadedSize !== this.expectedSize) {
+      console.warn(
+        `[Regions] Dataset size mismatch for ${this.id} in ${this.cityCode}: expected ${this.expectedSize}, loaded ${loadedSize}`,
+      );
+    }
+  }
+
   private unloadData(): void {
     this.boundaryData = null;
     this.labelData = null;
@@ -94,7 +109,7 @@ export class RegionDataset {
 
   async load(): Promise<boolean> {
     console.log(
-      `[Regions] Loading dataset: ${this.id} for city ${this.cityCode}`,
+      `[Regions] Loading dataset: ${this.id} for city ${this.cityCode} (${this.metadataSource})`,
     );
 
     if (this.status === DatasetStatus.Loaded) {
@@ -109,6 +124,7 @@ export class RegionDataset {
 
     try {
       await this.loadBoundaryData();
+      this.validateBoundarySize();
       this.buildLabelData();
       this.populateStaticData();
       this.status = DatasetStatus.Loaded;

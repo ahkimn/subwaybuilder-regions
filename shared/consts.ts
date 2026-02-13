@@ -8,3 +8,4 @@ export const SOURCE_DATA_DIR = 'source_data';
 export const DATA_INDEX_FILE = 'data_index.json';
 
 export const CITY_BOUNDARIES_FILE = 'boundaries.csv';
+export const OSM_COUNTRY_CONFIG_FILE = 'osm-country-admin-levels.json';

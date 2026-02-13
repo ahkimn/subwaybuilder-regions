@@ -35,6 +35,18 @@ function formatAttempt(attempt: number, maxRetries: number): string {
   return `${attempt + 1}/${maxRetries + 1}`;
 }
 
+function isJsonContentType(contentType: string | null): boolean {
+  if (!contentType) {
+    return false;
+  }
+
+  const normalizedContentType = contentType.toLowerCase();
+  return (
+    normalizedContentType.includes('application/json') ||
+    normalizedContentType.includes('+json')
+  );
+}
+
 export async function fetchJsonWithRetry(
   url: string | URL,
   init: RequestInit = {},
@@ -71,6 +83,17 @@ export async function fetchJsonWithRetry(
         }
 
         throw new Error(errorMessage);
+      }
+
+      const responseContentType = response.headers.get('content-type');
+      if (!isJsonContentType(responseContentType)) {
+        // Some queries may return non-JSON error responses (e.g. HTML error pages). If this occurs, we want to capture part of the response body
+        const responseText = await response.text();
+        const responseSnippet = responseText.slice(0, 180).replace(/\s+/g, ' ');
+        const attemptText = formatAttempt(attempt, maxRetries);
+        throw new Error(
+          `[${label}] ${method} ${requestUrl} returned non-JSON response (${responseContentType ?? 'unknown content-type'}) on attempt ${attemptText}. Body starts with: ${responseSnippet}`,
+        );
       }
 
       return await response.json();

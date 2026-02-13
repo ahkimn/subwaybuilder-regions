@@ -1,3 +1,5 @@
+import type { DatasetIndex, DatasetIndexEntry } from '@shared/dataset-index';
+
 import { RegionDataset } from '../datasets/RegionDataset';
 import {
   RegistryMissingDatasetError,
@@ -53,11 +55,30 @@ export class RegionDatasetRegistry {
   }
 
   // -- Setup -- //
+  private assertDatasetIndexEntry(
+    cityCode: string,
+    entry: DatasetIndexEntry,
+  ): void {
+    if (
+      !entry ||
+      typeof entry.datasetId !== 'string' ||
+      typeof entry.displayName !== 'string' ||
+      typeof entry.unitSingular !== 'string' ||
+      typeof entry.unitPlural !== 'string' ||
+      typeof entry.source !== 'string' ||
+      typeof entry.size !== 'number'
+    ) {
+      throw new Error(
+        `[Regions] Invalid dataset index entry for city ${cityCode}: ${JSON.stringify(entry)}`,
+      );
+    }
+  }
+
   async build(onFetchError: () => void) {
     this.clear();
 
-    // Expected format of index.json is { [cityCode: string]: { id: string; displayName: string }[] }
-    let index: Record<string, { id: string; name: string }[]> = {};
+    // Expected format of index.json is { [cityCode: string]: DatasetIndexEntry[] }
+    let index: DatasetIndex = {};
     try {
       index = await fetch(`${this.serveUrl}/${this.indexFile}`).then((res) =>
         res.json(),
@@ -69,17 +90,16 @@ export class RegionDatasetRegistry {
 
     for (const [cityCode, datasets] of Object.entries(index)) {
       for (const record of datasets) {
-        const { id, name } = record;
+        this.assertDatasetIndexEntry(cityCode, record);
         this.registerDataset(
           new RegionDataset(
-            id,
+            record,
             cityCode,
             {
               type: 'static',
-              dataPath: `${this.serveUrl}/${cityCode}/${id}.geojson`,
+              dataPath: `${this.serveUrl}/${cityCode}/${record.datasetId}.geojson`,
               writable: false,
             },
-            name,
           ),
         );
       }

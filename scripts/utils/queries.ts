@@ -400,11 +400,27 @@ export function extractStateCodesFromGeoIDs(
 
 // --- Overpass API --- //
 
-export function buildOverpassQuery(bbox: BoundaryBox, admin_level: number): string {
+export function buildOverpassQuery(
+  bbox: BoundaryBox,
+  adminLevels: number[],
+  countryCode?: string,
+): string {
+  const normalizedAdminLevels = Array.from(new Set(adminLevels)).sort(
+    (a, b) => a - b,
+  );
+  const adminLevelRegex = `^(${normalizedAdminLevels.join('|')})$`;
+  const areaSelector = countryCode
+    ? `area["ISO3166-1"="${countryCode}"]["boundary"="administrative"]["admin_level"="2"]->.searchCountry;`
+    : '';
+  const relationSelector = countryCode
+    ? `relation["boundary"="administrative"]["admin_level"~"${adminLevelRegex}"](area.searchCountry)(${bbox.south},${bbox.west},${bbox.north},${bbox.east});`
+    : `relation["boundary"="administrative"]["admin_level"~"${adminLevelRegex}"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});`;
+
   return `
         [out:json][timeout:60];
+        ${areaSelector}
         (
-          relation["boundary"="administrative"]["admin_level"="${admin_level}"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+          ${relationSelector}
         );
         out geom;
       `;

@@ -3,6 +3,7 @@ import osmtogeojson from 'osmtogeojson';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import type { BoundaryBox } from '../utils/geometry';
 import { expandBBox } from '../utils/geometry';
+import { renderFeaturePreview } from '../utils/preview';
 import {
   buildCountyUrl,
   buildOverpassQuery,
@@ -22,25 +23,41 @@ import { processAndSaveBoundaries } from './process';
 
 const US_DATA_CONFIGS: Record<string, DataConfig> = {
   counties: {
+    datasetId: 'counties',
     displayName: 'Counties',
+    unitSingular: 'County',
+    unitPlural: 'Counties',
+    source: 'US Census Bureau',
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['NAME'],
   },
   'county-subdivisions': {
+    datasetId: 'county-subdivisions',
     displayName: 'County Subdivisions',
+    unitSingular: 'County Subdivision',
+    unitPlural: 'County Subdivisions',
+    source: 'US Census Bureau',
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['BASENAME', 'NAME'],
   },
   zctas: {
+    datasetId: 'zctas',
     displayName: 'ZIP Code Tabulation Areas',
+    unitSingular: 'ZCTA',
+    unitPlural: 'ZCTAs',
+    source: 'US Census Bureau',
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['BASENAME', 'NAME'],
   },
   neighborhoods: {
+    datasetId: 'neighborhoods',
     displayName: 'Neighborhoods',
+    unitSingular: 'Neighborhood',
+    unitPlural: 'Neighborhoods',
+    source: 'OSM',
     idProperty: 'id',
     nameProperty: 'name',
     applicableNameProperties: ['name'],
@@ -70,9 +87,8 @@ const US_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
   },
 };
 
-// Neighborhood data is queried from OpenStreetMap Overpass API based on admin level
-const US_NEIGHBORHOOD_ADMIN_LEVEL = 10;
-
+// Neighborhood data is queried from OpenStreetMap Overpass API based on admin levels.
+const US_NEIGHBORHOOD_ADMIN_LEVELS = [10];
 
 async function extractCountyBoundaries(bbox: BoundaryBox) {
   const geoJson = await fetchGeoJSONFromArcGIS(buildCountyUrl(bbox));
@@ -125,7 +141,11 @@ async function extractZctaBoundaries(bbox: BoundaryBox) {
 }
 
 async function extractNeighborhoodBoundaries(bbox: BoundaryBox) {
-  const query = buildOverpassQuery(bbox, US_NEIGHBORHOOD_ADMIN_LEVEL);
+  const query = buildOverpassQuery(
+    bbox,
+    US_NEIGHBORHOOD_ADMIN_LEVELS,
+    'US',
+  );
   const overpassJson = await fetchOverpassData(query);
   const geoJson = osmtogeojson(overpassJson);
   // Populations for neighborhoods should be included in the OSM data as a property (if available) so we don't need to return a separate population map
@@ -144,6 +164,10 @@ export async function extractUSBoundaries(
   const { geoJson, populationMap } = await handler.extractBoundaries(
     expandBBox(bbox, 0.01),
   );
+  if (args.preview) {
+    renderFeaturePreview(geoJson.features, args.previewCount!);
+    return;
+  }
 
   processAndSaveBoundaries(
     geoJson,
