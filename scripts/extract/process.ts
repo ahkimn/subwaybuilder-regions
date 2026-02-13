@@ -85,7 +85,7 @@ export function saveBoundaries(
     size: filteredRegions.length,
   };
 
-  updateIndexJson(OUTPUT_INDEX_FILE, args.cityCode, indexEntry);
+  updateIndexJson(OUTPUT_INDEX_FILE, args.cityCode!, indexEntry, args.countryCode!);
 }
 
 function attachRegionPopulationData(
