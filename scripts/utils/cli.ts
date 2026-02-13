@@ -71,6 +71,8 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     },
   });
 
+  console.log('Raw parsed arguments:', argv);
+
   const dataType: string = requireString(
     argv.dataType ?? argv['data-type'],
     'data-type',
@@ -92,10 +94,10 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     process.exit(1);
   }
 
-  const south = argv['south'] as number | undefined;
-  const west = argv['west'] as number | undefined;
-  const north = argv['north'] as number | undefined;
-  const east = argv['east'] as number | undefined;
+  const south = argv.south != null ? Number(argv.south) : undefined;
+  const west = argv.west != null ? Number(argv.west) : undefined;
+  const north = argv.north != null ? Number(argv.north) : undefined;
+  const east = argv.east != null ? Number(argv.east) : undefined;
 
   const useLocalData = (argv.useLocalData ?? argv['use-local-data']) as
     | boolean
@@ -104,7 +106,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
   const preview = (argv.preview ?? argv['preview']) as boolean | undefined;
 
   console.log('Parsed arguments:', {
-    'data-type': dataType,
+    dataType: dataType,
     countryCode: countryCode,
     cityCode: cityCode,
     south: south,

@@ -105,7 +105,7 @@ _Latest Tested Game Version:_ `v1.0.2`
    From the project repository root, run
 
    ```
-   npm run extract:map-features -- \
+   npm run extract:map-features -- -- \
      --country-code=US \
      --data-type=zctas \
      --city-code=DEN \
@@ -114,7 +114,7 @@ _Latest Tested Game Version:_ `v1.0.2`
    Or to override the boundaries set in `boundaries.csv`, manually provide a boundary box
 
    ```
-   npm run extract:map-features -- \
+   npm run extract:map-features -- -- \
      --country-code=US \
      --data-type=zctas \
      --city-code=DEN \
