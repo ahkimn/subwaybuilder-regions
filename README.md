@@ -106,9 +106,9 @@ _Latest Tested Game Version:_ `v1.0.2`
 
     ```
    npx tsx scripts/extract-map-features.ts \
-    --country-code=US \
-    --data-type=zctas \
-    --city-code=DEN
+     --country-code=US \
+     --data-type=zctas \
+     --city-code=DEN
    ```
     
    Or if using Powershell
