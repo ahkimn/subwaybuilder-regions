@@ -104,20 +104,20 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    From the project repository root, run
 
+    ```
+   npx tsx scripts/extract-map-features.ts \
+    --country-code=US \
+    --data-type=zctas \
+    --city-code=DEN
+   ```
+    
+   Or if using Powershell
+
    ```
    npm run extract:map-features -- -- \
      --country-code=US \
      --data-type=zctas \
      --city-code=DEN
-   ```
-
-   Or if on Linux/MacOS
-
-   ```
-   npx tsx scripts/extract-map-features.ts \
-    --country-code=US \
-    --data-type=zctas \
-    --city-code=DEN
    ```
 
    To override the boundaries set in `boundaries.csv`, manually provide a boundary box
@@ -150,7 +150,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    :warning: If boundaries are not provided, `city-code` must be in `boundaries.csv`
 
-4. Serve Local Data
+5. Serve Local Data
    From the repository root, run:
 
    ```
@@ -159,7 +159,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    By default this serves: http://127.0.0.1:8080.
 
-5. Build
+6. Build
    From the repository root, run:
 
    ```
@@ -168,7 +168,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    This will build the `index.js` in `dist/`
 
-6. Install
+7. Install
 
    Move the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
@@ -180,7 +180,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
 
-7. Validate Behavior
+8. Validate Behavior
 
    Configure `config.yaml`. Then, use the following command to run the game from terminal with the Console enabled.
 
@@ -189,7 +189,7 @@ _Latest Tested Game Version:_ `v1.0.2`
 
    ```
 
-8. Contribute
+9. Contribute
 
    Once new behavior is verified, run code quality checks before opening a PR:
 
