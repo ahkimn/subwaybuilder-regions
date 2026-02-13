@@ -163,7 +163,13 @@ export function updateIndexJson(
   cityCode: string,
   datasetEntry: DatasetIndexEntry,
 ): void {
-  validateFilePath(indexPath);
+  if (!fs.existsSync(indexPath)) {
+    const indexDirectory = path.dirname(indexPath);
+    fs.ensureDirSync(indexDirectory);
+    fs.writeJsonSync(indexPath, {}, { spaces: 2 });
+    console.log(`Created missing index file: ${indexPath}`);
+  }
+
   const index = (fs.readJsonSync(indexPath, { throws: false }) ||
     {}) as DatasetIndex;
 
