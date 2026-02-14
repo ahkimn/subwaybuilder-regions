@@ -105,7 +105,7 @@ export function renderOverviewSearchField(
 
 export function renderOverviewTable(
   h: typeof createElement,
-  u: typeof useState,
+  useStateHook: typeof useState,
   rows: RegionsOverviewRow[],
   activeSelection: RegionSelection | null,
   sortState: RegionsOverviewSortState,
@@ -186,7 +186,7 @@ export function renderOverviewTable(
     h(
       'div',
       { className: 'overflow-auto max-h-[60vh] px-1.5 py-1' },
-      ReactDataTable(h, u, tableOptions, tableRows),
+      ReactDataTable(h, useStateHook, tableOptions, tableRows),
     ),
   );
 }

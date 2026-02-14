@@ -114,7 +114,7 @@ function buildDOMCell(
 
 type ReactDataTableViewProps = {
   h: typeof createElement;
-  u: typeof useState;
+  useStateHook: typeof useState;
   tableOptions: TableOptions;
   tableValues: DataTableRow[];
 };
@@ -122,21 +122,21 @@ type ReactDataTableViewProps = {
 
 export function ReactDataTable(
   h: typeof createElement,
-  u: typeof useState,
+  useStateHook: typeof useState,
   tableOptions: TableOptions,
   tableValues: DataTableRow[],
 ): ReactNode {
-  return h(ReactDataTableView, { h, u, tableOptions, tableValues });
+  return h(ReactDataTableView, { h, useStateHook, tableOptions, tableValues });
 }
 
 function ReactDataTableView({
   h,
-  u,
+  useStateHook,
   tableOptions,
   tableValues,
 }: ReactDataTableViewProps): ReactNode {
   const [hoveredRowIndex, setHoveredRowIndex] =
-    u<number | null>(null);
+    useStateHook<number | null>(null);
   const cells: ReactNode[] = [];
 
   tableValues.forEach(({ rowValues, options }, rowIndex) => {
