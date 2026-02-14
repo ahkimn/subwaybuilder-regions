@@ -1,12 +1,16 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
-import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from '../../../core/constants';
+import {
+  REGIONS_OVERVIEW_PANEL_CONTENT_ID,
+  SHOW_UNPOPULATED_REGIONS,
+} from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
-import type {
-  RegionGameData,
-  RegionSelection,
-  UIState,
+import {
+  type RegionGameData,
+  RegionGameData as RegionGameDataUtils,
+  type RegionSelection,
+  type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import type { InputFieldProperties } from './render';
@@ -150,7 +154,13 @@ function buildRows(
   datasetGameData: Map<string | number, RegionGameData>,
   selectedDatasetIdentifier: string,
 ): RegionsOverviewRow[] {
-  return Array.from(datasetGameData.values()).map((gameData) => {
+  const rowsData = SHOW_UNPOPULATED_REGIONS
+    ? Array.from(datasetGameData.values())
+    : Array.from(datasetGameData.values()).filter((gameData) =>
+        RegionGameDataUtils.isPopulated(gameData),
+      );
+
+  return rowsData.map((gameData) => {
     return {
       selection: {
         datasetIdentifier: selectedDatasetIdentifier,

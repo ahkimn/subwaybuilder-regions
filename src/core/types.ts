@@ -136,6 +136,12 @@ export type RegionGameData = {
   infraData?: RegionInfraData; // infrastructure data for the region, dynamically updated
 };
 
+export const RegionGameData = {
+  isPopulated(regionData: RegionGameData): boolean {
+    return (regionData.demandData?.demandPoints ?? 0) > 0
+  }
+}
+
 // --- Display Types --- //
 
 export type RouteBulletType = 'circle' | 'square' | 'triangle' | 'diamond';

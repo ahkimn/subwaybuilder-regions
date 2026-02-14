@@ -1,3 +1,4 @@
+import { SHOW_UNPOPULATED_REGIONS } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import { RegionSelection } from '../core/types';
 import type { DisplayColor } from '../ui/types/DisplayColor';
@@ -15,6 +16,7 @@ import {
 } from './styles';
 
 const FORCE_HIDE_LAYERS_ON_DROP = false; // TODO: Expose via mod settings.
+const EXISTS_DEMAND_PROPERTY = 'EXISTS_DEMAND';
 
 type MapLayerState = {
   datasetIdentifier: string;
@@ -399,6 +401,16 @@ export class RegionsMapLayers {
     this.addLabelLayer(layerState, lightMode);
   }
 
+  private buildDemandExistsFilter():
+    | maplibregl.FilterSpecification
+    | undefined {
+    if (SHOW_UNPOPULATED_REGIONS) {
+      return undefined;
+    }
+
+    return ['==', ['get', EXISTS_DEMAND_PROPERTY], true];
+  }
+
   private updateSource(sourceId: string, data: GeoJSON.FeatureCollection) {
     if (!this.map.getSource(sourceId)) {
       this.map.addSource(sourceId, {
@@ -436,6 +448,7 @@ export class RegionsMapLayers {
         id: layerState.boundaryLayerId,
         type: 'fill',
         source: layerState.sourceId,
+        filter: this.buildDemandExistsFilter(),
         layout: {
           visibility: 'none',
         },
@@ -481,6 +494,7 @@ export class RegionsMapLayers {
         id: layerState.labelLayerId,
         type: 'symbol',
         source: layerState.labelSourceId,
+        filter: this.buildDemandExistsFilter(),
         layout: {
           'text-field': ['get', 'NAME'],
           'text-size': labelSettings['text-size'],

@@ -25,8 +25,10 @@ import type {
   RegionGameData,
   RegionInfraData,
 } from '../types';
-import { DatasetStatus } from '../types';
+import { DatasetStatus, RegionGameData as RegionGameDataUtils } from '../types';
 import { fetchGeoJSON } from '../utils';
+
+const EXISTS_DEMAND_PROPERTY = 'EXISTS_DEMAND';
 
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
@@ -271,6 +273,39 @@ export class RegionDataset {
     for (const [featureId, demandData] of results) {
       this.gameData.get(featureId)!.demandData = demandData;
     }
+    this.applyExistsDemandProperties();
+  }
+
+  private applyExistsDemandProperties(): void {
+    const applyToCollection = (featureCollection: GeoJSON.FeatureCollection | null) => {
+      if (!featureCollection) {
+        return;
+      }
+
+      for (const feature of featureCollection.features) {
+        const featureId = this.getFeatureId(feature);
+        const gameData = featureId === null ? null : this.gameData.get(featureId) ?? null;
+        const existsDemand = gameData
+          ? RegionGameDataUtils.isPopulated(gameData)
+          : false;
+
+        if (!feature.properties) {
+          feature.properties = {};
+        }
+        feature.properties[EXISTS_DEMAND_PROPERTY] = existsDemand;
+      }
+    };
+
+    applyToCollection(this.boundaryData);
+    applyToCollection(this.labelData);
+  }
+
+  private getFeatureId(feature: GeoJSON.Feature): string | number | null {
+    const featureId = feature.id ?? feature.properties?.ID;
+    if (typeof featureId === 'string' || typeof featureId === 'number') {
+      return featureId;
+    }
+    return null;
   }
 
   private populateStaticData(): void {
@@ -295,6 +330,8 @@ export class RegionDataset {
         realPopulation: feature.properties?.POPULATION || null,
       });
     });
+
+    this.applyExistsDemandProperties();
   }
 
   buildLabelData(): void {
