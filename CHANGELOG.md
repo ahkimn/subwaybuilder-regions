@@ -2,6 +2,19 @@
 
 [Back to README](README.md)
 
+## v0.2.4 - 2026-02-14
+
+_Game version_ v1.0.2
+
+### Other Updates
+
+- Refactored `RegionsOverviewPanel` and the React-version `DataTable` to be stateful components using React's `useState`.
+  - `RegionsOverviewPanel` no longer needs to be force rerendered through the game API on state update.
+
+### Bugfixes
+
+- Fixed Overview table row hover and selected state highlights.
+
 ## v0.2.3 - 2026-02-13
 
 _Game version_ v1.0.2
