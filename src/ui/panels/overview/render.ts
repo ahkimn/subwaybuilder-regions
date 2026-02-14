@@ -162,9 +162,9 @@ export function renderOverviewTable(
         onClick: [rowAction, rowAction, rowAction, rowAction, rowAction],
         align: ['left', 'right', 'right', 'right', 'right'],
         rowClassName: isActive
-          ? 'bg-secondary-foreground/25 text-foreground transition-colors cursor-pointer'
+          ? 'bg-accent text-accent-foreground transition-colors cursor-pointer'
           : 'transition-colors cursor-pointer',
-        rowHoverClassName: 'bg-secondary-foreground/15 text-foreground',
+        rowHoverClassName: 'bg-accent text-accent-foreground',
       };
 
       tableRows.push({
