@@ -1,6 +1,4 @@
-import type {
-  useState
-} from 'react';
+import type { useState } from 'react';
 import {
   type createElement,
   type CSSProperties,
@@ -119,7 +117,6 @@ type ReactDataTableViewProps = {
   tableValues: DataTableRow[];
 };
 
-
 export function ReactDataTable(
   h: typeof createElement,
   useStateHook: typeof useState,
@@ -135,8 +132,9 @@ function ReactDataTableView({
   tableOptions,
   tableValues,
 }: ReactDataTableViewProps): ReactNode {
-  const [hoveredRowIndex, setHoveredRowIndex] =
-    useStateHook<number | null>(null);
+  const [hoveredRowIndex, setHoveredRowIndex] = useStateHook<number | null>(
+    null,
+  );
   const cells: ReactNode[] = [];
 
   tableValues.forEach(({ rowValues, options }, rowIndex) => {
@@ -188,7 +186,8 @@ function buildReactCell(
     index,
     isHeader,
   );
-  const hasRowHoverClass = getClassTokens(rowOptions.rowHoverClassName).length > 0;
+  const hasRowHoverClass =
+    getClassTokens(rowOptions.rowHoverClassName).length > 0;
   const isHoveredRow = hasRowHoverClass && hoveredRowIndex === rowIndex;
   const className = isHoveredRow
     ? `${presentation.className} ${rowOptions.rowHoverClassName ?? ''}`
@@ -199,11 +198,13 @@ function buildReactCell(
     : undefined;
   const onMouseLeave = hasRowHoverClass
     ? (event: { relatedTarget: EventTarget | null }) => {
-      if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
-        return;
+        if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
+          return;
+        }
+        setHoveredRowIndex((current) =>
+          current === rowIndex ? null : current,
+        );
       }
-      setHoveredRowIndex((current) => (current === rowIndex ? null : current));
-    }
     : undefined;
 
   if (cellValue instanceof HTMLElement) {
@@ -323,7 +324,9 @@ function isEventMovingWithinReactRow(
 ): boolean {
   if (!(relatedTarget instanceof Element)) return false;
   const relatedRow = relatedTarget.closest('[data-table-row]');
-  return relatedRow ? relatedRow.getAttribute('data-table-row') === String(rowIndex) : false;
+  return relatedRow
+    ? relatedRow.getAttribute('data-table-row') === String(rowIndex)
+    : false;
 }
 
 function attachDOMRowHoverHandlers(

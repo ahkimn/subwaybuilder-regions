@@ -57,7 +57,8 @@ export function renderRegionsOverviewPanel(
   const [selectedDatasetIdentifier, setSelectedDatasetIdentifier] =
     useStateHook<string>(props.availableDatasetIdentifiers[0]);
   const [searchTerm, setSearchTerm] = useStateHook<string>('');
-  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>('overview');
+  const [activeTab, setActiveTab] =
+    useStateHook<RegionsOverviewTab>('overview');
   const [sortState, setSortState] =
     useStateHook<RegionsOverviewSortState>(INITIAL_SORT_STATE);
 
@@ -67,7 +68,10 @@ export function renderRegionsOverviewPanel(
   const activeSelection = props.uiState.activeSelection;
 
   const rows = sortRows(
-    filterRows(buildRows(datasetGameData, selectedDatasetIdentifier), searchTerm),
+    filterRows(
+      buildRows(datasetGameData, selectedDatasetIdentifier),
+      searchTerm,
+    ),
     sortState,
   );
 
@@ -201,7 +205,8 @@ function sortRows(
     switch (index) {
       case 1:
         return (
-          ((a.gameData.realPopulation ?? 0) - (b.gameData.realPopulation ?? 0)) *
+          ((a.gameData.realPopulation ?? 0) -
+            (b.gameData.realPopulation ?? 0)) *
           multiplier
         );
       case 2:
@@ -228,12 +233,7 @@ function sortRows(
   };
 
   return [...rows].sort((a, b) => {
-    let result = applySort(
-      a,
-      b,
-      sortState.sortIndex,
-      sortState.sortDirection,
-    );
+    let result = applySort(a, b, sortState.sortIndex, sortState.sortDirection);
     if (result === 0) {
       result = applySort(
         a,

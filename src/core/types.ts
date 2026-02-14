@@ -138,9 +138,9 @@ export type RegionGameData = {
 
 export const RegionGameData = {
   isPopulated(regionData: RegionGameData): boolean {
-    return (regionData.demandData?.demandPoints ?? 0) > 0
-  }
-}
+    return (regionData.demandData?.demandPoints ?? 0) > 0;
+  },
+};
 
 // --- Display Types --- //
 

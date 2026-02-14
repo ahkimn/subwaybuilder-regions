@@ -275,7 +275,9 @@ export class RegionDataset {
   }
 
   private applyExistsDemandProperties(): void {
-    const applyToCollection = (featureCollection: GeoJSON.FeatureCollection | null) => {
+    const applyToCollection = (
+      featureCollection: GeoJSON.FeatureCollection | null,
+    ) => {
       if (!featureCollection) return;
 
       for (const feature of featureCollection.features) {
@@ -284,7 +286,6 @@ export class RegionDataset {
         const existsDemand = gameData
           ? RegionGameDataUtils.isPopulated(gameData)
           : false;
-
 
         feature.properties = {
           ...feature.properties,
@@ -296,7 +297,6 @@ export class RegionDataset {
     applyToCollection(this.boundaryData);
     applyToCollection(this.labelData);
   }
-
 
   private populateStaticData(): void {
     this.boundaryData!.features.forEach((feature) => {

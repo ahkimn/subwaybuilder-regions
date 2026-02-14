@@ -1,4 +1,7 @@
-import { ENFORCE_ONE_LAYER_ACTIVE, SHOW_UNPOPULATED_REGIONS } from '../core/constants';
+import {
+  ENFORCE_ONE_LAYER_ACTIVE,
+  SHOW_UNPOPULATED_REGIONS,
+} from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import { RegionSelection } from '../core/types';
 import type { DisplayColor } from '../ui/types/DisplayColor';
@@ -238,8 +241,7 @@ export class RegionsMapLayers {
       return;
     }
 
-    const nextVisible =
-      visible !== undefined ? visible : !layerState.visible;
+    const nextVisible = visible !== undefined ? visible : !layerState.visible;
     if (nextVisible === layerState.visible) return;
 
     if (nextVisible && ENFORCE_ONE_LAYER_ACTIVE) {
@@ -260,8 +262,12 @@ export class RegionsMapLayers {
   }
 
   private hideOtherVisibleLayers(datasetIdentifier: string): void {
-    for (const [otherDatasetIdentifier, layerState] of this.layerStates.entries()) {
-      if (datasetIdentifier === otherDatasetIdentifier || !layerState.visible) continue;
+    for (const [
+      otherDatasetIdentifier,
+      layerState,
+    ] of this.layerStates.entries()) {
+      if (datasetIdentifier === otherDatasetIdentifier || !layerState.visible)
+        continue;
 
       layerState.visible = false;
       this.applyVisibility(layerState);
@@ -388,7 +394,7 @@ export class RegionsMapLayers {
     return new Set(
       Array.from(this.layerStates.values())
         .filter((state) => state.visible)
-        .map((state) => state.datasetIdentifier)
+        .map((state) => state.datasetIdentifier),
     );
   }
 
