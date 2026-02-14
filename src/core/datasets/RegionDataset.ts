@@ -28,8 +28,6 @@ import type {
 import { DatasetStatus, RegionGameData as RegionGameDataUtils } from '../types';
 import { fetchGeoJSON } from '../utils';
 
-const EXISTS_DEMAND_PROPERTY = 'EXISTS_DEMAND';
-
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
   readonly cityCode: string; // city identifier (e.x. "LON", "MAN", "BOS")
@@ -175,14 +173,14 @@ export class RegionDataset {
     featureId: string | number,
     commuterData: RegionCommuterData,
   ): void {
-    this.gameData.get(featureId)!.commuterData = commuterData;
+    this.getRegionGameData(featureId)!.commuterData = commuterData;
   }
 
   updateWithInfraData(
     featureId: string | number,
     infraData: RegionInfraData,
   ): void {
-    this.gameData.get(featureId)!.infraData = infraData;
+    this.getRegionGameData(featureId)!.infraData = infraData;
   }
 
   private assignDemandPoints(
@@ -271,28 +269,27 @@ export class RegionDataset {
   updateWithDemandData(demandData: DemandData): void {
     const results = this.assignDemandPoints(demandData);
     for (const [featureId, demandData] of results) {
-      this.gameData.get(featureId)!.demandData = demandData;
+      this.getRegionGameData(featureId)!.demandData = demandData;
     }
     this.applyExistsDemandProperties();
   }
 
   private applyExistsDemandProperties(): void {
     const applyToCollection = (featureCollection: GeoJSON.FeatureCollection | null) => {
-      if (!featureCollection) {
-        return;
-      }
+      if (!featureCollection) return;
 
       for (const feature of featureCollection.features) {
-        const featureId = this.getFeatureId(feature);
-        const gameData = featureId === null ? null : this.gameData.get(featureId) ?? null;
+        const featureId: string | number = feature.properties?.ID!;
+        const gameData = this.getRegionGameData(featureId);
         const existsDemand = gameData
           ? RegionGameDataUtils.isPopulated(gameData)
           : false;
 
-        if (!feature.properties) {
-          feature.properties = {};
-        }
-        feature.properties[EXISTS_DEMAND_PROPERTY] = existsDemand;
+
+        feature.properties = {
+          ...feature.properties,
+          EXISTS_DEMAND: existsDemand,
+        };
       }
     };
 
@@ -300,13 +297,6 @@ export class RegionDataset {
     applyToCollection(this.labelData);
   }
 
-  private getFeatureId(feature: GeoJSON.Feature): string | number | null {
-    const featureId = feature.id ?? feature.properties?.ID;
-    if (typeof featureId === 'string' || typeof featureId === 'number') {
-      return featureId;
-    }
-    return null;
-  }
 
   private populateStaticData(): void {
     this.boundaryData!.features.forEach((feature) => {

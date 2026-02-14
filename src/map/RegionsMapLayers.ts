@@ -16,7 +16,6 @@ import {
 } from './styles';
 
 const FORCE_HIDE_LAYERS_ON_DROP = false; // TODO: Expose via mod settings.
-const EXISTS_DEMAND_PROPERTY = 'EXISTS_DEMAND';
 
 type MapLayerState = {
   datasetIdentifier: string;
@@ -408,7 +407,7 @@ export class RegionsMapLayers {
       return undefined;
     }
 
-    return ['==', ['get', EXISTS_DEMAND_PROPERTY], true];
+    return ['==', ['get', 'EXISTS_DEMAND'], true];
   }
 
   private updateSource(sourceId: string, data: GeoJSON.FeatureCollection) {
@@ -472,6 +471,7 @@ export class RegionsMapLayers {
         id: layerState.boundaryLineLayerId,
         type: 'line',
         source: layerState.sourceId,
+        filter: this.buildDemandExistsFilter(),
         layout: {
           visibility: 'none',
         },
