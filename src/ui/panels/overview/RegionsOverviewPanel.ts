@@ -90,19 +90,14 @@ export function renderRegionsOverviewPanel(
   };
 
   const onSelectDataset = (datasetIdentifier: string) => {
-    if (
-      !datasetIdentifier ||
-      datasetIdentifier === selectedDatasetIdentifier ||
-      !props.availableDatasetIdentifiers.includes(datasetIdentifier)
-    ) {
-      return;
-    }
+    if (datasetIdentifier === selectedDatasetIdentifier) return;
     setSelectedDatasetIdentifier(datasetIdentifier);
   };
 
-  const tabContent =
-    activeTab === 'overview'
-      ? h(
+  let tabContent: React.ReactNode;
+  switch (activeTab) {
+    case 'overview':
+      tabContent = h(
         'div',
         { className: 'flex flex-col gap-2 min-h-0' },
         renderOverviewSearchField(h, Input, searchTerm, setSearchTerm),
@@ -115,16 +110,22 @@ export function renderRegionsOverviewPanel(
           onSortChange,
           props.onRegionSelect,
         ),
-      )
-      : activeTab === 'commuter-flows'
-        ? renderPlaceholderTab(
-          h,
-          'Commuter flow analysis is under construction.',
-        )
-        : renderPlaceholderTab(
-          h,
-          'Ridership analysis is under construction.',
-        );
+      );
+      break;
+    case 'commuter-flows':
+      tabContent = renderPlaceholderTab(
+        h,
+        'Commuter flow analysis is under construction.',
+      );
+      break;
+    case 'ridership':
+    default:
+      tabContent = renderPlaceholderTab(
+        h,
+        'Ridership analysis is under construction.',
+      );
+      break;
+  }
 
   return h(
     'div',

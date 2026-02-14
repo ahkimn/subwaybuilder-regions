@@ -4,7 +4,7 @@
 
 ## v0.2.4 - 2026-02-14
 
-_Game version_ v1.0.2
+_Game version_ v1.0.3
 
 ### Other Updates
 
@@ -13,7 +13,8 @@ _Game version_ v1.0.2
 
 ### Bugfixes
 
-- Fixed Overview table row hover and selected state highlights.
+- Fixed Overview table row hover and selected state highlights not rendering.
+- Re-selecting a region using Overview table now correctly toggles off selection if the region was already selected.
 
 ## v0.2.3 - 2026-02-13
 

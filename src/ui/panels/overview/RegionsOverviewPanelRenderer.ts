@@ -16,7 +16,6 @@ export type RegionsOverviewPanelEvents = {
 export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
   private initialized = false;
-  private currentDatasetIds: string[] = [];
 
   private events: RegionsOverviewPanelEvents = {};
 
@@ -50,17 +49,14 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
       );
       return;
     }
-
-    this.currentDatasetIds = currentDatasetIds;
-
     this.host.initialize();
     this.host.setRender(() =>
       renderRegionsOverviewPanel({
         api: this.api,
         uiState: this.state,
         regionDataManager: this.dataManager,
-        availableDatasetIdentifiers: this.currentDatasetIds,
-        onRegionSelect: this.events.onRegionSelect ?? (() => {}),
+        availableDatasetIdentifiers: currentDatasetIds,
+        onRegionSelect: this.events.onRegionSelect ?? (() => { }),
       }),
     );
     this.initialized = true;
@@ -68,7 +64,6 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
 
   tearDown(): void {
     this.initialized = false;
-    this.currentDatasetIds = [];
     this.host.clear();
   }
 

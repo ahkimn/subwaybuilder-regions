@@ -295,14 +295,11 @@ function getClassTokens(className?: string): string[] {
   return className?.split(/\s+/).filter(Boolean) ?? [];
 }
 
-function applyRowHoverClassTokens(
+function applyRowHover(
   rowCells: HTMLElement[],
   hoverClassTokens: string[],
   shouldApply: boolean,
 ): void {
-  if (hoverClassTokens.length === 0 || rowCells.length === 0) {
-    return;
-  }
   for (const rowCell of rowCells) {
     if (shouldApply) {
       rowCell.classList.add(...hoverClassTokens);
@@ -316,9 +313,7 @@ function isEventMovingWithinRow(
   relatedTarget: EventTarget | null,
   rowCells: HTMLElement[],
 ): boolean {
-  if (!(relatedTarget instanceof Node)) {
-    return false;
-  }
+  if (!(relatedTarget instanceof Node)) return false;
   return rowCells.some((rowCell) => rowCell.contains(relatedTarget));
 }
 
@@ -326,14 +321,9 @@ function isEventMovingWithinReactRow(
   relatedTarget: EventTarget | null,
   rowIndex: number,
 ): boolean {
-  if (!(relatedTarget instanceof Element)) {
-    return false;
-  }
+  if (!(relatedTarget instanceof Element)) return false;
   const relatedRow = relatedTarget.closest('[data-table-row]');
-  if (!relatedRow) {
-    return false;
-  }
-  return relatedRow.getAttribute('data-table-row') === String(rowIndex);
+  return relatedRow ? relatedRow.getAttribute('data-table-row') === String(rowIndex) : false;
 }
 
 function attachDOMRowHoverHandlers(
@@ -343,11 +333,11 @@ function attachDOMRowHoverHandlers(
   const hoverClassTokens = getClassTokens(rowHoverClassName);
 
   const onMouseOver = () => {
-    applyRowHoverClassTokens(rowCells, hoverClassTokens, true);
+    applyRowHover(rowCells, hoverClassTokens, true);
   };
   const onMouseOut = (event: MouseEvent) => {
     if (isEventMovingWithinRow(event.relatedTarget, rowCells)) return;
-    scheduleRowHoverClassRemoval(rowCells, hoverClassTokens);
+    tryRemoveRowHover(rowCells, hoverClassTokens);
   };
 
   for (const rowCell of rowCells) {
@@ -356,22 +346,17 @@ function attachDOMRowHoverHandlers(
   }
 }
 
-function scheduleRowHoverClassRemoval(
+function tryRemoveRowHover(
   rowCells: HTMLElement[],
   hoverClassTokens: string[],
 ): void {
   const removeIfNotHovered = () => {
     // Avoid removing hover class is there exists another cell within the same row that is currently hovered
     if (rowCells.some((rowCell) => rowCell.matches(':hover'))) return;
-    applyRowHoverClassTokens(rowCells, hoverClassTokens, false);
+    applyRowHover(rowCells, hoverClassTokens, false);
   };
 
-  if (typeof window !== 'undefined' && window.requestAnimationFrame) {
-    window.requestAnimationFrame(removeIfNotHovered);
-    return;
-  }
-
-  setTimeout(removeIfNotHovered, 0);
+  window.requestAnimationFrame(removeIfNotHovered);
 }
 
 function computeCellPresentation(
