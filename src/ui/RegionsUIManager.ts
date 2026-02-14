@@ -195,7 +195,7 @@ export class RegionsUIManager {
       this.state.cityCode,
     );
     cityDatasets.forEach((ds) => {
-      this.mapLayers!.ensureDatasetRendered(ds);
+      this.mapLayers!.ensureDatasetLayers(ds);
     });
     const toggleOptions = cityDatasets.map((ds) =>
       this.mapLayers!.getDatasetToggleOptions(ds),

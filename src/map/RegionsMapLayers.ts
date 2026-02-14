@@ -1,4 +1,4 @@
-import { SHOW_UNPOPULATED_REGIONS } from '../core/constants';
+import { ENFORCE_ONE_LAYER_ACTIVE, SHOW_UNPOPULATED_REGIONS } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import { RegionSelection } from '../core/types';
 import type { DisplayColor } from '../ui/types/DisplayColor';
@@ -189,7 +189,7 @@ export class RegionsMapLayers {
     }
   }
 
-  ensureDatasetRendered(dataset: RegionDataset) {
+  ensureDatasetLayers(dataset: RegionDataset) {
     if (!dataset.isLoaded) {
       console.warn(
         `[Regions] Cannot render dataset ${dataset.id}: data not loaded`,
@@ -228,7 +228,7 @@ export class RegionsMapLayers {
 
   toggleOrSetVisibility(dataset: RegionDataset, visible?: boolean): void {
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
-    this.ensureDatasetRendered(dataset);
+    this.ensureDatasetLayers(dataset);
 
     const layerState = this.layerStates.get(datasetIdentifier);
     if (!layerState) {
@@ -242,6 +242,10 @@ export class RegionsMapLayers {
       visible !== undefined ? visible : !layerState.visible;
     if (nextVisible === layerState.visible) return;
 
+    if (nextVisible && ENFORCE_ONE_LAYER_ACTIVE) {
+      this.hideOtherVisibleLayers(datasetIdentifier);
+    }
+
     layerState.visible = nextVisible;
     this.applyVisibility(layerState);
 
@@ -253,6 +257,20 @@ export class RegionsMapLayers {
     console.log(
       `[Regions] Toggled visibility for dataset ${dataset.displayName} to ${layerState.visible}`,
     );
+  }
+
+  private hideOtherVisibleLayers(datasetIdentifier: string): void {
+    for (const [otherDatasetIdentifier, layerState] of this.layerStates.entries()) {
+      if (datasetIdentifier === otherDatasetIdentifier || !layerState.visible) continue;
+
+      layerState.visible = false;
+      this.applyVisibility(layerState);
+
+      this.events.onLayerVisibilityChange?.({
+        datasetIdentifier: otherDatasetIdentifier,
+        visible: false,
+      });
+    }
   }
 
   private applyVisibility(layerState: MapLayerState) {
@@ -363,6 +381,14 @@ export class RegionsMapLayers {
     return (
       this.layerStates.get(RegionDataset.getIdentifier(dataset))?.visible ??
       false
+    );
+  }
+
+  getVisibleLayers(): Set<string> {
+    return new Set(
+      Array.from(this.layerStates.values())
+        .filter((state) => state.visible)
+        .map((state) => state.datasetIdentifier)
     );
   }
 
