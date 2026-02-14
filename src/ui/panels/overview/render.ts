@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { createElement } from 'react';
+import type { createElement, useState } from 'react';
 
 import {
   type RegionSelection,
@@ -9,7 +9,7 @@ import { formatNumberOrDefault } from '../../../core/utils';
 import type {
   DataRowOptions,
   DataTableRow,
-  TableOptions,
+  TableOptions
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
 import type { ReactSelectButtonConfig } from '../../elements/SelectRow';
@@ -105,6 +105,7 @@ export function renderOverviewSearchField(
 
 export function renderOverviewTable(
   h: typeof createElement,
+  useStateHook: typeof useState,
   rows: RegionsOverviewRow[],
   activeSelection: RegionSelection | null,
   sortState: RegionsOverviewSortState,
@@ -161,8 +162,9 @@ export function renderOverviewTable(
         onClick: [rowAction, rowAction, rowAction, rowAction, rowAction],
         align: ['left', 'right', 'right', 'right', 'right'],
         rowClassName: isActive
-          ? 'bg-secondary-foreground/15 text-foreground cursor-pointer'
-          : 'hover:bg-accent/60 cursor-pointer',
+          ? 'bg-accent text-accent-foreground transition-colors cursor-pointer'
+          : 'transition-colors cursor-pointer',
+        rowHoverClassName: 'bg-accent text-accent-foreground',
       };
 
       tableRows.push({
@@ -184,7 +186,7 @@ export function renderOverviewTable(
     h(
       'div',
       { className: 'overflow-auto max-h-[60vh] px-1.5 py-1' },
-      ReactDataTable(h, tableOptions, tableRows),
+      ReactDataTable(h, useStateHook, tableOptions, tableRows),
     ),
   );
 }

@@ -7,7 +7,7 @@ import type { RegionSelection, UIState } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import { ReactToolbarPanelHost } from '../shared/ReactToolbarPanelHost';
 import type { RegionsPanelRenderer } from '../types';
-import { RegionsOverviewPanel } from './RegionsOverviewPanel';
+import { renderRegionsOverviewPanel } from './RegionsOverviewPanel';
 
 export type RegionsOverviewPanelEvents = {
   onRegionSelect?: (payload: RegionSelection) => void;
@@ -15,7 +15,7 @@ export type RegionsOverviewPanelEvents = {
 
 export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
-  private overviewPanel: RegionsOverviewPanel | null = null;
+  private initialized = false;
 
   private events: RegionsOverviewPanelEvents = {};
 
@@ -37,7 +37,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   }
 
   initialize(): void {
-    if (this.overviewPanel !== null) return;
+    if (this.initialized) return;
     if (!this.state.cityCode) return;
 
     const currentDatasetIds = this.dataManager.getCityDatasetIds(
@@ -49,23 +49,21 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
       );
       return;
     }
-
-    this.overviewPanel = new RegionsOverviewPanel(
-      this.api,
-      this.state,
-      this.dataManager,
-      currentDatasetIds,
-      this.events.onRegionSelect ?? (() => {}),
-      () => this.host.requestRender(),
-    );
-
     this.host.initialize();
-    this.host.setRender(() => this.overviewPanel?.render());
+    this.host.setRender(() =>
+      renderRegionsOverviewPanel({
+        api: this.api,
+        uiState: this.state,
+        regionDataManager: this.dataManager,
+        availableDatasetIdentifiers: currentDatasetIds,
+        onRegionSelect: this.events.onRegionSelect ?? (() => { }),
+      }),
+    );
+    this.initialized = true;
   }
 
   tearDown(): void {
-    this.overviewPanel?.reset();
-    this.overviewPanel = null;
+    this.initialized = false;
     this.host.clear();
   }
 
@@ -74,10 +72,10 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   }
 
   tryUpdatePanel(): void {
-    if (!this.overviewPanel) {
+    if (!this.initialized) {
       this.initialize();
       return;
     }
-    this.host.setRender(() => this.overviewPanel?.render());
+    this.host.requestRender();
   }
 }
