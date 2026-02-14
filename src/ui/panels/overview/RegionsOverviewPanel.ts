@@ -1,5 +1,4 @@
 import type React from 'react';
-import type { createElement } from 'react';
 
 import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
@@ -66,7 +65,8 @@ export class RegionsOverviewPanel {
   }
 
   render(): React.ReactNode {
-    const h = this.api.utils.React.createElement as typeof createElement;
+    const h = this.api.utils.React.createElement;
+    const u = this.api.utils.React.useState;
     const Input = this.api.utils.components
       .Input as React.ComponentType<InputFieldProperties>;
     const datasetGameData = this.regionDataManager.requestGameDataByDataset(
@@ -109,6 +109,7 @@ export class RegionsOverviewPanel {
           ),
           renderOverviewTable(
             h,
+            u,
             rows,
             activeSelection,
             this.sortState,

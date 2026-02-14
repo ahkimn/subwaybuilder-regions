@@ -495,6 +495,8 @@ function buildTableRow(
   ];
   const options: DataRowOptions = {
     align: ['left', 'right', 'right'],
+    rowClassName: 'transition-colors',
+    rowHoverClassName: 'bg-accent text-accent-foreground',
   };
 
   if (viewState.modeShareLayout === 'all') {

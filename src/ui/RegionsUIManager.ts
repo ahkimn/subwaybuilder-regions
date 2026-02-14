@@ -236,7 +236,7 @@ export class RegionsUIManager {
       selection.datasetIdentifier,
     );
     this.mapLayers.toggleOrSetVisibility(dataset, true);
-    this.setActiveSelection(selection, { toggleIfSame: false, showInfo: true });
+    this.setActiveSelection(selection, { toggleIfSame: true, showInfo: true });
   }
 
   private onLayerVisibilityChange(
