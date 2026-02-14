@@ -1,12 +1,16 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
-import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from '../../../core/constants';
+import {
+  REGIONS_OVERVIEW_PANEL_CONTENT_ID,
+  SHOW_UNPOPULATED_REGIONS,
+} from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
-import type {
-  RegionGameData,
-  RegionSelection,
-  UIState,
+import {
+  type RegionGameData,
+  RegionGameData as RegionGameDataUtils,
+  type RegionSelection,
+  type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import type { InputFieldProperties } from './render';
@@ -53,7 +57,8 @@ export function renderRegionsOverviewPanel(
   const [selectedDatasetIdentifier, setSelectedDatasetIdentifier] =
     useStateHook<string>(props.availableDatasetIdentifiers[0]);
   const [searchTerm, setSearchTerm] = useStateHook<string>('');
-  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>('overview');
+  const [activeTab, setActiveTab] =
+    useStateHook<RegionsOverviewTab>('overview');
   const [sortState, setSortState] =
     useStateHook<RegionsOverviewSortState>(INITIAL_SORT_STATE);
 
@@ -63,7 +68,10 @@ export function renderRegionsOverviewPanel(
   const activeSelection = props.uiState.activeSelection;
 
   const rows = sortRows(
-    filterRows(buildRows(datasetGameData, selectedDatasetIdentifier), searchTerm),
+    filterRows(
+      buildRows(datasetGameData, selectedDatasetIdentifier),
+      searchTerm,
+    ),
     sortState,
   );
 
@@ -150,7 +158,13 @@ function buildRows(
   datasetGameData: Map<string | number, RegionGameData>,
   selectedDatasetIdentifier: string,
 ): RegionsOverviewRow[] {
-  return Array.from(datasetGameData.values()).map((gameData) => {
+  const rowsData = SHOW_UNPOPULATED_REGIONS
+    ? Array.from(datasetGameData.values())
+    : Array.from(datasetGameData.values()).filter((gameData) =>
+        RegionGameDataUtils.isPopulated(gameData),
+      );
+
+  return rowsData.map((gameData) => {
     return {
       selection: {
         datasetIdentifier: selectedDatasetIdentifier,
@@ -191,7 +205,8 @@ function sortRows(
     switch (index) {
       case 1:
         return (
-          ((a.gameData.realPopulation ?? 0) - (b.gameData.realPopulation ?? 0)) *
+          ((a.gameData.realPopulation ?? 0) -
+            (b.gameData.realPopulation ?? 0)) *
           multiplier
         );
       case 2:
@@ -218,12 +233,7 @@ function sortRows(
   };
 
   return [...rows].sort((a, b) => {
-    let result = applySort(
-      a,
-      b,
-      sortState.sortIndex,
-      sortState.sortDirection,
-    );
+    let result = applySort(a, b, sortState.sortIndex, sortState.sortDirection);
     if (result === 0) {
       result = applySort(
         a,

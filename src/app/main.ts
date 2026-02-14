@@ -200,6 +200,14 @@ export class RegionsMod {
         : 'Map layers not initialized',
     );
   }
+
+  logVisibleLayers() {
+    console.log(
+      this.mapLayers
+        ? this.mapLayers.getVisibleLayers()
+        : 'Map layers not initialized',
+    );
+  }
 }
 
 // Initialize mod
@@ -212,6 +220,7 @@ const mod = new RegionsMod();
     tearDownUIManager: () => mod.tearDownUIManager(),
     logMapStyle: () => mod.logMapStyle(),
     logLayerOrder: () => mod.logLayerOrder(),
+    logVisibleLayers: () => mod.logVisibleLayers(),
   },
 };
 mod.initialize();

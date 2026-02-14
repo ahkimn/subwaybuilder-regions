@@ -56,7 +56,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
         uiState: this.state,
         regionDataManager: this.dataManager,
         availableDatasetIdentifiers: currentDatasetIds,
-        onRegionSelect: this.events.onRegionSelect ?? (() => { }),
+        onRegionSelect: this.events.onRegionSelect ?? (() => {}),
       }),
     );
     this.initialized = true;

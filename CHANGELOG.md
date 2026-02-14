@@ -2,6 +2,16 @@
 
 [Back to README](README.md)
 
+## v0.2.5 - 2026-02-14
+
+_Game version_ v1.0.3
+
+### Other Updates
+
+- Prepare for settings panel by handling two global configuration options:
+  - `ENFORCE_ONE_DATASET_VISIBLE` => only allow one dataset's map layers to be rendered/visible at the same time
+  - `SHOW_UNPOPULATED_REGIONS` => show/hide regions that are not assigned any demand points by the game's demand data
+
 ## v0.2.4 - 2026-02-14
 
 _Game version_ v1.0.3

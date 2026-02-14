@@ -25,7 +25,7 @@ import type {
   RegionGameData,
   RegionInfraData,
 } from '../types';
-import { DatasetStatus } from '../types';
+import { DatasetStatus, RegionGameData as RegionGameDataUtils } from '../types';
 import { fetchGeoJSON } from '../utils';
 
 export class RegionDataset {
@@ -173,14 +173,14 @@ export class RegionDataset {
     featureId: string | number,
     commuterData: RegionCommuterData,
   ): void {
-    this.gameData.get(featureId)!.commuterData = commuterData;
+    this.getRegionGameData(featureId)!.commuterData = commuterData;
   }
 
   updateWithInfraData(
     featureId: string | number,
     infraData: RegionInfraData,
   ): void {
-    this.gameData.get(featureId)!.infraData = infraData;
+    this.getRegionGameData(featureId)!.infraData = infraData;
   }
 
   private assignDemandPoints(
@@ -269,8 +269,33 @@ export class RegionDataset {
   updateWithDemandData(demandData: DemandData): void {
     const results = this.assignDemandPoints(demandData);
     for (const [featureId, demandData] of results) {
-      this.gameData.get(featureId)!.demandData = demandData;
+      this.getRegionGameData(featureId)!.demandData = demandData;
     }
+    this.applyExistsDemandProperties();
+  }
+
+  private applyExistsDemandProperties(): void {
+    const applyToCollection = (
+      featureCollection: GeoJSON.FeatureCollection | null,
+    ) => {
+      if (!featureCollection) return;
+
+      for (const feature of featureCollection.features) {
+        const featureId: string | number = feature.properties?.ID!;
+        const gameData = this.getRegionGameData(featureId);
+        const existsDemand = gameData
+          ? RegionGameDataUtils.isPopulated(gameData)
+          : false;
+
+        feature.properties = {
+          ...feature.properties,
+          EXISTS_DEMAND: existsDemand,
+        };
+      }
+    };
+
+    applyToCollection(this.boundaryData);
+    applyToCollection(this.labelData);
   }
 
   private populateStaticData(): void {
@@ -295,6 +320,8 @@ export class RegionDataset {
         realPopulation: feature.properties?.POPULATION || null,
       });
     });
+
+    this.applyExistsDemandProperties();
   }
 
   buildLabelData(): void {

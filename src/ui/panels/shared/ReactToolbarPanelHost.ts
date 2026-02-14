@@ -24,7 +24,7 @@ export class ReactToolbarPanelHost {
   constructor(
     private readonly api: ModdingAPI,
     private readonly options: ToolbarPanelHostOptions,
-  ) { }
+  ) {}
 
   initialize(): void {
     if (this.initialized) {

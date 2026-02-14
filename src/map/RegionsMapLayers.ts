@@ -1,3 +1,7 @@
+import {
+  ENFORCE_ONE_DATASET_VISIBLE,
+  SHOW_UNPOPULATED_REGIONS,
+} from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import { RegionSelection } from '../core/types';
 import type { DisplayColor } from '../ui/types/DisplayColor';
@@ -188,7 +192,7 @@ export class RegionsMapLayers {
     }
   }
 
-  ensureDatasetRendered(dataset: RegionDataset) {
+  ensureDatasetLayers(dataset: RegionDataset) {
     if (!dataset.isLoaded) {
       console.warn(
         `[Regions] Cannot render dataset ${dataset.id}: data not loaded`,
@@ -227,7 +231,7 @@ export class RegionsMapLayers {
 
   toggleOrSetVisibility(dataset: RegionDataset, visible?: boolean): void {
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
-    this.ensureDatasetRendered(dataset);
+    this.ensureDatasetLayers(dataset);
 
     const layerState = this.layerStates.get(datasetIdentifier);
     if (!layerState) {
@@ -237,9 +241,12 @@ export class RegionsMapLayers {
       return;
     }
 
-    const nextVisible =
-      visible !== undefined ? visible : !layerState.visible;
+    const nextVisible = visible !== undefined ? visible : !layerState.visible;
     if (nextVisible === layerState.visible) return;
+
+    if (nextVisible && ENFORCE_ONE_DATASET_VISIBLE) {
+      this.hideOtherVisibleLayers(datasetIdentifier);
+    }
 
     layerState.visible = nextVisible;
     this.applyVisibility(layerState);
@@ -252,6 +259,24 @@ export class RegionsMapLayers {
     console.log(
       `[Regions] Toggled visibility for dataset ${dataset.displayName} to ${layerState.visible}`,
     );
+  }
+
+  private hideOtherVisibleLayers(datasetIdentifier: string): void {
+    for (const [
+      otherDatasetIdentifier,
+      layerState,
+    ] of this.layerStates.entries()) {
+      if (datasetIdentifier === otherDatasetIdentifier || !layerState.visible)
+        continue;
+
+      layerState.visible = false;
+      this.applyVisibility(layerState);
+
+      this.events.onLayerVisibilityChange?.({
+        datasetIdentifier: otherDatasetIdentifier,
+        visible: false,
+      });
+    }
   }
 
   private applyVisibility(layerState: MapLayerState) {
@@ -365,6 +390,14 @@ export class RegionsMapLayers {
     );
   }
 
+  getVisibleLayers(): Set<string> {
+    return new Set(
+      Array.from(this.layerStates.values())
+        .filter((state) => state.visible)
+        .map((state) => state.datasetIdentifier),
+    );
+  }
+
   getDatasetToggleOptions(dataset: RegionDataset): LayerToggleOptions {
     return {
       id: dataset.id,
@@ -397,6 +430,16 @@ export class RegionsMapLayers {
 
     this.addBoundaryLayers(layerState, lightMode);
     this.addLabelLayer(layerState, lightMode);
+  }
+
+  private buildDemandExistsFilter():
+    | maplibregl.FilterSpecification
+    | undefined {
+    if (SHOW_UNPOPULATED_REGIONS) {
+      return undefined;
+    }
+
+    return ['==', ['get', 'EXISTS_DEMAND'], true];
   }
 
   private updateSource(sourceId: string, data: GeoJSON.FeatureCollection) {
@@ -436,6 +479,7 @@ export class RegionsMapLayers {
         id: layerState.boundaryLayerId,
         type: 'fill',
         source: layerState.sourceId,
+        filter: this.buildDemandExistsFilter(),
         layout: {
           visibility: 'none',
         },
@@ -459,6 +503,7 @@ export class RegionsMapLayers {
         id: layerState.boundaryLineLayerId,
         type: 'line',
         source: layerState.sourceId,
+        filter: this.buildDemandExistsFilter(),
         layout: {
           visibility: 'none',
         },
@@ -481,6 +526,7 @@ export class RegionsMapLayers {
         id: layerState.labelLayerId,
         type: 'symbol',
         source: layerState.labelSourceId,
+        filter: this.buildDemandExistsFilter(),
         layout: {
           'text-field': ['get', 'NAME'],
           'text-size': labelSettings['text-size'],

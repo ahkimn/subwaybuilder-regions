@@ -9,7 +9,7 @@ import { formatNumberOrDefault } from '../../../core/utils';
 import type {
   DataRowOptions,
   DataTableRow,
-  TableOptions
+  TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
 import type { ReactSelectButtonConfig } from '../../elements/SelectRow';

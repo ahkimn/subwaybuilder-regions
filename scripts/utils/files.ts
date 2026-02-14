@@ -219,12 +219,17 @@ export function updateIndexJson(
       return [];
     }
 
-    return osmCountryConfig.availableBoundaryTypes.map((entry) => entry.datasetId);
+    return osmCountryConfig.availableBoundaryTypes.map(
+      (entry) => entry.datasetId,
+    );
   }
 
   const preferredDatasetOrder = resolveDatasetOrder(countryCode);
   const datasetOrderIndex = new Map<string, number>(
-    preferredDatasetOrder.map((datasetId, orderIndex) => [datasetId, orderIndex]),
+    preferredDatasetOrder.map((datasetId, orderIndex) => [
+      datasetId,
+      orderIndex,
+    ]),
   );
 
   for (const sortedCityCode of sortedCityCodes) {
