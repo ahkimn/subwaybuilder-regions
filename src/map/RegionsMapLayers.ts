@@ -1,5 +1,5 @@
 import {
-  ENFORCE_ONE_LAYER_ACTIVE,
+  ENFORCE_ONE_DATASET_VISIBLE,
   SHOW_UNPOPULATED_REGIONS,
 } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
@@ -244,7 +244,7 @@ export class RegionsMapLayers {
     const nextVisible = visible !== undefined ? visible : !layerState.visible;
     if (nextVisible === layerState.visible) return;
 
-    if (nextVisible && ENFORCE_ONE_LAYER_ACTIVE) {
+    if (nextVisible && ENFORCE_ONE_DATASET_VISIBLE) {
       this.hideOtherVisibleLayers(datasetIdentifier);
     }
 
