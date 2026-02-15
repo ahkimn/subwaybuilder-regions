@@ -1,8 +1,14 @@
 import type { DatasetIndex, DatasetIndexEntry } from '@shared/dataset-index';
 
 import { RegionDataset } from '../datasets/RegionDataset';
-import { RegistryMissingDatasetError, RegistryMissingIndexError } from '../errors';
 import {
+  RegistryMissingDatasetError,
+  RegistryMissingIndexError,
+} from '../errors';
+import {
+  buildLocalDatasetUrl,
+  getFeatureCount,
+  resolveLocalModsDataRoot,
   STATIC_BASE_GAME_CITY_CODES,
   STATIC_BASE_GAME_DATASET_TEMPLATES,
   type StaticDatasetTemplate,
@@ -143,77 +149,31 @@ export class RegionDatasetRegistry {
     }
   }
 
-  // -- Static Fallback Helpers -- //  
+  // -- Static Fallback Helpers -- //
 
   // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
   async buildStatic(): Promise<void> {
     this.clear();
     const registered = await this.buildFromStaticLocalFiles();
     if (registered === 0) {
-      throw new Error(
-        '[Regions] No local datasets found in static mapping',
-      );
-    }
-  }
-
-  private async resolveLocalModsDataRoot(): Promise<string> {
-    type ElectronModsAPI = {
-      getModsFolder?: () => Promise<string>;
-    };
-
-    const electronApi = window.electron as ElectronModsAPI | undefined;
-    if (!electronApi?.getModsFolder) {
-      throw new Error('[Regions] Missing electron.getModsFolder API');
-    }
-
-    const modsDir = (await electronApi.getModsFolder()).replace(/\\/g, '/');
-    return `${modsDir}/Regions/data`;
-  }
-
-  private buildLocalDatasetUrl(
-    localModsDataRoot: string,
-    cityCode: string,
-    datasetId: string,
-  ): string {
-    return encodeURI(
-      `file:///${localModsDataRoot}/${cityCode}/${datasetId}.geojson`,
-    );
-  }
-
-  private async probeLocalDatasetFeatureCount(
-    dataPath: string,
-  ): Promise<number | null> {
-    try {
-      const response = await fetch(dataPath);
-      if (!response.ok) {
-        return null;
-      }
-
-      const geoJson = (await response.json()) as GeoJSON.FeatureCollection;
-      if (!Array.isArray(geoJson.features)) {
-        return null;
-      }
-
-      return geoJson.features.length;
-    } catch {
-      return null;
+      throw new Error('[Regions] No local datasets found in static mapping');
     }
   }
 
   private async buildFromStaticLocalFiles(): Promise<number> {
-    const localModsDataRoot = await this.resolveLocalModsDataRoot();
+    const localModsDataRoot = await resolveLocalModsDataRoot();
     let registeredDatasets = 0;
 
     for (const cityCode of STATIC_BASE_GAME_CITY_CODES) {
       const datasetTemplates = STATIC_BASE_GAME_DATASET_TEMPLATES[cityCode];
       for (const template of datasetTemplates) {
-        const dataPath = this.buildLocalDatasetUrl(
+        const dataPath = buildLocalDatasetUrl(
           localModsDataRoot,
           cityCode,
           template.datasetId,
         );
 
-        const size = await this.probeLocalDatasetFeatureCount(dataPath);
+        const size = await getFeatureCount(dataPath);
         if (size === null) {
           continue;
         }

@@ -33,15 +33,20 @@ export class RegionsMod {
         console.warn('[Regions] Failed to load dataset index from server');
       });
       api.ui.showNotification(
-        '[Regions] Loaded region datasets from local server.', 'success',
+        '[Regions] Loaded region datasets from local server.',
+        'success',
       );
       return;
     } catch (indexBuildError) {
-      console.warn('[Regions] Failed to build dataset registry from server, attempting to build from local files', indexBuildError);
+      console.warn(
+        '[Regions] Failed to build dataset registry from server, attempting to build from local files',
+        indexBuildError,
+      );
     }
     await this.registry.buildStatic();
     api.ui.showNotification(
-      '[Regions] Loaded region datasets from local mod data files.', 'success',
+      '[Regions] Loaded region datasets from local mod data files.',
+      'success',
     );
   }
 

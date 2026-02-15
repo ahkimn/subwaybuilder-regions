@@ -225,9 +225,9 @@ export function renderOverviewTable(
         : null;
       const totalModeShare = commuterSummary
         ? ModeShare.add(
-          commuterSummary.residentModeShare,
-          commuterSummary.workerModeShare,
-        )
+            commuterSummary.residentModeShare,
+            commuterSummary.workerModeShare,
+          )
         : null;
       const rowOptions: DataRowOptions = {
         onClick: Array.from({ length: OVERVIEW_COLUMN_COUNT }, () => rowAction),
@@ -248,18 +248,18 @@ export function renderOverviewTable(
           formatNumberOrDefault(workers),
           totalModeShare
             ? formatPercentOrDefault(
-              ModeShare.share(totalModeShare, 'transit') * 100,
-            )
+                ModeShare.share(totalModeShare, 'transit') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
             ? formatPercentOrDefault(
-              ModeShare.share(totalModeShare, 'driving') * 100,
-            )
+                ModeShare.share(totalModeShare, 'driving') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
             ? formatPercentOrDefault(
-              ModeShare.share(totalModeShare, 'walking') * 100,
-            )
+                ModeShare.share(totalModeShare, 'walking') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           infraData
             ? formatNumberOrDefault(infraData.stations.size)

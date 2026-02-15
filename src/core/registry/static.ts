@@ -87,7 +87,8 @@ export const STATIC_BASE_GAME_CITY_CODES = [
   'STL',
 ] as const;
 
-export type StaticBaseGameCityCode = (typeof STATIC_BASE_GAME_CITY_CODES)[number];
+export type StaticBaseGameCityCode =
+  (typeof STATIC_BASE_GAME_CITY_CODES)[number];
 
 export const STATIC_BASE_GAME_DATASET_TEMPLATES: Record<
   StaticBaseGameCityCode,
@@ -128,3 +129,47 @@ export const STATIC_BASE_GAME_DATASET_TEMPLATES: Record<
   SLC: US_DATASET_TEMPLATES,
   STL: US_DATASET_TEMPLATES,
 };
+
+export async function resolveLocalModsDataRoot(): Promise<string> {
+  type ElectronModsAPI = {
+    getModsFolder?: () => Promise<string>;
+  };
+
+  const electronApi = window.electron as ElectronModsAPI | undefined;
+  if (!electronApi?.getModsFolder) {
+    throw new Error('[Regions] Missing electron.getModsFolder API');
+  }
+
+  const modsDir = (await electronApi.getModsFolder()).replace(/\\/g, '/');
+  return `${modsDir}/Regions/data`;
+}
+
+export function buildLocalDatasetUrl(
+  localModsDataRoot: string,
+  cityCode: string,
+  datasetId: string,
+): string {
+  return encodeURI(
+    `file:///${localModsDataRoot}/${cityCode}/${datasetId}.geojson`,
+  );
+}
+
+export async function getFeatureCount(
+  dataPath: string,
+): Promise<number | null> {
+  try {
+    const response = await fetch(dataPath);
+    if (!response.ok) {
+      return null;
+    }
+
+    const geoJson = (await response.json()) as GeoJSON.FeatureCollection;
+    if (!Array.isArray(geoJson.features)) {
+      return null;
+    }
+
+    return geoJson.features.length;
+  } catch {
+    return null;
+  }
+}
