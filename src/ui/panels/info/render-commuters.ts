@@ -5,6 +5,7 @@ import type {
   SetStateAction,
   useState,
 } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { ModeShare, type RegionGameData } from '../../../core/types';
 import {
@@ -22,6 +23,7 @@ import {
   ReactSelectRow,
   type SelectButtonConfig,
 } from '../../elements/SelectRow';
+import { buildReactViewHeader } from '../shared/view-header';
 import {
   CommuterDirection,
   type CommutersViewState,
@@ -38,6 +40,13 @@ type CommuterRowData = {
   transitValue: number;
   drivingValue: number;
   walkingValue: number;
+};
+
+type CommutersBodyTableProps = {
+  h: typeof createElement;
+  useStateHook: typeof useState;
+  tableOptions: TableOptions;
+  tableBodyData: ReactDataTableRow[];
 };
 
 export function renderCommutersView(
@@ -61,8 +70,6 @@ export function renderCommutersView(
     viewState,
   );
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
-  const mayRequireScroll =
-    viewState.expanded && rows.length > DEFAULT_TABLE_ROWS;
 
   return h(
     'div',
@@ -78,7 +85,6 @@ export function renderCommutersView(
       viewState,
       rows,
       rowsToDisplay,
-      mayRequireScroll,
       setViewState,
     ),
   );
@@ -110,18 +116,13 @@ function buildCommutersHeader(
       ),
   });
 
-  return h(
-    'div',
-    { className: 'flex justify-between items-center text-sm font-medium h-8' },
-    h('span', { className: 'font-medium leading-none' }, gameData.displayName),
-    ReactSelectRow(
-      h,
-      directionConfigs,
-      viewState.direction,
-      'commutes-direction',
-      false,
-    ),
-  );
+  return buildReactViewHeader(h, gameData.displayName, [ReactSelectRow(
+    h,
+    directionConfigs,
+    viewState.direction,
+    'commutes-direction',
+    false,
+  )]);
 }
 
 function buildSummaryStatistics(
@@ -293,7 +294,6 @@ function buildCommutersTable(
   viewState: CommutersViewState,
   rows: CommuterRowData[],
   rowsToDisplay: number,
-  mayRequireScroll: boolean,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
   const tableOptions: TableOptions = {
@@ -315,40 +315,84 @@ function buildCommutersTable(
       tableOptions,
       tableValues: tableHeaderData,
     }),
-    h(
-      'div',
-      {
-        className: `overflow-y-auto min-h-0${mayRequireScroll ? ' pr-2' : ''}`,
-        style: {
-          maxHeight: '60vh',
-          ...(mayRequireScroll
-            ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' }
-            : {}),
-        },
-      },
-      h(ReactDataTable, {
-        h,
-        useStateHook,
-        tableOptions,
-        tableValues: tableBodyData,
-      }),
-    ),
+    h(CommutersBodyTable, {
+      h,
+      useStateHook,
+      tableOptions,
+      tableBodyData,
+    }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-          'div',
-          { className: 'pt-1 flex justify-center' },
-          ReactExtendButton(
-            h,
-            viewState.expanded ? 'Collapse' : 'Expand',
-            rows.length - DEFAULT_TABLE_ROWS,
-            () =>
-              setViewState((current) => ({
-                ...current,
-                expanded: !current.expanded,
-              })),
-          ),
-        )
+        'div',
+        { className: 'pt-1 flex justify-center' },
+        ReactExtendButton(
+          h,
+          viewState.expanded ? 'Collapse' : 'Expand',
+          rows.length - DEFAULT_TABLE_ROWS,
+          () =>
+            setViewState((current) => ({
+              ...current,
+              expanded: !current.expanded,
+            })),
+        ),
+      )
       : null,
+  );
+}
+
+function CommutersBodyTable({
+  h,
+  useStateHook,
+  tableOptions,
+  tableBodyData,
+}: CommutersBodyTableProps): ReactNode {
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [hasOverflow, setHasOverflow] = useStateHook<boolean>(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateOverflowState = () => {
+      const nextHasOverflow = container.scrollHeight > container.clientHeight + 1;
+      setHasOverflow((current) =>
+        current === nextHasOverflow ? current : nextHasOverflow,
+      );
+    };
+
+    updateOverflowState();
+
+    const resizeObserver = new ResizeObserver(updateOverflowState)
+    resizeObserver.observe(container);
+    if (container.firstElementChild instanceof HTMLElement) {
+      resizeObserver.observe(container.firstElementChild);
+    }
+
+    window.addEventListener('resize', updateOverflowState);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateOverflowState);
+    };
+  }, [tableBodyData.length]);
+
+  return h(
+    'div',
+    {
+      ref: (node: HTMLElement | null) => {
+        containerRef.current = node;
+      },
+      className: `overflow-y-auto min-h-0${hasOverflow ? ' pr-2' : ''}`,
+      style: {
+        maxHeight: '60vh',
+        ...(hasOverflow ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' } : {}),
+      },
+    },
+    h(ReactDataTable, {
+      h,
+      useStateHook,
+      tableOptions,
+      tableValues: tableBodyData,
+    }),
   );
 }
 

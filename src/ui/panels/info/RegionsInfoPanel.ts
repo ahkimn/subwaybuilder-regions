@@ -143,30 +143,40 @@ export function RegionsInfoPanel({
     }),
   });
 
-  const content: ReactNode = gameData
-    ? activeView === RegionsInfoPanelView.Statistics
-      ? renderStatisticsView(createElement, gameData)
-      : gameData.commuterData
-        ? renderCommutersView(
-            createElement,
-            useState,
-            gameData,
-            commutersViewState,
-            setCommutersViewState,
-          )
+  let content: ReactNode;
+
+  switch (activeView) {
+    case RegionsInfoPanelView.Statistics:
+      content = gameData
+        ? renderStatisticsView(createElement, gameData)
         : createElement(
             'div',
-            {
-              className:
-                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-            },
-            'Loading commuter data...',
-          )
-    : createElement(
-        'div',
-        { className: 'text-xs text-muted-foreground' },
-        'No game data set for info panel rendering',
-      );
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
+      break;
+    case RegionsInfoPanelView.Commuters:
+      content =
+        gameData && gameData.commuterData
+          ? renderCommutersView(
+              createElement,
+              useState,
+              gameData,
+              commutersViewState,
+              setCommutersViewState,
+            )
+          : createElement(
+              'div',
+              {
+                className:
+                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+              },
+              'Loading commuter data...',
+            );
+      break;
+    default:
+      throw new Error(`Unsupported view ${activeView}`);
+  };
 
   return createElement(
     'div',

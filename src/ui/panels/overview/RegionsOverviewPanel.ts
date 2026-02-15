@@ -13,6 +13,7 @@ import {
   type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
+import { buildReactViewHeader } from '../shared/view-header';
 import { SortDirection } from '../types';
 import type { InputFieldProperties } from './render';
 import {
@@ -114,7 +115,7 @@ export function renderRegionsOverviewPanel(
     case RegionsOverviewTabs.Overview:
       tabContent = h(
         'div',
-        { className: 'flex flex-col gap-2 min-h-0' },
+        { className: 'flex flex-col gap-2 min-h-0 flex-1' },
         renderOverviewSearchField(h, Input, searchTerm, setSearchTerm),
         renderOverviewTable(
           h,
@@ -148,15 +149,15 @@ export function renderRegionsOverviewPanel(
       id: REGIONS_OVERVIEW_PANEL_CONTENT_ID,
       className: 'p-3 flex flex-col gap-3 h-full min-h-0',
     },
-    renderLayerSelectorRow(
+    renderOverviewTabs(h, activeTab, onSetTab),
+    buildReactViewHeader(h, 'Dataset', [renderLayerSelectorRow(
       h,
       props.availableDatasetIdentifiers,
       selectedDatasetIdentifier,
       (datasetIdentifier: string) =>
         props.regionDataManager.getDatasetDisplayName(datasetIdentifier),
       onSelectDataset,
-    ),
-    renderOverviewTabs(h, activeTab, onSetTab),
+    )]),
     tabContent,
   );
 }
@@ -168,8 +169,8 @@ function buildRows(
   const rowsData = SHOW_UNPOPULATED_REGIONS
     ? Array.from(datasetGameData.values())
     : Array.from(datasetGameData.values()).filter((gameData) =>
-        RegionGameDataUtils.isPopulated(gameData),
-      );
+      RegionGameDataUtils.isPopulated(gameData),
+    );
 
   return rowsData.map((gameData) => {
     return {
@@ -202,6 +203,13 @@ function sortRows(
   rows: RegionsOverviewRow[],
   sortState: RegionsOverviewSortState,
 ): RegionsOverviewRow[] {
+
+  const getTotalCommuters = (row: RegionsOverviewRow): number => {
+    const residents = row.gameData.demandData?.residents;
+    const workers = row.gameData.demandData?.workers;
+    return (residents ?? 0) + (workers ?? 0);
+  };
+
   const applySort = (
     a: RegionsOverviewRow,
     b: RegionsOverviewRow,
@@ -218,18 +226,23 @@ function sortRows(
         );
       case 2:
         return (
+          ((a.gameData.area ?? 0) - (b.gameData.area ?? 0)) *
+          multiplier
+        );
+      case 3:
+        return (getTotalCommuters(a) - getTotalCommuters(b)) * multiplier;
+      case 4:
+        return (
           ((a.gameData.demandData?.residents ?? 0) -
             (b.gameData.demandData?.residents ?? 0)) *
           multiplier
         );
-      case 3:
+      case 5:
         return (
           ((a.gameData.demandData?.workers ?? 0) -
             (b.gameData.demandData?.workers ?? 0)) *
           multiplier
         );
-      case 4:
-        return ((a.gameData.area ?? 0) - (b.gameData.area ?? 0)) * multiplier;
       case 0:
       default:
         return (

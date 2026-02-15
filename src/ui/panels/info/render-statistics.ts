@@ -9,7 +9,7 @@ import type { RegionGameData } from '../../../core/types';
 import { formatNumberOrDefault } from '../../../core/utils';
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
-import { buildReactViewHeader } from './render-shared';
+import { buildReactViewHeader } from '../shared/view-header';
 
 export function renderStatisticsView(
   h: typeof createElement,
@@ -63,12 +63,12 @@ export function renderStatisticsView(
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-            Array.from(infraData!.trackLengths.values()).reduce(
-              (a, b) => a + b,
-              0,
-            ),
-            2,
-          )} km`
+          Array.from(infraData!.trackLengths.values()).reduce(
+            (a, b) => a + b,
+            0,
+          ),
+          2,
+        )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     ReactDetailRow(

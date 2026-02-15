@@ -43,6 +43,9 @@ const TABLE_DENSITY_SETTINGS: Record<TableDensity, string> = {
 export type TableOptions = {
   columnTemplate: string;
   density: TableDensity;
+  groupBoundaries?: number[];
+  cellBorderClassName?: string;
+  groupBoundaryClassName?: string;
 };
 
 // --- React Implementation --- //
@@ -64,6 +67,10 @@ export function ReactDataTable({
     null,
   );
   const cells: ReactNode[] = [];
+  const groupBoundaries = new Set<number>(tableOptions.groupBoundaries ?? []);
+  const cellBorderClassName = tableOptions.cellBorderClassName;
+  const groupBoundaryClassName =
+    tableOptions.groupBoundaryClassName ?? 'border-r border-border/30 pr-1.5';
 
   tableValues.forEach(({ rowValues, options }, rowIndex) => {
     const rowOptions = options ?? {};
@@ -77,6 +84,9 @@ export function ReactDataTable({
           rowOptions,
           colIndex,
           isHeader,
+          groupBoundaries.has(colIndex),
+          cellBorderClassName,
+          groupBoundaryClassName,
           rowIndex,
           hoveredRowIndex,
           setHoveredRowIndex,
@@ -103,6 +113,9 @@ function buildReactCell(
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,
+  isGroupBoundary: boolean,
+  cellBorderClassName: string | undefined,
+  groupBoundaryClassName: string,
   rowIndex: number,
   hoveredRowIndex: number | null,
   setHoveredRowIndex: Dispatch<SetStateAction<number | null>>,
@@ -113,6 +126,9 @@ function buildReactCell(
     rowOptions,
     index,
     isHeader,
+    isGroupBoundary,
+    cellBorderClassName,
+    groupBoundaryClassName,
   );
   const hasRowHoverClass =
     getClassTokens(rowOptions.rowHoverClassName).length > 0;
@@ -246,6 +262,9 @@ function computeCellPresentation(
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,
+  isGroupBoundary: boolean,
+  cellBorderClassName: string | undefined,
+  groupBoundaryClassName: string,
 ): {
   className: string;
   indicator?: string;
@@ -282,6 +301,12 @@ function computeCellPresentation(
 
   if (rowOptions.onClick?.[index]) {
     classNames.push('cursor-pointer hover:text-foreground');
+  }
+  if (cellBorderClassName) {
+    classNames.push(cellBorderClassName);
+  }
+  if (isGroupBoundary && !span) {
+    classNames.push(groupBoundaryClassName);
   }
 
   const style = span && span > 1 ? { gridColumn: `span ${span}` } : undefined;
