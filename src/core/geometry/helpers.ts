@@ -63,10 +63,7 @@ export function isCoordinateWithinFeature(
   feature: Feature<Polygon | MultiPolygon>,
   bbox?: BBox,
 ) {
-  if (
-    bbox &&
-    isCoordinateOutsideBBox(lng, lat, bbox)
-  ) {
+  if (bbox && isCoordinateOutsideBBox(lng, lat, bbox)) {
     return false;
   }
 
@@ -79,7 +76,7 @@ export function isCoordinateOutsideBBox(
   lat: number,
   bbox: BBox,
 ): boolean {
-  return (lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3]);
+  return lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3];
 }
 
 // BBox is [west, south, east, north] => [minLng, minLat, maxLng, maxLat]

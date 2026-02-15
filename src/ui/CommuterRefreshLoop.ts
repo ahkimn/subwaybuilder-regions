@@ -103,7 +103,9 @@ export class CommuterRefreshLoop {
     }
 
     if (this.state.activeSelection !== null) {
-      summaryDatasetIdentifiers.add(this.state.activeSelection.datasetIdentifier);
+      summaryDatasetIdentifiers.add(
+        this.state.activeSelection.datasetIdentifier,
+      );
     }
 
     const updatePromises: Array<Promise<unknown>> = [];

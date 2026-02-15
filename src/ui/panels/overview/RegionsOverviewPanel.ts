@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { createElement, useEffect, useState } from 'react';
+import { type createElement, type useEffect, type useState } from 'react';
 
 import {
   REGIONS_OVERVIEW_PANEL_CONTENT_ID,
@@ -15,6 +15,7 @@ import {
   type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
+import { buildReactViewHeader } from '../shared/view-header';
 import { SortDirection } from '../types';
 import type { InputFieldProperties } from './render';
 import {
@@ -80,14 +81,13 @@ export function renderRegionsOverviewPanel(
   const [searchTerm, setSearchTerm] = useStateHook<string>(
     props.initialState?.searchTerm ?? '',
   );
-  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(() =>
-    props.initialState?.activeTab ?? RegionsOverviewTabs.Overview,
+  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(
+    () => props.initialState?.activeTab ?? RegionsOverviewTabs.Overview,
   );
   const [, setSummaryRenderToken] = useStateHook<number>(0);
-  const [sortState, setSortState] =
-    useStateHook<RegionsOverviewSortState>(
-      props.initialState?.sortState ?? INITIAL_SORT_STATE,
-    );
+  const [sortState, setSortState] = useStateHook<RegionsOverviewSortState>(
+    props.initialState?.sortState ?? INITIAL_SORT_STATE,
+  );
 
   useEffectHook(() => {
     if (!props.onStateChange) return;
@@ -232,14 +232,16 @@ export function renderRegionsOverviewPanel(
       className: 'p-3 flex flex-col gap-3 h-full min-h-0',
     },
     renderOverviewTabs(h, activeTab, onSetTab),
-    renderLayerSelectorRow(
-      h,
-      props.availableDatasetIdentifiers,
-      selectedDatasetIdentifier,
-      (datasetIdentifier: string) =>
-        props.regionDataManager.getDatasetDisplayName(datasetIdentifier),
-      onSelectDataset,
-    ),
+    buildReactViewHeader(h, 'Dataset', [
+      renderLayerSelectorRow(
+        h,
+        props.availableDatasetIdentifiers,
+        selectedDatasetIdentifier,
+        (datasetIdentifier: string) =>
+          props.regionDataManager.getDatasetDisplayName(datasetIdentifier),
+        onSelectDataset,
+      ),
+    ]),
     tabContent,
   );
 }
@@ -251,8 +253,8 @@ function buildRows(
   const rowsData = SHOW_UNPOPULATED_REGIONS
     ? Array.from(datasetGameData.values())
     : Array.from(datasetGameData.values()).filter((gameData) =>
-      RegionGameDataUtils.isPopulated(gameData),
-    );
+        RegionGameDataUtils.isPopulated(gameData),
+      );
 
   return rowsData.map((gameData) => {
     return {
@@ -285,7 +287,6 @@ function sortRows(
   rows: RegionsOverviewRow[],
   sortState: RegionsOverviewSortState,
 ): RegionsOverviewRow[] {
-
   const getTotalCommuters = (row: RegionsOverviewRow): number => {
     const residents = row.gameData.demandData?.residents;
     const workers = row.gameData.demandData?.workers;
@@ -302,14 +303,23 @@ function sortRows(
     const aCommuterModeShare = ModeShare.add(
       a.gameData.commuterSummary?.residentModeShare ?? ModeShare.createEmpty(),
       a.gameData.commuterSummary?.workerModeShare ?? ModeShare.createEmpty(),
-    )
+    );
     const bCommuterModeShare = ModeShare.add(
       b.gameData.commuterSummary?.residentModeShare ?? ModeShare.createEmpty(),
       b.gameData.commuterSummary?.workerModeShare ?? ModeShare.createEmpty(),
     );
-    const aTrackLengths = a.gameData.infraData ? Array.from(a.gameData.infraData.trackLengths.values()).reduce((sum, length) => sum + length, 0) : 0;
-    const bTrackLengths = b.gameData.infraData ? Array.from(b.gameData.infraData.trackLengths.values()).reduce((sum, length) => sum + length, 0) : 0;
-
+    const aTrackLengths = a.gameData.infraData
+      ? Array.from(a.gameData.infraData.trackLengths.values()).reduce(
+          (sum, length) => sum + length,
+          0,
+        )
+      : 0;
+    const bTrackLengths = b.gameData.infraData
+      ? Array.from(b.gameData.infraData.trackLengths.values()).reduce(
+          (sum, length) => sum + length,
+          0,
+        )
+      : 0;
 
     switch (index) {
       case 1:
@@ -319,10 +329,7 @@ function sortRows(
           multiplier
         );
       case 2:
-        return (
-          ((a.gameData.area ?? 0) - (b.gameData.area ?? 0)) *
-          multiplier
-        );
+        return ((a.gameData.area ?? 0) - (b.gameData.area ?? 0)) * multiplier;
       case 3:
         return (getTotalCommuters(a) - getTotalCommuters(b)) * multiplier;
       case 4:
@@ -339,28 +346,35 @@ function sortRows(
         );
       case 6:
         return (
-          (ModeShare.share(aCommuterModeShare, 'transit') - ModeShare.share(bCommuterModeShare, 'transit')) *
+          (ModeShare.share(aCommuterModeShare, 'transit') -
+            ModeShare.share(bCommuterModeShare, 'transit')) *
           multiplier
         );
       case 7:
         return (
-          (ModeShare.share(aCommuterModeShare, 'driving') - ModeShare.share(bCommuterModeShare, 'driving')) * multiplier
+          (ModeShare.share(aCommuterModeShare, 'driving') -
+            ModeShare.share(bCommuterModeShare, 'driving')) *
+          multiplier
         );
       case 8:
         return (
-          (ModeShare.share(aCommuterModeShare, 'walking') - ModeShare.share(bCommuterModeShare, 'walking')) * multiplier
+          (ModeShare.share(aCommuterModeShare, 'walking') -
+            ModeShare.share(bCommuterModeShare, 'walking')) *
+          multiplier
         );
       case 9:
         return (
-          ((a.gameData.infraData?.stations.size ?? 0) - (b.gameData.infraData?.stations.size ?? 0)) * multiplier
+          ((a.gameData.infraData?.stations.size ?? 0) -
+            (b.gameData.infraData?.stations.size ?? 0)) *
+          multiplier
         );
       case 10:
-        return (
-          ((aTrackLengths) - (bTrackLengths)) * multiplier
-        );
+        return (aTrackLengths - bTrackLengths) * multiplier;
       case 11:
         return (
-          ((a.gameData.infraData?.routes.size ?? 0) - (b.gameData.infraData?.routes.size ?? 0)) * multiplier
+          ((a.gameData.infraData?.routes.size ?? 0) -
+            (b.gameData.infraData?.routes.size ?? 0)) *
+          multiplier
         );
       default:
         return (

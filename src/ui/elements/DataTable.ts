@@ -139,13 +139,13 @@ function buildReactCell(
     : undefined;
   const onMouseLeave = hasRowHoverClass
     ? (event: { relatedTarget: EventTarget | null }) => {
-      if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
-        return;
+        if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
+          return;
+        }
+        setHoveredRowIndex((current) =>
+          current === rowIndex ? null : current,
+        );
       }
-      setHoveredRowIndex((current) =>
-        current === rowIndex ? null : current,
-      );
-    }
     : undefined;
 
   if (cellValue instanceof HTMLElement) {

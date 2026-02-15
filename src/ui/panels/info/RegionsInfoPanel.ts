@@ -117,7 +117,9 @@ export function RegionsInfoPanel({
         ),
       ]).then(() => {
         if (cancelled) return;
-        if (!RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection))
+        if (
+          !RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection)
+        )
           return;
 
         setGameData(getCurrentGameData(regionDataManager, uiState));
@@ -161,33 +163,33 @@ export function RegionsInfoPanel({
       content = gameData
         ? renderStatisticsView(createElement, gameData)
         : createElement(
-          'div',
-          { className: 'text-xs text-muted-foreground' },
-          'No game data set for info panel rendering',
-        );
+            'div',
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-            createElement,
-            useState,
-            gameData,
-            commutersViewState,
-            setCommutersViewState,
-          )
+              createElement,
+              useState,
+              gameData,
+              commutersViewState,
+              setCommutersViewState,
+            )
           : createElement(
-            'div',
-            {
-              className:
-                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-            },
-            LOADING_VALUE_DISPLAY,
-          );
+              'div',
+              {
+                className:
+                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+              },
+              LOADING_VALUE_DISPLAY,
+            );
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);
-  };
+  }
 
   return createElement(
     'div',

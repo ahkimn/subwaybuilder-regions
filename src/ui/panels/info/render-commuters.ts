@@ -117,13 +117,15 @@ function buildCommutersHeader(
       ),
   });
 
-  return buildReactViewHeader(h, gameData.displayName, [ReactSelectRow(
-    h,
-    directionConfigs,
-    viewState.direction,
-    'commutes-direction',
-    false,
-  )]);
+  return buildReactViewHeader(h, gameData.displayName, [
+    ReactSelectRow(
+      h,
+      directionConfigs,
+      viewState.direction,
+      'commutes-direction',
+      false,
+    ),
+  ]);
 }
 
 function buildSummaryStatistics(
@@ -324,19 +326,19 @@ function buildCommutersTable(
     }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-        'div',
-        { className: 'pt-1 flex justify-center' },
-        ReactExtendButton(
-          h,
-          viewState.expanded ? 'Collapse' : 'Expand',
-          rows.length - DEFAULT_TABLE_ROWS,
-          () =>
-            setViewState((current) => ({
-              ...current,
-              expanded: !current.expanded,
-            })),
-        ),
-      )
+          'div',
+          { className: 'pt-1 flex justify-center' },
+          ReactExtendButton(
+            h,
+            viewState.expanded ? 'Collapse' : 'Expand',
+            rows.length - DEFAULT_TABLE_ROWS,
+            () =>
+              setViewState((current) => ({
+                ...current,
+                expanded: !current.expanded,
+              })),
+          ),
+        )
       : null,
   );
 }
@@ -355,7 +357,8 @@ function CommutersBodyTable({
     if (!container) return;
 
     const updateOverflowState = () => {
-      const nextHasOverflow = container.scrollHeight > container.clientHeight + 1;
+      const nextHasOverflow =
+        container.scrollHeight > container.clientHeight + 1;
       setHasOverflow((current) =>
         current === nextHasOverflow ? current : nextHasOverflow,
       );
@@ -363,7 +366,7 @@ function CommutersBodyTable({
 
     updateOverflowState();
 
-    const resizeObserver = new ResizeObserver(updateOverflowState)
+    const resizeObserver = new ResizeObserver(updateOverflowState);
     resizeObserver.observe(container);
     if (container.firstElementChild instanceof HTMLElement) {
       resizeObserver.observe(container.firstElementChild);
@@ -385,7 +388,9 @@ function CommutersBodyTable({
       className: `overflow-y-auto min-h-0${hasOverflow ? ' pr-2' : ''}`,
       style: {
         maxHeight: '60vh',
-        ...(hasOverflow ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' } : {}),
+        ...(hasOverflow
+          ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' }
+          : {}),
       },
     },
     h(ReactDataTable, {

@@ -3,6 +3,10 @@ import type { BBox } from 'geojson';
 import type { BoundaryParams } from '../geometry/arc-length';
 import { bboxIntersects, isCoordinateOutsideBBox } from '../geometry/helpers';
 
+/**
+ * Helper class to index region features on a regular grid based on their bounding boxes
+ * to speed up spatial queries for points/arcs that may or may not intersect with them.
+ */
 export class RegionBoundaryGridIndex {
   readonly cells: Map<number, Set<string | number>> = new Map();
   readonly cellWidth: number;
@@ -25,7 +29,6 @@ export class RegionBoundaryGridIndex {
     xCells: number,
     yCells: number,
   ): RegionBoundaryGridIndex | null {
-
     let minLng = Number.POSITIVE_INFINITY;
     let minLat = Number.POSITIVE_INFINITY;
     let maxLng = Number.NEGATIVE_INFINITY;
@@ -33,7 +36,8 @@ export class RegionBoundaryGridIndex {
 
     // Empty datasets are invalidated at load time, so there should be at least one feature
     for (const params of regionBoundaryParamsMap.values()) {
-      const [featureMinLng, featureMinLat, featureMaxLng, featureMaxLat] = params.bbox;
+      const [featureMinLng, featureMinLat, featureMaxLng, featureMaxLat] =
+        params.bbox;
       minLng = Math.min(minLng, featureMinLng);
       minLat = Math.min(minLat, featureMinLat);
       maxLng = Math.max(maxLng, featureMaxLng);
@@ -50,7 +54,7 @@ export class RegionBoundaryGridIndex {
       index.insertFeature(featureId, params.bbox);
     }
 
-    console.log(`[Regions] Built boundary grid index in ${xCells}x${yCells} cells for dataset ${datasetId}. Dataset bbox: ${index.datasetBBox}, cell width: ${index.cellWidth}, cell height: ${index.cellHeight}`);
+    // console.log(`[Regions] Built boundary grid index in ${xCells}x${yCells} cells for dataset ${datasetId}. Dataset bbox: ${index.datasetBBox}, cell width: ${index.cellWidth}, cell height: ${index.cellHeight}`);
 
     return index;
   }
@@ -59,12 +63,12 @@ export class RegionBoundaryGridIndex {
     if (isCoordinateOutsideBBox(lng, lat, this.datasetBBox)) {
       return new Set<string | number>();
     }
-
     const x = this.resolveGridX(lng);
     const y = this.resolveGridY(lat);
     return new Set(this.cells.get(this.getGridCellKey(x, y)) ?? []);
   }
 
+  // For arcs / polygon intersections, check all grid cells that the geometry's bounding box intersects with
   queryByBBox(bbox: BBox): Set<string | number> {
     if (!bboxIntersects(this.datasetBBox, bbox)) {
       return new Set<string | number>();

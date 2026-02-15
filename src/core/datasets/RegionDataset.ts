@@ -212,12 +212,14 @@ export class RegionDataset {
     lng: number,
     lat: number,
   ): Set<string | number> {
-    if (!this.regionBoundaryGridIndex) throw new DatasetMissingGridIndexError(this.id);
+    if (!this.regionBoundaryGridIndex)
+      throw new DatasetMissingGridIndexError(this.id);
     return this.regionBoundaryGridIndex.queryByPoint(lng, lat);
   }
 
   queryBoundaryCandidatesByBBox(bbox: BBox): Set<string | number> {
-    if (!this.regionBoundaryGridIndex) throw new DatasetMissingGridIndexError(this.id);
+    if (!this.regionBoundaryGridIndex)
+      throw new DatasetMissingGridIndexError(this.id);
     return this.regionBoundaryGridIndex.queryByBBox(bbox);
   }
 
@@ -231,15 +233,19 @@ export class RegionDataset {
       }
 
       const featureId: string | number = feature.properties?.ID!;
-      this.regionBoundaryParamsMap.set(featureId, prepareBoundaryParams(feature));
+      this.regionBoundaryParamsMap.set(
+        featureId,
+        prepareBoundaryParams(feature),
+      );
     }
 
-    this.regionBoundaryGridIndex = RegionBoundaryGridIndex.fromBoundaryParamsMap(
-      this.id,
-      this.regionBoundaryParamsMap,
-      REGION_BOUNDARY_GRID_X_CELLS,
-      REGION_BOUNDARY_GRID_Y_CELLS,
-    );
+    this.regionBoundaryGridIndex =
+      RegionBoundaryGridIndex.fromBoundaryParamsMap(
+        this.id,
+        this.regionBoundaryParamsMap,
+        REGION_BOUNDARY_GRID_X_CELLS,
+        REGION_BOUNDARY_GRID_Y_CELLS,
+      );
   }
 
   private resetBoundaryHelpers(): void {

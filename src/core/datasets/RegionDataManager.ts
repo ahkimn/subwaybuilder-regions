@@ -24,7 +24,7 @@ export class RegionDataManager {
     private builder: RegionDataBuilder,
     private registry: RegionDatasetRegistry,
     private api: ModdingAPI,
-  ) { }
+  ) {}
 
   async ensureExistsDataForSelection(
     uiState: Readonly<UIState>,
@@ -33,7 +33,10 @@ export class RegionDataManager {
       forceBuild?: boolean;
     },
   ): Promise<
-    RegionCommuterSummaryData | RegionCommuterDetailsData | RegionInfraData | null
+    | RegionCommuterSummaryData
+    | RegionCommuterDetailsData
+    | RegionInfraData
+    | null
   > {
     if (!uiState.isActive) {
       console.error('[Regions] UI State not active: ', uiState);
@@ -141,9 +144,10 @@ export class RegionDataManager {
     options?: {
       forceBuild?: boolean;
     },
-  ): Promise<
-    Map<string | number, RegionCommuterSummaryData | RegionInfraData> | null
-  > {
+  ): Promise<Map<
+    string | number,
+    RegionCommuterSummaryData | RegionInfraData
+  > | null> {
     const dataset = this.registry.getDatasetByIdentifier(datasetIdentifier);
     const currentTime = this.api.gameState.getElapsedSeconds();
 
@@ -167,7 +171,10 @@ export class RegionDataManager {
         return updatedData;
       }
       case RegionDataType.Infra: {
-        if (!options?.forceBuild && !this.hasStaleInfraData(dataset, currentTime)) {
+        if (
+          !options?.forceBuild &&
+          !this.hasStaleInfraData(dataset, currentTime)
+        ) {
           return this.collectInfraData(dataset);
         }
 
@@ -196,7 +203,9 @@ export class RegionDataManager {
     currentTime: number,
     thresholdSeconds: number,
   ): boolean {
-    return !forceBuild && !this.isStale(metadata, currentTime, thresholdSeconds);
+    return (
+      !forceBuild && !this.isStale(metadata, currentTime, thresholdSeconds)
+    );
   }
 
   private isStale(
@@ -227,7 +236,10 @@ export class RegionDataManager {
     return false;
   }
 
-  private hasStaleInfraData(dataset: RegionDataset, currentTime: number): boolean {
+  private hasStaleInfraData(
+    dataset: RegionDataset,
+    currentTime: number,
+  ): boolean {
     for (const gameData of dataset.gameData.values()) {
       if (
         this.isStale(

@@ -7,7 +7,10 @@ import {
   type RegionSelection,
   RegionSelection as RegionSelectionUtils,
 } from '../../../core/types';
-import { formatNumberOrDefault, formatPercentOrDefault } from '../../../core/utils';
+import {
+  formatNumberOrDefault,
+  formatPercentOrDefault,
+} from '../../../core/utils';
 import type {
   DataRowOptions,
   ReactDataTableRow,
@@ -86,24 +89,12 @@ export function renderLayerSelectorRow(
 
   return h(
     'div',
-    {
-      className:
-        'rounded-md border border-border/60 bg-background/30 px-2 py-1.5 flex items-center justify-between gap-2',
-    },
-    h(
-      'span',
-      {
-        className:
-          'text-[0.72rem] font-semibold tracking-wide text-muted-foreground',
-      },
-      'Dataset',
-    ),
+    { className: 'flex flex-col gap-1.5' },
     ReactSelectRow(
       h,
       buttonConfigs,
       selectedDatasetIdentifier,
       'regions-overview-layer-select',
-      false,
     ),
   );
 }
@@ -174,7 +165,10 @@ export function renderOverviewTable(
     (_, index) => () => onSortChange(index),
   );
 
-  const tableAlign: ('left' | 'right' | 'center')[] = ['left', ...Array(OVERVIEW_COLUMN_COUNT - 1).fill('right')];
+  const tableAlign: ('left' | 'right' | 'center')[] = [
+    'left',
+    ...Array(OVERVIEW_COLUMN_COUNT - 1).fill('right'),
+  ];
 
   const tableRows: ReactDataTableRow[] = [
     {
@@ -212,10 +206,16 @@ export function renderOverviewTable(
         RegionSelectionUtils.isEqual(activeSelection, row.selection);
       const rowAction = () => onSelectRow(row.selection);
       // TODO (Game Bug): Resident worker counts from the demand data are currently inaccurate. Using the commuter summary mode share values (if present) until it is fixed.
-      const residentsFromCommuterSummary = ModeShare.totalOrUndefined(row.gameData.commuterSummary?.residentModeShare);
-      const workersFromCommuterSummary = ModeShare.totalOrUndefined(row.gameData.commuterSummary?.workerModeShare);
-      const residents = residentsFromCommuterSummary ?? row.gameData.demandData?.residents ?? 0;
-      const workers = workersFromCommuterSummary ?? row.gameData.demandData?.workers ?? 0;
+      const residentsFromCommuterSummary = ModeShare.totalOrUndefined(
+        row.gameData.commuterSummary?.residentModeShare,
+      );
+      const workersFromCommuterSummary = ModeShare.totalOrUndefined(
+        row.gameData.commuterSummary?.workerModeShare,
+      );
+      const residents =
+        residentsFromCommuterSummary ?? row.gameData.demandData?.residents ?? 0;
+      const workers =
+        workersFromCommuterSummary ?? row.gameData.demandData?.workers ?? 0;
       const totalCommuters = residents + workers;
 
       const commuterSummary = row.gameData.commuterSummary;
@@ -225,9 +225,9 @@ export function renderOverviewTable(
         : null;
       const totalModeShare = commuterSummary
         ? ModeShare.add(
-          commuterSummary.residentModeShare,
-          commuterSummary.workerModeShare,
-        )
+            commuterSummary.residentModeShare,
+            commuterSummary.workerModeShare,
+          )
         : null;
       const rowOptions: DataRowOptions = {
         onClick: Array.from({ length: OVERVIEW_COLUMN_COUNT }, () => rowAction),
@@ -247,13 +247,19 @@ export function renderOverviewTable(
           formatNumberOrDefault(residents),
           formatNumberOrDefault(workers),
           totalModeShare
-            ? formatPercentOrDefault(ModeShare.share(totalModeShare, 'transit') * 100)
+            ? formatPercentOrDefault(
+                ModeShare.share(totalModeShare, 'transit') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
-            ? formatPercentOrDefault(ModeShare.share(totalModeShare, 'driving') * 100)
+            ? formatPercentOrDefault(
+                ModeShare.share(totalModeShare, 'driving') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
-            ? formatPercentOrDefault(ModeShare.share(totalModeShare, 'walking') * 100)
+            ? formatPercentOrDefault(
+                ModeShare.share(totalModeShare, 'walking') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           infraData
             ? formatNumberOrDefault(infraData.stations.size)

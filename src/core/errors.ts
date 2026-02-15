@@ -11,7 +11,9 @@ export class DatasetMissingDataLayerError extends Error {
 
 export class DatasetMissingGridIndexError extends Error {
   constructor(datasetId: string) {
-    super(`Dataset ${datasetId} is missing required grid index for boundary lookups`);
+    super(
+      `Dataset ${datasetId} is missing required grid index for boundary lookups`,
+    );
     this.name = 'DatasetMissingGridIndexError';
     Object.setPrototypeOf(this, new.target.prototype);
   }

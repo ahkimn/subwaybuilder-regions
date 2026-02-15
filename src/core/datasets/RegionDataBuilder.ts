@@ -49,7 +49,7 @@ type InfraDataAccumulator = {
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
-  constructor(private api: ModdingAPI) { }
+  constructor(private api: ModdingAPI) {}
 
   async updateDatasetCommuteData(
     dataset: RegionDataset,
@@ -96,8 +96,10 @@ export class RegionDataBuilder {
 
     dataset.gameData.forEach((_, featureId) => {
       updatedData.set(featureId, {
-        residentModeShare: residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
-        workerModeShare: workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+        residentModeShare:
+          residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+        workerModeShare:
+          workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
         metadata: {
           lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
           dirty: false,
@@ -221,7 +223,6 @@ export class RegionDataBuilder {
       },
     };
   }
-
 
   async buildRegionInfraData(
     dataset: RegionDataset,
@@ -367,11 +368,7 @@ export class RegionDataBuilder {
     const trackDurationMs = getCurrentMillis() - trackStart;
 
     const routeStart = getCurrentMillis();
-    this.getDatasetRoutes(
-      accumulators,
-      stationNodeToRegionMap,
-      allRoutes,
-    );
+    this.getDatasetRoutes(accumulators, stationNodeToRegionMap, allRoutes);
     const routeDurationMs = getCurrentMillis() - routeStart;
     const totalDurationMs = getCurrentMillis() - buildStart;
 
@@ -380,14 +377,14 @@ export class RegionDataBuilder {
     );
 
     const finalizedData = new Map<string | number, RegionInfraData>();
-    const resolvedUpdateTime = updateTime ?? this.api.gameState.getElapsedSeconds();
+    const resolvedUpdateTime =
+      updateTime ?? this.api.gameState.getElapsedSeconds();
     accumulators.forEach((accumulator, featureId) => {
       finalizedData.set(
         featureId,
         this.resolveAccumulator(accumulator, resolvedUpdateTime),
       );
     });
-
 
     return finalizedData;
   }
@@ -460,7 +457,6 @@ export class RegionDataBuilder {
     }
   }
 
-
   /**
    * Given a region boundary feature, and a list of all current tracks within the game, returns the following:
    * - A map of track IDs to their lengths within the region (in kilometers)
@@ -503,7 +499,11 @@ export class RegionDataBuilder {
 
       if (trackLengthInRegion > 0) {
         trackIds.set(track.id, trackLengthInRegion);
-        this.addTrackLength(trackLengths, track.trackType!, trackLengthInRegion);
+        this.addTrackLength(
+          trackLengths,
+          track.trackType!,
+          trackLengthInRegion,
+        );
       }
     });
     return { trackIds, trackLengths };
@@ -571,9 +571,9 @@ export class RegionDataBuilder {
     for (const route of routes) {
       const regionIds = new Set<string | number>();
       route.stNodes?.forEach((node) => {
-        stationNodeToRegionMap.get(node.id)?.forEach((featureId) =>
-          regionIds.add(featureId),
-        );
+        stationNodeToRegionMap
+          .get(node.id)
+          ?.forEach((featureId) => regionIds.add(featureId));
       });
       if (regionIds.size === 0) continue;
 
