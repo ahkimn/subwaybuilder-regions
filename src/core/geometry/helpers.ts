@@ -65,13 +65,21 @@ export function isCoordinateWithinFeature(
 ) {
   if (
     bbox &&
-    (lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3])
+    isCoordinateOutsideBBox(lng, lat, bbox)
   ) {
     return false;
   }
 
   const point = turf.point([lng, lat]);
   return turf.booleanPointInPolygon(point, feature, { ignoreBoundary: false });
+}
+
+export function isCoordinateOutsideBBox(
+  lng: number,
+  lat: number,
+  bbox: BBox,
+): boolean {
+  return (lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3]);
 }
 
 // BBox is [west, south, east, north] => [minLng, minLat, maxLng, maxLat]

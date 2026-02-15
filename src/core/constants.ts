@@ -17,6 +17,8 @@ export const PERCENT_DECIMALS = 2; // Default number of decimal places for perce
 export const STALE_COMMUTER_DATA_THRESHOLD_SECONDS = 900; // Threshold for considering commuter data stale and in need of refresh, in seconds of in-game time (15 minutes)
 export const STALE_INFRA_DATA_THRESHOLD_SECONDS = 604800; // Threshold for considering infra data stale and in need of refresh, in seconds of in-game time (weekly)
 export const DEFAULT_CHUNK_SIZE = 100; // Default loop chunk size for time-sliced data processing
+export const REGION_BOUNDARY_GRID_X_CELLS = 32; // Number of horizontal cells for dataset boundary acceleration grid
+export const REGION_BOUNDARY_GRID_Y_CELLS = 32; // Number of vertical cells for dataset boundary acceleration grid
 
 export const REGIONS_INFO_CONTAINER_ID = 'regions-info-container';
 export const REGIONS_INFO_UPDATE_GAME_INTERVAL = 900; // 15 in-game minutes

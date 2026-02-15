@@ -1,19 +1,27 @@
 import type { DatasetIndexEntry } from '@shared/dataset-index';
 import * as turf from '@turf/turf';
-import type { Feature, MultiPolygon, Polygon } from 'geojson';
+import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 
 import type { DemandData } from '../../types/modding-api-v1';
 import {
   DEFAULT_UNIT_LABELS,
   LAYER_PREFIX,
+  REGION_BOUNDARY_GRID_X_CELLS,
+  REGION_BOUNDARY_GRID_Y_CELLS,
   SOURCE_PREFIX,
   UNASSIGNED_REGION_ID,
   UNKNOWN_VALUE_DISPLAY,
 } from '../constants';
 import {
+  DatasetEmptyError,
   DatasetInvalidFeatureTypeError,
   DatasetMissingDataLayerError,
+  DatasetMissingGridIndexError,
 } from '../errors';
+import {
+  type BoundaryParams,
+  prepareBoundaryParams,
+} from '../geometry/arc-length';
 import {
   isCoordinateWithinFeature,
   isPolygonFeature,
@@ -28,6 +36,7 @@ import type {
 } from '../types';
 import { DatasetStatus, RegionGameData as RegionGameDataUtils } from '../types';
 import { fetchGeoJSON } from '../utils';
+import { RegionBoundaryGridIndex } from './RegionBoundaryGridIndex';
 
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
@@ -53,6 +62,9 @@ export class RegionDataset {
   // Populations may have more than one associated region if they live and work in different regions
   readonly regionDemandPointMap: Map<string, string | number> = new Map();
   readonly regionNameMap: Map<string | number, string> = new Map();
+  readonly regionBoundaryParamsMap: Map<string | number, BoundaryParams> =
+    new Map();
+  regionBoundaryGridIndex: RegionBoundaryGridIndex | null = null;
 
   status: DatasetStatus = DatasetStatus.Unloaded;
   isUserEdited: boolean = false;
@@ -100,10 +112,13 @@ export class RegionDataset {
       console.warn(
         `[Regions] Dataset size mismatch for ${this.id} in ${this.cityCode}: expected ${this.expectedSize}, loaded ${loadedSize}`,
       );
+    } else if (loadedSize === 0) {
+      throw new DatasetEmptyError(this.id);
     }
   }
 
   private unloadData(): void {
+    this.resetBoundaryHelpers();
     this.boundaryData = null;
     this.labelData = null;
   }
@@ -126,6 +141,7 @@ export class RegionDataset {
     try {
       await this.loadBoundaryData();
       this.validateBoundarySize();
+      this.buildBoundaryHelpers();
       this.buildLabelData();
       this.populateStaticData();
       this.status = DatasetStatus.Loaded;
@@ -190,6 +206,44 @@ export class RegionDataset {
     infraData: RegionInfraData,
   ): void {
     this.getRegionGameData(featureId)!.infraData = infraData;
+  }
+
+  queryBoundaryCandidatesByPoint(
+    lng: number,
+    lat: number,
+  ): Set<string | number> {
+    if (!this.regionBoundaryGridIndex) throw new DatasetMissingGridIndexError(this.id);
+    return this.regionBoundaryGridIndex.queryByPoint(lng, lat);
+  }
+
+  queryBoundaryCandidatesByBBox(bbox: BBox): Set<string | number> {
+    if (!this.regionBoundaryGridIndex) throw new DatasetMissingGridIndexError(this.id);
+    return this.regionBoundaryGridIndex.queryByBBox(bbox);
+  }
+
+  private buildBoundaryHelpers(): void {
+    this.resetBoundaryHelpers();
+    if (!this.boundaryData) return;
+
+    for (const feature of this.boundaryData.features) {
+      if (!isPolygonFeature(feature)) {
+        throw new DatasetInvalidFeatureTypeError(this.id, feature);
+      }
+
+      const featureId: string | number = feature.properties?.ID!;
+      this.regionBoundaryParamsMap.set(featureId, prepareBoundaryParams(feature));
+    }
+
+    this.regionBoundaryGridIndex = RegionBoundaryGridIndex.fromBoundaryParamsMap(
+      this.regionBoundaryParamsMap,
+      REGION_BOUNDARY_GRID_X_CELLS,
+      REGION_BOUNDARY_GRID_Y_CELLS,
+    );
+  }
+
+  private resetBoundaryHelpers(): void {
+    this.regionBoundaryParamsMap.clear();
+    this.regionBoundaryGridIndex = null;
   }
 
   private assignDemandPoints(

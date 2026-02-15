@@ -35,7 +35,7 @@ import type { RegionDataset } from './RegionDataset';
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
-  constructor(private api: ModdingAPI) {}
+  constructor(private api: ModdingAPI) { }
 
   async updateDatasetCommuteData(
     dataset: RegionDataset,
@@ -67,14 +67,14 @@ export class RegionDataBuilder {
 
       if (residenceRegion !== undefined) {
         ModeShare.addInPlace(
-          this.getOrCreateModeShare(residentModeShareMap, residenceRegion),
+          getOrCreateModeShare(residentModeShareMap, residenceRegion),
           popModeShare,
         );
       }
 
       if (jobRegion !== undefined) {
         ModeShare.addInPlace(
-          this.getOrCreateModeShare(workerModeShareMap, jobRegion),
+          getOrCreateModeShare(workerModeShareMap, jobRegion),
           popModeShare,
         );
       }
@@ -186,13 +186,13 @@ export class RegionDataBuilder {
       // Update mode share by region maps
       if (homeRegion) {
         ModeShare.addInPlace(
-          this.getOrCreateModeShare(workerModeShares, homeRegion),
+          getOrCreateModeShare(workerModeShares, homeRegion),
           popModeShare,
         );
       }
       if (workRegion) {
         ModeShare.addInPlace(
-          this.getOrCreateModeShare(residentModeShares, workRegion),
+          getOrCreateModeShare(residentModeShares, workRegion),
           popModeShare,
         );
       }
@@ -208,15 +208,6 @@ export class RegionDataBuilder {
     };
   }
 
-  private getOrCreateModeShare<K>(map: Map<K, ModeShare>, key: K): ModeShare {
-    const existing = map.get(key);
-    if (existing) {
-      return existing;
-    }
-    const empty = ModeShare.createEmpty();
-    map.set(key, empty);
-    return empty;
-  }
 
   async buildRegionInfraData(
     dataset: RegionDataset,
@@ -387,4 +378,12 @@ export class RegionDataBuilder {
 
     return { routes: routesWithinRegion, routeDisplayParams };
   }
+}
+
+function getOrCreateModeShare<K>(map: Map<K, ModeShare>, key: K): ModeShare {
+  const existing = map.get(key);
+  if (existing) return existing;
+  const empty = ModeShare.createEmpty();
+  map.set(key, empty);
+  return empty;
 }
