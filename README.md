@@ -206,7 +206,7 @@ _Latest Changelog Entry:_ [v0.2.7](CHANGELOG.md#v027---2026-02-15)
    npm run serve
    ```
 
-   By default this serves: http://127.0.0.1:8080.
+   By default this serves: http://127.0.0.1:8088.
 
 5. Build
    From the repository root, run:
@@ -267,7 +267,7 @@ Each GeoJSON installed will correspond to a single map layer for a city.
 
 Installed map layers are accessible via the game's existing `Map Layers` menu. The mod injects a new section of toggle buttons `Region Data Layers` to this dropdown panel.
 
-![Region Layer Toggles](img/usage-map-layers.png)
+![Region Layer Toggles](img/region-layer-toggles.png)
 
 Clicking on these toggles will enable/disable the display of the corresponding map layer.
 
@@ -277,7 +277,7 @@ Once a map layer is toggled on, the boundaries of regions within the map layer w
 
 The labels for each region are clickable, and will change color when hovered over. Click on the label to activate selection for the corresponding region.
 
-![Clickable Region Labels](img/usage-select-region.png)
+![Clickable Region Labels](img/clickable-region-labels.png)
 
 If a region is already selected, clicking on its label will remove selection. Clicking a different region will switch the selection to that region.
 
@@ -287,7 +287,7 @@ Once any new region is selected, the Regions Info panel will open in the top rig
 
 #### Summary View
 
-![Summary View](img/usage-summary-view.png)
+![Summary View](img/summary-view.png)
 
 The initial `Summary` panel contains overall summary statistics about the selected region.
 
@@ -303,7 +303,7 @@ The commuters view for a region contains a breakdown of commuter counts and comm
 - `Workers` refer to commuters who work within the selected region
 - :information_source: A commuter can be both a `Resident` and a `Worker` of the same region if both their residence and workplace are within the region's boundaries
 
-![Commuters View](img/usage-commuters-view.png)
+![Commuters View](img/commuters-view.png)
 
 The upper portion of the view contains statistics of `Resident` and `Worker` counts and mode share aggregated for the selected region.
 
@@ -314,6 +314,40 @@ You can sort the table by clicking on column headers. If there is a tie, the pre
 Use the footer to expand and show additional rows when available.
 
 :information_source: The `Commuters` view is automatically updated with fresh demand data if at least 15 in-game minutes have passed.
+
+### Overview Panel
+
+In addition to a per-region view, the mod also implements a `Region Overview` where statistics / data visualizations across all regions within a dataset are visible at a time. This is accessible via a new top-bar button to the left of the `Map Layers` button.
+
+![Overview Panel Entry](img/overview-panel-entry.png)
+
+At the top of the panel are the set of tabs for the panel. Currently, only the `Overview` tab is available, but additional tabs will be added in the future.
+
+Below the set of tabs are a set of buttons to navigate between data for the datasets loaded for the city
+
+:warning: The Overview Panel will only be accessible if there is data present for the city being loaded
+
+:information_source: Tab / Dataset / Sort selection will persist even if the panel is closed
+
+#### Overview Tab
+
+The first tab available within this panel is the `Overview` tab. This panel contains summary statistics for each region similar to that shown on the `Info Panel`.
+
+![Overview Tab](img/overview-tab.png)
+
+The list of regions can be filtered by using the search bar to filter by region name.
+
+Clicking on a region within the `Overview` tab works similarly to region selection on the map itself. On click, the selected region (and its corresponding map layer) will be displayed on the map and the region's `Info Panel` will be displayed on the top right.
+
+:warning: Both commuter and infrastructure data are calculated asynchronously and may take some time to populate (especially on large maps). Commuter data gernally loads almost instantaneously while infrastructure data may take several seconds
+
+#### Commuter Flows Tab
+
+This tab is currently WIP
+
+#### Ridership Tab
+
+This tab is currently WIP
 
 ## Planned Features
 

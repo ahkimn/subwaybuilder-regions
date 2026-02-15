@@ -17,8 +17,8 @@ Those with :construction: are currently under implementation.
     - Hotkey modification,
     - etc.
 - :construction: **Aggregate Data View**
-  - Add a new table component to show all region statistics at a glance
-  - Sync data / selection state across multiple panels
+  - New `Overview Panel` to show cross-region statistics at a glance
+  - Selection / data state should be synced across tabs
   - Current progress:
     - Floating panel host has been implemented using the game panel API
     - Initial overview UX is in place (layer selector, tabs, search, sortable table shell)
@@ -28,11 +28,12 @@ Those with :construction: are currently under implementation.
 
 ## Minor Features
 
-- **Better Preset Data**
+- :construction: **Better Preset Data**
   - More Comprehensive GB Population Data
     - GB population data is spotty due to inconsistent IDs between data years
   - Label Generation Improvements (heuristic scoring of different candidate labels)
-  - More descriptive `type` for individual regions (e.g. _town_, _city_, _township_, _CDP_) for county subdivisions
+  - :white_check_mark: Support for other nations via OSM data
+  - :white_check_mark: More descriptive `type` for individual regions (_town_, _city_, _township_, _CDP_) for county subdivisions
 - **Visual Updates + Theme Integration**
   - Game currently assumes it is being run on the default game Dark mode, but some recoloring will be required to support the default Light mode
   - Once mod-level settings are added:

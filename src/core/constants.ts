@@ -47,7 +47,7 @@ export const REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID = 'regions-layer-toggles';
 export const REGIONS_LAYER_TOGGLE_MOD_ROLE = 'regions-layer-toggle';
 
 export const REGIONS_OVERVIEW_PANEL_ID = 'regions-overview-toolbar-panel';
-export const REGIONS_OVERVIEW_PANEL_TITLE = 'Regions Overview [WIP]';
+export const REGIONS_OVERVIEW_PANEL_TITLE = 'Regions Overview';
 export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
 export const REGIONS_OVERVIEW_PANEL_CONTENT_ID =
   'regions-overview-panel-content';
