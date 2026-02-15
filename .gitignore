@@ -14,5 +14,5 @@ package-lock.json
 
 # User configuration
 .vscode/
-.github/
+.github/agents/
 config.yaml
