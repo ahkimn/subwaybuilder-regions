@@ -1,5 +1,6 @@
 # Ignore data directories
 data/
+export/
 source_data/*
 !source_data/**/*.csv
 !source_data/**/*.json

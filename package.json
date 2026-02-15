@@ -45,7 +45,9 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\" --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",
     "serve": "tsx scripts/serve-data.ts",
-    "extract:map-features": "tsx scripts/extract-map-features.ts"
+    "extract:map-features": "tsx scripts/extract-map-features.ts",
+    "release:version": "tsx scripts/resolve-release-version.ts",
+    "release:package": "npm run build && tsx scripts/package-release.ts"
   },
   "repository": {
     "type": "git",
