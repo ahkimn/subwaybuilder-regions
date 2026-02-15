@@ -25,6 +25,7 @@ _Latest Changelog Entry:_ [v0.2.7](CHANGELOG.md#v027---2026-02-15)
 - [Changelog](CHANGELOG.md#changelog)
 - [Contributing](#contributing)
   - [Developer Commands](#developer-commands)
+  - [Release Process](RELEASING.md#releasing-subwaybuilder-regions)
 - [Credits](#credits)
 
 ## Features
@@ -394,6 +395,10 @@ The following are developer commands available within the repository, grouped by
 - `npm run extract:map-features`: Extracts boundary GeoJSONs for a city for use by the mod.
 - `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
   Details
+
+### Release Process
+
+See [RELEASING.md](RELEASING.md#releasing-subwaybuilder-regions) for the tag-based release workflow and packaging details.
 
 ## Credits
 
