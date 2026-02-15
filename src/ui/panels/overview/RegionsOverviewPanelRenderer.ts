@@ -18,7 +18,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
   private initialized = false;
   private panelStateSnapshot: RegionsOverviewPanelState | null = null;
-  private snapshotCityCode: string | null = null;
+  private activeCityCode: string | null = null;
 
   private events: RegionsOverviewPanelEvents = {};
 
@@ -43,9 +43,9 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
     if (this.initialized) return;
     if (!this.state.cityCode) return;
 
-    if (this.snapshotCityCode !== this.state.cityCode) {
+    if (this.activeCityCode !== this.state.cityCode) {
       this.panelStateSnapshot = null;
-      this.snapshotCityCode = this.state.cityCode;
+      this.activeCityCode = this.state.cityCode;
     }
 
     const currentDatasetIds = this.dataManager.getCityDatasetIds(
@@ -64,11 +64,11 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
         uiState: this.state,
         regionDataManager: this.dataManager,
         availableDatasetIdentifiers: currentDatasetIds,
-        onRegionSelect: this.events.onRegionSelect ?? (() => {}),
+        onRegionSelect: this.events.onRegionSelect ?? (() => { }),
         initialState: this.panelStateSnapshot,
         onStateChange: (nextState) => {
           this.panelStateSnapshot = nextState;
-          this.snapshotCityCode = this.state.cityCode;
+          this.activeCityCode = this.state.cityCode;
         },
       }),
     );

@@ -64,7 +64,15 @@ export function renderRegionsOverviewPanel(
 
   const resolveInitialDatasetIdentifier = (): string => {
     const prevStateIdentifier = props.initialState?.selectedDatasetIdentifier;
-    return prevStateIdentifier ?? props.availableDatasetIdentifiers[0];
+    if (!prevStateIdentifier) {
+      return props.availableDatasetIdentifiers[0];
+    }
+    if (!props.availableDatasetIdentifiers.includes(prevStateIdentifier)) {
+      throw new Error(
+        `[Regions] Overview panel state references unknown dataset identifier ${prevStateIdentifier}`,
+      );
+    }
+    return prevStateIdentifier;
   };
 
   const [selectedDatasetIdentifier, setSelectedDatasetIdentifier] =
