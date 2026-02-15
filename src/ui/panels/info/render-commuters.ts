@@ -16,9 +16,7 @@ import { ReactDataTable } from '../../elements/DataTable';
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
 import { ReactExtendButton } from '../../elements/ExtendButton';
-import {
-  ReactInlineToggle,
-} from '../../elements/InlineToggle';
+import { ReactInlineToggle } from '../../elements/InlineToggle';
 import {
   COMPACT_SELECT_ROW_STYLE,
   ReactSelectRow,
@@ -63,7 +61,8 @@ export function renderCommutersView(
     viewState,
   );
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
-  const mayRequireScroll = viewState.expanded && rows.length > DEFAULT_TABLE_ROWS;
+  const mayRequireScroll =
+    viewState.expanded && rows.length > DEFAULT_TABLE_ROWS;
 
   return h(
     'div',
@@ -131,21 +130,31 @@ function buildSummaryStatistics(
   aggregateModeShare: ModeShare,
 ): ReactNode[] {
   return [
-    ReactDetailRow(h, 'Total Commuters', formatNumberOrDefault(populationCount)),
+    ReactDetailRow(
+      h,
+      'Total Commuters',
+      formatNumberOrDefault(populationCount),
+    ),
     ReactDetailRow(
       h,
       'Transit Mode Share',
-      formatPercentOrDefault((aggregateModeShare.transit / populationCount) * 100),
+      formatPercentOrDefault(
+        (aggregateModeShare.transit / populationCount) * 100,
+      ),
     ),
     ReactDetailRow(
       h,
       'Driving Mode Share',
-      formatPercentOrDefault((aggregateModeShare.driving / populationCount) * 100),
+      formatPercentOrDefault(
+        (aggregateModeShare.driving / populationCount) * 100,
+      ),
     ),
     ReactDetailRow(
       h,
       'Walking Mode Share',
-      formatPercentOrDefault((aggregateModeShare.walking / populationCount) * 100),
+      formatPercentOrDefault(
+        (aggregateModeShare.walking / populationCount) * 100,
+      ),
     ),
   ];
 }
@@ -190,7 +199,8 @@ function buildCommuterTableControls(
     h(
       'span',
       {
-        className: 'text-[0.72rem] font-semibold tracking-wide text-muted-foreground',
+        className:
+          'text-[0.72rem] font-semibold tracking-wide text-muted-foreground',
       },
       'Layout',
     ),
@@ -210,27 +220,29 @@ function deriveCommuterRows(
   populationCount: number,
   viewState: CommutersViewState,
 ): CommuterRowData[] {
-  return Array.from(byRegionModeShare.entries()).map(([regionName, modeShare]) => {
-    return {
-      regionName: regionName,
-      commuterValue:
-        viewState.commuterCountDisplay === NumberDisplay.Absolute
-          ? ModeShare.total(modeShare)
-          : (ModeShare.total(modeShare) / populationCount) * 100,
-      transitValue:
-        viewState.modeShareDisplay === NumberDisplay.Absolute
-          ? modeShare.transit
-          : ModeShare.share(modeShare, 'transit') * 100,
-      drivingValue:
-        viewState.modeShareDisplay === NumberDisplay.Absolute
-          ? modeShare.driving
-          : ModeShare.share(modeShare, 'driving') * 100,
-      walkingValue:
-        viewState.modeShareDisplay === NumberDisplay.Absolute
-          ? modeShare.walking
-          : ModeShare.share(modeShare, 'walking') * 100,
-    };
-  });
+  return Array.from(byRegionModeShare.entries()).map(
+    ([regionName, modeShare]) => {
+      return {
+        regionName: regionName,
+        commuterValue:
+          viewState.commuterCountDisplay === NumberDisplay.Absolute
+            ? ModeShare.total(modeShare)
+            : (ModeShare.total(modeShare) / populationCount) * 100,
+        transitValue:
+          viewState.modeShareDisplay === NumberDisplay.Absolute
+            ? modeShare.transit
+            : ModeShare.share(modeShare, 'transit') * 100,
+        drivingValue:
+          viewState.modeShareDisplay === NumberDisplay.Absolute
+            ? modeShare.driving
+            : ModeShare.share(modeShare, 'driving') * 100,
+        walkingValue:
+          viewState.modeShareDisplay === NumberDisplay.Absolute
+            ? modeShare.walking
+            : ModeShare.share(modeShare, 'walking') * 100,
+      };
+    },
+  );
 }
 
 function sortCommuterRows(
@@ -323,19 +335,19 @@ function buildCommutersTable(
     ),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-        'div',
-        { className: 'pt-1 flex justify-center' },
-        ReactExtendButton(
-          h,
-          viewState.expanded ? 'Collapse' : 'Expand',
-          rows.length - DEFAULT_TABLE_ROWS,
-          () =>
-            setViewState((current) => ({
-              ...current,
-              expanded: !current.expanded,
-            })),
-        ),
-      )
+          'div',
+          { className: 'pt-1 flex justify-center' },
+          ReactExtendButton(
+            h,
+            viewState.expanded ? 'Collapse' : 'Expand',
+            rows.length - DEFAULT_TABLE_ROWS,
+            () =>
+              setViewState((current) => ({
+                ...current,
+                expanded: !current.expanded,
+              })),
+          ),
+        )
       : null,
   );
 }
@@ -390,7 +402,9 @@ function buildTableHeader(
   ];
 
   const directionHeadLabel =
-    viewState.direction === CommuterDirection.Outbound ? 'Destination' : 'Origin';
+    viewState.direction === CommuterDirection.Outbound
+      ? 'Destination'
+      : 'Origin';
   const commuterHeadLabel =
     viewState.commuterCountDisplay === NumberDisplay.Absolute
       ? 'Commuters'
@@ -424,9 +438,7 @@ function buildTableHeader(
       sortState: {
         index: viewState.sortIndex,
         directionLabel:
-          viewState.sortDirection === SortDirection.Asc
-            ? ' \u25B2'
-            : ' \u25BC',
+          viewState.sortDirection === SortDirection.Asc ? ' \u25B2' : ' \u25BC',
         sortSelectedClass: 'text-foreground',
       },
     },
@@ -508,9 +520,17 @@ function buildTableHeader(
   return [titleRow, controlsRow];
 }
 
-function buildTableRow(viewState: CommutersViewState, rowData: CommuterRowData) {
-  const { regionName, commuterValue, transitValue, drivingValue, walkingValue } =
-    rowData;
+function buildTableRow(
+  viewState: CommutersViewState,
+  rowData: CommuterRowData,
+) {
+  const {
+    regionName,
+    commuterValue,
+    transitValue,
+    drivingValue,
+    walkingValue,
+  } = rowData;
   const rowValues: Array<string | number> = [
     regionName,
     viewState.commuterCountDisplay === NumberDisplay.Absolute

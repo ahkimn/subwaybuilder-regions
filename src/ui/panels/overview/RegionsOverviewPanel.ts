@@ -59,8 +59,9 @@ export function renderRegionsOverviewPanel(
   const [selectedDatasetIdentifier, setSelectedDatasetIdentifier] =
     useStateHook<string>(props.availableDatasetIdentifiers[0]);
   const [searchTerm, setSearchTerm] = useStateHook<string>('');
-  const [activeTab, setActiveTab] =
-    useStateHook<RegionsOverviewTab>(RegionsOverviewTabs.Overview);
+  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(
+    RegionsOverviewTabs.Overview,
+  );
   const [sortState, setSortState] =
     useStateHook<RegionsOverviewSortState>(INITIAL_SORT_STATE);
 

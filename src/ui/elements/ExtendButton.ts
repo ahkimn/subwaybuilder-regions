@@ -16,7 +16,7 @@ const DEFAULT_CLASS_NAMES = [
   'hover:bg-accent',
   'rounded-md px-3 mt-1 h-7',
   'text-xs text-muted-foreground hover:text-foreground',
-]
+];
 
 export function ReactExtendButton(
   h: typeof createElement,

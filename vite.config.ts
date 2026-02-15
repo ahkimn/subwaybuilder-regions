@@ -6,7 +6,7 @@ const sourceDirectory = resolve(__dirname, 'src');
 export default {
   define: {
     // react-dom attempts to check process.env.NODE_ENV
-    "process.env.NODE_ENV": JSON.stringify("production")
+    'process.env.NODE_ENV': JSON.stringify('production'),
   },
   resolve: {
     alias: {

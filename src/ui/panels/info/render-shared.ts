@@ -1,4 +1,4 @@
-import type { createElement, ReactNode } from "react";
+import type { createElement, ReactNode } from 'react';
 
 export function buildReactViewHeader(
   h: typeof createElement,

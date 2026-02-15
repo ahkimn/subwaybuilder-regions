@@ -6,7 +6,7 @@ const HEADER_CLASS_NAMES = [
   'flex h-9 min-h-9 w-full p-1',
   'border-b border-primary/15',
   'items-center justify-between bg-primary-foreground',
-]
+];
 
 export function ReactPanelHeader(
   h: typeof createElement,

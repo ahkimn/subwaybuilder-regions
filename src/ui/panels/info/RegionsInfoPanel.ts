@@ -1,9 +1,4 @@
-import {
-  createElement,
-  type ReactNode,
-  useEffect,
-  useState,
-} from 'react';
+import { createElement, type ReactNode, useEffect, useState } from 'react';
 
 import {
   INFO_PANEL_MIN_WIDTH,
@@ -27,9 +22,7 @@ import {
   TramFrontIcon,
 } from '../../elements/utils/get-icon';
 import { renderCommutersView } from './render-commuters';
-import {
-  renderStatisticsView,
-} from './render-statistics';
+import { renderStatisticsView } from './render-statistics';
 import {
   CommuterDirection,
   type CommutersViewState,
@@ -60,8 +53,9 @@ export function RegionsInfoPanel({
   onClose,
   forceRefreshToken,
 }: RegionsInfoPanelProps): ReactNode {
-  const [activeView, setActiveView] =
-    useState<RegionsInfoPanelView>(RegionsInfoPanelView.Statistics);
+  const [activeView, setActiveView] = useState<RegionsInfoPanelView>(
+    RegionsInfoPanelView.Statistics,
+  );
   const [gameData, setGameData] = useState<RegionGameData | null>(() =>
     getCurrentGameData(regionDataManager, uiState),
   );
@@ -96,7 +90,9 @@ export function RegionsInfoPanel({
         .ensureExistsData(uiState, 'infra', { forceBuild: false })
         .then(() => {
           if (cancelled) return;
-          if (!RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection))
+          if (
+            !RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection)
+          )
             return;
 
           setGameData(getCurrentGameData(regionDataManager, uiState));
@@ -108,7 +104,9 @@ export function RegionsInfoPanel({
         .ensureExistsData(uiState, 'commuter', { forceBuild: true })
         .then(() => {
           if (cancelled) return;
-          if (!RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection))
+          if (
+            !RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection)
+          )
             return;
 
           setGameData(getCurrentGameData(regionDataManager, uiState));
@@ -145,31 +143,30 @@ export function RegionsInfoPanel({
     }),
   });
 
-
   const content: ReactNode = gameData
     ? activeView === RegionsInfoPanelView.Statistics
       ? renderStatisticsView(createElement, gameData)
       : gameData.commuterData
         ? renderCommutersView(
-          createElement,
-          useState,
-          gameData,
-          commutersViewState,
-          setCommutersViewState,
-        )
+            createElement,
+            useState,
+            gameData,
+            commutersViewState,
+            setCommutersViewState,
+          )
         : createElement(
-          'div',
-          {
-            className:
-              'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-          },
-          'Loading commuter data...',
-        )
+            'div',
+            {
+              className:
+                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+            },
+            'Loading commuter data...',
+          )
     : createElement(
-      'div',
-      { className: 'text-xs text-muted-foreground' },
-      'No game data set for info panel rendering',
-    );
+        'div',
+        { className: 'text-xs text-muted-foreground' },
+        'No game data set for info panel rendering',
+      );
 
   return createElement(
     'div',
@@ -204,7 +201,11 @@ export function RegionsInfoPanel({
             activeView,
             `${REGIONS_INFO_PANEL_ID}-main-select`,
           ),
-          createElement('div', { className: 'flex flex-col gap-2 min-h-0' }, content),
+          createElement(
+            'div',
+            { className: 'flex flex-col gap-2 min-h-0' },
+            content,
+          ),
         ),
       ),
     ),

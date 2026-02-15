@@ -53,7 +53,9 @@ export function ReactInlineToggle<T extends AllPrimitives<T>>(
 
   return h(
     'span',
-    { className: 'text-[0.65rem] text-muted-foreground ml-1 whitespace-nowrap' },
+    {
+      className: 'text-[0.65rem] text-muted-foreground ml-1 whitespace-nowrap',
+    },
     ...children,
   );
 }
