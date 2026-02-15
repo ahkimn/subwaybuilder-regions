@@ -33,15 +33,14 @@ const OVERVIEW_HEADER_LABELS = [
   'Total Commuters',
   'Residents',
   'Workers',
-  'Transit Share',
-  'Driving Share',
-  'Walking Share',
+  'Transit (%)',
+  'Driving (%)',
+  'Walking (%)',
   'Stations',
-  'Track Length (km)',
+  'Tracks (km)',
   'Routes',
 ] as const;
 const OVERVIEW_COLUMN_COUNT = OVERVIEW_HEADER_LABELS.length;
-const OVERVIEW_PLACEHOLDER_VALUE = '-';
 const OVERVIEW_MIN_COLUMN_PADDING_CH = 2;
 const OVERVIEW_MIN_NON_NAME_COLUMN_CH = 7;
 const OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH = '0.75rem';
@@ -87,12 +86,24 @@ export function renderLayerSelectorRow(
 
   return h(
     'div',
-    { className: 'flex flex-col gap-1.5' },
+    {
+      className:
+        'rounded-md border border-border/60 bg-background/30 px-2 py-1.5 flex items-center justify-between gap-2',
+    },
+    h(
+      'span',
+      {
+        className:
+          'text-[0.72rem] font-semibold tracking-wide text-muted-foreground',
+      },
+      'Dataset',
+    ),
     ReactSelectRow(
       h,
       buttonConfigs,
       selectedDatasetIdentifier,
       'regions-overview-layer-select',
+      false,
     ),
   );
 }
@@ -158,14 +169,10 @@ export function renderOverviewTable(
     cellPaddingClassName: OVERVIEW_CELL_PADDING_CLASS_NAMES,
   };
 
-  const sortHandlers = [
-    () => onSortChange(0),
-    () => onSortChange(1),
-    () => onSortChange(2),
-    () => onSortChange(3),
-    () => onSortChange(4),
-    () => onSortChange(5),
-  ];
+  const sortHandlers = Array.from(
+    { length: OVERVIEW_COLUMN_COUNT },
+    (_, index) => () => onSortChange(index),
+  );
 
   const tableAlign: ('left' | 'right' | 'center')[] = ['left', ...Array(OVERVIEW_COLUMN_COUNT - 1).fill('right')];
 
@@ -204,16 +211,23 @@ export function renderOverviewTable(
         activeSelection !== null &&
         RegionSelectionUtils.isEqual(activeSelection, row.selection);
       const rowAction = () => onSelectRow(row.selection);
-      const residents = row.gameData.demandData?.residents ?? 0;
-      const workers = row.gameData.demandData?.workers ?? 0;
-      const totalCommuters =
-        residents !== null && workers !== null ? residents + workers : null;
+      // TODO (Game Bug): Resident worker counts from the demand data are currently inaccurate. Using the commuter summary mode share values (if present) until it is fixed.
+      const residentsFromCommuterSummary = ModeShare.totalOrUndefined(row.gameData.commuterSummary?.residentModeShare);
+      const workersFromCommuterSummary = ModeShare.totalOrUndefined(row.gameData.commuterSummary?.workerModeShare);
+      const residents = residentsFromCommuterSummary ?? row.gameData.demandData?.residents ?? 0;
+      const workers = workersFromCommuterSummary ?? row.gameData.demandData?.workers ?? 0;
+      const totalCommuters = residents + workers;
+
       const commuterSummary = row.gameData.commuterSummary;
+      const infraData = row.gameData.infraData;
+      const totalTrackLength = infraData
+        ? Array.from(infraData.trackLengths.values()).reduce((a, b) => a + b, 0)
+        : null;
       const totalModeShare = commuterSummary
         ? ModeShare.add(
-            commuterSummary.residentModeShare,
-            commuterSummary.workerModeShare,
-          )
+          commuterSummary.residentModeShare,
+          commuterSummary.workerModeShare,
+        )
         : null;
       const rowOptions: DataRowOptions = {
         onClick: Array.from({ length: OVERVIEW_COLUMN_COUNT }, () => rowAction),
@@ -241,9 +255,15 @@ export function renderOverviewTable(
           totalModeShare
             ? formatPercentOrDefault(ModeShare.share(totalModeShare, 'walking') * 100)
             : LOADING_VALUE_DISPLAY,
-          OVERVIEW_PLACEHOLDER_VALUE,
-          OVERVIEW_PLACEHOLDER_VALUE,
-          OVERVIEW_PLACEHOLDER_VALUE,
+          infraData
+            ? formatNumberOrDefault(infraData.stations.size)
+            : LOADING_VALUE_DISPLAY,
+          infraData
+            ? formatNumberOrDefault(totalTrackLength, 2)
+            : LOADING_VALUE_DISPLAY,
+          infraData
+            ? formatNumberOrDefault(infraData.routes.size)
+            : LOADING_VALUE_DISPLAY,
         ],
         options: rowOptions,
       });

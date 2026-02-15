@@ -39,6 +39,9 @@ export const ModeShare = {
       modeShare.unknown
     );
   },
+  totalOrUndefined(modeShare: ModeShare | undefined): number | undefined {
+    return (modeShare && this.total(modeShare)) || undefined;
+  },
   share(modeShare: ModeShare, mode: keyof ModeShare): number {
     const total = this.total(modeShare);
     if (total === 0) {

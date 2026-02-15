@@ -102,6 +102,24 @@ export function segmentBBox(a: Coordinate, b: Coordinate): BBox {
   ];
 }
 
+export function getArcBBox(coords: Coordinate[]): BBox {
+  const [firstLng = 0, firstLat = 0] = coords[0] ?? [];
+  let minLng = firstLng;
+  let minLat = firstLat;
+  let maxLng = firstLng;
+  let maxLat = firstLat;
+
+  for (let i = 1; i < coords.length; i++) {
+    const [lng, lat] = coords[i];
+    minLng = Math.min(minLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLng = Math.max(maxLng, lng);
+    maxLat = Math.max(maxLat, lat);
+  }
+
+  return [minLng, minLat, maxLng, maxLat];
+}
+
 export function polygonBBox(polygon: PolygonCoordinates): BBox {
   let minLng = Infinity,
     minLat = Infinity,

@@ -7,6 +7,7 @@ import {
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import {
+  ModeShare,
   RegionDataType,
   type RegionGameData,
   RegionGameData as RegionGameDataUtils,
@@ -14,7 +15,6 @@ import {
   type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
-import { buildReactViewHeader } from '../shared/view-header';
 import { SortDirection } from '../types';
 import type { InputFieldProperties } from './render';
 import {
@@ -25,6 +25,7 @@ import {
   renderPlaceholderTab,
 } from './render';
 import type {
+  RegionsOverviewPanelState,
   RegionsOverviewRow,
   RegionsOverviewSortState,
   RegionsOverviewTab,
@@ -44,6 +45,8 @@ export type RegionsOverviewPanelProps = {
   regionDataManager: RegionDataManager;
   availableDatasetIdentifiers: string[];
   onRegionSelect: (selection: RegionSelection) => void;
+  initialState?: RegionsOverviewPanelState | null;
+  onStateChange?: (nextState: RegionsOverviewPanelState) => void;
 };
 
 export function renderRegionsOverviewPanel(
@@ -59,15 +62,40 @@ export function renderRegionsOverviewPanel(
   const Input = props.api.utils.components
     .Input as React.ComponentType<InputFieldProperties>;
 
+  const resolveInitialDatasetIdentifier = (): string => {
+    const prevStateIdentifier = props.initialState?.selectedDatasetIdentifier;
+    return prevStateIdentifier ?? props.availableDatasetIdentifiers[0];
+  };
+
   const [selectedDatasetIdentifier, setSelectedDatasetIdentifier] =
-    useStateHook<string>(props.availableDatasetIdentifiers[0]);
-  const [searchTerm, setSearchTerm] = useStateHook<string>('');
-  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(
-    RegionsOverviewTabs.Overview,
+    useStateHook<string>(resolveInitialDatasetIdentifier);
+  const [searchTerm, setSearchTerm] = useStateHook<string>(
+    props.initialState?.searchTerm ?? '',
+  );
+  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(() =>
+    props.initialState?.activeTab ?? RegionsOverviewTabs.Overview,
   );
   const [, setSummaryRenderToken] = useStateHook<number>(0);
   const [sortState, setSortState] =
-    useStateHook<RegionsOverviewSortState>(INITIAL_SORT_STATE);
+    useStateHook<RegionsOverviewSortState>(
+      props.initialState?.sortState ?? INITIAL_SORT_STATE,
+    );
+
+  useEffectHook(() => {
+    if (!props.onStateChange) return;
+    props.onStateChange({
+      selectedDatasetIdentifier,
+      searchTerm,
+      activeTab,
+      sortState: { ...sortState },
+    });
+  }, [
+    selectedDatasetIdentifier,
+    searchTerm,
+    activeTab,
+    sortState,
+    props.onStateChange,
+  ]);
 
   useEffectHook(() => {
     if (activeTab !== RegionsOverviewTabs.Overview) {
@@ -75,15 +103,29 @@ export function renderRegionsOverviewPanel(
     }
 
     let cancelled = false;
+
     void props.regionDataManager
       .ensureExistsDataForDataset(
         selectedDatasetIdentifier,
         RegionDataType.CommuterSummary,
         { forceBuild: false },
       )
-      .then((result) => {
+      .then((summaryResult) => {
         if (cancelled) return;
-        if (result !== null) {
+        if (summaryResult !== null) {
+          setSummaryRenderToken((current) => current + 1);
+        }
+      });
+
+    void props.regionDataManager
+      .ensureExistsDataForDataset(
+        selectedDatasetIdentifier,
+        RegionDataType.Infra,
+        { forceBuild: false },
+      )
+      .then((infraResult) => {
+        if (cancelled) return;
+        if (infraResult !== null) {
           setSummaryRenderToken((current) => current + 1);
         }
       });
@@ -182,14 +224,14 @@ export function renderRegionsOverviewPanel(
       className: 'p-3 flex flex-col gap-3 h-full min-h-0',
     },
     renderOverviewTabs(h, activeTab, onSetTab),
-    buildReactViewHeader(h, 'Dataset', [renderLayerSelectorRow(
+    renderLayerSelectorRow(
       h,
       props.availableDatasetIdentifiers,
       selectedDatasetIdentifier,
       (datasetIdentifier: string) =>
         props.regionDataManager.getDatasetDisplayName(datasetIdentifier),
       onSelectDataset,
-    )]),
+    ),
     tabContent,
   );
 }
@@ -249,6 +291,18 @@ function sortRows(
     direction: SortDirection,
   ): number => {
     const multiplier = direction === SortDirection.Asc ? 1 : -1;
+    const aCommuterModeShare = ModeShare.add(
+      a.gameData.commuterSummary?.residentModeShare ?? ModeShare.createEmpty(),
+      a.gameData.commuterSummary?.workerModeShare ?? ModeShare.createEmpty(),
+    )
+    const bCommuterModeShare = ModeShare.add(
+      b.gameData.commuterSummary?.residentModeShare ?? ModeShare.createEmpty(),
+      b.gameData.commuterSummary?.workerModeShare ?? ModeShare.createEmpty(),
+    );
+    const aTrackLengths = a.gameData.infraData ? Array.from(a.gameData.infraData.trackLengths.values()).reduce((sum, length) => sum + length, 0) : 0;
+    const bTrackLengths = b.gameData.infraData ? Array.from(b.gameData.infraData.trackLengths.values()).reduce((sum, length) => sum + length, 0) : 0;
+
+
     switch (index) {
       case 1:
         return (
@@ -275,7 +329,31 @@ function sortRows(
             (b.gameData.demandData?.workers ?? 0)) *
           multiplier
         );
-      case 0:
+      case 6:
+        return (
+          (ModeShare.share(aCommuterModeShare, 'transit') - ModeShare.share(bCommuterModeShare, 'transit')) *
+          multiplier
+        );
+      case 7:
+        return (
+          (ModeShare.share(aCommuterModeShare, 'driving') - ModeShare.share(bCommuterModeShare, 'driving')) * multiplier
+        );
+      case 8:
+        return (
+          (ModeShare.share(aCommuterModeShare, 'walking') - ModeShare.share(bCommuterModeShare, 'walking')) * multiplier
+        );
+      case 9:
+        return (
+          ((a.gameData.infraData?.stations.size ?? 0) - (b.gameData.infraData?.stations.size ?? 0)) * multiplier
+        );
+      case 10:
+        return (
+          ((aTrackLengths) - (bTrackLengths)) * multiplier
+        );
+      case 11:
+        return (
+          ((a.gameData.infraData?.routes.size ?? 0) - (b.gameData.infraData?.routes.size ?? 0)) * multiplier
+        );
       default:
         return (
           a.gameData.displayName.localeCompare(b.gameData.displayName) *

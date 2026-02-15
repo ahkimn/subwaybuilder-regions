@@ -20,6 +20,7 @@ export class RegionBoundaryGridIndex {
 
   // TODO: If we pass in BBox values at Dataset load time, prefer those to calculating them from each individual feature in succession.
   static fromBoundaryParamsMap(
+    datasetId: string,
     regionBoundaryParamsMap: ReadonlyMap<string | number, BoundaryParams>,
     xCells: number,
     yCells: number,
@@ -48,6 +49,8 @@ export class RegionBoundaryGridIndex {
     for (const [featureId, params] of regionBoundaryParamsMap.entries()) {
       index.insertFeature(featureId, params.bbox);
     }
+
+    console.log(`[Regions] Built boundary grid index in ${xCells}x${yCells} cells for dataset ${datasetId}. Dataset bbox: ${index.datasetBBox}, cell width: ${index.cellWidth}, cell height: ${index.cellHeight}`);
 
     return index;
   }

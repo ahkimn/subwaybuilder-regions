@@ -50,3 +50,11 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
    - The commuter refresh loop currently updates based on panel visibility, not active panel tab/view
    - This can trigger unnecessary commuter data refresh work (especially detail refresh) when a visible panel is not on a commuter-focused view
    - Future improvement: move to tab/view-scoped refresh ownership (or panel-local refresh triggers) to reduce redundant work
+7. _Slow Infrastructure Data Computation_ (`🔴 Open`)
+   - Infrastructure data is currently calculated on a dataset-wide level using a grid index
+   - This is relatively efficient when region boundaries are uniform but does not offer significant performance savings when a small number of regions dominate the playable area
+     - Additional pre-compute steps (e.g. if a region fully covers a grid cell / differing grid sizes based on region density) can be applied to reduce this latency
+8. _Overview Horizontal Scroll_ (`🔴 Open`)
+   - Floating panel has a set minimum size of 300 px x 200 px; however, this is far too small for the overview table
+     - When the relevant API becomes available, prevent the panel from obscuring the data table / selector buttons
+   - The first row of the overview table is not static, making referencing the region name while panning across the table difficult.

@@ -1,5 +1,6 @@
 import type { ModdingAPI } from '../../types/modding-api-v1';
 import {
+  DEFAULT_CHUNK_SIZE,
   STALE_COMMUTER_DATA_THRESHOLD_SECONDS,
   STALE_INFRA_DATA_THRESHOLD_SECONDS,
 } from '../constants';
@@ -171,32 +172,14 @@ export class RegionDataManager {
         }
 
         await yieldToEventLoop();
-        const updatedData = new Map<string | number, RegionInfraData>();
-
-        for (const [featureId, gameData] of dataset.gameData.entries()) {
-          if (
-            gameData.infraData &&
-            this.shouldUseExistingData(
-              options?.forceBuild,
-              gameData.infraData.metadata,
-              currentTime,
-              STALE_INFRA_DATA_THRESHOLD_SECONDS,
-            )
-          ) {
-            updatedData.set(featureId, gameData.infraData);
-            continue;
-          }
-
-          const builtInfraData = await this.builder.buildRegionInfraData(
-            dataset,
-            featureId,
-            currentTime,
-          );
-          if (builtInfraData) {
-            dataset.updateWithInfraData(featureId, builtInfraData);
-            updatedData.set(featureId, builtInfraData);
-          }
-        }
+        const updatedData = await this.builder.buildDatasetInfraData(
+          dataset,
+          currentTime,
+          DEFAULT_CHUNK_SIZE,
+        );
+        updatedData.forEach((infraData, featureId) => {
+          dataset.updateWithInfraData(featureId, infraData);
+        });
         return updatedData;
       }
       default:

@@ -1,5 +1,4 @@
-import * as turf from '@turf/turf';
-import type { Feature, MultiPolygon, Polygon } from 'geojson';
+import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 
 import type {
   ModdingAPI,
@@ -12,13 +11,14 @@ import {
   DatasetInvalidFeatureTypeError,
   DatasetMissingFeatureError,
 } from '../errors';
-import { prepareBoundaryParams } from '../geometry/arc-length';
+import type { BoundaryParams } from '../geometry/arc-length';
 import {
   geodesicArcLengthInsideBoundary,
   planarArcLengthInsideBoundary,
 } from '../geometry/arc-length';
 import type { Coordinate } from '../geometry/helpers';
 import {
+  getArcBBox,
   isCoordinateWithinFeature,
   isPolygonFeature,
 } from '../geometry/helpers';
@@ -32,6 +32,20 @@ import type {
 import { ModeShare } from '../types';
 import { processInChunks } from '../utils';
 import type { RegionDataset } from './RegionDataset';
+
+type InfraDataFeatureContext = {
+  feature: Feature<Polygon | MultiPolygon>;
+  boundaryParams: BoundaryParams;
+};
+
+type InfraDataAccumulator = {
+  stationNames: Map<string, string>;
+  stationNodes: Set<string>;
+  trackIds: Map<string, number>;
+  trackLengths: Map<string, number>;
+  routes: Set<string>;
+  routeDisplayParams: Map<string, RouteDisplayParams>;
+};
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
@@ -215,6 +229,7 @@ export class RegionDataBuilder {
     updateTime?: number,
     chunkSize: number = DEFAULT_CHUNK_SIZE,
   ): Promise<RegionInfraData | null> {
+    const buildStart = getCurrentMillis();
     const allStations: Station[] = this.api.gameState.getStations();
     const allTracks: Track[] = this.api.gameState.getTracks();
     const allRoutes: Route[] = this.api.gameState.getRoutes();
@@ -237,6 +252,7 @@ export class RegionDataBuilder {
       );
     if (!isPolygonFeature(feature))
       throw new DatasetInvalidFeatureTypeError(dataset.id, feature);
+    const boundaryParams = dataset.regionBoundaryParamsMap.get(featureId)!;
 
     const currentGameData = dataset.getRegionGameData(featureId);
     if (!currentGameData) {
@@ -246,19 +262,38 @@ export class RegionDataBuilder {
       return null;
     }
 
-    const { stationNames, stationNodes } = this.getStationDataWithinRegion(
+    const stationStart = getCurrentMillis();
+    const { stationNames, stationNodes } = this.getRegionStations(
+      dataset,
+      featureId,
       feature,
+      boundaryParams.bbox,
       allStations,
     );
-    const { trackIds, trackLengths } = await this.getTracksWithinRegionAsync(
+    const stationDurationMs = getCurrentMillis() - stationStart;
+
+    const trackStart = getCurrentMillis();
+    const { trackIds, trackLengths } = await this.getRegionTracksAsync(
+      dataset,
+      featureId,
       feature,
+      boundaryParams,
       allTracks,
       true,
       chunkSize,
     );
+    const trackDurationMs = getCurrentMillis() - trackStart;
+
+    const routeStart = getCurrentMillis();
     const { routes, routeDisplayParams } = this.getRoutesWithinRegion(
       allRoutes,
       stationNodes,
+    );
+    const routeDurationMs = getCurrentMillis() - routeStart;
+    const totalDurationMs = getCurrentMillis() - buildStart;
+
+    console.log(
+      `[Regions] Infra build (region ${dataset.id}:${featureId}) timings ms | stations: ${stationDurationMs.toFixed(2)}, tracks: ${trackDurationMs.toFixed(2)}, routes: ${routeDurationMs.toFixed(2)}, total: ${totalDurationMs.toFixed(2)}`,
     );
 
     return {
@@ -274,8 +309,94 @@ export class RegionDataBuilder {
     };
   }
 
-  private getStationDataWithinRegion(
+  async buildDatasetInfraData(
+    dataset: RegionDataset,
+    updateTime?: number,
+    chunkSize: number = DEFAULT_CHUNK_SIZE,
+  ): Promise<Map<string | number, RegionInfraData>> {
+    const buildStart = getCurrentMillis();
+    const allStations: Station[] = this.api.gameState.getStations();
+    const allTracks: Track[] = this.api.gameState.getTracks();
+    const allRoutes: Route[] = this.api.gameState.getRoutes();
+
+    if (!dataset.boundaryData) {
+      console.error(
+        `[Regions] No boundary data found for dataset ${dataset.id}`,
+      );
+      return new Map();
+    }
+
+    let featureContexts = new Map<string | number, InfraDataFeatureContext>();
+
+    for (const feature of dataset.boundaryData!.features) {
+      if (!isPolygonFeature(feature))
+        throw new DatasetInvalidFeatureTypeError(dataset.id, feature);
+
+      const featureId: string | number = feature.properties?.ID!;
+      featureContexts.set(featureId, {
+        feature,
+        boundaryParams: dataset.regionBoundaryParamsMap.get(featureId)!,
+      });
+    }
+
+    const accumulators = new Map<string | number, InfraDataAccumulator>();
+    featureContexts.forEach((_, featureId) => {
+      accumulators.set(featureId, initializeInfraAccumulator());
+    });
+
+    const stationNodeToRegionMap = new Map<string, Set<string | number>>();
+    const stationStart = getCurrentMillis();
+    this.getDatasetStations(
+      dataset,
+      featureContexts,
+      accumulators,
+      stationNodeToRegionMap,
+      allStations,
+    );
+    const stationDurationMs = getCurrentMillis() - stationStart;
+
+    const trackStart = getCurrentMillis();
+    await this.getDatasetTracksAsync(
+      dataset,
+      featureContexts,
+      accumulators,
+      allTracks,
+      true,
+      chunkSize,
+    );
+    const trackDurationMs = getCurrentMillis() - trackStart;
+
+    const routeStart = getCurrentMillis();
+    this.getDatasetRoutes(
+      accumulators,
+      stationNodeToRegionMap,
+      allRoutes,
+    );
+    const routeDurationMs = getCurrentMillis() - routeStart;
+    const totalDurationMs = getCurrentMillis() - buildStart;
+
+    console.log(
+      `[Regions] Infra build (dataset ${dataset.id}) timings ms | stations: ${stationDurationMs.toFixed(2)}, tracks: ${trackDurationMs.toFixed(2)}, routes: ${routeDurationMs.toFixed(2)}, total: ${totalDurationMs.toFixed(2)} | regions: ${featureContexts.size}`,
+    );
+
+    const finalizedData = new Map<string | number, RegionInfraData>();
+    const resolvedUpdateTime = updateTime ?? this.api.gameState.getElapsedSeconds();
+    accumulators.forEach((accumulator, featureId) => {
+      finalizedData.set(
+        featureId,
+        this.resolveAccumulator(accumulator, resolvedUpdateTime),
+      );
+    });
+
+
+    return finalizedData;
+  }
+
+  private getRegionStations(
+    dataset: RegionDataset,
+    featureId: string | number,
     feature: Feature<Polygon | MultiPolygon>,
+    boundaryBBox: BBox,
     stations: Station[],
   ): {
     stationNames: Map<string, string>;
@@ -283,18 +404,62 @@ export class RegionDataBuilder {
   } {
     const stationNames = new Map<string, string>();
     const stationNodes = new Set<string>();
-    const featureBBox = turf.bbox(feature);
 
     for (const station of stations) {
       if (station.buildType !== 'constructed') continue; // Ignore blueprint stations
       const [lng, lat] = station.coords;
-      if (isCoordinateWithinFeature(lat, lng, feature, featureBBox)) {
+      const candidates = dataset.queryBoundaryCandidatesByPoint(lng, lat);
+      if (!candidates.has(featureId)) continue;
+      if (isCoordinateWithinFeature(lat, lng, feature, boundaryBBox)) {
         stationNames.set(station.id, station.name);
         station.stNodeIds?.forEach((nodeId) => stationNodes.add(nodeId));
       }
     }
     return { stationNames, stationNodes };
   }
+
+  private getDatasetStations(
+    dataset: RegionDataset,
+    featureContexts: Map<string | number, InfraDataFeatureContext>,
+    accumulators: Map<string | number, InfraDataAccumulator>,
+    stationNodeToRegionMap: Map<string, Set<string | number>>,
+    stations: Station[],
+  ): void {
+    for (const station of stations) {
+      if (station.buildType !== 'constructed') continue; // Ignore blueprint stations
+      const [lng, lat] = station.coords;
+      const candidates = dataset.queryBoundaryCandidatesByPoint(lng, lat);
+
+      for (const featureId of candidates) {
+        const context = featureContexts.get(featureId);
+        if (!context) continue;
+
+        if (
+          !isCoordinateWithinFeature(
+            lat,
+            lng,
+            context.feature,
+            context.boundaryParams.bbox,
+          )
+        ) {
+          continue;
+        }
+
+        const accumulator = accumulators.get(featureId)!;
+        accumulator.stationNames.set(station.id, station.name);
+        station.stNodeIds?.forEach((nodeId) => {
+          accumulator.stationNodes.add(nodeId);
+          const existing = stationNodeToRegionMap.get(nodeId);
+          if (existing) {
+            existing.add(featureId);
+            return;
+          }
+          stationNodeToRegionMap.set(nodeId, new Set([featureId]));
+        });
+      }
+    }
+  }
+
 
   /**
    * Given a region boundary feature, and a list of all current tracks within the game, returns the following:
@@ -306,8 +471,11 @@ export class RegionDataBuilder {
    *
    * TODO: (Performance) Allow optional override of planar approximation for tracks if the region is small enough OR there are few track nodes OR if the user overrides through settings
    */
-  private async getTracksWithinRegionAsync(
+  private async getRegionTracksAsync(
+    dataset: RegionDataset,
+    featureId: string | number,
     feature: Feature<Polygon | MultiPolygon>,
+    boundaryParams: BoundaryParams,
     tracks: Track[],
     forcePlanar: boolean,
     chunkSize: number,
@@ -318,50 +486,66 @@ export class RegionDataBuilder {
     const trackIds = new Map<string, number>();
     const trackLengths = new Map<string, number>();
 
-    const featureBBox = turf.bbox(feature);
-    let boundaryParams;
-
     await processInChunks(tracks, chunkSize, (track) => {
       if (track.buildType !== 'constructed') return; // Ignore blueprint tracks
-      let trackLengthInRegion: number;
-      const knownTrackLength = track.length; // Game track length should be geodesic
-
-      if (forcePlanar) {
-        trackLengthInRegion = planarArcLengthInsideBoundary(
-          track.coords as Array<Coordinate>,
-          knownTrackLength,
-          (boundaryParams ??= prepareBoundaryParams(feature)),
-        );
-      } else {
-        trackLengthInRegion = geodesicArcLengthInsideBoundary(
-          track.coords as Array<Coordinate>,
-          feature,
-          featureBBox,
-          knownTrackLength,
-        );
+      const trackCoords = track.coords as Array<Coordinate>;
+      const trackBBox = getArcBBox(trackCoords);
+      if (!dataset.queryBoundaryCandidatesByBBox(trackBBox).has(featureId)) {
+        return;
       }
+      const trackLengthInRegion = this.computeTrackLengthInBoundary(
+        trackCoords,
+        track.length,
+        feature,
+        boundaryParams,
+        forcePlanar,
+      );
 
       if (trackLengthInRegion > 0) {
         trackIds.set(track.id, trackLengthInRegion);
-        trackLengths.has(track.trackType!)
-          ? trackLengths.set(
-            track.trackType!,
-            trackLengths.get(track.trackType!)! + trackLengthInRegion,
-          )
-          : trackLengths.set(track.trackType!, trackLengthInRegion);
+        this.addTrackLength(trackLengths, track.trackType!, trackLengthInRegion);
       }
     });
     return { trackIds, trackLengths };
   }
 
-  private buildRouteDisplayParams(route: Route): RouteDisplayParams {
-    return {
-      id: route.id,
-      bullet: route.bullet!,
-      color: route.color!,
-      textColor: route.textColor!,
-      shape: route.shape! as RouteBulletType,
-    };
+  private async getDatasetTracksAsync(
+    dataset: RegionDataset,
+    featureContexts: Map<string | number, InfraDataFeatureContext>,
+    accumulators: Map<string | number, InfraDataAccumulator>,
+    tracks: Track[],
+    forcePlanar: boolean,
+    chunkSize: number,
+  ): Promise<void> {
+    await processInChunks(tracks, chunkSize, (track) => {
+      if (track.buildType !== 'constructed') return; // Ignore blueprint tracks
+      const trackCoords = track.coords as Array<Coordinate>;
+      const trackBBox = getArcBBox(trackCoords);
+      const candidateIds = dataset.queryBoundaryCandidatesByBBox(trackBBox);
+
+      for (const featureId of candidateIds) {
+        const context = featureContexts.get(featureId);
+        if (!context) continue;
+
+        const trackLengthInRegion = this.computeTrackLengthInBoundary(
+          trackCoords,
+          track.length,
+          context.feature,
+          context.boundaryParams,
+          forcePlanar,
+        );
+
+        if (trackLengthInRegion <= 0) continue;
+
+        const accumulator = accumulators.get(featureId)!;
+        accumulator.trackIds.set(track.id, trackLengthInRegion);
+        this.addTrackLength(
+          accumulator.trackLengths,
+          track.trackType!,
+          trackLengthInRegion,
+        );
+      }
+    });
   }
 
   private getRoutesWithinRegion(routes: Route[], stationNodes: Set<string>) {
@@ -378,6 +562,107 @@ export class RegionDataBuilder {
 
     return { routes: routesWithinRegion, routeDisplayParams };
   }
+
+  private getDatasetRoutes(
+    accumulators: Map<string | number, InfraDataAccumulator>,
+    stationNodeToRegionMap: Map<string, Set<string | number>>,
+    routes: Route[],
+  ): void {
+    for (const route of routes) {
+      const regionIds = new Set<string | number>();
+      route.stNodes?.forEach((node) => {
+        stationNodeToRegionMap.get(node.id)?.forEach((featureId) =>
+          regionIds.add(featureId),
+        );
+      });
+      if (regionIds.size === 0) continue;
+
+      const displayParams = this.buildRouteDisplayParams(route);
+      regionIds.forEach((featureId) => {
+        const accumulator = accumulators.get(featureId);
+        if (!accumulator) return;
+        accumulator.routes.add(route.id);
+        accumulator.routeDisplayParams.set(route.id, displayParams);
+      });
+    }
+  }
+
+  private buildRouteDisplayParams(route: Route): RouteDisplayParams {
+    return {
+      id: route.id,
+      bullet: route.bullet!,
+      color: route.color!,
+      textColor: route.textColor!,
+      shape: route.shape! as RouteBulletType,
+    };
+  }
+
+  private resolveAccumulator(
+    accumulator: InfraDataAccumulator,
+    lastUpdate: number,
+  ): RegionInfraData {
+    return {
+      stations: accumulator.stationNames,
+      tracks: accumulator.trackIds,
+      trackLengths: accumulator.trackLengths,
+      routes: accumulator.routes,
+      routeDisplayParams: accumulator.routeDisplayParams,
+      metadata: {
+        lastUpdate,
+        dirty: false,
+      },
+    };
+  }
+
+  private addTrackLength(
+    trackLengths: Map<string, number>,
+    trackType: string,
+    additionalLength: number,
+  ): void {
+    trackLengths.set(
+      trackType,
+      (trackLengths.get(trackType) ?? 0) + additionalLength,
+    );
+  }
+
+  private computeTrackLengthInBoundary(
+    trackCoords: Array<Coordinate>,
+    knownTrackLength: number | undefined,
+    feature: Feature<Polygon | MultiPolygon>,
+    boundaryParams: BoundaryParams,
+    forcePlanar: boolean,
+  ): number {
+    if (forcePlanar) {
+      return planarArcLengthInsideBoundary(
+        trackCoords,
+        knownTrackLength,
+        boundaryParams,
+      );
+    }
+
+    return geodesicArcLengthInsideBoundary(
+      trackCoords,
+      feature,
+      boundaryParams.bbox,
+      knownTrackLength,
+    );
+  }
+}
+
+function initializeInfraAccumulator(): InfraDataAccumulator {
+  return {
+    stationNames: new Map<string, string>(),
+    stationNodes: new Set<string>(),
+    trackIds: new Map<string, number>(),
+    trackLengths: new Map<string, number>(),
+    routes: new Set<string>(),
+    routeDisplayParams: new Map<string, RouteDisplayParams>(),
+  };
+}
+
+function getCurrentMillis(): number {
+  const perf = globalThis.performance;
+  return perf?.now ? perf.now() : Date.now();
 }
 
 function getOrCreateModeShare<K>(map: Map<K, ModeShare>, key: K): ModeShare {

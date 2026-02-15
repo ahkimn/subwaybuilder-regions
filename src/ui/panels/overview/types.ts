@@ -17,6 +17,13 @@ export type RegionsOverviewSortState = {
   previousSortDirection: SortDirection;
 };
 
+export type RegionsOverviewPanelState = {
+  selectedDatasetIdentifier: string;
+  searchTerm: string;
+  activeTab: RegionsOverviewTab;
+  sortState: RegionsOverviewSortState;
+};
+
 export type RegionsOverviewRow = {
   selection: RegionSelection;
   gameData: RegionGameData;

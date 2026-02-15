@@ -235,6 +235,7 @@ export class RegionDataset {
     }
 
     this.regionBoundaryGridIndex = RegionBoundaryGridIndex.fromBoundaryParamsMap(
+      this.id,
       this.regionBoundaryParamsMap,
       REGION_BOUNDARY_GRID_X_CELLS,
       REGION_BOUNDARY_GRID_Y_CELLS,

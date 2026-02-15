@@ -438,14 +438,6 @@ function buildTableHeader(
     });
   }
 
-  const sortHandlers = [
-    () => changeSort(0),
-    () => changeSort(1),
-    () => changeSort(2),
-    () => changeSort(3),
-    () => changeSort(4),
-  ];
-
   const directionHeadLabel =
     viewState.direction === CommuterDirection.Outbound
       ? 'Destination'
@@ -467,15 +459,18 @@ function buildTableHeader(
       ? 'Walking'
       : 'Walking (%)';
 
+  const headerLabels = [
+    directionHeadLabel,
+    commuterHeadLabel,
+    transitHeadLabel,
+    ...(viewState.modeShareLayout === ModeLayout.All
+      ? [drivingHeadLabel, walkingHeadLabel]
+      : []),
+  ];
+  const sortHandlers = headerLabels.map((_, index) => () => changeSort(index));
+
   const titleRow: ReactDataTableRow = {
-    rowValues: [
-      directionHeadLabel,
-      commuterHeadLabel,
-      transitHeadLabel,
-      ...(viewState.modeShareLayout === ModeLayout.All
-        ? [drivingHeadLabel, walkingHeadLabel]
-        : []),
-    ],
+    rowValues: headerLabels,
     options: {
       header: true,
       onClick: sortHandlers,
