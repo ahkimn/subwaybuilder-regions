@@ -46,3 +46,7 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
    - Class-based DOM query / injection of info panel should be replaced by API call
 5. _Selection Escape_ (`🔴 Open`)
    - Currently, pressing `Esc` clears the selection, as expected; however, it also opens the Settings Menu if there are no active UI panels from the game itself
+6. _Over-broad Commuter Refresh Scope_ (`🔴 Open`)
+   - The commuter refresh loop currently updates based on panel visibility, not active panel tab/view
+   - This can trigger unnecessary commuter data refresh work (especially detail refresh) when a visible panel is not on a commuter-focused view
+   - Future improvement: move to tab/view-scoped refresh ownership (or panel-local refresh triggers) to reduce redundant work

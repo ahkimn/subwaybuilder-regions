@@ -56,14 +56,15 @@ export function renderCommutersView(
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
-  const commuterData = gameData.commuterData!;
+  const commuterSummaryData = gameData.commuterSummary!;
+  const commuterDetailsData = gameData.commuterDetails!;
   const isOutbound = viewState.direction === CommuterDirection.Outbound;
   const aggregateModeShare = isOutbound
-    ? commuterData.residentModeShare
-    : commuterData.workerModeShare;
+    ? commuterSummaryData.residentModeShare
+    : commuterSummaryData.workerModeShare;
   const byRegionModeShare = isOutbound
-    ? commuterData.residentModeShareByRegion
-    : commuterData.workerModeShareByRegion;
+    ? commuterDetailsData.residentModeShareByRegion
+    : commuterDetailsData.workerModeShareByRegion;
   const populationCount = ModeShare.total(aggregateModeShare);
   const rows = sortCommuterRows(
     deriveCommuterRows(byRegionModeShare, populationCount, viewState),

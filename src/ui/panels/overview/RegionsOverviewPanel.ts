@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { createElement, useState } from 'react';
+import type { createElement, useEffect, useState } from 'react';
 
 import {
   REGIONS_OVERVIEW_PANEL_CONTENT_ID,
@@ -7,6 +7,7 @@ import {
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import {
+  RegionDataType,
   type RegionGameData,
   RegionGameData as RegionGameDataUtils,
   type RegionSelection,
@@ -54,6 +55,7 @@ export function renderRegionsOverviewPanel(
 
   const h = props.api.utils.React.createElement as typeof createElement;
   const useStateHook = props.api.utils.React.useState as typeof useState;
+  const useEffectHook = props.api.utils.React.useEffect as typeof useEffect;
   const Input = props.api.utils.components
     .Input as React.ComponentType<InputFieldProperties>;
 
@@ -63,8 +65,38 @@ export function renderRegionsOverviewPanel(
   const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(
     RegionsOverviewTabs.Overview,
   );
+  const [, setSummaryRenderToken] = useStateHook<number>(0);
   const [sortState, setSortState] =
     useStateHook<RegionsOverviewSortState>(INITIAL_SORT_STATE);
+
+  useEffectHook(() => {
+    if (activeTab !== RegionsOverviewTabs.Overview) {
+      return;
+    }
+
+    let cancelled = false;
+    void props.regionDataManager
+      .ensureExistsDataForDataset(
+        selectedDatasetIdentifier,
+        RegionDataType.CommuterSummary,
+        { forceBuild: false },
+      )
+      .then((result) => {
+        if (cancelled) return;
+        if (result !== null) {
+          setSummaryRenderToken((current) => current + 1);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeTab,
+    selectedDatasetIdentifier,
+    setSummaryRenderToken,
+    props.regionDataManager,
+  ]);
 
   const datasetGameData = props.regionDataManager.requestGameDataByDataset(
     selectedDatasetIdentifier,

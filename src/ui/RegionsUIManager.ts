@@ -64,17 +64,17 @@ export class RegionsUIManager {
       () => this.clearSelection(),
     );
 
-    this.commuterRefreshLoop = new CommuterRefreshLoop(
-      api,
-      this.state,
-      this.regionDataManager,
-      [this.infoPanelRenderer],
-    );
-
     this.overviewPanelRenderer = new RegionsOverviewPanelRenderer(
       api,
       this.state,
       this.regionDataManager,
+    );
+
+    this.commuterRefreshLoop = new CommuterRefreshLoop(
+      api,
+      this.state,
+      this.regionDataManager,
+      [this.infoPanelRenderer, this.overviewPanelRenderer],
     );
 
     this.initialized = false;

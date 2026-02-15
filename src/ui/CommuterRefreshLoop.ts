@@ -4,7 +4,7 @@ import {
   UPDATE_ON_DEMAND_CHANGE,
 } from '../core/constants';
 import type { RegionDataManager } from '../core/datasets/RegionDataManager';
-import type { UIState } from '../core/types';
+import { RegionDataType, type UIState } from '../core/types';
 import type { ModdingAPI } from '../types/modding-api-v1';
 import type { RegionsPanelRenderer } from './panels/types';
 
@@ -70,7 +70,12 @@ export class CommuterRefreshLoop {
   }
 
   private tryRefresh(): void {
-    if (!this.refreshTargets.some((target) => target.isVisible())) return;
+    const visibleTargets = this.refreshTargets.filter((target) =>
+      target.isVisible(),
+    );
+    if (visibleTargets.length === 0) {
+      return;
+    }
 
     const elapsedSeconds = this.api.gameState.getElapsedSeconds();
     if (
@@ -80,13 +85,57 @@ export class CommuterRefreshLoop {
       return;
     }
 
-    void this.updateCommutersData();
+    void this.updateCommutersData(visibleTargets);
     this.lastCheckedGameTime = elapsedSeconds;
   }
 
-  private async updateCommutersData(): Promise<void> {
-    if (await this.dataManager.ensureExistsData(this.state, 'commuter')) {
-      this.refreshTargets.forEach((target) => target.tryUpdatePanel());
+  private async updateCommutersData(
+    visibleTargets: RegionsPanelRenderer[],
+  ): Promise<void> {
+    const summaryDatasetIdentifiers = new Set<string>();
+
+    if (this.state.cityCode) {
+      this.dataManager
+        .getCityDatasetIds(this.state.cityCode)
+        .forEach((datasetIdentifier) =>
+          summaryDatasetIdentifiers.add(datasetIdentifier),
+        );
+    }
+
+    if (this.state.activeSelection !== null) {
+      summaryDatasetIdentifiers.add(this.state.activeSelection.datasetIdentifier);
+    }
+
+    const updatePromises: Array<Promise<unknown>> = [];
+
+    summaryDatasetIdentifiers.forEach((datasetIdentifier) => {
+      updatePromises.push(
+        this.dataManager.ensureExistsDataForDataset(
+          datasetIdentifier,
+          RegionDataType.CommuterSummary,
+          { forceBuild: false },
+        ),
+      );
+    });
+
+    if (this.state.isActive) {
+      updatePromises.push(
+        this.dataManager.ensureExistsDataForSelection(
+          this.state,
+          RegionDataType.CommuterDetails,
+          { forceBuild: false },
+        ),
+      );
+    }
+
+    if (updatePromises.length === 0) {
+      return;
+    }
+
+    // TODO: (Issue 6) We may want to re-consider the more targeted approach of updating a specific panel only if a relevant view is present
+    const results = await Promise.all(updatePromises);
+    if (results.some((value) => value !== null)) {
+      visibleTargets.forEach((target) => target.tryUpdatePanel());
     }
   }
 }

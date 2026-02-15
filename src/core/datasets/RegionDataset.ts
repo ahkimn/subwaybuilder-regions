@@ -20,7 +20,8 @@ import {
 } from '../geometry/helpers';
 import type {
   DatasetSource,
-  RegionCommuterData,
+  RegionCommuterDetailsData,
+  RegionCommuterSummaryData,
   RegionDemandData,
   RegionGameData,
   RegionInfraData,
@@ -169,11 +170,19 @@ export class RegionDataset {
     return `${dataset.cityCode}-${dataset.id}`;
   }
 
-  updateWithCommuterData(
-    featureId: string | number,
-    commuterData: RegionCommuterData,
+  updateWithCommuterSummaryData(
+    updatedData: Map<string | number, RegionCommuterSummaryData>,
   ): void {
-    this.getRegionGameData(featureId)!.commuterData = commuterData;
+    updatedData.forEach((commuterSummaryData, featureId) => {
+      this.getRegionGameData(featureId)!.commuterSummary = commuterSummaryData;
+    });
+  }
+
+  updateWithCommuterDetailsData(
+    featureId: string | number,
+    commuterDetailsData: RegionCommuterDetailsData,
+  ): void {
+    this.getRegionGameData(featureId)!.commuterDetails = commuterDetailsData;
   }
 
   updateWithInfraData(

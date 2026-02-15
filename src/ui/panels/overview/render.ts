@@ -1,6 +1,7 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
+import { LOADING_VALUE_DISPLAY } from '../../../core/constants';
 import {
   ModeShare,
   type RegionSelection,
@@ -207,7 +208,13 @@ export function renderOverviewTable(
       const workers = row.gameData.demandData?.workers ?? 0;
       const totalCommuters =
         residents !== null && workers !== null ? residents + workers : null;
-      const totalModeShare = row.gameData.commuterData ? ModeShare.add(row.gameData.commuterData!.residentModeShare, row.gameData.commuterData!.workerModeShare) : null;
+      const commuterSummary = row.gameData.commuterSummary;
+      const totalModeShare = commuterSummary
+        ? ModeShare.add(
+            commuterSummary.residentModeShare,
+            commuterSummary.workerModeShare,
+          )
+        : null;
       const rowOptions: DataRowOptions = {
         onClick: Array.from({ length: OVERVIEW_COLUMN_COUNT }, () => rowAction),
         align: tableAlign,
@@ -225,9 +232,15 @@ export function renderOverviewTable(
           formatNumberOrDefault(totalCommuters),
           formatNumberOrDefault(residents),
           formatNumberOrDefault(workers),
-          formatPercentOrDefault(totalModeShare ? ModeShare.share(totalModeShare, 'transit') * 100 : null),
-          formatPercentOrDefault(totalModeShare ? ModeShare.share(totalModeShare, 'driving') * 100 : null),
-          formatPercentOrDefault(totalModeShare ? ModeShare.share(totalModeShare, 'walking') * 100 : null),
+          totalModeShare
+            ? formatPercentOrDefault(ModeShare.share(totalModeShare, 'transit') * 100)
+            : LOADING_VALUE_DISPLAY,
+          totalModeShare
+            ? formatPercentOrDefault(ModeShare.share(totalModeShare, 'driving') * 100)
+            : LOADING_VALUE_DISPLAY,
+          totalModeShare
+            ? formatPercentOrDefault(ModeShare.share(totalModeShare, 'walking') * 100)
+            : LOADING_VALUE_DISPLAY,
           OVERVIEW_PLACEHOLDER_VALUE,
           OVERVIEW_PLACEHOLDER_VALUE,
           OVERVIEW_PLACEHOLDER_VALUE,
