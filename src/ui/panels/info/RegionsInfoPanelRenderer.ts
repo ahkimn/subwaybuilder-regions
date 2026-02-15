@@ -1,6 +1,5 @@
 import { createElement } from 'react';
-import type { Root } from 'react-dom/client';
-import { createRoot } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 
 import {
   REGIONS_INFO_CONTAINER_ID,
@@ -10,12 +9,13 @@ import {
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import type { UIState } from '../../../core/types';
 import type { RegionsPanelRenderer } from '../types';
-import { RegionsReactInfoPanel } from './RegionsInfoPanel';
+import { RegionsInfoPanel } from './RegionsInfoPanel';
 
 export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
   private root: HTMLElement | null = null;
   private reactRoot: Root | null = null;
   private forceRefreshToken = 0;
+  private initialized = false;
 
   constructor(
     private readonly state: Readonly<UIState>,
@@ -25,7 +25,8 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
   ) { }
 
   initialize(): void {
-    // No-op for parity with other panel renderers.
+    if (this.initialized) return;
+    this.initialized = true;
   }
 
   private ensureContainer(): HTMLElement | null {
@@ -40,7 +41,7 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     }
 
     // Guard against duplicate panel container creation on hot-reload.
-    this.replaceExistingContainer();
+    this.removeContainer();
 
     const container = document.createElement('div');
     container.id = REGIONS_INFO_CONTAINER_ID;
@@ -68,7 +69,7 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     }
 
     this.reactRoot.render(
-      createElement(RegionsReactInfoPanel, {
+      createElement(RegionsInfoPanel, {
         regionDataManager: this.dataManager,
         uiState: this.state,
         onClose: this.onClose,
@@ -77,40 +78,31 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     );
   }
 
-  show(): void {
-    this.renderReactInfoPanel(false);
-  }
-
-  get rootElement(): HTMLElement | null {
-    return this.root;
-  }
-
   tearDown(): void {
+    this.initialized = false;
     this.unmount();
     this.forceRefreshToken = 0;
   }
 
-  // Unmount container from DOM.
   unmount(): void {
     this.reactRoot?.unmount();
     this.reactRoot = null;
+    this.removeContainer();
+  }
 
-    // Guard against duplicate panel container creation on hot-reload.
-    this.replaceExistingContainer();
-
+  private removeContainer(): void {
     if (this.root && this.root.parentElement) {
       this.root.replaceChildren();
       this.root.remove();
     }
-    this.root = null;
-  }
 
-  private replaceExistingContainer(): void {
     const existing = document.getElementById(REGIONS_INFO_CONTAINER_ID);
     if (existing && existing.parentElement) {
       existing.replaceChildren();
       existing.remove();
     }
+
+    this.root = null;
   }
 
   isVisible(): boolean {
@@ -118,12 +110,19 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
   }
 
   tryUpdatePanel(): void {
+    if (!this.initialized) {
+      this.initialize();
+      return;
+    }
     if (this.isVisible()) {
       this.renderReactInfoPanel(false);
     }
   }
 
   showFeatureData(): void {
+    if (!this.initialized) {
+      this.initialize();
+    }
     this.renderReactInfoPanel(true);
   }
 }

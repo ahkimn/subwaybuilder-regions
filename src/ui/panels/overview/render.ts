@@ -8,7 +8,7 @@ import {
 import { formatNumberOrDefault } from '../../../core/utils';
 import type {
   DataRowOptions,
-  DataTableRow,
+  ReactDataTableRow,
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
@@ -128,7 +128,7 @@ export function renderOverviewTable(
     () => onSortChange(4),
   ];
 
-  const tableRows: DataTableRow[] = [
+  const tableRows: ReactDataTableRow[] = [
     {
       rowValues: ['Region', 'Real Pop', 'Residents', 'Workers', 'Area'],
       options: {
@@ -191,7 +191,12 @@ export function renderOverviewTable(
     h(
       'div',
       { className: 'overflow-auto max-h-[60vh] px-1.5 py-1' },
-      ReactDataTable(h, useStateHook, tableOptions, tableRows),
+      h(ReactDataTable, {
+        h,
+        useStateHook,
+        tableOptions,
+        tableValues: tableRows,
+      }),
     ),
   );
 }

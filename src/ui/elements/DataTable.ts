@@ -47,28 +47,19 @@ export type TableOptions = {
 
 // --- React Implementation --- //
 
-type ReactDataTableViewProps = {
+export type ReactDataTableProps = {
   h: typeof createElement;
   useStateHook: typeof useState;
   tableOptions: TableOptions;
   tableValues: ReactDataTableRow[];
 };
 
-export function ReactDataTable(
-  h: typeof createElement,
-  useStateHook: typeof useState,
-  tableOptions: TableOptions,
-  tableValues: ReactDataTableRow[],
-): ReactNode {
-  return h(ReactDataTableView, { h, useStateHook, tableOptions, tableValues });
-}
-
-function ReactDataTableView({
+export function ReactDataTable({
   h,
   useStateHook,
   tableOptions,
   tableValues,
-}: ReactDataTableViewProps): ReactNode {
+}: ReactDataTableProps): ReactNode {
   const [hoveredRowIndex, setHoveredRowIndex] = useStateHook<number | null>(
     null,
   );
@@ -172,13 +163,7 @@ function buildReactCell(
   }
 
   const children: ReactNode[] = [];
-  if (
-    cellValue !== null &&
-    cellValue !== undefined &&
-    typeof cellValue !== 'boolean'
-  ) {
-    children.push(cellValue);
-  }
+  children.push(cellValue);
   if (presentation.indicator) {
     children.push(presentation.indicator);
   }

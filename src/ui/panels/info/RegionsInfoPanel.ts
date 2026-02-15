@@ -39,7 +39,7 @@ import {
   SortDirection,
 } from './types';
 
-export type RegionsReactInfoPanelProps = {
+export type RegionsInfoPanelProps = {
   regionDataManager: RegionDataManager;
   uiState: Readonly<UIState>;
   onClose: () => void;
@@ -54,12 +54,12 @@ function getCurrentGameData(
   return regionDataManager.getGameData(uiState);
 }
 
-export function RegionsReactInfoPanel({
+export function RegionsInfoPanel({
   regionDataManager,
   uiState,
   onClose,
   forceRefreshToken,
-}: RegionsReactInfoPanelProps): ReactNode {
+}: RegionsInfoPanelProps): ReactNode {
   const [activeView, setActiveView] =
     useState<RegionsInfoPanelView>(RegionsInfoPanelView.Statistics);
   const [gameData, setGameData] = useState<RegionGameData | null>(() =>

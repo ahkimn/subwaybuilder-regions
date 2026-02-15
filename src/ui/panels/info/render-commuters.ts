@@ -156,11 +156,10 @@ function buildCommuterTableControls(
 ): ReactNode {
   const columnConfigs: Map<string, SelectButtonConfig> = new Map();
   columnConfigs.set(ModeLayout.Transit, {
-    label: 'Transit',
+    label: 'Transit Only',
     onSelect: () =>
       setViewState((current) => {
         if (current.modeShareLayout === ModeLayout.Transit) return current;
-        // Keep parity with DOM logic for sort index transitions.
         if (current.modeShareLayout === ModeLayout.All) {
           return {
             ...current,
@@ -172,7 +171,7 @@ function buildCommuterTableControls(
       }),
   });
   columnConfigs.set(ModeLayout.All, {
-    label: 'All',
+    label: 'All Modes',
     onSelect: () =>
       setViewState((current) =>
         current.modeShareLayout === ModeLayout.All
@@ -185,9 +184,9 @@ function buildCommuterTableControls(
     'div',
     {
       className:
-        'flex items-center justify-end gap-1.5 pb-1 text-[0.72rem] text-muted-foreground',
+        'flex items-center justify-start gap-1.5 pb-1 text-[0.72rem] text-muted-foreground',
     },
-    h('span', { className: 'font-semibold tracking-wide' }, 'Columns'),
+    h('span', { className: 'font-semibold tracking-wide' }, 'Layout'),
     h(
       'div',
       { className: 'opacity-80' },
@@ -295,7 +294,12 @@ function buildCommutersTable(
   return h(
     'div',
     { className: 'border-t border-border/30 pt-1' },
-    ReactDataTable(h, useStateHook, tableOptions, tableHeaderData),
+    h(ReactDataTable, {
+      h,
+      useStateHook,
+      tableOptions,
+      tableValues: tableHeaderData,
+    }),
     h(
       'div',
       {
@@ -307,7 +311,12 @@ function buildCommutersTable(
             : {}),
         },
       },
-      ReactDataTable(h, useStateHook, tableOptions, tableBodyData),
+      h(ReactDataTable, {
+        h,
+        useStateHook,
+        tableOptions,
+        tableValues: tableBodyData,
+      }),
     ),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
@@ -331,8 +340,9 @@ function buildCommutersTable(
 function getColumnTemplate(viewState: CommutersViewState): string {
   const base = [
     'minmax(6rem,1fr)',
+    // Commuter/commuter share column is wider to accommodate the wider header
     'minmax(4.5rem,15rem)',
-    'minmax(4.5rem,15rem)',
+    'minmax(4.5rem,9rem)',
   ];
 
   if (viewState.modeShareLayout === ModeLayout.All) {
