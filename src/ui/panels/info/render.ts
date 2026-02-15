@@ -55,26 +55,18 @@ export function renderStatisticsView(gameData: RegionGameData): HTMLElement {
 
   root.append(
     buildViewHeader(gameData.displayName),
-    DetailRow('Full Name', gameData.fullName),
     DetailRow('Type', unitLabel ? unitLabel : DEFAULT_UNIT_LABELS.singular),
     DetailRow('Real Population', formatNumberOrDefault(realPopulation)),
-    Divider(),
-    DetailRow('Demand Point Count', formatNumberOrDefault(demandPoints)),
-    DetailRow('Residents', formatNumberOrDefault(residents)),
-    DetailRow('Jobs', formatNumberOrDefault(workers)),
-    Divider(),
     DetailRow(
-      'Total Area',
+      'Area',
       gameData.area
         ? `${formatNumberOrDefault(gameData.area, 2)} km²`
         : UNKNOWN_VALUE_DISPLAY,
     ),
-    DetailRow(
-      'Playable Area',
-      gameData.gameArea
-        ? `${formatNumberOrDefault(gameData.gameArea, 2)} km²`
-        : UNKNOWN_VALUE_DISPLAY,
-    ),
+    Divider(),
+    DetailRow('Demand Point Count', formatNumberOrDefault(demandPoints)),
+    DetailRow('Residents', formatNumberOrDefault(residents)),
+    DetailRow('Jobs', formatNumberOrDefault(workers)),
     Divider(),
     DetailRow(
       'Station Count',
@@ -86,12 +78,12 @@ export function renderStatisticsView(gameData: RegionGameData): HTMLElement {
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-            Array.from(infraData!.trackLengths.values()).reduce(
-              (a, b) => a + b,
-              0,
-            ),
-            2,
-          )} km`
+          Array.from(infraData!.trackLengths.values()).reduce(
+            (a, b) => a + b,
+            0,
+          ),
+          2,
+        )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     // TODO: Show Route bullets, but this requires allowing overflow and likely a different base component structure than DetailRow

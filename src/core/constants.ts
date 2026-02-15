@@ -57,3 +57,4 @@ export const INFO_PANEL_MIN_WIDTH = 80;
 // TODO: (Feature) add as config option
 export const SHOW_UNPOPULATED_REGIONS = false; // Whether to show regions with no demand data by default in the overview panel and layer.
 export const ENFORCE_ONE_DATASET_VISIBLE = true; // Whether to enforce that only one dataset's map layers can be visible at a time, or allow multiple datasets' layers to be toggled on simultaneously
+export const USE_REACT_INFO_PANEL = true;

@@ -74,7 +74,6 @@ export class RegionsInfoPanel {
     const b3 = document.createElement('div');
     b3.className = `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`;
     b2.appendChild(b3);
-
     this.mainSelectRow = new SelectRow(`${this.rootId}-main-select`, [
       {
         label: 'Summary',

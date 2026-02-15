@@ -60,7 +60,7 @@ export class RegionsUIManager {
       this.state,
       this.regionDataManager,
       this.getInfoPanelRoot.bind(this),
-      () => this.clearSelection(),
+      () => this.clearSelection()
     );
 
     this.commuterRefreshLoop = new CommuterRefreshLoop(

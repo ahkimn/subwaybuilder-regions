@@ -1,4 +1,6 @@
-import { CloseButton } from './CloseButton';
+import type { createElement, ReactNode } from 'react';
+
+import { CloseButton, ReactCloseButton } from './CloseButton';
 
 export function PanelHeader(
   title: string,
@@ -40,4 +42,32 @@ export function PanelHeader(
     el: header,
     setTitle,
   };
+}
+
+export function ReactPanelHeader(
+  h: typeof createElement,
+  title: string,
+  onClose: () => void,
+): ReactNode {
+  return h(
+    'div',
+    {
+      className: [
+        'flex h-9 min-h-9 w-full p-1',
+        'border-b border-primary/15',
+        'items-center justify-between bg-primary-foreground',
+      ].join(' '),
+    },
+    h('div', { className: 'flex items-center h-full w-full' }),
+    h(
+      'div',
+      { className: 'flex items-center h-full w-full' },
+      h('h1', { className: 'font-semibold whitespace-nowrap' }, title),
+    ),
+    h(
+      'div',
+      { className: 'flex items-center h-full w-full gap-1 justify-end' },
+      ReactCloseButton(h, onClose),
+    ),
+  );
 }
