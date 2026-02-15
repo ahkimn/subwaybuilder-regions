@@ -5,6 +5,7 @@ import type {
   SetStateAction,
   useState,
 } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { ModeShare, type RegionGameData } from '../../../core/types';
 import {
@@ -22,6 +23,7 @@ import {
   ReactSelectRow,
   type SelectButtonConfig,
 } from '../../elements/SelectRow';
+import { buildReactViewHeader } from '../shared/view-header';
 import {
   CommuterDirection,
   type CommutersViewState,
@@ -40,6 +42,13 @@ type CommuterRowData = {
   walkingValue: number;
 };
 
+type CommutersBodyTableProps = {
+  h: typeof createElement;
+  useStateHook: typeof useState;
+  tableOptions: TableOptions;
+  tableBodyData: ReactDataTableRow[];
+};
+
 export function renderCommutersView(
   h: typeof createElement,
   useStateHook: typeof useState,
@@ -47,22 +56,21 @@ export function renderCommutersView(
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
-  const commuterData = gameData.commuterData!;
+  const commuterSummaryData = gameData.commuterSummary!;
+  const commuterDetailsData = gameData.commuterDetails!;
   const isOutbound = viewState.direction === CommuterDirection.Outbound;
   const aggregateModeShare = isOutbound
-    ? commuterData.residentModeShare
-    : commuterData.workerModeShare;
+    ? commuterSummaryData.residentModeShare
+    : commuterSummaryData.workerModeShare;
   const byRegionModeShare = isOutbound
-    ? commuterData.residentModeShareByRegion
-    : commuterData.workerModeShareByRegion;
+    ? commuterDetailsData.residentModeShareByRegion
+    : commuterDetailsData.workerModeShareByRegion;
   const populationCount = ModeShare.total(aggregateModeShare);
   const rows = sortCommuterRows(
     deriveCommuterRows(byRegionModeShare, populationCount, viewState),
     viewState,
   );
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
-  const mayRequireScroll =
-    viewState.expanded && rows.length > DEFAULT_TABLE_ROWS;
 
   return h(
     'div',
@@ -78,7 +86,6 @@ export function renderCommutersView(
       viewState,
       rows,
       rowsToDisplay,
-      mayRequireScroll,
       setViewState,
     ),
   );
@@ -110,10 +117,7 @@ function buildCommutersHeader(
       ),
   });
 
-  return h(
-    'div',
-    { className: 'flex justify-between items-center text-sm font-medium h-8' },
-    h('span', { className: 'font-medium leading-none' }, gameData.displayName),
+  return buildReactViewHeader(h, gameData.displayName, [
     ReactSelectRow(
       h,
       directionConfigs,
@@ -121,7 +125,7 @@ function buildCommutersHeader(
       'commutes-direction',
       false,
     ),
-  );
+  ]);
 }
 
 function buildSummaryStatistics(
@@ -293,7 +297,6 @@ function buildCommutersTable(
   viewState: CommutersViewState,
   rows: CommuterRowData[],
   rowsToDisplay: number,
-  mayRequireScroll: boolean,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
   const tableOptions: TableOptions = {
@@ -315,24 +318,12 @@ function buildCommutersTable(
       tableOptions,
       tableValues: tableHeaderData,
     }),
-    h(
-      'div',
-      {
-        className: `overflow-y-auto min-h-0${mayRequireScroll ? ' pr-2' : ''}`,
-        style: {
-          maxHeight: '60vh',
-          ...(mayRequireScroll
-            ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' }
-            : {}),
-        },
-      },
-      h(ReactDataTable, {
-        h,
-        useStateHook,
-        tableOptions,
-        tableValues: tableBodyData,
-      }),
-    ),
+    h(CommutersBodyTable, {
+      h,
+      useStateHook,
+      tableOptions,
+      tableBodyData,
+    }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
           'div',
@@ -349,6 +340,65 @@ function buildCommutersTable(
           ),
         )
       : null,
+  );
+}
+
+function CommutersBodyTable({
+  h,
+  useStateHook,
+  tableOptions,
+  tableBodyData,
+}: CommutersBodyTableProps): ReactNode {
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [hasOverflow, setHasOverflow] = useStateHook<boolean>(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateOverflowState = () => {
+      const nextHasOverflow =
+        container.scrollHeight > container.clientHeight + 1;
+      setHasOverflow((current) =>
+        current === nextHasOverflow ? current : nextHasOverflow,
+      );
+    };
+
+    updateOverflowState();
+
+    const resizeObserver = new ResizeObserver(updateOverflowState);
+    resizeObserver.observe(container);
+    if (container.firstElementChild instanceof HTMLElement) {
+      resizeObserver.observe(container.firstElementChild);
+    }
+
+    window.addEventListener('resize', updateOverflowState);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateOverflowState);
+    };
+  }, [tableBodyData.length]);
+
+  return h(
+    'div',
+    {
+      ref: (node: HTMLElement | null) => {
+        containerRef.current = node;
+      },
+      className: `overflow-y-auto min-h-0${hasOverflow ? ' pr-2' : ''}`,
+      style: {
+        maxHeight: '60vh',
+        ...(hasOverflow
+          ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' }
+          : {}),
+      },
+    },
+    h(ReactDataTable, {
+      h,
+      useStateHook,
+      tableOptions,
+      tableValues: tableBodyData,
+    }),
   );
 }
 
@@ -393,14 +443,6 @@ function buildTableHeader(
     });
   }
 
-  const sortHandlers = [
-    () => changeSort(0),
-    () => changeSort(1),
-    () => changeSort(2),
-    () => changeSort(3),
-    () => changeSort(4),
-  ];
-
   const directionHeadLabel =
     viewState.direction === CommuterDirection.Outbound
       ? 'Destination'
@@ -422,15 +464,18 @@ function buildTableHeader(
       ? 'Walking'
       : 'Walking (%)';
 
+  const headerLabels = [
+    directionHeadLabel,
+    commuterHeadLabel,
+    transitHeadLabel,
+    ...(viewState.modeShareLayout === ModeLayout.All
+      ? [drivingHeadLabel, walkingHeadLabel]
+      : []),
+  ];
+  const sortHandlers = headerLabels.map((_, index) => () => changeSort(index));
+
   const titleRow: ReactDataTableRow = {
-    rowValues: [
-      directionHeadLabel,
-      commuterHeadLabel,
-      transitHeadLabel,
-      ...(viewState.modeShareLayout === ModeLayout.All
-        ? [drivingHeadLabel, walkingHeadLabel]
-        : []),
-    ],
+    rowValues: headerLabels,
     options: {
       header: true,
       onClick: sortHandlers,
@@ -509,7 +554,7 @@ function buildTableHeader(
         : ['', commuterDisplayControl, modeDisplayControl],
     options: {
       header: true,
-      borderBottom: true,
+      borderClassName: 'border-b border-border/30',
       align:
         viewState.modeShareLayout === ModeLayout.All
           ? ['left', 'right', 'right', 'right', 'right']

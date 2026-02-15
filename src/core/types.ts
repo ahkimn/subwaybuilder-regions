@@ -8,6 +8,14 @@ export type ModeShare = {
 };
 
 export const ModeShare = {
+  createEmpty(): ModeShare {
+    return {
+      transit: 0,
+      driving: 0,
+      walking: 0,
+      unknown: 0,
+    };
+  },
   add(a: ModeShare, b: ModeShare): ModeShare {
     return {
       transit: a.transit + b.transit,
@@ -16,6 +24,13 @@ export const ModeShare = {
       unknown: a.unknown + b.unknown,
     };
   },
+  addInPlace(target: ModeShare, source: ModeShare): ModeShare {
+    target.transit += source.transit;
+    target.driving += source.driving;
+    target.walking += source.walking;
+    target.unknown += source.unknown;
+    return target;
+  },
   total(modeShare: ModeShare): number {
     return (
       modeShare.transit +
@@ -23,6 +38,9 @@ export const ModeShare = {
       modeShare.walking +
       modeShare.unknown
     );
+  },
+  totalOrUndefined(modeShare: ModeShare | undefined): number | undefined {
+    return (modeShare && this.total(modeShare)) || undefined;
   },
   share(modeShare: ModeShare, mode: keyof ModeShare): number {
     const total = this.total(modeShare);
@@ -74,14 +92,17 @@ export type DatasetSource = {
   writable: boolean; // whether or not the data can be overwritten by the user
 };
 
-export type RegionCommuterData = {
+export type RegionCommuterSummaryData = {
   residentModeShare: ModeShare; // Mode share for all commuters living in the region, regardless of where they work
   workerModeShare: ModeShare; // Mode share for all commuters working in the region, regardless of where they live
+  metadata: RegionGameMetadata; // metadata
+};
 
+export type RegionCommuterDetailsData = {
   residentModeShareByRegion: Map<string, ModeShare>; // region name to mode share for commuters living in the region
   workerModeShareByRegion: Map<string, ModeShare>; // region name to mode share for commuters working in the region
 
-  metadata?: RegionGameMetadata; // metadata
+  metadata: RegionGameMetadata; // metadata
 
   // Potential future data fields:
   /*
@@ -132,9 +153,20 @@ export type RegionGameData = {
   readonly gameArea: number | null; // area of the region within the game's playable area in square kilometers
   readonly realPopulation: number | null; // real-world population if available
   demandData?: RegionDemandData; // demand data for the region, dynamically updated
-  commuterData?: RegionCommuterData; // commuter data for the region, dynamically updated
+  commuterSummary?: RegionCommuterSummaryData; // commuter summary data for the region, dynamically updated
+  commuterDetails?: RegionCommuterDetailsData; // commuter detailed data for the region, dynamically updated
   infraData?: RegionInfraData; // infrastructure data for the region, dynamically updated
 };
+
+export const RegionDataType = {
+  CommuterSummary: 'CommuterSummary',
+  CommuterDetails: 'CommuterDetails',
+  Infra: 'Infra',
+  Demand: 'Demand',
+} as const satisfies Record<string, string>;
+
+export type RegionDataType =
+  (typeof RegionDataType)[keyof typeof RegionDataType];
 
 export const RegionGameData = {
   isPopulated(regionData: RegionGameData): boolean {

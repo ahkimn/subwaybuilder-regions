@@ -11,7 +11,14 @@ import type {
 
 type ToolbarPanelHostOptions = Pick<
   UIFloatingPanelOptions,
-  'id' | 'icon' | 'title' | 'width' | 'defaultPosition'
+  | 'id'
+  | 'icon'
+  | 'title'
+  | 'width'
+  | 'height'
+  | 'defaultWidth'
+  | 'defaultHeight'
+  | 'defaultPosition'
 >;
 
 export class ReactToolbarPanelHost {

@@ -2,11 +2,13 @@ import { createElement, type ReactNode, useEffect, useState } from 'react';
 
 import {
   INFO_PANEL_MIN_WIDTH,
+  LOADING_VALUE_DISPLAY,
   REGIONS_INFO_PANEL_ID,
   REGIONS_INFO_PANEL_TITLE,
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import {
+  RegionDataType,
   type RegionGameData,
   RegionSelection,
   type UIState,
@@ -79,15 +81,14 @@ export function RegionsInfoPanel({
   useEffect(() => {
     setGameData(getCurrentGameData(regionDataManager, uiState));
 
-    if (!uiState.isActive) {
-      return;
-    }
-
-    const selectionSnapshot = uiState.activeSelection;
+    if (!uiState.isActive) return;
+    const selectionSnapshot = uiState.activeSelection!;
     let cancelled = false;
     if (activeView === RegionsInfoPanelView.Statistics) {
       void regionDataManager
-        .ensureExistsData(uiState, 'infra', { forceBuild: false })
+        .ensureExistsDataForSelection(uiState, RegionDataType.Infra, {
+          forceBuild: false,
+        })
         .then(() => {
           if (cancelled) return;
           if (
@@ -100,19 +101,31 @@ export function RegionsInfoPanel({
           setRenderToken((current) => current + 1);
         });
     } else if (activeView === RegionsInfoPanelView.Commuters) {
-      void regionDataManager
-        .ensureExistsData(uiState, 'commuter', { forceBuild: true })
-        .then(() => {
-          if (cancelled) return;
-          if (
-            !RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection)
-          )
-            return;
+      const activeDatasetIdentifier = selectionSnapshot.datasetIdentifier;
+      void Promise.all([
+        regionDataManager.ensureExistsDataForDataset(
+          activeDatasetIdentifier,
+          RegionDataType.CommuterSummary,
+          {
+            forceBuild: false,
+          },
+        ),
+        regionDataManager.ensureExistsDataForSelection(
+          uiState,
+          RegionDataType.CommuterDetails,
+          { forceBuild: true },
+        ),
+      ]).then(() => {
+        if (cancelled) return;
+        if (
+          !RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection)
+        )
+          return;
 
-          setGameData(getCurrentGameData(regionDataManager, uiState));
-          // Force a repaint when game data was updated in-place and object identity did not change.
-          setRenderToken((current) => current + 1);
-        });
+        setGameData(getCurrentGameData(regionDataManager, uiState));
+        // Force a repaint when game data was updated in-place and object identity did not change.
+        setRenderToken((current) => current + 1);
+      });
     }
 
     return () => {
@@ -143,30 +156,40 @@ export function RegionsInfoPanel({
     }),
   });
 
-  const content: ReactNode = gameData
-    ? activeView === RegionsInfoPanelView.Statistics
-      ? renderStatisticsView(createElement, gameData)
-      : gameData.commuterData
-        ? renderCommutersView(
-            createElement,
-            useState,
-            gameData,
-            commutersViewState,
-            setCommutersViewState,
-          )
+  let content: ReactNode;
+
+  switch (activeView) {
+    case RegionsInfoPanelView.Statistics:
+      content = gameData
+        ? renderStatisticsView(createElement, gameData)
         : createElement(
             'div',
-            {
-              className:
-                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-            },
-            'Loading commuter data...',
-          )
-    : createElement(
-        'div',
-        { className: 'text-xs text-muted-foreground' },
-        'No game data set for info panel rendering',
-      );
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
+      break;
+    case RegionsInfoPanelView.Commuters:
+      content =
+        gameData && gameData.commuterSummary && gameData.commuterDetails
+          ? renderCommutersView(
+              createElement,
+              useState,
+              gameData,
+              commutersViewState,
+              setCommutersViewState,
+            )
+          : createElement(
+              'div',
+              {
+                className:
+                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+              },
+              LOADING_VALUE_DISPLAY,
+            );
+      break;
+    default:
+      throw new Error(`Unsupported view ${activeView}`);
+  }
 
   return createElement(
     'div',

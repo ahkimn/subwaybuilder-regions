@@ -9,6 +9,24 @@ export class DatasetMissingDataLayerError extends Error {
   }
 }
 
+export class DatasetMissingGridIndexError extends Error {
+  constructor(datasetId: string) {
+    super(
+      `Dataset ${datasetId} is missing required grid index for boundary lookups`,
+    );
+    this.name = 'DatasetMissingGridIndexError';
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+export class DatasetEmptyError extends Error {
+  constructor(datasetId: string) {
+    super(`Dataset ${datasetId} contains no features`);
+    this.name = 'DatasetEmptyError';
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 export class DatasetMissingFeatureError extends Error {
   constructor(
     datasetId: string,

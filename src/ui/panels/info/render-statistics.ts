@@ -9,7 +9,7 @@ import type { RegionGameData } from '../../../core/types';
 import { formatNumberOrDefault } from '../../../core/utils';
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
-import { buildReactViewHeader } from './render-shared';
+import { buildReactViewHeader } from '../shared/view-header';
 
 export function renderStatisticsView(
   h: typeof createElement,

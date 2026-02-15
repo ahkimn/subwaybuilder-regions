@@ -2,6 +2,25 @@
 
 [Back to README](README.md)
 
+## v0.2.7 - 2026-02-15
+
+_Game version_ v1.0.3
+
+### New Features
+
+- Added both commuters and infrastructure data computation for `Regions Overview`.
+  - Infrastructure data is calculated on a dataset level instead of per-region infra calls using a new `buildDatasetInfraData` path in `RegionDataBuilder`
+  - Commuter data loads independently of infrastructure data
+- Commuter-related data is now split into `CommuterSummary` and `CommuterDetail` fields.
+  - `CommuterSummary` is loaded / requested at a dataset level and power the Overview Panel
+  - `CommuterDetail` contains region/region commuter counts and is requested per region from the Info Panel
+- Added in-session state persistence for `Regions Overview` controls (tab/search/sort/dataset) across close/reopen, with reset on city change.
+
+### Other Updates
+
+- Improved infrastructure computation performance by applying boundary-grid candidate filtering for both existing region-based and new dataset-level infrastructure computations.
+- All overview panel columns are now sortable and show `Loading...` placeholders while async (commuter / infra) data is being computed.
+
 ## v0.2.6 - 2026-02-15
 
 _Game version_ v1.0.3

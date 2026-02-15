@@ -1,14 +1,20 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
+import { LOADING_VALUE_DISPLAY } from '../../../core/constants';
 import {
+  ModeShare,
   type RegionSelection,
   RegionSelection as RegionSelectionUtils,
 } from '../../../core/types';
-import { formatNumberOrDefault } from '../../../core/utils';
+import {
+  formatNumberOrDefault,
+  formatPercentOrDefault,
+} from '../../../core/utils';
 import type {
   DataRowOptions,
   ReactDataTableRow,
+  TableCellPaddingClassName,
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
@@ -21,6 +27,43 @@ import type {
   RegionsOverviewTab,
 } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
+
+const MIN_ROWS_FOR_FULL_HEIGHT = 10;
+const OVERVIEW_HEADER_LABELS = [
+  'Region Name',
+  'Real Pop',
+  'Area (km\u00B2)',
+  'Total Commuters',
+  'Residents',
+  'Workers',
+  'Transit (%)',
+  'Driving (%)',
+  'Walking (%)',
+  'Stations',
+  'Tracks (km)',
+  'Routes',
+] as const;
+const OVERVIEW_COLUMN_COUNT = OVERVIEW_HEADER_LABELS.length;
+const OVERVIEW_MIN_COLUMN_PADDING_CH = 2;
+const OVERVIEW_MIN_NON_NAME_COLUMN_CH = 7;
+const OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH = '0.75rem';
+const OVERVIEW_CELL_PADDING_CLASS_NAMES: TableCellPaddingClassName = {
+  left: 'pl-2 pr-1',
+  right: 'pl-1 pr-2',
+  center: 'px-1.5',
+};
+
+function buildOverviewColumnTemplate(headerLabels: readonly string[]): string {
+  return headerLabels
+    .map((label) => {
+      const minCh = Math.max(
+        OVERVIEW_MIN_NON_NAME_COLUMN_CH,
+        label.length + OVERVIEW_MIN_COLUMN_PADDING_CH,
+      );
+      return `minmax(calc(${minCh}ch + ${OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH}),max-content)`;
+    })
+    .join(' ');
+}
 
 export type InputFieldProperties = {
   value?: string;
@@ -47,11 +90,6 @@ export function renderLayerSelectorRow(
   return h(
     'div',
     { className: 'flex flex-col gap-1.5' },
-    h(
-      'div',
-      { className: 'text-xs font-medium text-muted-foreground' },
-      'Region Layer',
-    ),
     ReactSelectRow(
       h,
       buttonConfigs,
@@ -114,28 +152,32 @@ export function renderOverviewTable(
   onSortChange: (columnIndex: number) => void,
   onSelectRow: (selection: RegionSelection) => void,
 ): React.ReactNode {
+  const shouldFillAvailableHeight = rows.length > MIN_ROWS_FOR_FULL_HEIGHT;
+
   const tableOptions: TableOptions = {
-    columnTemplate:
-      'minmax(10rem,1.2fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr) minmax(5rem,0.7fr)',
+    columnTemplate: buildOverviewColumnTemplate(OVERVIEW_HEADER_LABELS),
     density: 'compact',
+    cellPaddingClassName: OVERVIEW_CELL_PADDING_CLASS_NAMES,
   };
 
-  const sortHandlers = [
-    () => onSortChange(0),
-    () => onSortChange(1),
-    () => onSortChange(2),
-    () => onSortChange(3),
-    () => onSortChange(4),
+  const sortHandlers = Array.from(
+    { length: OVERVIEW_COLUMN_COUNT },
+    (_, index) => () => onSortChange(index),
+  );
+
+  const tableAlign: ('left' | 'right' | 'center')[] = [
+    'left',
+    ...Array(OVERVIEW_COLUMN_COUNT - 1).fill('right'),
   ];
 
   const tableRows: ReactDataTableRow[] = [
     {
-      rowValues: ['Region', 'Real Pop', 'Residents', 'Workers', 'Area'],
+      rowValues: [...OVERVIEW_HEADER_LABELS],
       options: {
         header: true,
-        borderBottom: true,
         onClick: sortHandlers,
-        align: ['left', 'right', 'right', 'right', 'right'],
+        align: tableAlign,
+        borderClassName: '',
         sortState: {
           index: sortState.sortIndex,
           directionLabel:
@@ -152,7 +194,7 @@ export function renderOverviewTable(
     tableRows.push({
       rowValues: ['No regions match the current filters.'],
       options: {
-        colSpan: [5],
+        colSpan: [OVERVIEW_COLUMN_COUNT],
         align: ['left'],
         rowClassName: 'text-xs text-muted-foreground',
       },
@@ -163,9 +205,33 @@ export function renderOverviewTable(
         activeSelection !== null &&
         RegionSelectionUtils.isEqual(activeSelection, row.selection);
       const rowAction = () => onSelectRow(row.selection);
+      // TODO (Game Bug): Resident worker counts from the demand data are currently inaccurate. Using the commuter summary mode share values (if present) until it is fixed.
+      const residentsFromCommuterSummary = ModeShare.totalOrUndefined(
+        row.gameData.commuterSummary?.residentModeShare,
+      );
+      const workersFromCommuterSummary = ModeShare.totalOrUndefined(
+        row.gameData.commuterSummary?.workerModeShare,
+      );
+      const residents =
+        residentsFromCommuterSummary ?? row.gameData.demandData?.residents ?? 0;
+      const workers =
+        workersFromCommuterSummary ?? row.gameData.demandData?.workers ?? 0;
+      const totalCommuters = residents + workers;
+
+      const commuterSummary = row.gameData.commuterSummary;
+      const infraData = row.gameData.infraData;
+      const totalTrackLength = infraData
+        ? Array.from(infraData.trackLengths.values()).reduce((a, b) => a + b, 0)
+        : null;
+      const totalModeShare = commuterSummary
+        ? ModeShare.add(
+            commuterSummary.residentModeShare,
+            commuterSummary.workerModeShare,
+          )
+        : null;
       const rowOptions: DataRowOptions = {
-        onClick: [rowAction, rowAction, rowAction, rowAction, rowAction],
-        align: ['left', 'right', 'right', 'right', 'right'],
+        onClick: Array.from({ length: OVERVIEW_COLUMN_COUNT }, () => rowAction),
+        align: tableAlign,
         rowClassName: isActive
           ? 'bg-accent text-accent-foreground transition-colors cursor-pointer'
           : 'transition-colors cursor-pointer',
@@ -176,9 +242,34 @@ export function renderOverviewTable(
         rowValues: [
           row.gameData.displayName,
           formatNumberOrDefault(row.gameData.realPopulation),
-          formatNumberOrDefault(row.gameData.demandData?.residents ?? null),
-          formatNumberOrDefault(row.gameData.demandData?.workers ?? null),
           formatNumberOrDefault(row.gameData.area, 2),
+          formatNumberOrDefault(totalCommuters),
+          formatNumberOrDefault(residents),
+          formatNumberOrDefault(workers),
+          totalModeShare
+            ? formatPercentOrDefault(
+                ModeShare.share(totalModeShare, 'transit') * 100,
+              )
+            : LOADING_VALUE_DISPLAY,
+          totalModeShare
+            ? formatPercentOrDefault(
+                ModeShare.share(totalModeShare, 'driving') * 100,
+              )
+            : LOADING_VALUE_DISPLAY,
+          totalModeShare
+            ? formatPercentOrDefault(
+                ModeShare.share(totalModeShare, 'walking') * 100,
+              )
+            : LOADING_VALUE_DISPLAY,
+          infraData
+            ? formatNumberOrDefault(infraData.stations.size)
+            : LOADING_VALUE_DISPLAY,
+          infraData
+            ? formatNumberOrDefault(totalTrackLength, 2)
+            : LOADING_VALUE_DISPLAY,
+          infraData
+            ? formatNumberOrDefault(infraData.routes.size)
+            : LOADING_VALUE_DISPLAY,
         ],
         options: rowOptions,
       });
@@ -187,10 +278,21 @@ export function renderOverviewTable(
 
   return h(
     'div',
-    { className: 'rounded-md border border-border/60 overflow-hidden min-h-0' },
+    {
+      className: [
+        'rounded-md border border-border/60 overflow-hidden min-h-0',
+        shouldFillAvailableHeight ? 'flex-1' : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+    },
     h(
       'div',
-      { className: 'overflow-auto max-h-[60vh] px-1.5 py-1' },
+      {
+        className: shouldFillAvailableHeight
+          ? 'overflow-auto h-full px-1.5 py-1'
+          : 'overflow-auto px-1.5 py-1',
+      },
       h(ReactDataTable, {
         h,
         useStateHook,

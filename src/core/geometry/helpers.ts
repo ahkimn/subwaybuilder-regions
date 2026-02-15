@@ -63,15 +63,20 @@ export function isCoordinateWithinFeature(
   feature: Feature<Polygon | MultiPolygon>,
   bbox?: BBox,
 ) {
-  if (
-    bbox &&
-    (lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3])
-  ) {
+  if (bbox && isCoordinateOutsideBBox(lng, lat, bbox)) {
     return false;
   }
 
   const point = turf.point([lng, lat]);
   return turf.booleanPointInPolygon(point, feature, { ignoreBoundary: false });
+}
+
+export function isCoordinateOutsideBBox(
+  lng: number,
+  lat: number,
+  bbox: BBox,
+): boolean {
+  return lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3];
 }
 
 // BBox is [west, south, east, north] => [minLng, minLat, maxLng, maxLat]
@@ -92,6 +97,24 @@ export function segmentBBox(a: Coordinate, b: Coordinate): BBox {
     Math.max(a[0], b[0]),
     Math.max(a[1], b[1]),
   ];
+}
+
+export function getArcBBox(coords: Coordinate[]): BBox {
+  const [firstLng = 0, firstLat = 0] = coords[0] ?? [];
+  let minLng = firstLng;
+  let minLat = firstLat;
+  let maxLng = firstLng;
+  let maxLat = firstLat;
+
+  for (let i = 1; i < coords.length; i++) {
+    const [lng, lat] = coords[i];
+    minLng = Math.min(minLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLng = Math.max(maxLng, lng);
+    maxLat = Math.max(maxLat, lat);
+  }
+
+  return [minLng, minLat, maxLng, maxLat];
 }
 
 export function polygonBBox(polygon: PolygonCoordinates): BBox {
