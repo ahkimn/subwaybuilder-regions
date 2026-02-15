@@ -58,3 +58,6 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
    - Floating panel has a set minimum size of 300 px x 200 px; however, this is far too small for the overview table
      - When the relevant API becomes available, prevent the panel from obscuring the data table / selector buttons
    - The first row of the overview table is not static, making referencing the region name while panning across the table difficult.
+9. _Infrastructure Refresh Coverage_ (`🔴 Open`)
+   - Infrastructure data now supports dataset-level build for Overview, but refresh is still request-driven (panel open / ensure calls) and not event-loop driven.
+   - Infra values can therefore become stale until the user re-enters the Overview tab.
