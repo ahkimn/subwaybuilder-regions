@@ -1,7 +1,6 @@
 import {
   INFO_PANEL_MIN_WIDTH,
   REGIONS_INFO_PANEL_ID,
-  REGIONS_INFO_PANEL_MOD_ID,
   REGIONS_INFO_PANEL_TITLE,
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
@@ -49,7 +48,6 @@ export class RegionsInfoPanel {
 
     this.root = document.createElement('div');
     this.root.id = this.rootId;
-    this.root.dataset.modId = REGIONS_INFO_PANEL_MOD_ID;
     this.root.className = [
       'pointer-events-auto',
       'backdrop-blur-sm bg-transparent',

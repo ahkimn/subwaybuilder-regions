@@ -8,7 +8,6 @@ import {
 import {
   INFO_PANEL_MIN_WIDTH,
   REGIONS_INFO_PANEL_ID,
-  REGIONS_INFO_PANEL_MOD_ID,
   REGIONS_INFO_PANEL_TITLE,
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
@@ -59,6 +58,7 @@ export function RegionsReactInfoPanel({
   const [gameData, setGameData] = useState<RegionGameData | null>(() =>
     getCurrentGameData(regionDataManager, uiState),
   );
+  const [, setRenderToken] = useState<number>(0);
 
   const activeDatasetIdentifier = uiState.activeSelection?.datasetIdentifier;
   const activeFeatureId = uiState.activeSelection?.featureId;
@@ -82,6 +82,8 @@ export function RegionsReactInfoPanel({
           return;
 
         setGameData(getCurrentGameData(regionDataManager, uiState));
+        // Force a repaint when game data was updated in-place and object identity did not change.
+        setRenderToken((current) => current + 1);
       });
 
     return () => {
@@ -126,7 +128,6 @@ export function RegionsReactInfoPanel({
     'div',
     {
       id: REGIONS_INFO_PANEL_ID,
-      'data-mod-id': REGIONS_INFO_PANEL_MOD_ID,
       className: [
         'pointer-events-auto',
         'backdrop-blur-sm bg-transparent',

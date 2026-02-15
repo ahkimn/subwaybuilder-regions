@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 
 import {
   REGIONS_INFO_CONTAINER_ID,
+  REGIONS_INFO_PANEL_MOD_ID,
   USE_REACT_INFO_PANEL,
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
@@ -50,6 +51,7 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
 
     const container = document.createElement('div');
     container.id = REGIONS_INFO_CONTAINER_ID;
+    container.dataset.modId = REGIONS_INFO_PANEL_MOD_ID;
     container.className = 'pointer-events-auto';
     parentContainer.appendChild(container);
 
