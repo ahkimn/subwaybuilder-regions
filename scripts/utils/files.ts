@@ -4,7 +4,7 @@ import path from 'path';
 import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
 
-import { DATA_INDEX_FILE } from '../../shared/consts';
+import { DATA_INDEX_FILE } from '../../shared/constants';
 import type {
   DatasetIndex,
   DatasetIndexEntry,

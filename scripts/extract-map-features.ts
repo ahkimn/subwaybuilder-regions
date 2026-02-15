@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import path from 'path';
 
-import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/consts';
+import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/constants';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
 import { extractWorldMapFeatures } from './extract/extract-row-map-features';
 import { extractUSBoundaries } from './extract/extract-us-map-features';

@@ -24,6 +24,7 @@ export const REGIONS_INFO_UPDATE_REAL_INTERVAL = 3; // 3 real-world seconds
 export const UPDATE_ON_DEMAND_CHANGE = true; // If true, commuter refresh checks are triggered by onDemandChange instead of polling
 export const REGIONS_DESELECT_KEY = 'Escape';
 
+export const REGIONS_INFO_ROOT_PREFIX = 'regions-info';
 export const REGIONS_INFO_PANEL_ID = 'regions-info-panel';
 export const REGIONS_INFO_PANEL_TITLE = 'Region Info';
 export const REGIONS_INFO_PANEL_MOD_ID = 'regions-info-panel';

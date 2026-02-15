@@ -1,9 +1,13 @@
-import { UserConfig } from 'vite';
 import { resolve } from 'path';
+import type { UserConfig } from 'vite';
 
 const sourceDirectory = resolve(__dirname, 'src');
 
 export default {
+  define: {
+    // react-dom attempts to check process.env.NODE_ENV
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
   resolve: {
     alias: {
       '@shared': resolve(__dirname, 'shared'),
@@ -26,6 +30,6 @@ export default {
     },
     outDir: 'dist',
     sourcemap: true,
-    minify: false,
+    minify: 'esbuild',
   },
 } satisfies UserConfig;

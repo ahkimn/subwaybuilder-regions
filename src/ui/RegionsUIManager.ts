@@ -2,6 +2,7 @@ import {
   LAYERS_PANEL_MOD_ID,
   modIdSelector,
   modRoleSelector,
+  REGIONS_INFO_CONTAINER_ID,
   REGIONS_INFO_PANEL_MOD_ID,
   REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID,
   REGIONS_LAYER_TOGGLE_MOD_ROLE,
@@ -128,6 +129,13 @@ export class RegionsUIManager {
 
     this.infoPanelObserver?.disconnect();
     this.infoPanelObserver = observeInfoPanelRoot(root, (node: HTMLElement) => {
+      if (
+        node.id === REGIONS_INFO_CONTAINER_ID ||
+        node.querySelector(`#${REGIONS_INFO_CONTAINER_ID}`) !== null
+      ) {
+        return;
+      }
+
       const infoPanelSelector = modIdSelector(REGIONS_INFO_PANEL_MOD_ID);
       // Ignore mutations to the info panel itself
       if (

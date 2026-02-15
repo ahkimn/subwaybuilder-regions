@@ -1,3 +1,5 @@
+import type { createElement, ReactNode } from 'react';
+
 type SVGNode =
   | { tag: 'path'; d: string }
   | {
@@ -53,6 +55,50 @@ export function createIconElement(
   }
 
   return svg;
+}
+
+export function createReactIconElement(
+  h: typeof createElement,
+  icon: IconDefinition,
+  options?: {
+    size?: number;
+    className?: string;
+  },
+): ReactNode {
+  const { size = 24, className = 'h-4 w-4 shrink-0' } = options ?? {};
+
+  return h(
+    'svg',
+    {
+      xmlns: SVG_NS,
+      viewBox: icon.viewBox ?? '0 0 24 24',
+      width: size,
+      height: size,
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      className,
+    },
+    icon.nodes.map((node, index) => {
+      if (node.tag === 'path') {
+        return h('path', {
+          key: `path-${index}`,
+          d: node.d,
+        });
+      }
+
+      return h('rect', {
+        key: `rect-${index}`,
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        rx: node.rx,
+      });
+    }),
+  );
 }
 
 export const CheckboxIcon: IconDefinition = {

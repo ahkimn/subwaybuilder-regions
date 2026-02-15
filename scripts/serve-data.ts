@@ -18,7 +18,7 @@ import minimist from 'minimist';
 import path from 'path';
 import process from 'process';
 
-import { DATA_DIR, DEFAULT_PORT, DEFAULT_URL } from '../shared/consts';
+import { DATA_DIR, DEFAULT_PORT, DEFAULT_URL } from '../shared/constants';
 import { requireNumber } from './utils/cli';
 
 const DEFAULT_DATA_DIR = path.join(__dirname, '..', DATA_DIR);

@@ -13,6 +13,7 @@ import {
   type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
+import { SortDirection } from '../types';
 import type { InputFieldProperties } from './render';
 import {
   renderLayerSelectorRow,
@@ -26,12 +27,13 @@ import type {
   RegionsOverviewSortState,
   RegionsOverviewTab,
 } from './types';
+import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
 
 const INITIAL_SORT_STATE: RegionsOverviewSortState = {
   sortIndex: 0,
   previousSortIndex: 1,
-  sortDirection: 'asc',
-  previousSortDirection: 'desc',
+  sortDirection: SortDirection.Asc,
+  previousSortDirection: SortDirection.Desc,
 };
 
 export type RegionsOverviewPanelProps = {
@@ -57,8 +59,9 @@ export function renderRegionsOverviewPanel(
   const [selectedDatasetIdentifier, setSelectedDatasetIdentifier] =
     useStateHook<string>(props.availableDatasetIdentifiers[0]);
   const [searchTerm, setSearchTerm] = useStateHook<string>('');
-  const [activeTab, setActiveTab] =
-    useStateHook<RegionsOverviewTab>('overview');
+  const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(
+    RegionsOverviewTabs.Overview,
+  );
   const [sortState, setSortState] =
     useStateHook<RegionsOverviewSortState>(INITIAL_SORT_STATE);
 
@@ -80,7 +83,10 @@ export function renderRegionsOverviewPanel(
       if (current.sortIndex === columnIndex) {
         return {
           ...current,
-          sortDirection: current.sortDirection === 'asc' ? 'desc' : 'asc',
+          sortDirection:
+            current.sortDirection === SortDirection.Asc
+              ? SortDirection.Desc
+              : SortDirection.Asc,
         };
       }
 
@@ -88,7 +94,8 @@ export function renderRegionsOverviewPanel(
         previousSortIndex: current.sortIndex,
         previousSortDirection: current.sortDirection,
         sortIndex: columnIndex,
-        sortDirection: columnIndex === 0 ? 'asc' : 'desc',
+        sortDirection:
+          columnIndex === 0 ? SortDirection.Asc : SortDirection.Desc,
       };
     });
   };
@@ -104,7 +111,7 @@ export function renderRegionsOverviewPanel(
 
   let tabContent: React.ReactNode;
   switch (activeTab) {
-    case 'overview':
+    case RegionsOverviewTabs.Overview:
       tabContent = h(
         'div',
         { className: 'flex flex-col gap-2 min-h-0' },
@@ -120,13 +127,13 @@ export function renderRegionsOverviewPanel(
         ),
       );
       break;
-    case 'commuter-flows':
+    case RegionsOverviewTabs.CommuterFlows:
       tabContent = renderPlaceholderTab(
         h,
         'Commuter flow analysis is under construction.',
       );
       break;
-    case 'ridership':
+    case RegionsOverviewTabs.Ridership:
     default:
       tabContent = renderPlaceholderTab(
         h,
@@ -199,9 +206,9 @@ function sortRows(
     a: RegionsOverviewRow,
     b: RegionsOverviewRow,
     index: number,
-    direction: 'asc' | 'desc',
+    direction: SortDirection,
   ): number => {
-    const multiplier = direction === 'asc' ? 1 : -1;
+    const multiplier = direction === SortDirection.Asc ? 1 : -1;
     switch (index) {
       case 1:
         return (

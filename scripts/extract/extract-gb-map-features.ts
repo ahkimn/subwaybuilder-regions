@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { SOURCE_DATA_DIR } from '../../shared/consts';
+import { SOURCE_DATA_DIR } from '../../shared/constants';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import type { Row } from '../utils/files';
 import {

@@ -1,4 +1,11 @@
-import { REGIONS_INFO_CONTAINER_ID } from '../../../core/constants';
+import { createElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+
+import {
+  REGIONS_INFO_CONTAINER_ID,
+  REGIONS_INFO_PANEL_MOD_ID,
+  REGIONS_INFO_ROOT_PREFIX,
+} from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import type { UIState } from '../../../core/types';
 import type { RegionsPanelRenderer } from '../types';
@@ -6,60 +13,95 @@ import { RegionsInfoPanel } from './RegionsInfoPanel';
 
 export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
   private root: HTMLElement | null = null;
-  private infoPanel: RegionsInfoPanel | null = null;
+  private reactRoot: Root | null = null;
+  private forceRefreshToken = 0;
+  private initialized = false;
 
   constructor(
     private readonly state: Readonly<UIState>,
-    private dataManager: RegionDataManager,
-    private getParentContainer: () => HTMLElement | null,
-    private onClose: () => void,
+    private readonly dataManager: RegionDataManager,
+    private readonly getParentContainer: () => HTMLElement | null,
+    private readonly onClose: () => void,
   ) {}
 
   initialize(): void {
-    // No-op for parity with other panel renderers.
+    if (this.initialized) return;
+    this.initialized = true;
   }
 
-  show() {
-    const parentContainer = this.getParentContainer();
-    if (!parentContainer || !this.infoPanel) {
-      console.warn('[Regions] Unable to show info panel');
-      return;
+  private ensureContainer(): HTMLElement | null {
+    if (this.root && document.contains(this.root)) {
+      return this.root;
     }
 
-    this.unmount();
+    const parentContainer = this.getParentContainer();
+    if (!parentContainer) {
+      console.warn('[Regions] Unable to resolve info panel root container');
+      return null;
+    }
+
+    // Guard against duplicate panel container creation on hot-reload.
+    this.removeContainer();
 
     const container = document.createElement('div');
     container.id = REGIONS_INFO_CONTAINER_ID;
+    container.dataset.modId = REGIONS_INFO_PANEL_MOD_ID;
     container.className = 'pointer-events-auto';
-
-    container.appendChild(this.infoPanel!.element);
     parentContainer.appendChild(container);
 
     this.root = container;
+    return container;
   }
 
-  get rootElement(): HTMLElement | null {
-    return this.root;
+  private renderReactInfoPanel(forceRefresh: boolean): void {
+    const container = this.ensureContainer();
+    if (!container) return;
+
+    if (!this.reactRoot) {
+      this.reactRoot = createRoot(container, {
+        // Avoid collision with game .
+        identifierPrefix: `${REGIONS_INFO_ROOT_PREFIX}-`,
+      });
+    }
+
+    if (forceRefresh) {
+      this.forceRefreshToken += 1;
+    }
+
+    this.reactRoot.render(
+      createElement(RegionsInfoPanel, {
+        regionDataManager: this.dataManager,
+        uiState: this.state,
+        onClose: this.onClose,
+        forceRefreshToken: this.forceRefreshToken,
+      }),
+    );
   }
 
-  tearDown() {
+  tearDown(): void {
+    this.initialized = false;
     this.unmount();
-    this.infoPanel = null;
+    this.forceRefreshToken = 0;
   }
 
-  // Unmount container from DOM
-  unmount() {
-    // Guard against duplicate panel container creation on hot-reload
+  unmount(): void {
+    this.reactRoot?.unmount();
+    this.reactRoot = null;
+    this.removeContainer();
+  }
+
+  private removeContainer(): void {
+    if (this.root && this.root.parentElement) {
+      this.root.replaceChildren();
+      this.root.remove();
+    }
+
     const existing = document.getElementById(REGIONS_INFO_CONTAINER_ID);
     if (existing && existing.parentElement) {
       existing.replaceChildren();
       existing.remove();
     }
 
-    if (this.root && this.root.parentElement) {
-      this.root.replaceChildren();
-      this.root.remove();
-    }
     this.root = null;
   }
 
@@ -67,19 +109,20 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     return !!this.root && document.contains(this.root);
   }
 
-  tryUpdatePanel() {
-    this.infoPanel?.tryRender();
+  tryUpdatePanel(): void {
+    if (!this.initialized) {
+      this.initialize();
+      return;
+    }
+    if (this.isVisible()) {
+      this.renderReactInfoPanel(false);
+    }
   }
 
-  showFeatureData() {
-    if (!this.infoPanel) {
-      this.infoPanel = new RegionsInfoPanel(
-        this.dataManager,
-        this.state,
-        this.onClose,
-      );
+  showFeatureData(): void {
+    if (!this.initialized) {
+      this.initialize();
     }
-    this.infoPanel.tryRender(true);
-    this.show();
+    this.renderReactInfoPanel(true);
   }
 }
