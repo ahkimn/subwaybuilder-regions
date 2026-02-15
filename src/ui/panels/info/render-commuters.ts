@@ -70,7 +70,9 @@ export function renderCommutersView(
     { className: 'flex flex-col gap-2 text-xs min-h-0' },
     buildCommutersHeader(h, gameData, viewState, setViewState),
     ...buildSummaryStatistics(h, populationCount, aggregateModeShare),
+    ReactDivider(h, 0.5),
     buildCommuterTableControls(h, viewState, setViewState),
+    ReactDivider(h, 0.5),
     buildCommutersTable(
       h,
       useStateHook,
@@ -145,7 +147,6 @@ function buildSummaryStatistics(
       'Walking Mode Share',
       formatPercentOrDefault((aggregateModeShare.walking / populationCount) * 100),
     ),
-    ReactDivider(h, 2),
   ];
 }
 
@@ -156,7 +157,7 @@ function buildCommuterTableControls(
 ): ReactNode {
   const columnConfigs: Map<string, SelectButtonConfig> = new Map();
   columnConfigs.set(ModeLayout.Transit, {
-    label: 'Transit Only',
+    label: 'Transit',
     onSelect: () =>
       setViewState((current) => {
         if (current.modeShareLayout === ModeLayout.Transit) return current;
@@ -164,14 +165,15 @@ function buildCommuterTableControls(
           return {
             ...current,
             modeShareLayout: ModeLayout.Transit,
-            sortIndex: Math.max(current.sortIndex, 2),
+            sortIndex: Math.min(current.sortIndex, 2),
+            previousSortIndex: Math.min(current.previousSortIndex, 2),
           };
         }
         return { ...current, modeShareLayout: ModeLayout.Transit };
       }),
   });
   columnConfigs.set(ModeLayout.All, {
-    label: 'All Modes',
+    label: 'All',
     onSelect: () =>
       setViewState((current) =>
         current.modeShareLayout === ModeLayout.All
@@ -183,21 +185,22 @@ function buildCommuterTableControls(
   return h(
     'div',
     {
-      className:
-        'flex items-center justify-start gap-1.5 pb-1 text-[0.72rem] text-muted-foreground',
+      className: 'flex items-center justify-start gap-1.5 pb-1',
     },
-    h('span', { className: 'font-semibold tracking-wide' }, 'Layout'),
     h(
-      'div',
-      { className: 'opacity-80' },
-      ReactSelectRow(
-        h,
-        columnConfigs,
-        viewState.modeShareLayout,
-        'commutes-mode-layout',
-        false,
-        COMPACT_SELECT_ROW_STYLE,
-      ),
+      'span',
+      {
+        className: 'text-[0.72rem] font-semibold tracking-wide text-muted-foreground',
+      },
+      'Layout',
+    ),
+    ReactSelectRow(
+      h,
+      columnConfigs,
+      viewState.modeShareLayout,
+      'commutes-mode-layout',
+      false,
+      COMPACT_SELECT_ROW_STYLE,
     ),
   );
 }
