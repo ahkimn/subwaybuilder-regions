@@ -9,19 +9,9 @@ import type { RegionGameData } from '../../../core/types';
 import { formatNumberOrDefault } from '../../../core/utils';
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
+import { buildReactViewHeader } from './render-shared';
 
-function buildReactViewHeader(
-  h: typeof createElement,
-  name: string,
-): ReactNode {
-  return h(
-    'div',
-    { className: 'flex justify-between items-center text-sm font-medium h-8' },
-    h('span', { className: 'font-medium leading-none' }, name),
-  );
-}
-
-export function renderReactStatisticsView(
+export function renderStatisticsView(
   h: typeof createElement,
   gameData: RegionGameData,
 ): ReactNode {
@@ -53,7 +43,7 @@ export function renderReactStatisticsView(
       h,
       'Area',
       gameData.area
-        ? `${formatNumberOrDefault(gameData.area, 2)} km^2`
+        ? `${formatNumberOrDefault(gameData.area, 2)} km\u00B2`
         : UNKNOWN_VALUE_DISPLAY,
     ),
     ReactDivider(h),
@@ -91,25 +81,6 @@ export function renderReactStatisticsView(
       existsInfraData
         ? `${formatNumberOrDefault(infraData!.routes.size)}`
         : LOADING_VALUE_DISPLAY,
-    ),
-  );
-}
-
-export function renderReactPlaceholderCommutersView(
-  h: typeof createElement,
-  gameData: RegionGameData,
-): ReactNode {
-  return h(
-    'div',
-    { className: 'flex flex-col gap-2 min-h-0' },
-    buildReactViewHeader(h, gameData.displayName),
-    h(
-      'div',
-      {
-        className:
-          'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-      },
-      'Commuter view migration is in progress.',
     ),
   );
 }

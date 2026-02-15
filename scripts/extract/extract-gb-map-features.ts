@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { SOURCE_DATA_DIR } from '../../shared/consts';
+import { SOURCE_DATA_DIR } from '../../shared/constants';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import type { Row } from '../utils/files';
 import {
@@ -159,8 +159,8 @@ async function extractWardBoundaries(
 ) {
   const boundaries: GeoJSON.FeatureCollection = useLocal
     ? await loadGeoJSONFromNDJSON(
-        path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES),
-      )
+      path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES),
+    )
     : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox));
   console.log(boundaries.features[0]);
   const populationCharacteristics: Row[] = loadCSV(

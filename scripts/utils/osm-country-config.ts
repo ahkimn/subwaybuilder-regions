@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { OSM_COUNTRY_CONFIG_FILE, SOURCE_DATA_DIR } from '../../shared/consts';
+import { OSM_COUNTRY_CONFIG_FILE, SOURCE_DATA_DIR } from '../../shared/constants';
 
 export type OSMBoundaryType = {
   adminLevels: number[]; // OSM admin levels to query for the administrative unit

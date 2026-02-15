@@ -1,9 +1,29 @@
-import type { NumberDisplay, SortDirection } from '../types';
+import { NumberDisplay, SortDirection } from '../types';
 
-export type RegionsInfoPanelView = 'statistics' | 'commuters';
-export type CommuterDirection = 'outbound' | 'inbound';
-export type ModeLayout = 'transit' | 'all';
-export type { NumberDisplay, SortDirection } from '../types';
+export const RegionsInfoPanelView = {
+  Statistics: 'Statistics',
+  Commuters: 'Commuters',
+} as const;
+
+export type RegionsInfoPanelView =
+  (typeof RegionsInfoPanelView)[keyof typeof RegionsInfoPanelView];
+
+export const CommuterDirection = {
+  Outbound: 'Outbound',
+  Inbound: 'Inbound',
+} as const;
+
+export type CommuterDirection =
+  (typeof CommuterDirection)[keyof typeof CommuterDirection];
+
+export const ModeLayout = {
+  Transit: 'Transit',
+  All: 'All',
+} as const;
+
+export type ModeLayout = (typeof ModeLayout)[keyof typeof ModeLayout];
+
+export { NumberDisplay, SortDirection };
 
 export type CommutersViewState = {
   direction: CommuterDirection;

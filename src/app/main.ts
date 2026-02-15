@@ -1,4 +1,4 @@
-import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/consts';
+import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/constants';
 
 import { REGIONS_DESELECT_KEY } from '../core/constants';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';

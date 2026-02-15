@@ -12,13 +12,15 @@ import type {
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
-import type { ReactSelectButtonConfig } from '../../elements/SelectRow';
+import type { SelectButtonConfig } from '../../elements/SelectRow';
 import { ReactSelectRow } from '../../elements/SelectRow';
+import { SortDirection } from '../types';
 import type {
   RegionsOverviewRow,
   RegionsOverviewSortState,
   RegionsOverviewTab,
 } from './types';
+import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
 
 export type InputFieldProperties = {
   value?: string;
@@ -34,7 +36,7 @@ export function renderLayerSelectorRow(
   getDatasetLabel: (datasetIdentifier: string) => string,
   onSelectDataset: (datasetIdentifier: string) => void,
 ): React.ReactNode {
-  const buttonConfigs: Map<string, ReactSelectButtonConfig> = new Map();
+  const buttonConfigs: Map<string, SelectButtonConfig> = new Map();
   datasetIdentifiers.forEach((datasetIdentifier) => {
     buttonConfigs.set(datasetIdentifier, {
       label: getDatasetLabel(datasetIdentifier),
@@ -64,18 +66,18 @@ export function renderOverviewTabs(
   activeTab: RegionsOverviewTab,
   onSetTab: (tab: RegionsOverviewTab) => void,
 ): React.ReactNode {
-  const tabOptions: Map<string, ReactSelectButtonConfig> = new Map();
-  tabOptions.set('overview', {
+  const tabOptions: Map<string, SelectButtonConfig> = new Map();
+  tabOptions.set(RegionsOverviewTabs.Overview, {
     label: 'Overview',
-    onSelect: () => onSetTab('overview'),
+    onSelect: () => onSetTab(RegionsOverviewTabs.Overview),
   });
-  tabOptions.set('commuter-flows', {
+  tabOptions.set(RegionsOverviewTabs.CommuterFlows, {
     label: 'Commuter Flows',
-    onSelect: () => onSetTab('commuter-flows'),
+    onSelect: () => onSetTab(RegionsOverviewTabs.CommuterFlows),
   });
-  tabOptions.set('ridership', {
+  tabOptions.set(RegionsOverviewTabs.Ridership, {
     label: 'Ridership',
-    onSelect: () => onSetTab('ridership'),
+    onSelect: () => onSetTab(RegionsOverviewTabs.Ridership),
   });
 
   return ReactSelectRow(
@@ -136,7 +138,10 @@ export function renderOverviewTable(
         align: ['left', 'right', 'right', 'right', 'right'],
         sortState: {
           index: sortState.sortIndex,
-          directionLabel: sortState.sortDirection === 'asc' ? ' ▲' : ' ▼',
+          directionLabel:
+            sortState.sortDirection === SortDirection.Asc
+              ? ' \u25B2'
+              : ' \u25BC',
           sortSelectedClass: 'text-foreground',
         },
       },

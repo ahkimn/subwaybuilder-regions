@@ -24,10 +24,10 @@ export type DataRowOptions = {
   align?: ('left' | 'right' | 'center')[];
 };
 
-export type DataTableValue = string | number | HTMLElement;
+export type ReactDataTableValue = ReactNode | HTMLElement;
 
-export type DataTableRow = {
-  rowValues: DataTableValue[];
+export type ReactDataTableRow = {
+  rowValues: ReactDataTableValue[];
   options?: DataRowOptions;
 };
 
@@ -45,83 +45,20 @@ export type TableOptions = {
   density: TableDensity;
 };
 
-// --- DOM Implementation ---
-
-export function DataTable(
-  tableOptions: TableOptions,
-  tableValues: DataTableRow[],
-): HTMLElement {
-  const table = document.createElement('div');
-  table.className = `grid min-w-0 ${TABLE_DENSITY_SETTINGS[tableOptions.density]}`;
-  table.style.gridTemplateColumns = tableOptions.columnTemplate;
-
-  tableValues.forEach(({ rowValues, options }) => {
-    const rowOptions = options ?? {};
-    const isHeader = rowOptions.header ?? false;
-    const rowCells: HTMLDivElement[] = [];
-
-    rowValues.forEach((value, colIndex) => {
-      const cell = buildDOMCell(value, rowOptions, colIndex, isHeader);
-      rowCells.push(cell);
-      table.appendChild(cell);
-    });
-
-    attachDOMRowHoverHandlers(rowCells, rowOptions.rowHoverClassName);
-  });
-
-  return table;
-}
-
-function buildDOMCell(
-  cellValue: DataTableValue,
-  rowOptions: DataRowOptions,
-  index: number,
-  isHeader: boolean,
-): HTMLDivElement {
-  const cell = document.createElement('div');
-
-  const presentation = computeCellPresentation(
-    cellValue,
-    rowOptions,
-    index,
-    isHeader,
-  );
-
-  if (rowOptions.onClick?.[index]) {
-    cell.addEventListener('click', rowOptions.onClick?.[index]);
-  }
-
-  if (presentation.style) {
-    Object.assign(cell.style, presentation.style);
-  }
-
-  cell.className = presentation.className;
-
-  if (cellValue instanceof HTMLElement) {
-    cell.appendChild(cellValue);
-    if (presentation.indicator)
-      cell.appendChild(document.createTextNode(presentation.indicator!));
-  } else {
-    cell.textContent = String(cellValue) + (presentation.indicator ?? '');
-  }
-
-  return cell;
-}
-
 // --- React Implementation --- //
 
 type ReactDataTableViewProps = {
   h: typeof createElement;
   useStateHook: typeof useState;
   tableOptions: TableOptions;
-  tableValues: DataTableRow[];
+  tableValues: ReactDataTableRow[];
 };
 
 export function ReactDataTable(
   h: typeof createElement,
   useStateHook: typeof useState,
   tableOptions: TableOptions,
-  tableValues: DataTableRow[],
+  tableValues: ReactDataTableRow[],
 ): ReactNode {
   return h(ReactDataTableView, { h, useStateHook, tableOptions, tableValues });
 }
@@ -171,7 +108,7 @@ function ReactDataTableView({
 
 function buildReactCell(
   h: typeof createElement,
-  cellValue: DataTableValue,
+  cellValue: ReactDataTableValue,
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,
@@ -198,13 +135,13 @@ function buildReactCell(
     : undefined;
   const onMouseLeave = hasRowHoverClass
     ? (event: { relatedTarget: EventTarget | null }) => {
-        if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
-          return;
-        }
-        setHoveredRowIndex((current) =>
-          current === rowIndex ? null : current,
-        );
+      if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
+        return;
       }
+      setHoveredRowIndex((current) =>
+        current === rowIndex ? null : current,
+      );
+    }
     : undefined;
 
   if (cellValue instanceof HTMLElement) {
@@ -232,21 +169,33 @@ function buildReactCell(
       },
       ...children,
     );
-  } else {
-    return h(
-      'div',
-      {
-        key,
-        className,
-        style: presentation.style,
-        'data-table-row': rowIndex,
-        onClick: rowOptions.onClick?.[index],
-        onMouseEnter,
-        onMouseLeave,
-      },
-      String(cellValue) + (presentation.indicator ?? ''),
-    );
   }
+
+  const children: ReactNode[] = [];
+  if (
+    cellValue !== null &&
+    cellValue !== undefined &&
+    typeof cellValue !== 'boolean'
+  ) {
+    children.push(cellValue);
+  }
+  if (presentation.indicator) {
+    children.push(presentation.indicator);
+  }
+
+  return h(
+    'div',
+    {
+      key,
+      className,
+      style: presentation.style,
+      'data-table-row': rowIndex,
+      onClick: rowOptions.onClick?.[index],
+      onMouseEnter,
+      onMouseLeave,
+    },
+    ...children,
+  );
 }
 
 // --- Helper Functions --- //
@@ -296,28 +245,6 @@ function getClassTokens(className?: string): string[] {
   return className?.split(/\s+/).filter(Boolean) ?? [];
 }
 
-function applyRowHover(
-  rowCells: HTMLElement[],
-  hoverClassTokens: string[],
-  shouldApply: boolean,
-): void {
-  for (const rowCell of rowCells) {
-    if (shouldApply) {
-      rowCell.classList.add(...hoverClassTokens);
-    } else {
-      rowCell.classList.remove(...hoverClassTokens);
-    }
-  }
-}
-
-function isEventMovingWithinRow(
-  relatedTarget: EventTarget | null,
-  rowCells: HTMLElement[],
-): boolean {
-  if (!(relatedTarget instanceof Node)) return false;
-  return rowCells.some((rowCell) => rowCell.contains(relatedTarget));
-}
-
 function isEventMovingWithinReactRow(
   relatedTarget: EventTarget | null,
   rowIndex: number,
@@ -329,41 +256,8 @@ function isEventMovingWithinReactRow(
     : false;
 }
 
-function attachDOMRowHoverHandlers(
-  rowCells: HTMLDivElement[],
-  rowHoverClassName?: string,
-): void {
-  const hoverClassTokens = getClassTokens(rowHoverClassName);
-
-  const onMouseOver = () => {
-    applyRowHover(rowCells, hoverClassTokens, true);
-  };
-  const onMouseOut = (event: MouseEvent) => {
-    if (isEventMovingWithinRow(event.relatedTarget, rowCells)) return;
-    tryRemoveRowHover(rowCells, hoverClassTokens);
-  };
-
-  for (const rowCell of rowCells) {
-    rowCell.addEventListener('mouseover', onMouseOver);
-    rowCell.addEventListener('mouseout', onMouseOut);
-  }
-}
-
-function tryRemoveRowHover(
-  rowCells: HTMLElement[],
-  hoverClassTokens: string[],
-): void {
-  const removeIfNotHovered = () => {
-    // Avoid removing hover class is there exists another cell within the same row that is currently hovered
-    if (rowCells.some((rowCell) => rowCell.matches(':hover'))) return;
-    applyRowHover(rowCells, hoverClassTokens, false);
-  };
-
-  window.requestAnimationFrame(removeIfNotHovered);
-}
-
 function computeCellPresentation(
-  cellValue: DataTableValue,
+  cellValue: unknown,
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,

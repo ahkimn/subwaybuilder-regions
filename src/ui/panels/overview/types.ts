@@ -1,7 +1,14 @@
 import type { RegionGameData, RegionSelection } from '../../../core/types';
 import type { SortDirection } from '../types';
 
-export type RegionsOverviewTab = 'overview' | 'commuter-flows' | 'ridership';
+export const RegionsOverviewTab = {
+  Overview: 'Overview',
+  CommuterFlows: 'CommuterFlows',
+  Ridership: 'Ridership',
+} as const;
+
+export type RegionsOverviewTab =
+  (typeof RegionsOverviewTab)[keyof typeof RegionsOverviewTab];
 
 export type RegionsOverviewSortState = {
   sortIndex: number;

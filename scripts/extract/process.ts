@@ -1,7 +1,7 @@
 import type { Feature, GeoJsonProperties, Geometry } from 'geojson';
 import path from 'path';
 
-import { DATA_INDEX_FILE } from '../../shared/consts';
+import { DATA_INDEX_FILE } from '../../shared/constants';
 import type { DatasetIndexEntry } from '../../shared/dataset-index';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import { parseNumber } from '../utils/cli';
