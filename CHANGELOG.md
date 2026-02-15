@@ -2,6 +2,21 @@
 
 [Back to README](README.md)
 
+## v0.2.6 - 2026-02-15
+
+_Game version_ v1.0.3
+
+### New Features
+
+- Migrated `Region Info` from a legacy DOM-only implementation to one that is fully React-based
+  - This encompasses both the `Statistics` and `Commuters` view as well as all components (Inline Toggle, Detail Row, etc.) that were previously DOM-only
+- Added a dedicated React root for `Region Info` mounted into the top-left UI container
+
+### Other Updates
+
+- Removed legacy DOM `Region Info` panel code paths and related dead renderer/fallback logic.
+- Improved UI commuters controls and injected toggles (control brightness, checkbox/check icon sizing, label hover styling).
+
 ## v0.2.5 - 2026-02-14
 
 _Game version_ v1.0.3
