@@ -227,11 +227,11 @@ _Latest Changelog Entry:_ [v0.2.7](CHANGELOG.md#v027---2026-02-15)
    npm run link
    ```
 
-   The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
+   :information_source: The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
 
 7. Validate Behavior
 
-   Configure `config.yaml`. Then, use the following command to run the game from terminal with the Console enabled.
+   Use the following command to run the game from terminal with the Console enabled (requires `config.yaml`).
 
    ```
    npm run dev
