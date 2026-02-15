@@ -9,10 +9,14 @@ source_data/*
 # Ignore dependencies / build outputs
 dist/
 tmp/
+release/
 node_modules/
-package-lock.json
 
 # User configuration
 .vscode/
 .github/agents/
 config.yaml
+
+# OS cruft
+.DS_Store
+Thumbs.db
