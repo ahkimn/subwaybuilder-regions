@@ -15,7 +15,7 @@ export const LOADING_VALUE_DISPLAY = 'Loading...'; // Display value for data poi
 export const PERCENT_DECIMALS = 2; // Default number of decimal places for percentage values in the UI
 
 export const STALE_COMMUTER_DATA_THRESHOLD_SECONDS = 900; // Threshold for considering commuter data stale and in need of refresh, in seconds of in-game time (15 minutes)
-export const STALE_INFRA_DATA_THRESHOLD_SECONDS = 86400; // Threshold for considering infra data stale and in need of refresh, in seconds of in-game time (daily)
+export const STALE_INFRA_DATA_THRESHOLD_SECONDS = 604800; // Threshold for considering infra data stale and in need of refresh, in seconds of in-game time (weekly)
 export const DEFAULT_CHUNK_SIZE = 100; // Default loop chunk size for time-sliced data processing
 
 export const REGIONS_INFO_CONTAINER_ID = 'regions-info-container';

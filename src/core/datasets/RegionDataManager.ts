@@ -55,9 +55,9 @@ export class RegionDataManager {
       case RegionDataType.CommuterSummary: {
         const existingData = gameData.commuterSummary;
         if (
-          !options?.forceBuild &&
           existingData &&
-          !this.isStale(
+          this.shouldUseExistingData(
+            options?.forceBuild,
             existingData.metadata,
             currentTime,
             STALE_COMMUTER_DATA_THRESHOLD_SECONDS,
@@ -79,9 +79,9 @@ export class RegionDataManager {
       case RegionDataType.CommuterDetails: {
         const existingData = gameData.commuterDetails;
         if (
-          !options?.forceBuild &&
           existingData &&
-          !this.isStale(
+          this.shouldUseExistingData(
+            options?.forceBuild,
             existingData.metadata,
             currentTime,
             STALE_COMMUTER_DATA_THRESHOLD_SECONDS,
@@ -104,9 +104,9 @@ export class RegionDataManager {
       case RegionDataType.Infra: {
         const existingData = gameData.infraData;
         if (
-          !options?.forceBuild &&
           existingData &&
-          !this.isStale(
+          this.shouldUseExistingData(
+            options?.forceBuild,
             existingData.metadata,
             currentTime,
             STALE_INFRA_DATA_THRESHOLD_SECONDS,
@@ -152,7 +152,7 @@ export class RegionDataManager {
           !options?.forceBuild &&
           !this.hasStaleCommuterSummaryData(dataset, currentTime)
         ) {
-          return this.collectCurrentCommuterSummaryData(dataset);
+          return this.collectCommuterSummaryData(dataset);
         }
 
         await yieldToEventLoop();
@@ -167,7 +167,7 @@ export class RegionDataManager {
       }
       case RegionDataType.Infra: {
         if (!options?.forceBuild && !this.hasStaleInfraData(dataset, currentTime)) {
-          return this.collectCurrentInfraData(dataset);
+          return this.collectInfraData(dataset);
         }
 
         await yieldToEventLoop();
@@ -175,9 +175,9 @@ export class RegionDataManager {
 
         for (const [featureId, gameData] of dataset.gameData.entries()) {
           if (
-            !options?.forceBuild &&
             gameData.infraData &&
-            !this.isStale(
+            this.shouldUseExistingData(
+              options?.forceBuild,
               gameData.infraData.metadata,
               currentTime,
               STALE_INFRA_DATA_THRESHOLD_SECONDS,
@@ -205,6 +205,15 @@ export class RegionDataManager {
         );
         return null;
     }
+  }
+
+  private shouldUseExistingData(
+    forceBuild: boolean | undefined,
+    metadata: RegionGameMetadata | undefined,
+    currentTime: number,
+    thresholdSeconds: number,
+  ): boolean {
+    return !forceBuild && !this.isStale(metadata, currentTime, thresholdSeconds);
   }
 
   private isStale(
@@ -235,17 +244,6 @@ export class RegionDataManager {
     return false;
   }
 
-  private collectCurrentCommuterSummaryData(
-    dataset: RegionDataset,
-  ): Map<string | number, RegionCommuterSummaryData> {
-    const currentData = new Map<string | number, RegionCommuterSummaryData>();
-    dataset.gameData.forEach((gameData, featureId) => {
-      if (!gameData.commuterSummary) return;
-      currentData.set(featureId, gameData.commuterSummary);
-    });
-    return currentData;
-  }
-
   private hasStaleInfraData(dataset: RegionDataset, currentTime: number): boolean {
     for (const gameData of dataset.gameData.values()) {
       if (
@@ -261,7 +259,18 @@ export class RegionDataManager {
     return false;
   }
 
-  private collectCurrentInfraData(
+  private collectCommuterSummaryData(
+    dataset: RegionDataset,
+  ): Map<string | number, RegionCommuterSummaryData> {
+    const currentData = new Map<string | number, RegionCommuterSummaryData>();
+    dataset.gameData.forEach((gameData, featureId) => {
+      if (!gameData.commuterSummary) return;
+      currentData.set(featureId, gameData.commuterSummary);
+    });
+    return currentData;
+  }
+
+  private collectInfraData(
     dataset: RegionDataset,
   ): Map<string | number, RegionInfraData> {
     const currentData = new Map<string | number, RegionInfraData>();

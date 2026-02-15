@@ -8,6 +8,14 @@ export type ModeShare = {
 };
 
 export const ModeShare = {
+  createEmpty(): ModeShare {
+    return {
+      transit: 0,
+      driving: 0,
+      walking: 0,
+      unknown: 0,
+    };
+  },
   add(a: ModeShare, b: ModeShare): ModeShare {
     return {
       transit: a.transit + b.transit,
@@ -15,6 +23,13 @@ export const ModeShare = {
       walking: a.walking + b.walking,
       unknown: a.unknown + b.unknown,
     };
+  },
+  addInPlace(target: ModeShare, source: ModeShare): ModeShare {
+    target.transit += source.transit;
+    target.driving += source.driving;
+    target.walking += source.walking;
+    target.unknown += source.unknown;
+    return target;
   },
   total(modeShare: ModeShare): number {
     return (

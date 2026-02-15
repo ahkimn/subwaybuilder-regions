@@ -53,7 +53,7 @@ export class RegionDataBuilder {
 
     const demandPointMap = dataset.regionDemandPointMap;
 
-    demandData.popsMap.forEach((popData) => {
+    for (const popData of demandData.popsMap.values()) {
       // These values may be empty if the region dataset does not encompass the entire playable area of the map
       const residenceRegion = demandPointMap.get(popData.residenceId);
       const jobRegion = demandPointMap.get(popData.jobId);
@@ -66,50 +66,24 @@ export class RegionDataBuilder {
       };
 
       if (residenceRegion !== undefined) {
-        residentModeShareMap.set(
-          residenceRegion,
-          ModeShare.add(
-            residentModeShareMap.get(residenceRegion) ?? {
-              transit: 0,
-              driving: 0,
-              walking: 0,
-              unknown: 0,
-            },
-            popModeShare,
-          ),
+        ModeShare.addInPlace(
+          this.getOrCreateModeShare(residentModeShareMap, residenceRegion),
+          popModeShare,
         );
       }
 
       if (jobRegion !== undefined) {
-        workerModeShareMap.set(
-          jobRegion,
-          ModeShare.add(
-            workerModeShareMap.get(jobRegion) ?? {
-              transit: 0,
-              driving: 0,
-              walking: 0,
-              unknown: 0,
-            },
-            popModeShare,
-          ),
+        ModeShare.addInPlace(
+          this.getOrCreateModeShare(workerModeShareMap, jobRegion),
+          popModeShare,
         );
       }
-    });
+    }
 
     dataset.gameData.forEach((_, featureId) => {
       updatedData.set(featureId, {
-        residentModeShare: residentModeShareMap.get(featureId) ?? {
-          transit: 0,
-          driving: 0,
-          walking: 0,
-          unknown: 0,
-        },
-        workerModeShare: workerModeShareMap.get(featureId) ?? {
-          transit: 0,
-          driving: 0,
-          walking: 0,
-          unknown: 0,
-        },
+        residentModeShare: residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+        workerModeShare: workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
         metadata: {
           lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
           dirty: false,
@@ -144,6 +118,14 @@ export class RegionDataBuilder {
       return null;
     }
 
+    const demandPointIds = currentGameData.demandData.demandPointIds;
+    const regionNameMap = dataset.regionNameMap;
+    const demandPointMap = dataset.regionDemandPointMap;
+    const selectedRegionName = regionNameMap.get(featureId)!;
+    const resolveRegion = (demandPointId: string): string | undefined => {
+      return regionNameMap.get(demandPointMap.get(demandPointId)!);
+    };
+
     // Build commuter data iterating over demand points located within the region
     for (const popId of currentGameData.demandData.populationIds) {
       const popData = demandData.popsMap.get(popId);
@@ -153,8 +135,6 @@ export class RegionDataBuilder {
         );
         continue;
       }
-
-      const demandPointIds = currentGameData.demandData.demandPointIds;
 
       const isResident = demandPointIds.has(popData.residenceId);
       const isWorker = demandPointIds.has(popData.jobId);
@@ -178,15 +158,9 @@ export class RegionDataBuilder {
       let homeRegion: string | undefined; // Defined if the population works in this region
       let workRegion: string | undefined; // Defined if the population lives in this region
 
-      const resolveRegion = (demandPointId: string): string | undefined => {
-        return dataset.regionNameMap.get(
-          dataset.regionDemandPointMap.get(demandPointId)!,
-        );
-      };
-
       // Population both lives and works in region
       if (isResident && isWorker) {
-        homeRegion = workRegion = dataset.regionNameMap.get(featureId)!;
+        homeRegion = workRegion = selectedRegionName;
       }
       // Population lives in region but works outside of it
       else if (isResident) {
@@ -211,31 +185,15 @@ export class RegionDataBuilder {
 
       // Update mode share by region maps
       if (homeRegion) {
-        workerModeShares.set(
-          homeRegion,
-          ModeShare.add(
-            workerModeShares.get(homeRegion) ?? {
-              transit: 0,
-              driving: 0,
-              walking: 0,
-              unknown: 0,
-            },
-            popModeShare,
-          ),
+        ModeShare.addInPlace(
+          this.getOrCreateModeShare(workerModeShares, homeRegion),
+          popModeShare,
         );
       }
       if (workRegion) {
-        residentModeShares.set(
-          workRegion,
-          ModeShare.add(
-            residentModeShares.get(workRegion) ?? {
-              transit: 0,
-              driving: 0,
-              walking: 0,
-              unknown: 0,
-            },
-            popModeShare,
-          ),
+        ModeShare.addInPlace(
+          this.getOrCreateModeShare(residentModeShares, workRegion),
+          popModeShare,
         );
       }
     }
@@ -248,6 +206,16 @@ export class RegionDataBuilder {
         dirty: false,
       },
     };
+  }
+
+  private getOrCreateModeShare<K>(map: Map<K, ModeShare>, key: K): ModeShare {
+    const existing = map.get(key);
+    if (existing) {
+      return existing;
+    }
+    const empty = ModeShare.createEmpty();
+    map.set(key, empty);
+    return empty;
   }
 
   async buildRegionInfraData(
