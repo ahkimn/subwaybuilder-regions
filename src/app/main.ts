@@ -26,6 +26,25 @@ export class RegionsMod {
     this.registry = new RegionDatasetRegistry(INDEX_FILE, SERVE_URL);
   }
 
+  // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
+  private async buildRegistryWithFallback(): Promise<void> {
+    try {
+      await this.registry.build(() => {
+        console.warn('[Regions] Failed to load dataset index from server');
+      });
+      api.ui.showNotification(
+        '[Regions] Loaded region datasets from local server.', 'success',
+      );
+      return;
+    } catch (indexBuildError) {
+      console.warn('[Regions] Failed to build dataset registry from server, attempting to build from local files', indexBuildError);
+    }
+    await this.registry.buildStatic();
+    api.ui.showNotification(
+      '[Regions] Loaded region datasets from local mod data files.', 'success',
+    );
+  }
+
   async initialize() {
     console.log('[Regions] Initializing Mod');
 
@@ -34,15 +53,15 @@ export class RegionsMod {
       return;
     }
 
-    // Build dataset registry from data index file.
-    // TODO (Future): replace with local mod storage
-    await this.registry.build(() => {
-      console.error('[Regions] Failed to load dataset index');
+    try {
+      await this.buildRegistryWithFallback();
+    } catch (registryBuildError) {
       api.ui.showNotification(
-        '[Regions] Failed to load region data index. Please ensure local data is being served.',
+        '[Regions] Failed to load region data index and local region files.',
         'error',
       );
-    });
+      throw registryBuildError;
+    }
 
     api.hooks.onCityLoad(this.onCityLoad.bind(this));
     api.hooks.onMapReady(this.onMapReady.bind(this));
