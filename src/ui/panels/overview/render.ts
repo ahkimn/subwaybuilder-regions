@@ -2,13 +2,15 @@ import type React from 'react';
 import type { createElement, useState } from 'react';
 
 import {
+  ModeShare,
   type RegionSelection,
   RegionSelection as RegionSelectionUtils,
 } from '../../../core/types';
-import { formatNumberOrDefault } from '../../../core/utils';
+import { formatNumberOrDefault, formatPercentOrDefault } from '../../../core/utils';
 import type {
   DataRowOptions,
   ReactDataTableRow,
+  TableCellPaddingClassName,
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
@@ -38,21 +40,26 @@ const OVERVIEW_HEADER_LABELS = [
   'Routes',
 ] as const;
 const OVERVIEW_COLUMN_COUNT = OVERVIEW_HEADER_LABELS.length;
-const OVERVIEW_GROUP_BOUNDARIES = [2, 5, 8];
 const OVERVIEW_PLACEHOLDER_VALUE = '-';
 const OVERVIEW_MIN_COLUMN_PADDING_CH = 2;
 const OVERVIEW_MIN_NON_NAME_COLUMN_CH = 7;
+const OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH = '0.75rem';
+const OVERVIEW_CELL_PADDING_CLASS_NAMES: TableCellPaddingClassName = {
+  left: 'pl-2 pr-1',
+  right: 'pl-1 pr-2',
+  center: 'px-1.5',
+};
 
 function buildOverviewColumnTemplate(headerLabels: readonly string[]): string {
-  const nonNameColumns = headerLabels.slice(1).map((label) => {
-    const minCh = Math.max(
-      OVERVIEW_MIN_NON_NAME_COLUMN_CH,
-      label.length + OVERVIEW_MIN_COLUMN_PADDING_CH,
-    );
-    return `minmax(${minCh}ch,max-content)`;
-  });
-
-  return ['minmax(13rem,1fr)', ...nonNameColumns].join(' ');
+  return headerLabels
+    .map((label) => {
+      const minCh = Math.max(
+        OVERVIEW_MIN_NON_NAME_COLUMN_CH,
+        label.length + OVERVIEW_MIN_COLUMN_PADDING_CH,
+      );
+      return `minmax(calc(${minCh}ch + ${OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH}),max-content)`;
+    })
+    .join(' ');
 }
 
 export type InputFieldProperties = {
@@ -147,9 +154,7 @@ export function renderOverviewTable(
   const tableOptions: TableOptions = {
     columnTemplate: buildOverviewColumnTemplate(OVERVIEW_HEADER_LABELS),
     density: 'compact',
-    groupBoundaries: OVERVIEW_GROUP_BOUNDARIES,
-    cellBorderClassName: 'border-r border-b border-border/15',
-    groupBoundaryClassName: 'border-r-2 border-border/45 pr-2',
+    cellPaddingClassName: OVERVIEW_CELL_PADDING_CLASS_NAMES,
   };
 
   const sortHandlers = [
@@ -168,9 +173,9 @@ export function renderOverviewTable(
       rowValues: [...OVERVIEW_HEADER_LABELS],
       options: {
         header: true,
-        borderBottom: true,
         onClick: sortHandlers,
         align: tableAlign,
+        borderClassName: '',
         sortState: {
           index: sortState.sortIndex,
           directionLabel:
@@ -202,6 +207,7 @@ export function renderOverviewTable(
       const workers = row.gameData.demandData?.workers ?? 0;
       const totalCommuters =
         residents !== null && workers !== null ? residents + workers : null;
+      const totalModeShare = row.gameData.commuterData ? ModeShare.add(row.gameData.commuterData!.residentModeShare, row.gameData.commuterData!.workerModeShare) : null;
       const rowOptions: DataRowOptions = {
         onClick: Array.from({ length: OVERVIEW_COLUMN_COUNT }, () => rowAction),
         align: tableAlign,
@@ -219,9 +225,9 @@ export function renderOverviewTable(
           formatNumberOrDefault(totalCommuters),
           formatNumberOrDefault(residents),
           formatNumberOrDefault(workers),
-          OVERVIEW_PLACEHOLDER_VALUE,
-          OVERVIEW_PLACEHOLDER_VALUE,
-          OVERVIEW_PLACEHOLDER_VALUE,
+          formatPercentOrDefault(totalModeShare ? ModeShare.share(totalModeShare, 'transit') * 100 : null),
+          formatPercentOrDefault(totalModeShare ? ModeShare.share(totalModeShare, 'driving') * 100 : null),
+          formatPercentOrDefault(totalModeShare ? ModeShare.share(totalModeShare, 'walking') * 100 : null),
           OVERVIEW_PLACEHOLDER_VALUE,
           OVERVIEW_PLACEHOLDER_VALUE,
           OVERVIEW_PLACEHOLDER_VALUE,

@@ -34,7 +34,64 @@ import type { RegionDataset } from './RegionDataset';
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
-  constructor(private api: ModdingAPI) {}
+  constructor(private api: ModdingAPI) { }
+
+  async updateDatasetCommuteData(
+    dataset: RegionDataset,
+    updateTime?: number
+  ): Promise<Map<string | number, RegionCommuterData>> {
+    const updatedData = new Map<string | number, RegionCommuterData>();
+    const workerModeShareMap = new Map<string | number, ModeShare>();
+    const residentModeShareMap = new Map<string | number, ModeShare>();
+    const demandData = this.api.gameState.getDemandData();
+
+    if (!demandData) {
+      console.error('[Regions] Demand data not available');
+      return updatedData;
+    }
+
+    const demandPointMap = dataset.regionDemandPointMap;
+
+    demandData.popsMap.forEach((popData, popId) => {
+
+      // These values may be empty if the region dataset does not encompass the entire playable area of the map
+      const residenceRegion = demandPointMap.get(popData.residenceId);
+      const jobRegion = demandPointMap.get(popData.jobId);
+
+      const popModeShare: ModeShare = popData.lastCommute?.modeChoice ?? {
+        transit: 0,
+        driving: 0,
+        walking: 0,
+        unknown: popData.size,
+      }
+
+      if (residenceRegion !== undefined) {
+        residentModeShareMap.set(
+          residenceRegion,
+          ModeShare.add(residentModeShareMap.get(residenceRegion) ?? {
+            transit: 0,
+            driving: 0,
+            walking: 0,
+            unknown: 0,
+          }, popModeShare)
+        );
+      }
+
+      if (jobRegion !== undefined) {
+        workerModeShareMap.set(
+          jobRegion,
+          ModeShare.add(workerModeShareMap.get(jobRegion) ?? {
+            transit: 0,
+            driving: 0,
+            walking: 0,
+            unknown: 0,
+          }, popModeShare)
+        );
+      }
+    });
+
+    return updatedData
+  }
 
   // TODO (Future): If an API is added to show only changed demand points, this function + the region data structure should be optimized to only update the changed demand points
   buildRegionCommuteData(
@@ -321,9 +378,9 @@ export class RegionDataBuilder {
         trackIds.set(track.id, trackLengthInRegion);
         trackLengths.has(track.trackType!)
           ? trackLengths.set(
-              track.trackType!,
-              trackLengths.get(track.trackType!)! + trackLengthInRegion,
-            )
+            track.trackType!,
+            trackLengths.get(track.trackType!)! + trackLengthInRegion,
+          )
           : trackLengths.set(track.trackType!, trackLengthInRegion);
       }
     });

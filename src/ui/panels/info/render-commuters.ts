@@ -553,7 +553,7 @@ function buildTableHeader(
         : ['', commuterDisplayControl, modeDisplayControl],
     options: {
       header: true,
-      borderBottom: true,
+      borderClassName: 'border-b border-border/30',
       align:
         viewState.modeShareLayout === ModeLayout.All
           ? ['left', 'right', 'right', 'right', 'right']

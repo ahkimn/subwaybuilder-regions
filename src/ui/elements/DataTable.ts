@@ -15,7 +15,7 @@ export type SortState = {
 
 export type DataRowOptions = {
   header?: boolean;
-  borderBottom?: boolean;
+  borderClassName?: string;
   rowClassName?: string;
   rowHoverClassName?: string;
   colSpan?: number[];
@@ -32,6 +32,9 @@ export type ReactDataTableRow = {
 };
 
 export type TableDensity = 'compact' | 'standard' | 'relaxed';
+export type TableCellPaddingClassName = Partial<
+  Record<'left' | 'right' | 'center', string>
+>;
 
 // Mapping of CSS classes for several default table "denssity" options
 const TABLE_DENSITY_SETTINGS: Record<TableDensity, string> = {
@@ -43,9 +46,8 @@ const TABLE_DENSITY_SETTINGS: Record<TableDensity, string> = {
 export type TableOptions = {
   columnTemplate: string;
   density: TableDensity;
-  groupBoundaries?: number[];
   cellBorderClassName?: string;
-  groupBoundaryClassName?: string;
+  cellPaddingClassName?: TableCellPaddingClassName;
 };
 
 // --- React Implementation --- //
@@ -67,10 +69,8 @@ export function ReactDataTable({
     null,
   );
   const cells: ReactNode[] = [];
-  const groupBoundaries = new Set<number>(tableOptions.groupBoundaries ?? []);
   const cellBorderClassName = tableOptions.cellBorderClassName;
-  const groupBoundaryClassName =
-    tableOptions.groupBoundaryClassName ?? 'border-r border-border/30 pr-1.5';
+  const cellPaddingClassName = tableOptions.cellPaddingClassName ?? {};
 
   tableValues.forEach(({ rowValues, options }, rowIndex) => {
     const rowOptions = options ?? {};
@@ -84,9 +84,8 @@ export function ReactDataTable({
           rowOptions,
           colIndex,
           isHeader,
-          groupBoundaries.has(colIndex),
           cellBorderClassName,
-          groupBoundaryClassName,
+          cellPaddingClassName,
           rowIndex,
           hoveredRowIndex,
           setHoveredRowIndex,
@@ -113,9 +112,8 @@ function buildReactCell(
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,
-  isGroupBoundary: boolean,
   cellBorderClassName: string | undefined,
-  groupBoundaryClassName: string,
+  cellPaddingClassName: TableCellPaddingClassName,
   rowIndex: number,
   hoveredRowIndex: number | null,
   setHoveredRowIndex: Dispatch<SetStateAction<number | null>>,
@@ -126,9 +124,8 @@ function buildReactCell(
     rowOptions,
     index,
     isHeader,
-    isGroupBoundary,
     cellBorderClassName,
-    groupBoundaryClassName,
+    cellPaddingClassName,
   );
   const hasRowHoverClass =
     getClassTokens(rowOptions.rowHoverClassName).length > 0;
@@ -142,13 +139,13 @@ function buildReactCell(
     : undefined;
   const onMouseLeave = hasRowHoverClass
     ? (event: { relatedTarget: EventTarget | null }) => {
-        if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
-          return;
-        }
-        setHoveredRowIndex((current) =>
-          current === rowIndex ? null : current,
-        );
+      if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
+        return;
       }
+      setHoveredRowIndex((current) =>
+        current === rowIndex ? null : current,
+      );
+    }
     : undefined;
 
   if (cellValue instanceof HTMLElement) {
@@ -214,13 +211,27 @@ function getCellAlignmentClass(align: 'left' | 'right' | 'center'): string {
 function getCellBaseClass(
   shouldTruncate: boolean,
   align: 'left' | 'right' | 'center',
+  cellPaddingClassNames: TableCellPaddingClassName,
 ): string {
+  const horizontalPaddingClass = getCellPaddingClass(
+    align,
+    cellPaddingClassNames,
+  );
+
   return [
     'min-w-0',
     shouldTruncate ? 'truncate' : 'overflow-visible',
     getCellAlignmentClass(align),
+    horizontalPaddingClass,
     'py-0.5',
   ].join(' ');
+}
+
+function getCellPaddingClass(
+  align: 'left' | 'right' | 'center',
+  cellPaddingClassNames: TableCellPaddingClassName,
+): string {
+  return cellPaddingClassNames[align] ?? '';
 }
 
 function getCellTextClass(isHeader: boolean, isDataCol: boolean): string {
@@ -262,9 +273,8 @@ function computeCellPresentation(
   rowOptions: DataRowOptions,
   index: number,
   isHeader: boolean,
-  isGroupBoundary: boolean,
   cellBorderClassName: string | undefined,
-  groupBoundaryClassName: string,
+  cellPaddingClassName: TableCellPaddingClassName,
 ): {
   className: string;
   indicator?: string;
@@ -284,7 +294,7 @@ function computeCellPresentation(
     typeof cellValue === 'number';
 
   const classNames = [
-    getCellBaseClass(shouldTruncate, align),
+    getCellBaseClass(shouldTruncate, align, cellPaddingClassName),
     getCellTextClass(isHeader, !isHeader && index > 0),
   ];
 
@@ -292,9 +302,6 @@ function computeCellPresentation(
     classNames.push(rowOptions.sortState.sortSelectedClass);
   }
 
-  if (rowOptions.borderBottom) {
-    classNames.push('border-b border-border/30');
-  }
   if (rowOptions.rowClassName) {
     classNames.push(rowOptions.rowClassName);
   }
@@ -302,11 +309,11 @@ function computeCellPresentation(
   if (rowOptions.onClick?.[index]) {
     classNames.push('cursor-pointer hover:text-foreground');
   }
-  if (cellBorderClassName) {
+  // Row boundary classes take precedence over cell (table-wide) border classes
+  if (rowOptions.borderClassName !== undefined) {
+    classNames.push(rowOptions.borderClassName);
+  } else if (cellBorderClassName) {
     classNames.push(cellBorderClassName);
-  }
-  if (isGroupBoundary && !span) {
-    classNames.push(groupBoundaryClassName);
   }
 
   const style = span && span > 1 ? { gridColumn: `span ${span}` } : undefined;
