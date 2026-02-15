@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.2.7`  
+_Latest Mod Version:_ `v0.2.8`  
 _Latest Tested Game Version:_ `v1.0.3`
-_Latest Changelog Entry:_ [v0.2.7](CHANGELOG.md#v027---2026-02-15)
+_Latest Changelog Entry:_ [v0.2.8](CHANGELOG.md#v028---2026-02-15)
 
 ## Table of Contents
 
@@ -83,10 +83,40 @@ _Latest Changelog Entry:_ [v0.2.7](CHANGELOG.md#v027---2026-02-15)
 
 ## Installation
 
+> :warning: The prebuilt release for general users lags behind the dev build and may be unstable!
+
 ### General User Installation
 
-> :warning: This mod currently does not have a prebuilt release.
-> General users will need to wait for a release package to be available.
+1.  Under the game's mod folder, create a new `regions/` directory if one does not already exist.
+
+    :warning: Please match the folder name exactly; otherwise the mod may not function properly
+
+2.  Navigate to this repository's **Releases** [section](https://github.com/ahkimn/subwaybuilder-regions/releases) and download the latest release
+
+    Un-zip the file and copy the `index.js` and `manifest.json` directly into the `mods/regions/` directory
+
+3.  Visit the shared [Google Drive](https://drive.google.com/drive/folders/1TPlqNRh-zqJTIoTs-KUNdZHVVTS0QCzd?usp=drive_link) and download the `.zip` files of the cities you intend to play with.
+
+    Un-zip each city's files into its own `mods/regions/data/{CITY_CODE}/` directory.
+    For example, if you download the `ATL` .zip for Atlanta files your directory should look like
+
+    ```
+    mods/
+      regions/
+        index.js
+        manifest.json
+        data/
+          ATL/
+            counties.geojson
+            county-subdivisions.geojson
+            zctas.geojson
+          AUS/
+            ...
+    ```
+
+4.  Open the game, navigate to `Mod Manager` within the `Settings` menu and enable the `Regions` mod.
+5.  Restart the game to ensure that the mod load properly.
+6.  Load a city for which you have downloaded region-level data and enjoy!
 
 ### Dev Installation
 
@@ -366,8 +396,8 @@ See [CHANGELOG.md](CHANGELOG.md#changelog) for full release notes.
 
 Issues and Pull Requests are welcome. Please include:
 
-- Game version
-- Mod version
+- Game version (beta / full release)
+- Mod version (prebuilt / dev)
 - Platform
 - Other Relevant Details
 

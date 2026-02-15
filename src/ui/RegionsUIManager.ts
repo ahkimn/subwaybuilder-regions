@@ -1,3 +1,5 @@
+import type { RegionDatasetRegistry } from 'src/core/registry/static';
+
 import {
   LAYERS_PANEL_MOD_ID,
   modIdSelector,
@@ -10,7 +12,6 @@ import {
 import { RegionDataBuilder } from '../core/datasets/RegionDataBuilder';
 import { RegionDataManager } from '../core/datasets/RegionDataManager';
 import { RegionDataset } from '../core/datasets/RegionDataset';
-import type { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
 import { RegionSelection, UIState } from '../core/types';
 import type { RegionsMapLayers } from '../map/RegionsMapLayers';
 import type { ModdingAPI } from '../types/modding-api-v1';
