@@ -2,6 +2,17 @@
 
 [Back to README](README.md)
 
+## v0.2.8 - 2026-02-15
+
+_Game version_ v1.0.3
+
+### Other Updates
+
+- Added a temporary workaround path to get the mod working for non-dev users
+  - The mod now tries to build the registry from `data_index.json` via the local data server first.
+  - If that fetch fails, it falls back to a static city/dataset mapping defined in `src/core/registry/static.ts` and probes local GeoJSON files from the mod data directory.
+- This is intended as an interim bridge until the game API exposes a more complete local file access flow.
+
 ## v0.2.7 - 2026-02-15
 
 _Game version_ v1.0.3

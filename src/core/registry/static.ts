@@ -141,7 +141,7 @@ export async function resolveLocalModsDataRoot(): Promise<string> {
   }
 
   const modsDir = (await electronApi.getModsFolder()).replace(/\\/g, '/');
-  return `${modsDir}/Regions/data`;
+  return `${modsDir}/regions/data`;
 }
 
 export function buildLocalDatasetUrl(
