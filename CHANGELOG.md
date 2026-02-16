@@ -2,6 +2,14 @@
 
 [Back to README](README.md)
 
+## v0.2.9 - 2026-02-15
+
+_Game version_ v1.0.3
+
+### Other Updates
+
+- Creating a diff to make a release dist
+
 ## v0.2.8 - 2026-02-15
 
 _Game version_ v1.0.3
