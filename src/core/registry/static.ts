@@ -163,8 +163,23 @@ export async function getFeatureCount(
       return null;
     }
 
-    const geoJson = (await response.json()) as GeoJSON.FeatureCollection;
+    const raw = await response.text();
+    let geoJson: GeoJSON.FeatureCollection;
+    try {
+      geoJson = JSON.parse(raw) as GeoJSON.FeatureCollection;
+    } catch (error) {
+      const preview = raw.slice(0, 180).replace(/\s+/g, ' ');
+      console.error(
+        `[Regions] Failed to parse fallback GeoJSON at ${dataPath}. Preview: ${preview}`,
+        error,
+      );
+      return null;
+    }
+
     if (!Array.isArray(geoJson.features)) {
+      console.warn(
+        `[Regions] Invalid fallback GeoJSON (missing features array) at ${dataPath}`,
+      );
       return null;
     }
 

@@ -42,7 +42,16 @@ export async function fetchGeoJSON(
       `Failed to fetch GeoJSON from ${dataPath}: ${response.statusText}`,
     );
   }
-  return await response.json();
+
+  const raw = await response.text();
+  try {
+    return JSON.parse(raw) as GeoJSON.FeatureCollection;
+  } catch (error) {
+    const preview = raw.slice(0, 180).replace(/\s+/g, ' ');
+    throw new Error(
+      `Failed to parse GeoJSON from ${dataPath}. Preview: ${preview}. Error: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 export async function yieldToEventLoop(): Promise<void> {
