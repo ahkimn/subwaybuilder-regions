@@ -2,13 +2,14 @@
 
 [Back to README](README.md)
 
-## v0.2.10 - 2026-02-15
+## v0.2.11 - 2026-02-15
 
 _Game version_ v1.0.3
 
 ### Other Updates
 
 - Minor updates to logging to facilitate debug on mod load.
+- Update dangling import
 
 ## v0.2.8 - 2026-02-15
 
