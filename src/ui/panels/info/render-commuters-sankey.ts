@@ -1,4 +1,9 @@
-import type { ComponentType, createElement, ReactNode } from 'react';
+import type { createElement, ReactNode } from 'react';
+import {
+  ResponsiveContainer,
+  Sankey,
+  Tooltip,
+} from 'recharts';
 
 import { ModeShare, type RegionGameData } from '../../../core/types';
 import {
@@ -14,29 +19,21 @@ import {
 const DEFAULT_TABLE_ROWS = 10;
 const SANKEY_TOP_FLOW_COUNT = 10;
 const SANKEY_EMPTY_MESSAGE = 'No commuter flow data available';
-const SANKEY_CHART_UNAVAILABLE_MESSAGE =
-  'Sankey chart components are unavailable in this game build';
 
 const SANKEY_MODE_COLOR = {
-  transit: '#2563eb',
-  driving: '#dc2626',
-  walking: '#16a34a',
+  transit: '#0000ff',
+  driving: '#ff0000',
+  walking: '#00ff00',
   neutral: '#64748b',
 } as const;
 
 const SANKEY_NODE_COLOR = {
-  active: '#e2e8f0',
-  region: '#9ca3af',
-  others: '#64748b',
+  active: '#94a3b8',
+  region: '#64748b',
+  others: '#475569',
 } as const;
 
 const ALL_OTHERS_LABEL = 'All Others';
-
-type SankeyCharts = {
-  ResponsiveContainer: ComponentType<any>;
-  Sankey: ComponentType<any>;
-  Tooltip: ComponentType<any>;
-};
 
 type SankeyNodeRole = 'active' | 'region' | 'others';
 type SankeyLinkMode = 'mixed' | 'transit' | 'driving' | 'walking';
@@ -63,6 +60,11 @@ type SankeyLinkData = {
   targetName: string;
 };
 
+type SankeyNodeTooltipData = {
+  name?: string;
+  value?: number;
+};
+
 type SankeyData = {
   nodes: SankeyNodeData[];
   links: SankeyLinkData[];
@@ -80,18 +82,6 @@ export function renderCommutersSankey(
   viewState: CommutersViewState,
   byRegionModeShare: Map<string, ModeShare>,
 ): ReactNode {
-  const charts = resolveSankeyCharts();
-  if (!charts) {
-    return h(
-      'div',
-      {
-        className:
-          'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-      },
-      SANKEY_CHART_UNAVAILABLE_MESSAGE,
-    );
-  }
-
   const sankeyData = buildSankeyData(
     gameData.displayName,
     byRegionModeShare,
@@ -108,7 +98,6 @@ export function renderCommutersSankey(
     );
   }
 
-  const { ResponsiveContainer, Sankey, Tooltip } = charts;
   const estimatedRowCount = Math.max(sankeyData.nodes.length, DEFAULT_TABLE_ROWS);
   const chartHeight = Math.max(
     280,
@@ -118,14 +107,19 @@ export function renderCommutersSankey(
         (viewState.modeShareLayout === ModeLayout.All ? 26 : 22),
     ),
   );
+  const ResponsiveContainerComponent = ResponsiveContainer as any;
+  const SankeyComponent = Sankey as any;
+  const TooltipComponent = Tooltip as any;
+  const chartMinWidth =
+    viewState.modeShareLayout === ModeLayout.All ? '44rem' : '40rem';
 
   return h(
     'div',
-    { className: 'border-t border-border/30 pt-1' },
+    { className: 'border-t border-border/30 pt-1 w-full' },
     h(
       'div',
       {
-        className: 'overflow-y-auto min-h-0',
+        className: 'overflow-auto min-h-0 w-full',
         style: {
           maxHeight: '60vh',
           scrollbarWidth: 'thin',
@@ -137,24 +131,33 @@ export function renderCommutersSankey(
         {
           className: 'w-full min-w-0',
           style: {
+            minWidth: '0',
+            width: '100%',
+            maxWidth: 'none',
+            minInlineSize: chartMinWidth,
             minHeight: '16rem',
             height: `${chartHeight}px`,
           },
         },
         h(
-          ResponsiveContainer,
-          { width: '100%', height: '100%' },
+          ResponsiveContainerComponent,
+          { width: '100%', height: '100%', minWidth: 0, minHeight: chartHeight },
           h(
-            Sankey,
+            SankeyComponent,
             {
               data: sankeyData,
-              margin: { top: 10, right: 20, bottom: 10, left: 20 },
+              margin: { top: 16, right: 120, bottom: 16, left: 120 },
               nodePadding: viewState.modeShareLayout === ModeLayout.All ? 18 : 14,
               nodeWidth: 12,
               sort: false,
+              node: buildSankeyNodeRenderer(
+                h,
+                viewState,
+                gameData.displayName,
+              ),
               link: buildSankeyLinkRenderer(h),
             },
-            h(Tooltip, {
+            h(TooltipComponent, {
               content: buildSankeyTooltipRenderer(h),
               wrapperStyle: { outline: 'none' },
             }),
@@ -163,24 +166,6 @@ export function renderCommutersSankey(
       ),
     ),
   );
-}
-
-function resolveSankeyCharts(): SankeyCharts | null {
-  const charts = window.SubwayBuilderAPI?.utils?.charts as
-    | unknown
-    | undefined;
-  const chartRecord = charts as Record<string, unknown> | undefined;
-
-  const ResponsiveContainer = chartRecord?.ResponsiveContainer as
-    | ComponentType<any>
-    | undefined;
-  const Sankey = chartRecord?.Sankey as ComponentType<any> | undefined;
-  const Tooltip = chartRecord?.Tooltip as ComponentType<any> | undefined;
-
-  if (!ResponsiveContainer || !Sankey || !Tooltip) {
-    return null;
-  }
-  return { ResponsiveContainer, Sankey, Tooltip };
 }
 
 function buildSankeyData(
@@ -415,19 +400,88 @@ function getMixedModeColor(modeShare: ModeShare): string {
     return SANKEY_MODE_COLOR.neutral;
   }
 
-  const minChannel = 32;
-  const range = 192;
-  const red = Math.round(minChannel + (modeShare.driving / knownTotal) * range);
-  const green = Math.round(
-    minChannel + (modeShare.walking / knownTotal) * range,
-  );
-  const blue = Math.round(minChannel + (modeShare.transit / knownTotal) * range);
+  const red = Math.round((modeShare.driving / knownTotal) * 255);
+  const green = Math.round((modeShare.walking / knownTotal) * 255);
+  const blue = Math.round((modeShare.transit / knownTotal) * 255);
   return `rgb(${red}, ${green}, ${blue})`;
+}
+
+function buildSankeyNodeRenderer(
+  h: typeof createElement,
+  viewState: CommutersViewState,
+  activeRegionName: string,
+): (props: unknown) => ReactNode {
+  return function SankeyNodeShape(props: unknown): ReactNode {
+    const shape = props as Record<string, unknown>;
+    const payload = shape.payload as
+      | (SankeyNodeTooltipData & { depth?: number })
+      | undefined;
+    const x = Number(shape.x);
+    const y = Number(shape.y);
+    const width = Number(shape.width);
+    const height = Number(shape.height);
+
+    if (
+      !payload ||
+      Number.isNaN(x) ||
+      Number.isNaN(y) ||
+      Number.isNaN(width) ||
+      Number.isNaN(height)
+    ) {
+      return null;
+    }
+
+    const nodeName = payload.name ?? '';
+    const depth = payload.depth ?? 0;
+    const isLeftNode = depth === 0;
+    const isActiveNode = nodeName === activeRegionName;
+    const labelText = isActiveNode
+      ? `${
+          viewState.direction === CommuterDirection.Outbound
+            ? 'Origin'
+            : 'Destination'
+        }: ${nodeName}`
+      : nodeName;
+    const labelX = isLeftNode ? x + width + 8 : x - 8;
+    const textAnchor = isLeftNode ? 'start' : 'end';
+    const nodeFill = isActiveNode
+      ? SANKEY_NODE_COLOR.active
+      : payload.name === ALL_OTHERS_LABEL
+        ? SANKEY_NODE_COLOR.others
+        : SANKEY_NODE_COLOR.region;
+
+    return h(
+      'g',
+      null,
+      h('rect', {
+        x,
+        y,
+        width,
+        height,
+        fill: nodeFill,
+        fillOpacity: isActiveNode ? 0.95 : 0.8,
+      }),
+      h(
+        'text',
+        {
+          x: labelX,
+          y: y + height / 2,
+          fill: isActiveNode ? '#f8fafc' : '#cbd5e1',
+          fontSize: isActiveNode ? 11 : 10,
+          fontWeight: isActiveNode ? 700 : 500,
+          alignmentBaseline: 'middle',
+          dominantBaseline: 'middle',
+          textAnchor,
+        },
+        labelText,
+      ),
+    );
+  };
 }
 
 function buildSankeyLinkRenderer(
   h: typeof createElement,
-): ComponentType<any> {
+): (props: unknown) => any {
   return function SankeyLinkShape(props: unknown): ReactNode {
     const shape = props as Record<string, unknown>;
     const sourceX = Number(shape.sourceX);
@@ -460,7 +514,7 @@ function buildSankeyLinkRenderer(
       d: pathData,
       fill: 'none',
       stroke: payload?.color ?? SANKEY_MODE_COLOR.neutral,
-      strokeOpacity: 0.72,
+      strokeOpacity: 0.78,
       strokeWidth: width,
       vectorEffect: 'non-scaling-stroke',
     });
@@ -469,7 +523,7 @@ function buildSankeyLinkRenderer(
 
 function buildSankeyTooltipRenderer(
   h: typeof createElement,
-): ComponentType<any> {
+): (props: unknown) => any {
   return function SankeyTooltip(props: unknown): ReactNode {
     const tooltip = props as {
       active?: boolean;
@@ -477,8 +531,38 @@ function buildSankeyTooltipRenderer(
     };
     if (!tooltip.active) return null;
 
-    const linkData = tooltip.payload?.[0]?.payload;
-    if (!linkData) return null;
+    const firstPayload = tooltip.payload?.[0];
+    if (!firstPayload) return null;
+    const rawPayload = (firstPayload as { payload?: unknown }).payload;
+    const tooltipData = (rawPayload ?? firstPayload) as unknown;
+
+    if (!isSankeyLinkData(tooltipData)) {
+      const nodeData = tooltipData as SankeyNodeTooltipData | undefined;
+      if (!nodeData || typeof nodeData.name !== 'string') {
+        return null;
+      }
+      const nodeValue =
+        typeof nodeData.value === 'number'
+          ? nodeData.value
+          : typeof (firstPayload as { value?: unknown }).value === 'number'
+            ? ((firstPayload as { value?: number }).value ?? 0)
+            : 0;
+
+      return h(
+        'div',
+        {
+          className:
+            'rounded-md border border-border/80 bg-background/95 px-2 py-1.5 text-[0.68rem] shadow-md',
+        },
+        h('div', { className: 'font-semibold text-foreground pb-1' }, nodeData.name),
+        h(
+          'div',
+          { className: 'text-foreground/90' },
+          `Flow volume: ${formatNumberOrDefault(nodeValue)}`,
+        ),
+      );
+    }
+    const linkData = tooltipData;
 
     const total = linkData.total;
     const safeTotal = Math.max(total, 1);
@@ -532,4 +616,15 @@ function buildSankeyTooltipRenderer(
         : null,
     );
   };
+}
+
+function isSankeyLinkData(value: unknown): value is SankeyLinkData {
+  if (!value || typeof value !== 'object') return false;
+  const data = value as Record<string, unknown>;
+  return (
+    typeof data.mode === 'string' &&
+    typeof data.sourceName === 'string' &&
+    typeof data.targetName === 'string' &&
+    typeof data.value === 'number'
+  );
 }
