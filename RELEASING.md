@@ -26,7 +26,7 @@ The zip contains only:
 4. Run local checks:
    - `npm run lint`
    - `npm run build`
-   - `npm run package-release`
+   - `npm run release:package`
 5. Create and push release tag:
    - `git tag vX.Y.Z`
    - `git push origin vX.Y.Z`

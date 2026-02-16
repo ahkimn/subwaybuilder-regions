@@ -42,7 +42,7 @@ jobs:
           fi
 
       - name: Build and Package Release
-        run: npm run package-release
+        run: npm run release:package
 
       - name: Build Release Notes from Changelog
         env:
