@@ -24,8 +24,10 @@ import {
   type SelectButtonConfig,
 } from '../../elements/SelectRow';
 import { buildReactViewHeader } from '../shared/view-header';
+import { renderCommutersSankey } from './render-commuters-sankey';
 import {
   CommuterDirection,
+  CommuterDisplayMode,
   type CommutersViewState,
   ModeLayout,
   NumberDisplay,
@@ -71,6 +73,17 @@ export function renderCommutersView(
     viewState,
   );
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
+  const content =
+    viewState.displayMode === CommuterDisplayMode.Sankey
+      ? renderCommutersSankey(h, gameData, viewState, byRegionModeShare)
+      : buildCommutersTable(
+          h,
+          useStateHook,
+          viewState,
+          rows,
+          rowsToDisplay,
+          setViewState,
+        );
 
   return h(
     'div',
@@ -78,16 +91,9 @@ export function renderCommutersView(
     buildCommutersHeader(h, gameData, viewState, setViewState),
     ...buildSummaryStatistics(h, populationCount, aggregateModeShare),
     ReactDivider(h, 0.5),
-    buildCommuterTableControls(h, viewState, setViewState),
+    buildCommuterControls(h, viewState, setViewState),
     ReactDivider(h, 0.5),
-    buildCommutersTable(
-      h,
-      useStateHook,
-      viewState,
-      rows,
-      rowsToDisplay,
-      setViewState,
-    ),
+    content,
   );
 }
 
@@ -163,13 +169,13 @@ function buildSummaryStatistics(
   ];
 }
 
-function buildCommuterTableControls(
+function buildCommuterControls(
   h: typeof createElement,
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
-  const columnConfigs: Map<string, SelectButtonConfig> = new Map();
-  columnConfigs.set(ModeLayout.Transit, {
+  const layoutConfigs: Map<string, SelectButtonConfig> = new Map();
+  layoutConfigs.set(ModeLayout.Transit, {
     label: 'Transit',
     onSelect: () =>
       setViewState((current) => {
@@ -185,7 +191,7 @@ function buildCommuterTableControls(
         return { ...current, modeShareLayout: ModeLayout.Transit };
       }),
   });
-  columnConfigs.set(ModeLayout.All, {
+  layoutConfigs.set(ModeLayout.All, {
     label: 'All',
     onSelect: () =>
       setViewState((current) =>
@@ -194,25 +200,71 @@ function buildCommuterTableControls(
           : { ...current, modeShareLayout: ModeLayout.All },
       ),
   });
+  const viewConfigs: Map<string, SelectButtonConfig> = new Map();
+  viewConfigs.set(CommuterDisplayMode.Table, {
+    label: 'Table',
+    onSelect: () =>
+      setViewState((current) =>
+        current.displayMode === CommuterDisplayMode.Table
+          ? current
+          : { ...current, displayMode: CommuterDisplayMode.Table },
+      ),
+  });
+  viewConfigs.set(CommuterDisplayMode.Sankey, {
+    label: 'Sankey',
+    onSelect: () =>
+      setViewState((current) =>
+        current.displayMode === CommuterDisplayMode.Sankey
+          ? current
+          : { ...current, displayMode: CommuterDisplayMode.Sankey },
+      ),
+  });
 
   return h(
     'div',
     {
-      className: 'flex items-center justify-start gap-1.5 pb-1',
+      className: 'flex flex-wrap items-center justify-start gap-3 pb-1',
     },
+    buildCompactControlGroup(
+      h,
+      'Layout',
+      'commutes-mode-layout',
+      layoutConfigs,
+      viewState.modeShareLayout,
+    ),
+    buildCompactControlGroup(
+      h,
+      'View',
+      'commutes-display-mode',
+      viewConfigs,
+      viewState.displayMode,
+    ),
+  );
+}
+
+function buildCompactControlGroup(
+  h: typeof createElement,
+  label: string,
+  selectRowId: string,
+  configs: Map<string, SelectButtonConfig>,
+  selectedValue: string,
+): ReactNode {
+  return h(
+    'div',
+    { className: 'flex items-center justify-start gap-1.5' },
     h(
       'span',
       {
         className:
           'text-[0.72rem] font-semibold tracking-wide text-muted-foreground',
       },
-      'Layout',
+      label,
     ),
     ReactSelectRow(
       h,
-      columnConfigs,
-      viewState.modeShareLayout,
-      'commutes-mode-layout',
+      configs,
+      selectedValue,
+      selectRowId,
       false,
       COMPACT_SELECT_ROW_STYLE,
     ),

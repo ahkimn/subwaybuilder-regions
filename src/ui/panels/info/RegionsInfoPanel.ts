@@ -27,6 +27,7 @@ import { renderCommutersView } from './render-commuters';
 import { renderStatisticsView } from './render-statistics';
 import {
   CommuterDirection,
+  CommuterDisplayMode,
   type CommutersViewState,
   ModeLayout,
   NumberDisplay,
@@ -67,6 +68,7 @@ export function RegionsInfoPanel({
       commuterCountDisplay: NumberDisplay.Absolute,
       modeShareDisplay: NumberDisplay.Absolute,
       modeShareLayout: ModeLayout.Transit,
+      displayMode: CommuterDisplayMode.Table,
       expanded: false,
       sortIndex: 1,
       previousSortIndex: 0,

@@ -23,6 +23,14 @@ export const ModeLayout = {
 
 export type ModeLayout = (typeof ModeLayout)[keyof typeof ModeLayout];
 
+export const CommuterDisplayMode = {
+  Table: 'Table',
+  Sankey: 'Sankey',
+} as const;
+
+export type CommuterDisplayMode =
+  (typeof CommuterDisplayMode)[keyof typeof CommuterDisplayMode];
+
 export { NumberDisplay, SortDirection };
 
 export type CommutersViewState = {
@@ -30,6 +38,7 @@ export type CommutersViewState = {
   commuterCountDisplay: NumberDisplay;
   modeShareDisplay: NumberDisplay;
   modeShareLayout: ModeLayout;
+  displayMode: CommuterDisplayMode;
   expanded: boolean;
   sortIndex: number;
   previousSortIndex: number;
