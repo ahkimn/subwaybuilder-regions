@@ -432,11 +432,9 @@ export class RegionsMapLayers {
     this.addLabelLayer(layerState, lightMode);
   }
 
-  private buildDemandExistsFilter():
-    | maplibregl.FilterSpecification
-    | undefined {
+  private buildDemandExistsFilter(): maplibregl.FilterSpecification {
     if (SHOW_UNPOPULATED_REGIONS) {
-      return undefined;
+      return ['all'];
     }
 
     return ['==', ['get', 'EXISTS_DEMAND'], true];
