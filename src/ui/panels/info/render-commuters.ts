@@ -9,9 +9,11 @@ import { useEffect, useRef } from 'react';
 
 import {
   COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
+  DISTANCE_BUCKET_COUNT,
   SANKEY_FLOW_DISPLAY_COUNT,
   SANKEY_LABEL_FLOW_SYNC,
 } from '../../../core/constants';
+import type { RegionCommuterDetailsData } from '../../../core/types';
 import { ModeShare, type RegionGameData } from '../../../core/types';
 import {
   formatNumberOrDefault,
@@ -41,9 +43,19 @@ import {
 } from './types';
 
 const DEFAULT_TABLE_ROWS = 10; // Max number of rows to show in commuters by region table before truncation
+const DEFAULT_DISTANCE_BUCKET_SIZE_KM = 5;
+
+type CommuterBreakdownData = {
+  modeShareByBreakdownUnit: Map<string | number, ModeShare>;
+  resolveBreakdownUnitName: (unitId: string | number) => string;
+  sankeyTopFlowCount: number;
+  orderedSankeyUnitIds?: Array<string | number>;
+};
 
 type CommuterRowData = {
+  breakdownUnitId: string | number;
   regionName: string;
+  breakdownSortOrder: number | null;
   commuterValue: number;
   transitValue: number;
   drivingValue: number;
@@ -63,7 +75,7 @@ export function renderCommutersView(
   gameData: RegionGameData,
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
-  resolveRegionName: (regionId: string | number) => string,
+  resolveBreakdownUnitName: (unitId: string | number) => string,
 ): ReactNode {
   const commuterSummaryData = gameData.commuterSummary!;
   const commuterDetailsData = gameData.commuterDetails!;
@@ -71,16 +83,19 @@ export function renderCommutersView(
   const aggregateModeShare = isOutbound
     ? commuterSummaryData.residentModeShare
     : commuterSummaryData.workerModeShare;
-  const byRegionModeShare = isOutbound
-    ? commuterDetailsData.residentModeShareByRegion
-    : commuterDetailsData.workerModeShareByRegion;
+  const breakdownData = resolveCommuterBreakdownData(
+    commuterDetailsData,
+    viewState,
+    resolveBreakdownUnitName,
+  );
+  const byBreakdownModeShare = breakdownData.modeShareByBreakdownUnit;
   const populationCount = ModeShare.total(aggregateModeShare);
   const rows = sortCommuterRows(
     deriveCommuterRows(
-      byRegionModeShare,
+      byBreakdownModeShare,
       populationCount,
       viewState,
-      resolveRegionName,
+      breakdownData.resolveBreakdownUnitName,
     ),
     viewState,
   );
@@ -88,25 +103,26 @@ export function renderCommutersView(
   const content =
     viewState.displayMode === CommuterDisplayMode.Sankey
       ? renderCommutersSankey(
-          h,
-          gameData,
-          viewState,
-          byRegionModeShare,
-          resolveRegionName,
-          {
-            labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
-            topFlowCount: SANKEY_FLOW_DISPLAY_COUNT,
-            colorNodesByModeShare: COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
-          },
-        )
+        h,
+        gameData,
+        viewState,
+        byBreakdownModeShare,
+        breakdownData.resolveBreakdownUnitName,
+        {
+          labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
+          topFlowCount: breakdownData.sankeyTopFlowCount,
+          colorNodesByModeShare: COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
+          orderedUnitIds: breakdownData.orderedSankeyUnitIds,
+        },
+      )
       : buildCommutersTable(
-          h,
-          useStateHook,
-          viewState,
-          rows,
-          rowsToDisplay,
-          setViewState,
-        );
+        h,
+        useStateHook,
+        viewState,
+        rows,
+        rowsToDisplay,
+        setViewState,
+      );
 
   return h(
     'div',
@@ -118,6 +134,111 @@ export function renderCommutersView(
     ReactDivider(h, 0.5),
     content,
   );
+}
+
+function resolveCommuterBreakdownData(
+  commuterDetailsData: RegionCommuterDetailsData,
+  viewState: CommutersViewState,
+  resolveBreakdownUnitName: (unitId: string | number) => string,
+): CommuterBreakdownData {
+  const isOutbound = viewState.direction === CommuterDirection.Outbound;
+
+  if (viewState.dimension === CommuterDimension.CommuteLength) {
+    const distanceModeShareByBucketStartKm = isOutbound
+      ? commuterDetailsData.residentModeShareByCommuteDistance
+      : commuterDetailsData.workerModeShareByCommuteDistance;
+    const distanceBreakdown = bucketDistanceBreakdownModeShare(
+      distanceModeShareByBucketStartKm,
+      DEFAULT_DISTANCE_BUCKET_SIZE_KM,
+      DISTANCE_BUCKET_COUNT,
+    );
+    return {
+      modeShareByBreakdownUnit: distanceBreakdown.modeShareByBucketStartKm,
+      resolveBreakdownUnitName: (unitId) =>
+        formatDistanceBreakdownUnitName(
+          unitId,
+          distanceBreakdown.bucketSizeKm,
+        ),
+      sankeyTopFlowCount: DISTANCE_BUCKET_COUNT + 1,
+      orderedSankeyUnitIds: distanceBreakdown.orderedBucketIds,
+    };
+  }
+
+  // TODO: CommuteHour rendering path will be split from Region once hourly table/chart views are implemented.
+  return {
+    modeShareByBreakdownUnit: isOutbound
+      ? commuterDetailsData.residentModeShareByRegion
+      : commuterDetailsData.workerModeShareByRegion,
+    resolveBreakdownUnitName,
+    sankeyTopFlowCount: SANKEY_FLOW_DISPLAY_COUNT,
+  };
+}
+
+function bucketDistanceBreakdownModeShare(
+  modeShareByDistanceBucketStartKm: Map<number, ModeShare> | undefined,
+  bucketSizeKm: number,
+  bucketCount: number,
+): {
+  modeShareByBucketStartKm: Map<string | number, ModeShare>;
+  bucketSizeKm: number;
+  orderedBucketIds: Array<string | number>;
+} {
+  if (!modeShareByDistanceBucketStartKm || modeShareByDistanceBucketStartKm.size === 0) {
+    return {
+      modeShareByBucketStartKm: new Map<string | number, ModeShare>(),
+      bucketSizeKm,
+      orderedBucketIds: [],
+    };
+  }
+
+  const overflowBucketStartKm = bucketSizeKm * bucketCount;
+  const overflowBucketId = `${overflowBucketStartKm}+`;
+  const modeShareByBucketStartKm = new Map<string | number, ModeShare>();
+
+  modeShareByDistanceBucketStartKm.forEach((modeShare, bucketStartKm) => {
+    const bucketId: string | number =
+      bucketStartKm >= overflowBucketStartKm
+        ? overflowBucketId
+        : Math.floor(bucketStartKm / bucketSizeKm) * bucketSizeKm;
+    const existing = modeShareByBucketStartKm.get(bucketId);
+    if (existing) {
+      ModeShare.addInPlace(existing, modeShare);
+      return;
+    }
+    modeShareByBucketStartKm.set(
+      bucketId,
+      ModeShare.add(ModeShare.createEmpty(), modeShare),
+    );
+  });
+
+  const numericBucketIds = Array.from(modeShareByBucketStartKm.keys())
+    .filter((bucketId): bucketId is number => typeof bucketId === 'number')
+    .sort((a, b) => a - b);
+  const orderedBucketIds: Array<string | number> = [...numericBucketIds];
+  if (modeShareByBucketStartKm.has(overflowBucketId)) {
+    orderedBucketIds.push(overflowBucketId);
+  }
+
+  return {
+    modeShareByBucketStartKm,
+    bucketSizeKm,
+    orderedBucketIds,
+  };
+}
+
+function formatDistanceBreakdownUnitName(
+  bucketStartKmOrOverflowId: string | number,
+  bucketSizeKm: number,
+): string {
+  if (typeof bucketStartKmOrOverflowId === 'string') {
+    if (bucketStartKmOrOverflowId.endsWith('+')) {
+      return `${bucketStartKmOrOverflowId.slice(0, -1)}km+`;
+    }
+    return `${bucketStartKmOrOverflowId}km`;
+  }
+  const bucketStartKm = bucketStartKmOrOverflowId;
+  const bucketEndKm = bucketStartKm + bucketSizeKm;
+  return `${bucketStartKm}-${bucketEndKm}km`;
 }
 
 function buildCommutersHeader(
@@ -146,7 +267,7 @@ function buildCommutersHeader(
       ),
   });
 
-  return buildReactViewHeader(h, gameData.displayName, [
+  return buildReactViewHeader(h, gameData.displayName, undefined, [
     ReactSelectRow(
       h,
       directionConfigs,
@@ -198,7 +319,6 @@ function buildCommuterControls(
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
   const controlNodes: ReactNode[] = [];
-
   const dimensionConfigs: Map<string, SelectButtonConfig> = new Map();
   dimensionConfigs.set(CommuterDimension.Region, {
     label: 'Region',
@@ -210,7 +330,7 @@ function buildCommuterControls(
       ),
   });
   dimensionConfigs.set(CommuterDimension.CommuteHour, {
-    label: 'Commute Hour',
+    label: 'Hour',
     onSelect: () =>
       setViewState((current) =>
         current.dimension === CommuterDimension.CommuteHour
@@ -218,11 +338,19 @@ function buildCommuterControls(
           : { ...current, dimension: CommuterDimension.CommuteHour },
       ),
   });
-
+  dimensionConfigs.set(CommuterDimension.CommuteLength, {
+    label: 'Length',
+    onSelect: () =>
+      setViewState((current) =>
+        current.dimension === CommuterDimension.CommuteLength
+          ? current
+          : { ...current, dimension: CommuterDimension.CommuteLength },
+      ),
+  });
   controlNodes.push(
     buildCompactControlGroup(
       h,
-      'Dimension',
+      'Breakdown',
       'commutes-dimension',
       dimensionConfigs,
       viewState.dimension,
@@ -248,55 +376,75 @@ function buildCommuterControls(
           : { ...current, displayMode: CommuterDisplayMode.Sankey },
       ),
   });
+  viewConfigs.set(CommuterDisplayMode.BarChart, {
+    label: 'Bar',
+    onSelect: () =>
+      setViewState((current) =>
+        current.displayMode === CommuterDisplayMode.BarChart
+          ? current
+          : { ...current, displayMode: CommuterDisplayMode.BarChart },
+      ),
+  });
 
   controlNodes.push(
-    buildCompactControlGroup(
-      h,
-      'View',
-      'commutes-display-mode',
-      viewConfigs,
-      viewState.displayMode,
+    h(
+      'div',
+      { className: 'border-l border-border/30 pl-3' },
+      buildCompactControlGroup(
+        h,
+        'View',
+        'commutes-display-mode',
+        viewConfigs,
+        viewState.displayMode,
+      ),
     ),
   );
 
-  if (viewState.displayMode === CommuterDisplayMode.Table) {
-    const layoutConfigs: Map<string, SelectButtonConfig> = new Map();
-    layoutConfigs.set(ModeLayout.Transit, {
-      label: 'Transit',
-      onSelect: () =>
-        setViewState((current) => {
-          if (current.modeShareLayout === ModeLayout.Transit) return current;
-          if (current.modeShareLayout === ModeLayout.All) {
-            return {
-              ...current,
-              modeShareLayout: ModeLayout.Transit,
-              sortIndex: Math.min(current.sortIndex, 2),
-              previousSortIndex: Math.min(current.previousSortIndex, 2),
-            };
-          }
-          return { ...current, modeShareLayout: ModeLayout.Transit };
-        }),
-    });
-    layoutConfigs.set(ModeLayout.All, {
-      label: 'All',
-      onSelect: () =>
-        setViewState((current) =>
-          current.modeShareLayout === ModeLayout.All
-            ? current
-            : { ...current, modeShareLayout: ModeLayout.All },
-        ),
-    });
-
-    controlNodes.push(
-      buildCompactControlGroup(
-        h,
-        'Layout',
-        'commutes-mode-layout',
-        layoutConfigs,
-        viewState.modeShareLayout,
-      ),
-    );
-  }
+  // Layout control is temporarily hidden to reduce control-bar noise.
+  // Keep modeShareLayout state/logic intact so this can be re-enabled later.
+  //
+  // if (viewState.displayMode === CommuterDisplayMode.Table) {
+  //   const layoutConfigs: Map<string, SelectButtonConfig> = new Map();
+  //   layoutConfigs.set(ModeLayout.Transit, {
+  //     label: 'Transit',
+  //     onSelect: () =>
+  //       setViewState((current) => {
+  //         if (current.modeShareLayout === ModeLayout.Transit) return current;
+  //         if (current.modeShareLayout === ModeLayout.All) {
+  //           return {
+  //             ...current,
+  //             modeShareLayout: ModeLayout.Transit,
+  //             sortIndex: Math.min(current.sortIndex, 2),
+  //             previousSortIndex: Math.min(current.previousSortIndex, 2),
+  //           };
+  //         }
+  //         return { ...current, modeShareLayout: ModeLayout.Transit };
+  //       }),
+  //   });
+  //   layoutConfigs.set(ModeLayout.All, {
+  //     label: 'All',
+  //     onSelect: () =>
+  //       setViewState((current) =>
+  //         current.modeShareLayout === ModeLayout.All
+  //           ? current
+  //           : { ...current, modeShareLayout: ModeLayout.All },
+  //       ),
+  //   });
+  //
+  //   controlNodes.push(
+  //     h(
+  //       'div',
+  //       { className: 'border-l border-border/30 pl-3' },
+  //       buildCompactControlGroup(
+  //         h,
+  //         'Layout',
+  //         'commutes-mode-layout',
+  //         layoutConfigs,
+  //         viewState.modeShareLayout,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   return h(
     'div',
@@ -307,7 +455,7 @@ function buildCommuterControls(
       'div',
       {
         className:
-          'inline-flex min-w-max flex-nowrap items-center justify-start gap-3',
+          'flex min-w-max flex-nowrap items-center justify-start gap-3',
       },
       ...controlNodes,
     ),
@@ -344,15 +492,17 @@ function buildCompactControlGroup(
 }
 
 function deriveCommuterRows(
-  byRegionModeShare: Map<string | number, ModeShare>,
+  modeShareByBreakdownUnit: Map<string | number, ModeShare>,
   populationCount: number,
   viewState: CommutersViewState,
-  resolveRegionName: (regionId: string | number) => string,
+  resolveBreakdownUnitName: (unitId: string | number) => string,
 ): CommuterRowData[] {
-  return Array.from(byRegionModeShare.entries()).map(
-    ([regionId, modeShare]) => {
+  return Array.from(modeShareByBreakdownUnit.entries()).map(
+    ([unitId, modeShare]) => {
       return {
-        regionName: resolveRegionName(regionId),
+        breakdownUnitId: unitId,
+        regionName: resolveBreakdownUnitName(unitId),
+        breakdownSortOrder: getBreakdownSortOrder(viewState.dimension, unitId),
         commuterValue:
           viewState.commuterCountDisplay === NumberDisplay.Absolute
             ? ModeShare.total(modeShare)
@@ -395,6 +545,13 @@ function sortCommuterRows(
       case 4:
         return (b.walkingValue - a.walkingValue) * m;
       default:
+        if (
+          viewState.dimension === CommuterDimension.CommuteLength &&
+          a.breakdownSortOrder !== null &&
+          b.breakdownSortOrder !== null
+        ) {
+          return (a.breakdownSortOrder - b.breakdownSortOrder) * m;
+        }
         return a.regionName.localeCompare(b.regionName) * m;
     }
   };
@@ -414,6 +571,18 @@ function sortCommuterRows(
     }
     return result;
   });
+}
+
+function getBreakdownSortOrder(
+  dimension: CommuterDimension,
+  unitId: string | number,
+): number | null {
+  if (dimension !== CommuterDimension.CommuteLength) return null;
+  if (typeof unitId === 'number') return unitId;
+  if (typeof unitId === 'string' && unitId.endsWith('+')) {
+    return Number.parseFloat(unitId);
+  }
+  return null;
 }
 
 function buildCommutersTable(
@@ -451,19 +620,19 @@ function buildCommutersTable(
     }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-          'div',
-          { className: 'pt-1 flex justify-center' },
-          ReactExtendButton(
-            h,
-            viewState.expanded ? 'Collapse' : 'Expand',
-            rows.length - DEFAULT_TABLE_ROWS,
-            () =>
-              setViewState((current) => ({
-                ...current,
-                expanded: !current.expanded,
-              })),
-          ),
-        )
+        'div',
+        { className: 'pt-1 flex justify-center' },
+        ReactExtendButton(
+          h,
+          viewState.expanded ? 'Collapse' : 'Expand',
+          rows.length - DEFAULT_TABLE_ROWS,
+          () =>
+            setViewState((current) => ({
+              ...current,
+              expanded: !current.expanded,
+            })),
+        ),
+      )
       : null,
   );
 }
@@ -569,9 +738,11 @@ function buildTableHeader(
   }
 
   const directionHeadLabel =
-    viewState.direction === CommuterDirection.Outbound
-      ? 'Destination'
-      : 'Origin';
+    viewState.dimension === CommuterDimension.CommuteLength
+      ? 'Distance'
+      : viewState.direction === CommuterDirection.Outbound
+        ? 'Destination'
+        : 'Origin';
   const commuterHeadLabel =
     viewState.commuterCountDisplay === NumberDisplay.Absolute
       ? 'Commuters'

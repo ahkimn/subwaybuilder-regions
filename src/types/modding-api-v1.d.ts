@@ -286,6 +286,7 @@ export interface Pop {
   drivingDistance: number;
   drivingPath?: Coordinate[];
   homeDepartureTime: number;
+  workDepartureTime: number;
   lastCommute: CompletedPopCommute;
 }
 
@@ -568,7 +569,7 @@ export interface UIStyledButtonOptions extends UIButtonOptions {
   size?: StyledButtonSize;
 }
 
-export interface UIStyledToggleOptions extends UIToggleOptions {}
+export interface UIStyledToggleOptions extends UIToggleOptions { }
 
 export interface UIStyledSliderOptions extends UISliderOptions {
   showValue?: boolean;

@@ -120,9 +120,11 @@ export type DatasetSource = {
   writable: boolean; // whether or not the data can be overwritten by the user
 };
 
+// Commute type is the origin -> destination pair for a commute
 export const CommuteType = {
-  Work: 'Work',
-  Home: 'Home',
+  WorkToHome: 'WorkToHome',
+  HomeToWork: 'HomeToWork',
+  // Extend to leisure travel (e.g. Home to Leisure, Leisure to Home), etc. in the future
 } as const satisfies Record<string, string>;
 
 export type CommuteType = (typeof CommuteType)[keyof typeof CommuteType];
@@ -130,7 +132,8 @@ export type CommuteType = (typeof CommuteType)[keyof typeof CommuteType];
 export type RegionCommuterSummaryData = {
   residentModeShare: ModeShare; // Mode share for all commuters living in the region, regardless of where they work
   workerModeShare: ModeShare; // Mode share for all commuters working in the region, regardless of where they live
-  averageCommuteDistance: number | null; // Average commute distance for commuters living or working in the region, in kilometers
+  averageResidentCommuteDistance: number | null; // Average commute distance for commuters living in the region, in kilometers
+  averageWorkerCommuteDistance: number | null; // Average commute distance for commuters working in the region, in kilometers
   metadata: RegionGameMetadata; // metadata
 };
 
@@ -138,8 +141,12 @@ export type RegionCommuterDetailsData = {
   residentModeShareByRegion: Map<string | number, ModeShare>; // region ID to mode share for commuters living in the region
   workerModeShareByRegion: Map<string | number, ModeShare>; // region ID to mode share for commuters working in the region
 
-  residentModeSharesByHour?: Map<number, Map<CommuteType, ModeShare>>; // hour of day to mode share for commuters living in the region by type of commute
-  workerModeSharesByHour?: Map<number, Map<CommuteType, ModeShare>>; // hour of day to mode share for commuters working in the region by type of commute
+  /* For hourly mode share breakdown, the map key is the departure-time bucket in minutes from midnight.
+    - For both residents / workers, this is the departure time from home for HomeToWork trips and the departure time from work for WorkToHome trips.
+    - Example with 60-minute buckets: 1200 -> 20:00. Example with 30-minute buckets: 1230 -> 20:30.
+  */
+  residentModeSharesByHour?: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters living in the region by type of commute
+  workerModeSharesByHour?: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters working in the region by type of commute
 
   residentModeShareByCommuteDistance?: Map<number, ModeShare>; // commute distance bucket to mode share for commuters living in the region
   workerModeShareByCommuteDistance?: Map<number, ModeShare>; // commute distance bucket to mode share for commuters working in the region

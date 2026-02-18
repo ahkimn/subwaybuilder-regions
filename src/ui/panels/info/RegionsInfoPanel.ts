@@ -70,7 +70,7 @@ export function RegionsInfoPanel({
       commuterCountDisplay: NumberDisplay.Absolute,
       modeShareDisplay: NumberDisplay.Absolute,
       graphDisplay: NumberDisplay.Absolute,
-      modeShareLayout: ModeLayout.Transit,
+      modeShareLayout: ModeLayout.All,
       displayMode: CommuterDisplayMode.Table,
       expanded: false,
       sortIndex: 1,
@@ -92,7 +92,7 @@ export function RegionsInfoPanel({
     return null;
   }
 
-  const resolveRegionName = (regionId: string | number): string => {
+  const resolveBreakdownUnitName = (regionId: string | number): string => {
     return regionDataManager.resolveRegionName(
       activeDatasetIdentifier!,
       regionId,
@@ -182,30 +182,30 @@ export function RegionsInfoPanel({
       content = gameData
         ? renderStatisticsView(createElement, gameData)
         : createElement(
-            'div',
-            { className: 'text-xs text-muted-foreground' },
-            'No game data set for info panel rendering',
-          );
+          'div',
+          { className: 'text-xs text-muted-foreground' },
+          'No game data set for info panel rendering',
+        );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-              createElement,
-              useState,
-              gameData,
-              commutersViewState,
-              setCommutersViewState,
-              resolveRegionName,
-            )
+            createElement,
+            useState,
+            gameData,
+            commutersViewState,
+            setCommutersViewState,
+            resolveBreakdownUnitName,
+          )
           : createElement(
-              'div',
-              {
-                className:
-                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-              },
-              LOADING_VALUE_DISPLAY,
-            );
+            'div',
+            {
+              className:
+                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+            },
+            LOADING_VALUE_DISPLAY,
+          );
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);

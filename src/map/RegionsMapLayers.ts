@@ -619,6 +619,7 @@ export class RegionsMapLayers {
     mapRef.on('data', this.layerHandler);
   }
 
+  // This currently does not work as the game's default layers always seem to maintain priority on the map's z-axis :/
   private moveVisibleLabelsToTop(): void {
     const mapRef = this.getMapReference();
     if (!mapRef) return;

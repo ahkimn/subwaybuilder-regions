@@ -232,7 +232,7 @@ export function renderRegionsOverviewPanel(
       className: 'p-3 flex flex-col gap-3 h-full min-h-0',
     },
     renderOverviewTabs(h, activeTab, onSetTab),
-    buildReactViewHeader(h, 'Dataset', [
+    buildReactViewHeader(h, 'Dataset', undefined, [
       renderLayerSelectorRow(
         h,
         props.availableDatasetIdentifiers,
@@ -253,8 +253,8 @@ function buildRows(
   const rowsData = SHOW_UNPOPULATED_REGIONS
     ? Array.from(datasetGameData.values())
     : Array.from(datasetGameData.values()).filter((gameData) =>
-        RegionGameDataUtils.isPopulated(gameData),
-      );
+      RegionGameDataUtils.isPopulated(gameData),
+    );
 
   return rowsData.map((gameData) => {
     return {
@@ -310,15 +310,15 @@ function sortRows(
     );
     const aTrackLengths = a.gameData.infraData
       ? Array.from(a.gameData.infraData.trackLengths.values()).reduce(
-          (sum, length) => sum + length,
-          0,
-        )
+        (sum, length) => sum + length,
+        0,
+      )
       : 0;
     const bTrackLengths = b.gameData.infraData
       ? Array.from(b.gameData.infraData.trackLengths.values()).reduce(
-          (sum, length) => sum + length,
-          0,
-        )
+        (sum, length) => sum + length,
+        0,
+      )
       : 0;
 
     switch (index) {

@@ -38,7 +38,11 @@ const LABEL_SUBTITLE_FONT_SIZE = 9;
 const LABEL_ROW_GAP = 2;
 const LABEL_GAP_BETWEEN_NODES = 2;
 const LABEL_TOP_PADDING = 2;
-const LABEL_BOTTOM_PADDING = 2;
+const LABEL_BOTTOM_PADDING_WITH_SUBTITLE = 8;
+const LABEL_BOTTOM_PADDING_SINGLE = 2;
+const LABEL_BASELINE_DESCENT_BUFFER_WITH_SUBTITLE = 4;
+const LABEL_BASELINE_DESCENT_BUFFER_SINGLE = 1;
+const MAX_LABEL_CENTER_SHIFT_PX = 4;
 const MIN_LABEL_CHARS = 8;
 
 const SANKEY_MODE_COLOR_MUTED: Record<ModeKey, string> = {
@@ -70,6 +74,9 @@ type SankeyLinkData = {
   sourceName: string;
   target: number;
   targetName: string;
+  sourceUnitName: string;
+  sinkUnitName: string;
+  isSelectedUnitLink: boolean;
   value: number;
   mode: ModeKey;
   displayColor: string;
@@ -81,6 +88,7 @@ type SankeyData = {
   nodes: SankeyNodeData[];
   links: SankeyLinkData[];
   totalCommuters: number;
+  activeModes: ModeKey[];
 };
 
 type FlowParams = {
@@ -106,23 +114,25 @@ type SankeyRenderOptions = {
   labelsFollowFlowDirection: boolean;
   topFlowCount: number;
   colorNodesByModeShare: boolean;
+  orderedUnitIds?: Array<string | number>;
 };
 
 export function renderCommutersSankey(
   h: typeof createElement,
   gameData: RegionGameData,
   viewState: CommutersViewState,
-  byRegionModeShare: Map<string | number, ModeShare>,
-  resolveRegionName: (regionId: string | number) => string,
+  byBreakdownUnitModeShare: Map<string | number, ModeShare>,
+  resolveBreakdownUnitName: (unitId: string | number) => string,
   options: SankeyRenderOptions,
 ): ReactNode {
   const sankeyData = buildSankeyData(
     gameData.displayName,
-    byRegionModeShare,
+    byBreakdownUnitModeShare,
     viewState.direction,
-    resolveRegionName,
+    resolveBreakdownUnitName,
     options.topFlowCount,
     options.colorNodesByModeShare,
+    options.orderedUnitIds,
   );
 
   if (sankeyData === null || sankeyData.links.length === 0) {
@@ -136,9 +146,21 @@ export function renderCommutersSankey(
     );
   }
 
-  const maxRows = Math.max(12, sankeyData.nodes.length);
-  // Calculate expected height of the sankey to set a minimum bound for the size of its container
-  const chartHeight = Math.max(320, Math.min(620, maxRows * 26));
+  const terminalNodeCount = sankeyData.nodes.filter(
+    (node) => node.nodeType === 'region' || node.nodeType === 'others',
+  ).length;
+  const estimatedLabelRows = Math.max(terminalNodeCount, 8);
+  const perLabelRowHeight =
+    LABEL_TITLE_FONT_SIZE +
+    LABEL_ROW_GAP +
+    LABEL_SUBTITLE_FONT_SIZE +
+    LABEL_GAP_BETWEEN_NODES +
+    12;
+  // Estimate required height from terminal label count (2-line labels), not raw node count.
+  const chartHeight = Math.max(
+    360,
+    Math.min(760, estimatedLabelRows * perLabelRowHeight + 96),
+  );
 
   return h(
     'div',
@@ -162,6 +184,24 @@ export function renderCommutersSankey(
         labelsFollowFlowDirection: options.labelsFollowFlowDirection,
         colorNodesByModeShare: options.colorNodesByModeShare,
       } satisfies SankeyCanvasProps),
+    ),
+    h(
+      'div',
+      {
+        className:
+          'flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] font-medium text-foreground',
+      },
+      ...sankeyData.activeModes.map((mode) =>
+        h(
+          'div',
+          { className: 'flex items-center gap-2' },
+          h('span', {
+            className: 'inline-block h-2.5 w-2.5 rounded-full',
+            style: { backgroundColor: SANKEY_MODE_NODE_COLOR[mode] },
+          }),
+          MODE_LABEL[mode],
+        ),
+      ),
     ),
   );
 }
@@ -229,53 +269,56 @@ function SankeyCanvas({
     },
     chartWidth > 0
       ? h(
-          Sankey as any,
-          {
-            width: chartWidth,
-            height: chartHeight,
-            data: sankeyData,
-            margin: sankeyMargins,
-            nodePadding: 18,
-            nodeWidth: 14,
-            sort: false,
-            node: buildSankeyNodeRenderer(
-              h,
-              chartWidth,
-              chartHeight,
-              renderLabelsOnLeft,
-              colorNodesByModeShare,
-            ),
-            link: buildSankeyLinkRenderer(
-              h,
-              hoveredLinkIndex,
-              setHoveredLinkIndex,
-            ),
-            onMouseLeave: () => setHoveredLinkIndex(null),
-          },
-          h(Tooltip as any, {
-            content: buildSankeyTooltipRenderer(h, sankeyData.totalCommuters),
-            wrapperStyle: { outline: 'none' },
-            isAnimationActive: false,
-            animationDuration: 0,
-            offset: 8,
-          }),
-        )
+        Sankey as any,
+        {
+          width: chartWidth,
+          height: chartHeight,
+          data: sankeyData,
+          margin: sankeyMargins,
+          nodePadding: 22,
+          nodeWidth: 14,
+          sort: false,
+          isAnimationActive: false,
+          node: buildSankeyNodeRenderer(
+            h,
+            chartWidth,
+            chartHeight,
+            renderLabelsOnLeft,
+            colorNodesByModeShare,
+          ),
+          link: buildSankeyLinkRenderer(
+            h,
+            hoveredLinkIndex,
+            setHoveredLinkIndex,
+          ),
+          onMouseLeave: () => setHoveredLinkIndex(null),
+        },
+        h(Tooltip as any, {
+          content: buildSankeyTooltipRenderer(h, sankeyData.totalCommuters),
+          wrapperStyle: { outline: 'none' },
+          isAnimationActive: false,
+          animationDuration: 0,
+          offset: 8,
+        }),
+      )
       : null,
   );
 }
 
 function buildSankeyData(
   selectedRegionName: string,
-  byRegionModeShare: Map<string | number, ModeShare>,
+  byBreakdownUnitModeShare: Map<string | number, ModeShare>,
   direction: CommuterDirection,
-  resolveRegionName: (regionId: string | number) => string,
+  resolveBreakdownUnitName: (unitId: string | number) => string,
   topFlowCount: number,
   _colorNodesByModeShare: boolean,
+  orderedUnitIds?: Array<string | number>,
 ): SankeyData | null {
   const displayFlows = getTopFlows(
-    byRegionModeShare,
-    resolveRegionName,
+    byBreakdownUnitModeShare,
+    resolveBreakdownUnitName,
     topFlowCount,
+    orderedUnitIds,
   );
   const activeModes = getActiveModes(displayFlows);
 
@@ -345,10 +388,14 @@ function buildSankeyData(
         (sum, entry) => sum + entry.modeShare[mode],
         0,
       );
+      if (modeTotal <= 0) return;
       links.push({
         tooltipKind: 'sankey-link',
         source: selectedNodeIndex,
         target: modeNodeIndex[mode]!,
+        sourceUnitName: selectedRegionName,
+        sinkUnitName: selectedRegionName,
+        isSelectedUnitLink: true,
         value: modeTotal,
         mode,
         displayColor: SANKEY_MODE_COLOR_MUTED[mode],
@@ -361,10 +408,14 @@ function buildSankeyData(
     displayFlows.forEach((entry) => {
       activeModes.forEach((mode) => {
         const value = entry.modeShare[mode];
+        if (value <= 0) return;
         links.push({
           tooltipKind: 'sankey-link',
           source: modeNodeIndex[mode]!,
           target: regionNodeIndex.get(entry.regionId)!,
+          sourceUnitName: selectedRegionName,
+          sinkUnitName: entry.regionName,
+          isSelectedUnitLink: false,
           value,
           mode,
           displayColor: SANKEY_MODE_COLOR_MUTED[mode],
@@ -379,10 +430,14 @@ function buildSankeyData(
     displayFlows.forEach((entry) => {
       activeModes.forEach((mode) => {
         const value = entry.modeShare[mode];
+        if (value <= 0) return;
         links.push({
           tooltipKind: 'sankey-link',
           source: regionNodeIndex.get(entry.regionId)!,
           target: modeNodeIndex[mode]!,
+          sourceUnitName: entry.regionName,
+          sinkUnitName: selectedRegionName,
+          isSelectedUnitLink: false,
           value,
           mode,
           displayColor: SANKEY_MODE_COLOR_MUTED[mode],
@@ -398,10 +453,14 @@ function buildSankeyData(
         (sum, entry) => sum + entry.modeShare[mode],
         0,
       );
+      if (modeTotal <= 0) return;
       links.push({
         tooltipKind: 'sankey-link',
         source: modeNodeIndex[mode]!,
         target: selectedNodeIndex,
+        sourceUnitName: selectedRegionName,
+        sinkUnitName: selectedRegionName,
+        isSelectedUnitLink: true,
         value: modeTotal,
         mode,
         displayColor: SANKEY_MODE_COLOR_MUTED[mode],
@@ -413,35 +472,42 @@ function buildSankeyData(
     });
   }
 
-  return { nodes, links, totalCommuters: totalCommuters };
+  return { nodes, links, totalCommuters, activeModes };
 }
 
 function getTopFlows(
-  byRegionModeShare: Map<string | number, ModeShare>,
-  resolveRegionName: (regionId: string | number) => string,
+  byBreakdownUnitModeShare: Map<string | number, ModeShare>,
+  resolveBreakdownUnitName: (unitId: string | number) => string,
   topFlowCount: number,
+  orderedUnitIds?: Array<string | number>,
 ): FlowParams[] {
-  if (byRegionModeShare.size === 0) {
+  if (byBreakdownUnitModeShare.size === 0) {
     return [];
   }
-
-  const sortedRegions = Array.from(byRegionModeShare.entries())
-    .map(([regionId, modeShare]) => ({
-      regionId,
-      regionName: resolveRegionName(regionId),
-      modeShare,
-      total: ModeShare.total(modeShare),
-    }))
-    .filter((entry) => entry.total > 0)
-    .sort((a, b) => {
-      // If totals are equal, apply a tiebreaker based on region name and then feature ID.
-      if (a.total === b.total) {
-        const nameCompare = a.regionName.localeCompare(b.regionName);
-        if (nameCompare !== 0) return nameCompare;
-        return String(a.regionId).localeCompare(String(b.regionId));
-      }
-      return b.total - a.total;
+  const sortedRegions: FlowParams[] = [];
+  if (orderedUnitIds && orderedUnitIds.length > 0) {
+    orderedUnitIds.forEach((unitId) => {
+      const modeShare = byBreakdownUnitModeShare.get(unitId)!;
+      sortedRegions.push({
+        regionId: unitId,
+        regionName: resolveBreakdownUnitName(unitId),
+        modeShare,
+        total: ModeShare.total(modeShare),
+        isAggregate: false,
+      });
     });
+  } else {
+    sortedRegions.push(...Array.from(byBreakdownUnitModeShare.entries())
+      .map(([regionId, modeShare]) => ({
+        regionId,
+        regionName: resolveBreakdownUnitName(regionId),
+        modeShare,
+        total: ModeShare.total(modeShare),
+        isAggregate: false,
+      }))
+      .filter((entry) => entry.total > 0));
+    sortedRegions.sort(orderRegions);
+  }
 
   // Split out the unassigned region (if it exists) so that it can be rendered separately at the bottom of the Sankey
   const unassignedEntry = sortedRegions.find(
@@ -540,8 +606,6 @@ function buildSankeyNodeRenderer(
   renderLabelsOnLeft: boolean,
   colorNodesByModeShare: boolean,
 ): (props: unknown) => ReactNode {
-  const lastLabelBottomByDepth = new Map<number, number>();
-
   return function SankeyNodeShape(props: unknown): ReactNode {
     const shape = props as Record<string, unknown>;
     const payload = shape.payload as NodeRenderPayload;
@@ -581,33 +645,56 @@ function buildSankeyNodeRenderer(
     const fullBlockHeight =
       LABEL_TITLE_FONT_SIZE + LABEL_ROW_GAP + LABEL_SUBTITLE_FONT_SIZE;
     const singleBlockHeight = LABEL_TITLE_FONT_SIZE;
+    const minCenterYWithSubtitle =
+      LABEL_TOP_PADDING +
+      LABEL_BASELINE_DESCENT_BUFFER_WITH_SUBTITLE +
+      fullBlockHeight / 2;
+    const maxCenterYWithSubtitle =
+      chartHeight -
+      LABEL_BOTTOM_PADDING_WITH_SUBTITLE -
+      LABEL_BASELINE_DESCENT_BUFFER_WITH_SUBTITLE -
+      fullBlockHeight / 2;
+    const minCenterYSingle =
+      LABEL_TOP_PADDING +
+      LABEL_BASELINE_DESCENT_BUFFER_SINGLE +
+      singleBlockHeight / 2;
+    const maxCenterYSingle =
+      chartHeight -
+      LABEL_BOTTOM_PADDING_SINGLE -
+      LABEL_BASELINE_DESCENT_BUFFER_SINGLE -
+      singleBlockHeight / 2;
 
-    const centeredTop = y + height / 2 - fullBlockHeight / 2;
-    const depthKey = payload.depth ?? 0;
-    const previousBottom = lastLabelBottomByDepth.get(depthKey) ?? -Infinity;
-    const minTop = previousBottom + LABEL_GAP_BETWEEN_NODES;
-    const maxTopWithSubtitle =
-      chartHeight - fullBlockHeight - LABEL_BOTTOM_PADDING;
-    let blockTop = Math.max(centeredTop, minTop, LABEL_TOP_PADDING);
-    let showSubtitle = true;
-    let blockHeight = fullBlockHeight;
+    const nodeCenterY = y + height / 2;
+    let centerY = nodeCenterY;
+    let showSubtitle =
+      height >= 8 && minCenterYWithSubtitle <= maxCenterYWithSubtitle;
+    if (showSubtitle) {
+      const centeredWithSubtitle = Math.max(
+        minCenterYWithSubtitle,
+        Math.min(nodeCenterY, maxCenterYWithSubtitle),
+      );
+      const maxAllowedShift = Math.max(
+        MAX_LABEL_CENTER_SHIFT_PX,
+        height * 0.35,
+      );
+      if (Math.abs(centeredWithSubtitle - nodeCenterY) > maxAllowedShift) {
+        showSubtitle = false;
+      } else {
+        centerY = centeredWithSubtitle;
+      }
+    }
 
-    if (blockTop > maxTopWithSubtitle) {
-      showSubtitle = false;
-      blockHeight = singleBlockHeight;
-      const centeredSingleTop = y + height / 2 - singleBlockHeight / 2;
-      const maxTopSingle =
-        chartHeight - singleBlockHeight - LABEL_BOTTOM_PADDING;
-      blockTop = Math.min(
-        Math.max(centeredSingleTop, minTop, LABEL_TOP_PADDING),
-        maxTopSingle,
+    if (!showSubtitle) {
+      centerY = Math.max(
+        minCenterYSingle,
+        Math.min(nodeCenterY, maxCenterYSingle),
       );
     }
 
-    lastLabelBottomByDepth.set(depthKey, blockTop + blockHeight);
-
-    const titleY = blockTop + LABEL_TITLE_FONT_SIZE * 0.78;
-    const subtitleY = titleY + LABEL_ROW_GAP + LABEL_SUBTITLE_FONT_SIZE * 0.92;
+    const titleY = showSubtitle
+      ? centerY - (LABEL_ROW_GAP + LABEL_SUBTITLE_FONT_SIZE) / 2
+      : centerY;
+    const subtitleY = centerY + (LABEL_ROW_GAP + LABEL_TITLE_FONT_SIZE) / 2;
 
     return h(
       'g',
@@ -633,7 +720,6 @@ function buildSankeyNodeRenderer(
           fill: WHITE,
           fontSize: LABEL_TITLE_FONT_SIZE,
           fontWeight: isSelectedNode ? 700 : isModeNode ? 600 : 500,
-          alignmentBaseline: 'central',
           dominantBaseline: 'middle',
           textAnchor,
         },
@@ -641,20 +727,19 @@ function buildSankeyNodeRenderer(
       ),
       showSubtitle
         ? h(
-            'text',
-            {
-              x: textX,
-              y: subtitleY,
-              fill: WHITE,
-              fillOpacity: 0.72,
-              fontSize: LABEL_SUBTITLE_FONT_SIZE,
-              fontWeight: 500,
-              alignmentBaseline: 'central',
-              dominantBaseline: 'middle',
-              textAnchor,
-            },
-            subtitleText,
-          )
+          'text',
+          {
+            x: textX,
+            y: subtitleY,
+            fill: WHITE,
+            fillOpacity: 0.72,
+            fontSize: LABEL_SUBTITLE_FONT_SIZE,
+            fontWeight: 500,
+            dominantBaseline: 'middle',
+            textAnchor,
+          },
+          subtitleText,
+        )
         : null,
     );
   };
@@ -712,6 +797,7 @@ function buildTooltipContainer(
   title: ReactNode,
   lineA: string,
   lineB: string,
+  lineC?: string,
   modeColor?: string,
 ): ReactNode {
   return h(
@@ -728,14 +814,15 @@ function buildTooltipContainer(
       },
       modeColor
         ? h('span', {
-            className: 'inline-block h-2 w-2 rounded-full shrink-0',
-            style: { backgroundColor: modeColor },
-          })
+          className: 'inline-block h-2 w-2 rounded-full shrink-0',
+          style: { backgroundColor: modeColor },
+        })
         : null,
       title,
     ),
     h('div', { className: 'text-foreground/90' }, lineA),
     h('div', { className: 'text-muted-foreground pt-0.5' }, lineB),
+    lineC ? h('div', { className: 'text-muted-foreground pt-0.5' }, lineC) : null,
   );
 }
 
@@ -783,12 +870,20 @@ function buildSankeyTooltipRenderer(
     const linkData = isLinkPayload(tooltipPayload) ? tooltipPayload : null;
 
     if (linkData) {
+      const totalShare = (linkData.value / totalCommuters) * 100;
       const linkShare = (linkData.value / linkData.displayTotal) * 100;
+      const shouldShowUnitShare = linkData.displayTotal !== totalCommuters;
       return buildTooltipContainer(
         h,
-        `${linkData.displayName} - ${MODE_LABEL[linkData.mode]}`,
+        linkData.isSelectedUnitLink
+          ? linkData.sourceUnitName
+          : `${linkData.sourceUnitName} => ${linkData.sinkUnitName}`,
+        // Show proportion of mode share commuters for the selected sink node as well as for the entire diagram
         `${formatNumberOrDefault(linkData.value)} commuters`,
-        `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} commuters`,
+        `${formatPercentOrDefault(totalShare)} of all commuters`,
+        shouldShowUnitShare
+          ? `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} commuters`
+          : undefined,
         SANKEY_MODE_NODE_COLOR[linkData.mode],
       );
     }
@@ -802,9 +897,23 @@ function buildSankeyTooltipRenderer(
       nodeData.name,
       `${formatNumberOrDefault(nodeTotal)} commuters`,
       `${formatPercentOrDefault(nodeShare)} of all commuters`,
+      undefined,
       nodeData.nodeType === 'mode'
         ? SANKEY_MODE_NODE_COLOR[nodeData.mode!]
         : nodeData.tooltipBubbleColor,
     );
   };
 }
+
+function orderRegions(
+  a: { regionId: string | number; regionName: string; total: number },
+  b: { regionId: string | number; regionName: string; total: number },
+): number {
+  // If totals are equal, apply a tiebreaker based on region name and then feature ID.
+  if (a.total === b.total) {
+    const nameCompare = a.regionName.localeCompare(b.regionName);
+    if (nameCompare !== 0) return nameCompare;
+    return String(a.regionId).localeCompare(String(b.regionId));
+  }
+  return b.total - a.total;
+};

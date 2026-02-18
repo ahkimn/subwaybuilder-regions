@@ -63,12 +63,12 @@ export function renderStatisticsView(
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-            Array.from(infraData!.trackLengths.values()).reduce(
-              (a, b) => a + b,
-              0,
-            ),
-            2,
-          )} km`
+          Array.from(infraData!.trackLengths.values()).reduce(
+            (a, b) => a + b,
+            0,
+          ),
+          2,
+        )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     ReactDetailRow(
