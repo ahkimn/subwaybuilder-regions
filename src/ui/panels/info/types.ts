@@ -16,6 +16,16 @@ export const CommuterDirection = {
 export type CommuterDirection =
   (typeof CommuterDirection)[keyof typeof CommuterDirection];
 
+
+export const CommuterDimension = {
+  Region: 'Region',
+  CommuteHour: 'Hour',
+  CommuteLength: 'Length',
+} as const;
+
+export type CommuterDimension =
+  (typeof CommuterDimension)[keyof typeof CommuterDimension];
+
 export const ModeLayout = {
   Transit: 'Transit',
   All: 'All',
@@ -26,6 +36,7 @@ export type ModeLayout = (typeof ModeLayout)[keyof typeof ModeLayout];
 export const CommuterDisplayMode = {
   Table: 'Table',
   Sankey: 'Sankey',
+  BarChart: 'Bar Chart',
 } as const;
 
 export type CommuterDisplayMode =
@@ -34,9 +45,11 @@ export type CommuterDisplayMode =
 export { NumberDisplay, SortDirection };
 
 export type CommutersViewState = {
+  dimension: CommuterDimension;
   direction: CommuterDirection;
   commuterCountDisplay: NumberDisplay;
   modeShareDisplay: NumberDisplay;
+  graphDisplay: NumberDisplay;
   modeShareLayout: ModeLayout;
   displayMode: CommuterDisplayMode;
   expanded: boolean;

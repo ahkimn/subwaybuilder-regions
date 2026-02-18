@@ -49,7 +49,7 @@ type InfraDataAccumulator = {
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
-  constructor(private api: ModdingAPI) {}
+  constructor(private api: ModdingAPI) { }
 
   async updateDatasetCommuteData(
     dataset: RegionDataset,
@@ -100,6 +100,7 @@ export class RegionDataBuilder {
           residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
         workerModeShare:
           workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+        averageCommuteDistance: null, // TODO: Add average commute distance calculation
         metadata: {
           lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
           dirty: false,
@@ -118,8 +119,8 @@ export class RegionDataBuilder {
   ): RegionCommuterDetailsData | null {
     const demandData = this.api.gameState.getDemandData();
 
-    const residentModeShares = new Map<string, ModeShare>();
-    const workerModeShares = new Map<string, ModeShare>();
+    const residentModeShares = new Map<string | number, ModeShare>();
+    const workerModeShares = new Map<string | number, ModeShare>();
 
     if (!demandData) {
       console.error('[Regions] Demand data not available');
@@ -135,11 +136,9 @@ export class RegionDataBuilder {
     }
 
     const demandPointIds = currentGameData.demandData.demandPointIds;
-    const regionNameMap = dataset.regionNameMap;
     const demandPointMap = dataset.regionDemandPointMap;
-    const selectedRegionName = regionNameMap.get(featureId)!;
-    const resolveRegion = (demandPointId: string): string | undefined => {
-      return regionNameMap.get(demandPointMap.get(demandPointId)!);
+    const resolveRegion = (demandPointId: string): string | number => {
+      return demandPointMap.get(demandPointId)!;
     };
 
     // Build commuter data iterating over demand points located within the region
@@ -171,12 +170,12 @@ export class RegionDataBuilder {
         unknown: popData.size,
       };
 
-      let homeRegion: string | undefined; // Defined if the population works in this region
-      let workRegion: string | undefined; // Defined if the population lives in this region
+      let homeRegion: string | number | undefined; // Defined if the population works in this region
+      let workRegion: string | number | undefined; // Defined if the population lives in this region
 
       // Population both lives and works in region
       if (isResident && isWorker) {
-        homeRegion = workRegion = selectedRegionName;
+        homeRegion = workRegion = featureId;
       }
       // Population lives in region but works outside of it
       else if (isResident) {

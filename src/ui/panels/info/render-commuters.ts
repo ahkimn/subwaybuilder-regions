@@ -7,6 +7,11 @@ import type {
 } from 'react';
 import { useEffect, useRef } from 'react';
 
+import {
+  COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
+  SANKEY_FLOW_DISPLAY_COUNT,
+  SANKEY_LABEL_FLOW_SYNC,
+} from '../../../core/constants';
 import { ModeShare, type RegionGameData } from '../../../core/types';
 import {
   formatNumberOrDefault,
@@ -26,6 +31,7 @@ import {
 import { buildReactViewHeader } from '../shared/view-header';
 import { renderCommutersSankey } from './render-commuters-sankey';
 import {
+  CommuterDimension,
   CommuterDirection,
   CommuterDisplayMode,
   type CommutersViewState,
@@ -57,6 +63,7 @@ export function renderCommutersView(
   gameData: RegionGameData,
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
+  resolveRegionName: (regionId: string | number) => string
 ): ReactNode {
   const commuterSummaryData = gameData.commuterSummary!;
   const commuterDetailsData = gameData.commuterDetails!;
@@ -69,21 +76,32 @@ export function renderCommutersView(
     : commuterDetailsData.workerModeShareByRegion;
   const populationCount = ModeShare.total(aggregateModeShare);
   const rows = sortCommuterRows(
-    deriveCommuterRows(byRegionModeShare, populationCount, viewState),
+    deriveCommuterRows(byRegionModeShare, populationCount, viewState, resolveRegionName),
     viewState,
   );
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
   const content =
     viewState.displayMode === CommuterDisplayMode.Sankey
-      ? renderCommutersSankey(h, gameData, viewState, byRegionModeShare)
+      ? renderCommutersSankey(
+        h,
+        gameData,
+        viewState,
+        byRegionModeShare,
+        resolveRegionName,
+        {
+          labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
+          topFlowCount: SANKEY_FLOW_DISPLAY_COUNT,
+          colorNodesByModeShare: COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
+        },
+      )
       : buildCommutersTable(
-          h,
-          useStateHook,
-          viewState,
-          rows,
-          rowsToDisplay,
-          setViewState,
-        );
+        h,
+        useStateHook,
+        viewState,
+        rows,
+        rowsToDisplay,
+        setViewState,
+      );
 
   return h(
     'div',
@@ -174,32 +192,39 @@ function buildCommuterControls(
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
-  const layoutConfigs: Map<string, SelectButtonConfig> = new Map();
-  layoutConfigs.set(ModeLayout.Transit, {
-    label: 'Transit',
-    onSelect: () =>
-      setViewState((current) => {
-        if (current.modeShareLayout === ModeLayout.Transit) return current;
-        if (current.modeShareLayout === ModeLayout.All) {
-          return {
-            ...current,
-            modeShareLayout: ModeLayout.Transit,
-            sortIndex: Math.min(current.sortIndex, 2),
-            previousSortIndex: Math.min(current.previousSortIndex, 2),
-          };
-        }
-        return { ...current, modeShareLayout: ModeLayout.Transit };
-      }),
-  });
-  layoutConfigs.set(ModeLayout.All, {
-    label: 'All',
+
+  const controlNodes: ReactNode[] = [];
+
+  const dimensionConfigs: Map<string, SelectButtonConfig> = new Map();
+  dimensionConfigs.set(CommuterDimension.Region, {
+    label: 'Region',
     onSelect: () =>
       setViewState((current) =>
-        current.modeShareLayout === ModeLayout.All
+        current.dimension === CommuterDimension.Region
           ? current
-          : { ...current, modeShareLayout: ModeLayout.All },
+          : { ...current, dimension: CommuterDimension.Region },
       ),
   });
+  dimensionConfigs.set(CommuterDimension.CommuteHour, {
+    label: 'Commute Hour',
+    onSelect: () =>
+      setViewState((current) =>
+        current.dimension === CommuterDimension.CommuteHour
+          ? current
+          : { ...current, dimension: CommuterDimension.CommuteHour },
+      ),
+  });
+
+  controlNodes.push(
+    buildCompactControlGroup(
+      h,
+      'Dimension',
+      'commutes-dimension',
+      dimensionConfigs,
+      viewState.dimension,
+    )
+  )
+
   const viewConfigs: Map<string, SelectButtonConfig> = new Map();
   viewConfigs.set(CommuterDisplayMode.Table, {
     label: 'Table',
@@ -220,24 +245,66 @@ function buildCommuterControls(
       ),
   });
 
-  return h(
-    'div',
-    {
-      className: 'flex flex-wrap items-center justify-start gap-3 pb-1',
-    },
-    buildCompactControlGroup(
-      h,
-      'Layout',
-      'commutes-mode-layout',
-      layoutConfigs,
-      viewState.modeShareLayout,
-    ),
+  controlNodes.push(
     buildCompactControlGroup(
       h,
       'View',
       'commutes-display-mode',
       viewConfigs,
       viewState.displayMode,
+    )
+  )
+
+  if (viewState.displayMode === CommuterDisplayMode.Table) {
+
+    const layoutConfigs: Map<string, SelectButtonConfig> = new Map();
+    layoutConfigs.set(ModeLayout.Transit, {
+      label: 'Transit',
+      onSelect: () =>
+        setViewState((current) => {
+          if (current.modeShareLayout === ModeLayout.Transit) return current;
+          if (current.modeShareLayout === ModeLayout.All) {
+            return {
+              ...current,
+              modeShareLayout: ModeLayout.Transit,
+              sortIndex: Math.min(current.sortIndex, 2),
+              previousSortIndex: Math.min(current.previousSortIndex, 2),
+            };
+          }
+          return { ...current, modeShareLayout: ModeLayout.Transit };
+        }),
+    });
+    layoutConfigs.set(ModeLayout.All, {
+      label: 'All',
+      onSelect: () =>
+        setViewState((current) =>
+          current.modeShareLayout === ModeLayout.All
+            ? current
+            : { ...current, modeShareLayout: ModeLayout.All },
+        ),
+    });
+
+    controlNodes.push(
+      buildCompactControlGroup(
+        h,
+        'Layout',
+        'commutes-mode-layout',
+        layoutConfigs,
+        viewState.modeShareLayout,
+      ))
+  }
+
+  return h(
+    'div',
+    {
+      className: 'w-full overflow-x-auto overflow-y-hidden pb-1',
+    },
+    h(
+      'div',
+      {
+        className: 'inline-flex min-w-max flex-nowrap items-center justify-start gap-3',
+      },
+      ...controlNodes,
     ),
   );
 }
@@ -272,14 +339,15 @@ function buildCompactControlGroup(
 }
 
 function deriveCommuterRows(
-  byRegionModeShare: Map<string, ModeShare>,
+  byRegionModeShare: Map<string | number, ModeShare>,
   populationCount: number,
   viewState: CommutersViewState,
+  resolveRegionName: (regionId: string | number) => string
 ): CommuterRowData[] {
   return Array.from(byRegionModeShare.entries()).map(
-    ([regionName, modeShare]) => {
+    ([regionId, modeShare]) => {
       return {
-        regionName: regionName,
+        regionName: resolveRegionName(regionId),
         commuterValue:
           viewState.commuterCountDisplay === NumberDisplay.Absolute
             ? ModeShare.total(modeShare)
@@ -378,19 +446,19 @@ function buildCommutersTable(
     }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-          'div',
-          { className: 'pt-1 flex justify-center' },
-          ReactExtendButton(
-            h,
-            viewState.expanded ? 'Collapse' : 'Expand',
-            rows.length - DEFAULT_TABLE_ROWS,
-            () =>
-              setViewState((current) => ({
-                ...current,
-                expanded: !current.expanded,
-              })),
-          ),
-        )
+        'div',
+        { className: 'pt-1 flex justify-center' },
+        ReactExtendButton(
+          h,
+          viewState.expanded ? 'Collapse' : 'Expand',
+          rows.length - DEFAULT_TABLE_ROWS,
+          () =>
+            setViewState((current) => ({
+              ...current,
+              expanded: !current.expanded,
+            })),
+        ),
+      )
       : null,
   );
 }

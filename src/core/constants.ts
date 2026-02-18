@@ -58,5 +58,9 @@ export const FLOATING_PANEL_OFFSET_Y = 80;
 export const INFO_PANEL_MIN_WIDTH = 80;
 
 // TODO: (Feature) add as config option
-export const SHOW_UNPOPULATED_REGIONS = true; // Whether to show regions with no demand data by default in the overview panel and layer.
+export const SHOW_UNPOPULATED_REGIONS = false; // Whether to show regions with no demand data by default in the overview panel and layer.
 export const ENFORCE_ONE_DATASET_VISIBLE = true; // Whether to enforce that only one dataset's map layers can be visible at a time, or allow multiple datasets' layers to be toggled on simultaneously
+
+export const SANKEY_FLOW_DISPLAY_COUNT = 10; // Number of flows to display in sankey diagrams by default, excluding "Other" and "Unassigned" aggregate categories
+export const SANKEY_LABEL_FLOW_SYNC = true; // Whether the labels of entries within a Sankey diagram should always be rendered on the right side of nodes, or if they should be conditionally rendered on the left side depending on the direction of flow
+export const COLOR_COMMUTER_NODES_WITH_MODE_COLORS = false; // Whether to color nodes in the commuter info view with their corresponding mode share color, or to use a single default color for all nodes

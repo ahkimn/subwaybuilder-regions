@@ -1,93 +1,132 @@
-import type { createElement, ReactNode } from 'react';
 import {
-  ResponsiveContainer,
-  Sankey,
-  Tooltip,
-} from 'recharts';
+  type createElement,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { Sankey, Tooltip } from 'recharts';
 
-import { ModeShare, type RegionGameData } from '../../../core/types';
+import { UNASSIGNED_REGION_ID } from '../../../core/constants';
+import type { ModeKey } from '../../../core/types';
+import {
+  MODE_LABEL,
+  MODE_ORDER,
+  ModeShare,
+  type RegionGameData,
+} from '../../../core/types';
 import {
   formatNumberOrDefault,
   formatPercentOrDefault,
 } from '../../../core/utils';
 import {
-  CommuterDirection,
-  type CommutersViewState,
-  ModeLayout,
-} from './types';
+  BLACK,
+  getPrimaryChartColorByName,
+  hexToRgb,
+  rgbToHex,
+  SANKEY_TERMINAL_NODE_COLOR,
+  WHITE,
+} from '../../types/DisplayColor';
+import { CommuterDirection, type CommutersViewState } from './types';
 
-const DEFAULT_TABLE_ROWS = 10;
-const SANKEY_TOP_FLOW_COUNT = 10;
+const SANKEY_MIN_WIDTH_PX = 720;
 const SANKEY_EMPTY_MESSAGE = 'No commuter flow data available';
+const ALL_OTHERS_LABEL = 'Other Regions';
+const LABEL_OFFSET = 6;
+const LABEL_TITLE_FONT_SIZE = 10;
+const LABEL_SUBTITLE_FONT_SIZE = 9;
+const LABEL_ROW_GAP = 2;
+const LABEL_GAP_BETWEEN_NODES = 2;
+const LABEL_TOP_PADDING = 2;
+const LABEL_BOTTOM_PADDING = 2;
+const MIN_LABEL_CHARS = 8;
 
-const SANKEY_MODE_COLOR = {
-  transit: '#0000ff',
-  driving: '#ff0000',
-  walking: '#00ff00',
-  neutral: '#64748b',
-} as const;
+const SANKEY_MODE_COLOR_MUTED: Record<ModeKey, string> = {
+  transit: getPrimaryChartColorByName('Blue').mutedHex,
+  driving: getPrimaryChartColorByName('Red').mutedHex,
+  walking: getPrimaryChartColorByName('Green').mutedHex,
+  unknown: getPrimaryChartColorByName('Gray').mutedHex,
+};
 
-const SANKEY_NODE_COLOR = {
-  active: '#94a3b8',
-  region: '#64748b',
-  others: '#475569',
-} as const;
+const SANKEY_MODE_NODE_COLOR: Record<ModeKey, string> = {
+  transit: getPrimaryChartColorByName('Blue').hex,
+  driving: getPrimaryChartColorByName('Red').hex,
+  walking: getPrimaryChartColorByName('Green').hex,
+  unknown: getPrimaryChartColorByName('Gray').hex,
+};
 
-const ALL_OTHERS_LABEL = 'All Others';
-
-type SankeyNodeRole = 'active' | 'region' | 'others';
-type SankeyLinkMode = 'mixed' | 'transit' | 'driving' | 'walking';
+type SankeyNodeType = 'selected' | 'region' | 'others' | 'mode';
 
 type SankeyNodeData = {
   name: string;
-  role: SankeyNodeRole;
-  fill: string;
+  nodeType: SankeyNodeType;
+  mode?: ModeKey;
+  tooltipBubbleColor?: string;
 };
 
 type SankeyLinkData = {
+  tooltipKind: 'sankey-link';
   source: number;
-  target: number;
-  value: number;
-  color: string;
-  mode: SankeyLinkMode;
-  transit: number;
-  driving: number;
-  walking: number;
-  unknown: number;
-  total: number;
-  isAggregated: boolean;
   sourceName: string;
+  target: number;
   targetName: string;
-};
-
-type SankeyNodeTooltipData = {
-  name?: string;
-  value?: number;
+  value: number;
+  mode: ModeKey;
+  displayColor: string;
+  displayName: string;
+  displayTotal: number;
 };
 
 type SankeyData = {
   nodes: SankeyNodeData[];
   links: SankeyLinkData[];
+  totalCommuters: number;
 };
 
-type FlowEntry = {
+type FlowParams = {
+  regionId: string | number;
   regionName: string;
   modeShare: ModeShare;
-  isAggregated: boolean;
+  total: number;
+  isAggregate: boolean;
+};
+
+type NodeRenderPayload = SankeyNodeData & {
+  depth: number;
+  value: number;
+};
+
+type LinkRenderPayload = SankeyLinkData & {
+  index: number;
+  source?: NodeRenderPayload;
+  target?: NodeRenderPayload;
+};
+
+type SankeyRenderOptions = {
+  labelsFollowFlowDirection: boolean;
+  topFlowCount: number;
+  colorNodesByModeShare: boolean;
 };
 
 export function renderCommutersSankey(
   h: typeof createElement,
   gameData: RegionGameData,
   viewState: CommutersViewState,
-  byRegionModeShare: Map<string, ModeShare>,
+  byRegionModeShare: Map<string | number, ModeShare>,
+  resolveRegionName: (regionId: string | number) => string,
+  options: SankeyRenderOptions,
 ): ReactNode {
+
   const sankeyData = buildSankeyData(
     gameData.displayName,
     byRegionModeShare,
-    viewState,
+    viewState.direction,
+    resolveRegionName,
+    options.topFlowCount,
+    options.colorNodesByModeShare,
   );
-  if (!sankeyData || sankeyData.links.length === 0) {
+
+  if (sankeyData === null || sankeyData.links.length === 0) {
     return h(
       'div',
       {
@@ -98,20 +137,9 @@ export function renderCommutersSankey(
     );
   }
 
-  const estimatedRowCount = Math.max(sankeyData.nodes.length, DEFAULT_TABLE_ROWS);
-  const chartHeight = Math.max(
-    280,
-    Math.min(
-      560,
-      estimatedRowCount *
-        (viewState.modeShareLayout === ModeLayout.All ? 26 : 22),
-    ),
-  );
-  const ResponsiveContainerComponent = ResponsiveContainer as any;
-  const SankeyComponent = Sankey as any;
-  const TooltipComponent = Tooltip as any;
-  const chartMinWidth =
-    viewState.modeShareLayout === ModeLayout.All ? '44rem' : '40rem';
+  const maxRows = Math.max(12, sankeyData.nodes.length);
+  // Calculate expected height of the sankey to set a minimum bound for the size of its container
+  const chartHeight = Math.max(320, Math.min(620, maxRows * 26));
 
   return h(
     'div',
@@ -122,333 +150,452 @@ export function renderCommutersSankey(
         className: 'overflow-auto min-h-0 w-full',
         style: {
           maxHeight: '60vh',
+          // Likely unneeded as the sankey should never be tall enough to require scrolling
           scrollbarWidth: 'thin',
-          scrollbarGutter: 'stable',
+          scrollbarGutter: 'stable both-edges',
         },
       },
-      h(
-        'div',
-        {
-          className: 'w-full min-w-0',
-          style: {
-            minWidth: '0',
-            width: '100%',
-            maxWidth: 'none',
-            minInlineSize: chartMinWidth,
-            minHeight: '16rem',
-            height: `${chartHeight}px`,
-          },
-        },
-        h(
-          ResponsiveContainerComponent,
-          { width: '100%', height: '100%', minWidth: 0, minHeight: chartHeight },
-          h(
-            SankeyComponent,
-            {
-              data: sankeyData,
-              margin: { top: 16, right: 120, bottom: 16, left: 120 },
-              nodePadding: viewState.modeShareLayout === ModeLayout.All ? 18 : 14,
-              nodeWidth: 12,
-              sort: false,
-              node: buildSankeyNodeRenderer(
-                h,
-                viewState,
-                gameData.displayName,
-              ),
-              link: buildSankeyLinkRenderer(h),
-            },
-            h(TooltipComponent, {
-              content: buildSankeyTooltipRenderer(h),
-              wrapperStyle: { outline: 'none' },
-            }),
-          ),
-        ),
-      ),
+      h(SankeyCanvas, {
+        h,
+        sankeyData,
+        chartHeight,
+        direction: viewState.direction,
+        labelsFollowFlowDirection: options.labelsFollowFlowDirection,
+        colorNodesByModeShare: options.colorNodesByModeShare,
+      } satisfies SankeyCanvasProps),
     ),
   );
 }
 
+type SankeyCanvasProps = {
+  h: typeof createElement;
+  sankeyData: SankeyData;
+  chartHeight: number;
+  direction: CommuterDirection;
+  labelsFollowFlowDirection: boolean;
+  colorNodesByModeShare: boolean;
+};
+
+// Thin wrapper class around the Sankey chart component to handle dynamic resizing (most notably on the initial render when we do not know the width of the container)
+function SankeyCanvas({
+  h,
+  sankeyData,
+  chartHeight,
+  direction,
+  labelsFollowFlowDirection,
+  colorNodesByModeShare,
+}: SankeyCanvasProps): ReactNode {
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [chartWidth, setChartWidth] = useState<number>(0);
+  const [hoveredLinkIndex, setHoveredLinkIndex] = useState<number | null>(null);
+  const renderLabelsOnLeft =
+    labelsFollowFlowDirection && direction === CommuterDirection.Inbound;
+
+  // Horizontal padding is greater on the side the labels are intended to be rendered on
+  const sankeyMargins = renderLabelsOnLeft
+    ? { top: 10, right: 10, bottom: 10, left: 108 }
+    : { top: 10, right: 108, bottom: 10, left: 10 };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateWidth = () => {
+      const nextWidth = Math.max(container.clientWidth, SANKEY_MIN_WIDTH_PX);
+      setChartWidth((current) => (current === nextWidth ? current : nextWidth));
+    };
+
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(container);
+    window.addEventListener('resize', updateWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
+
+  return h(
+    'div',
+    {
+      ref: (node: HTMLElement | null) => {
+        containerRef.current = node;
+      },
+      className: 'w-full min-w-0',
+      style: {
+        minWidth: `${SANKEY_MIN_WIDTH_PX}px`,
+        height: `${chartHeight}px`,
+      },
+    },
+    chartWidth > 0
+      ? h(
+        Sankey as any,
+        {
+          width: chartWidth,
+          height: chartHeight,
+          data: sankeyData,
+          margin: sankeyMargins,
+          nodePadding: 18,
+          nodeWidth: 14,
+          sort: false,
+          node: buildSankeyNodeRenderer(
+            h,
+            chartWidth,
+            chartHeight,
+            renderLabelsOnLeft,
+            colorNodesByModeShare,
+          ),
+          link: buildSankeyLinkRenderer(h, hoveredLinkIndex, setHoveredLinkIndex),
+          onMouseLeave: () => setHoveredLinkIndex(null),
+        },
+        h(Tooltip as any, {
+          content: buildSankeyTooltipRenderer(
+            h,
+            sankeyData.totalCommuters,
+          ),
+          wrapperStyle: { outline: 'none' },
+          isAnimationActive: false,
+          animationDuration: 0,
+          offset: 8,
+        }),
+      )
+      : null,
+  );
+}
+
 function buildSankeyData(
-  activeRegionName: string,
-  byRegionModeShare: Map<string, ModeShare>,
-  viewState: CommutersViewState,
+  selectedRegionName: string,
+  byRegionModeShare: Map<string | number, ModeShare>,
+  direction: CommuterDirection,
+  resolveRegionName: (regionId: string | number) => string,
+  topFlowCount: number,
+  _colorNodesByModeShare: boolean,
 ): SankeyData | null {
-  const entries = getTopFlowEntries(byRegionModeShare);
-  if (entries.length === 0) {
+  const displayFlows = getTopFlows(byRegionModeShare, resolveRegionName, topFlowCount);
+  const activeModes = getActiveModes(displayFlows);
+
+  if (displayFlows.length === 0 && activeModes.length === 0) {
     return null;
   }
+  const totalModeShare = calculateTotalModeShare(displayFlows);
+  const totalCommuters = ModeShare.total(totalModeShare);
 
-  const nodes: SankeyNodeData[] = [
-    {
-      name: activeRegionName,
-      role: 'active',
-      fill: SANKEY_NODE_COLOR.active,
-    },
-  ];
-  const nodeIndexByName = new Map<string, number>([[activeRegionName, 0]]);
+  const nodes: SankeyNodeData[] = [];
   const links: SankeyLinkData[] = [];
 
-  entries.forEach((entry) => {
-    const targetLabel =
-      entry.regionName === activeRegionName
-        ? `${entry.regionName} (Within Region)`
-        : entry.regionName;
-    const targetIndex = getOrCreateNodeIndex(
-      nodes,
-      nodeIndexByName,
-      targetLabel,
-      entry.isAggregated ? 'others' : 'region',
-    );
+  const nodeIndexByKey = new Map<string, number>();
 
-    const sourceIndex =
-      viewState.direction === CommuterDirection.Outbound ? 0 : targetIndex;
-    const sinkIndex =
-      viewState.direction === CommuterDirection.Outbound ? targetIndex : 0;
-    const sourceName =
-      viewState.direction === CommuterDirection.Outbound
-        ? activeRegionName
-        : targetLabel;
-    const targetName =
-      viewState.direction === CommuterDirection.Outbound
-        ? targetLabel
-        : activeRegionName;
+  // Build index of nodes (necessary for the Sankey to construct links)
+  const addNode = (
+    key: string,
+    name: string,
+    kind: SankeyNodeType,
+    mode?: ModeKey,
+    tooltipBubbleColor?: string,
+  ) => {
+    const existing = nodeIndexByKey.get(key);
+    if (existing !== undefined) return existing;
+    const index = nodes.length;
+    nodeIndexByKey.set(key, index);
+    nodes.push({ name, nodeType: kind, mode, tooltipBubbleColor });
+    return index;
+  };
 
-    links.push(
-      ...createLinksForEntry(
-        entry,
-        sourceIndex,
-        sinkIndex,
-        sourceName,
-        targetName,
-        viewState.modeShareLayout,
+  // Add nodes for the individual transit modes (to be displayed in the middle of the Sankey)
+  const modeNodeIndex: Partial<Record<ModeKey, number>> = {};
+  activeModes.forEach((mode) => {
+    modeNodeIndex[mode] = addNode(`mode:${mode}`, MODE_LABEL[mode], 'mode', mode);
+  });
+
+  // Add node for the selected region (to be displayed on the left or right of the Sankey depending on flow direction)
+  const selectedNodeIndex = addNode(
+    `selected:${selectedRegionName}`,
+    selectedRegionName,
+    'selected',
+    undefined,
+    getModeShareBubbleColor(totalModeShare),
+  );
+  const regionNodeIndex = new Map<string | number, number>();
+  displayFlows.forEach((entry) => {
+    regionNodeIndex.set(
+      entry.regionId,
+      addNode(
+        `region:${String(entry.regionId)}`,
+        entry.regionName,
+        entry.isAggregate ? 'others' : 'region',
+        undefined,
+        getModeShareBubbleColor(entry.modeShare),
       ),
     );
   });
 
-  return { nodes, links };
+  if (direction === CommuterDirection.Outbound) {
+    activeModes.forEach((mode) => {
+      const modeTotal = displayFlows.reduce(
+        (sum, entry) => sum + entry.modeShare[mode],
+        0,
+      );
+      links.push({
+        tooltipKind: 'sankey-link',
+        source: selectedNodeIndex,
+        target: modeNodeIndex[mode]!,
+        value: modeTotal,
+        mode,
+        displayColor: SANKEY_MODE_COLOR_MUTED[mode],
+        sourceName: selectedRegionName,
+        targetName: MODE_LABEL[mode],
+        displayName: selectedRegionName,
+        displayTotal: totalCommuters,
+      });
+    });
+    displayFlows.forEach((entry) => {
+      activeModes.forEach((mode) => {
+        const value = entry.modeShare[mode];
+        links.push({
+          tooltipKind: 'sankey-link',
+          source: modeNodeIndex[mode]!,
+          target: regionNodeIndex.get(entry.regionId)!,
+          value,
+          mode,
+          displayColor: SANKEY_MODE_COLOR_MUTED[mode],
+          sourceName: MODE_LABEL[mode],
+          targetName: entry.regionName,
+          displayName: entry.regionName,
+          displayTotal: entry.total,
+        });
+      });
+    });
+  } else {
+    displayFlows.forEach((entry) => {
+      activeModes.forEach((mode) => {
+        const value = entry.modeShare[mode];
+        links.push({
+          tooltipKind: 'sankey-link',
+          source: regionNodeIndex.get(entry.regionId)!,
+          target: modeNodeIndex[mode]!,
+          value,
+          mode,
+          displayColor: SANKEY_MODE_COLOR_MUTED[mode],
+          sourceName: entry.regionName,
+          targetName: MODE_LABEL[mode],
+          displayName: entry.regionName,
+          displayTotal: entry.total,
+        });
+      });
+    });
+    activeModes.forEach((mode) => {
+      const modeTotal = displayFlows.reduce(
+        (sum, entry) => sum + entry.modeShare[mode],
+        0,
+      );
+      links.push({
+        tooltipKind: 'sankey-link',
+        source: modeNodeIndex[mode]!,
+        target: selectedNodeIndex,
+        value: modeTotal,
+        mode,
+        displayColor: SANKEY_MODE_COLOR_MUTED[mode],
+        sourceName: MODE_LABEL[mode],
+        targetName: selectedRegionName,
+        displayName: selectedRegionName,
+        displayTotal: totalCommuters,
+      });
+    });
+  }
+
+  return { nodes, links, totalCommuters: totalCommuters };
 }
 
-function getTopFlowEntries(byRegionModeShare: Map<string, ModeShare>): FlowEntry[] {
-  const sortedEntries = Array.from(byRegionModeShare.entries())
-    .map(([regionName, modeShare]) => ({
-      regionName,
+function getTopFlows(
+  byRegionModeShare: Map<string | number, ModeShare>,
+  resolveRegionName: (regionId: string | number) => string,
+  topFlowCount: number,
+): FlowParams[] {
+  if (byRegionModeShare.size === 0) {
+    return [];
+  }
+
+  const sortedRegions = Array.from(byRegionModeShare.entries())
+    .map(([regionId, modeShare]) => ({
+      regionId,
+      regionName: resolveRegionName(regionId),
       modeShare,
       total: ModeShare.total(modeShare),
     }))
     .filter((entry) => entry.total > 0)
     .sort((a, b) => {
+      // If totals are equal, apply a tiebreaker based on region name and then feature ID.
       if (a.total === b.total) {
-        return a.regionName.localeCompare(b.regionName);
+        const nameCompare = a.regionName.localeCompare(b.regionName);
+        if (nameCompare !== 0) return nameCompare;
+        return String(a.regionId).localeCompare(String(b.regionId));
       }
       return b.total - a.total;
     });
 
-  if (sortedEntries.length === 0) {
-    return [];
-  }
+  // Split out the unassigned region (if it exists) so that it can be rendered separately at the bottom of the Sankey
+  const unassignedEntry = sortedRegions.find(
+    (entry) => String(entry.regionId) === UNASSIGNED_REGION_ID,
+  );
+  const assignedRegions = sortedRegions.filter(
+    (entry) => String(entry.regionId) !== UNASSIGNED_REGION_ID,
+  );
 
-  const entries: FlowEntry[] = sortedEntries
-    .slice(0, SANKEY_TOP_FLOW_COUNT)
-    .map(({ regionName, modeShare }) => ({
+  const topFlows: FlowParams[] = assignedRegions
+    .slice(0, topFlowCount)
+    .map(({ regionId, regionName, modeShare, total }) => ({
+      regionId,
       regionName,
       modeShare,
-      isAggregated: false,
+      total,
+      isAggregate: false,
     }));
 
-  if (sortedEntries.length <= SANKEY_TOP_FLOW_COUNT) {
-    return entries;
-  }
+  if (assignedRegions.length > topFlowCount) {
+    // If there are any other regions, aggregate them into a single "Other Regions" source/sink within the Sankey
+    const otherModeShare = ModeShare.createEmpty();
+    let otherTotal = 0;
+    assignedRegions.slice(topFlowCount).forEach((entry) => {
+      ModeShare.addInPlace(otherModeShare, entry.modeShare);
+      otherTotal += entry.total;
+    });
 
-  const remainingTotal = ModeShare.createEmpty();
-  sortedEntries.slice(SANKEY_TOP_FLOW_COUNT).forEach(({ modeShare }) => {
-    ModeShare.addInPlace(remainingTotal, modeShare);
-  });
-
-  if (ModeShare.total(remainingTotal) > 0) {
-    entries.push({
+    topFlows.push({
+      regionId: ALL_OTHERS_LABEL,
       regionName: ALL_OTHERS_LABEL,
-      modeShare: remainingTotal,
-      isAggregated: true,
+      modeShare: otherModeShare,
+      total: otherTotal,
+      isAggregate: true,
     });
   }
 
-  return entries;
-}
-
-function getOrCreateNodeIndex(
-  nodes: SankeyNodeData[],
-  nodeIndexByName: Map<string, number>,
-  nodeName: string,
-  role: SankeyNodeRole,
-): number {
-  const existingIndex = nodeIndexByName.get(nodeName);
-  if (existingIndex !== undefined) {
-    return existingIndex;
+  // Always keep the unassigned region separate and render it last (below "Other Regions").
+  if (unassignedEntry && unassignedEntry.total > 0) {
+    topFlows.push({
+      regionId: unassignedEntry.regionId,
+      regionName: unassignedEntry.regionName,
+      modeShare: unassignedEntry.modeShare,
+      total: unassignedEntry.total,
+      isAggregate: false,
+    });
   }
 
-  const index = nodes.length;
-  nodeIndexByName.set(nodeName, index);
-  nodes.push({
-    name: nodeName,
-    role,
-    fill:
-      role === 'active'
-        ? SANKEY_NODE_COLOR.active
-        : role === 'others'
-          ? SANKEY_NODE_COLOR.others
-          : SANKEY_NODE_COLOR.region,
-  });
-  return index;
+  return topFlows;
 }
 
-function createLinksForEntry(
-  entry: FlowEntry,
-  source: number,
-  target: number,
-  sourceName: string,
-  targetName: string,
-  layout: ModeLayout,
-): SankeyLinkData[] {
-  const total = ModeShare.total(entry.modeShare);
-  if (total <= 0) {
-    return [];
-  }
-
-  if (layout === ModeLayout.All) {
-    const byMode: Array<{
-      mode: SankeyLinkMode;
-      value: number;
-      color: string;
-    }> = [
-      {
-        mode: 'transit',
-        value: entry.modeShare.transit,
-        color: SANKEY_MODE_COLOR.transit,
-      },
-      {
-        mode: 'driving',
-        value: entry.modeShare.driving,
-        color: SANKEY_MODE_COLOR.driving,
-      },
-      {
-        mode: 'walking',
-        value: entry.modeShare.walking,
-        color: SANKEY_MODE_COLOR.walking,
-      },
-    ];
-
-    return byMode
-      .filter((modeData) => modeData.value > 0)
-      .map((modeData) =>
-        buildSankeyLink(
-          source,
-          target,
-          modeData.value,
-          modeData.mode,
-          modeData.color,
-          entry,
-          sourceName,
-          targetName,
-        ),
-      );
-  }
-
-  return [
-    buildSankeyLink(
-      source,
-      target,
-      total,
-      'mixed',
-      getMixedModeColor(entry.modeShare),
-      entry,
-      sourceName,
-      targetName,
-    ),
-  ];
+function getActiveModes(entries: FlowParams[]): ModeKey[] {
+  return MODE_ORDER.filter((mode) =>
+    entries.some((entry) => entry.modeShare[mode] > 0),
+  );
 }
 
-function buildSankeyLink(
-  source: number,
-  target: number,
-  value: number,
-  mode: SankeyLinkMode,
-  color: string,
-  entry: FlowEntry,
-  sourceName: string,
-  targetName: string,
-): SankeyLinkData {
-  return {
-    source,
-    target,
-    value,
-    mode,
-    color,
-    transit: entry.modeShare.transit,
-    driving: entry.modeShare.driving,
-    walking: entry.modeShare.walking,
-    unknown: entry.modeShare.unknown,
-    total: ModeShare.total(entry.modeShare),
-    isAggregated: entry.isAggregated,
-    sourceName,
-    targetName,
-  };
+function calculateTotalModeShare(entries: FlowParams[]): ModeShare {
+  const totalModeShare = ModeShare.createEmpty();
+  entries.forEach((entry) => ModeShare.addInPlace(totalModeShare, entry.modeShare));
+  return totalModeShare;
 }
 
-function getMixedModeColor(modeShare: ModeShare): string {
-  const knownTotal = modeShare.transit + modeShare.driving + modeShare.walking;
-  if (knownTotal <= 0) {
-    return SANKEY_MODE_COLOR.neutral;
-  }
+function getModeShareBubbleColor(modeShare: ModeShare): string {
+  const total = ModeShare.total(modeShare);
+  const weightedRgb = MODE_ORDER.reduce(
+    (acc, mode) => {
+      const modeValue = modeShare[mode];
+      if (modeValue <= 0) return acc;
+      const modeColor = hexToRgb(SANKEY_MODE_NODE_COLOR[mode]);
+      if (!modeColor) return acc;
+      const weight = modeValue / total;
+      return {
+        r: acc.r + modeColor.r * weight,
+        g: acc.g + modeColor.g * weight,
+        b: acc.b + modeColor.b * weight,
+      };
+    },
+    { r: 0, g: 0, b: 0 },
+  );
 
-  const red = Math.round((modeShare.driving / knownTotal) * 255);
-  const green = Math.round((modeShare.walking / knownTotal) * 255);
-  const blue = Math.round((modeShare.transit / knownTotal) * 255);
-  return `rgb(${red}, ${green}, ${blue})`;
+  return rgbToHex(weightedRgb);
+}
+
+function truncateLabel(label: string, maxLength = 24): string {
+  if (label.length <= maxLength) return label;
+  return `${label.slice(0, maxLength - 3)}...`;
 }
 
 function buildSankeyNodeRenderer(
   h: typeof createElement,
-  viewState: CommutersViewState,
-  activeRegionName: string,
+  chartWidth: number,
+  chartHeight: number,
+  renderLabelsOnLeft: boolean,
+  colorNodesByModeShare: boolean,
 ): (props: unknown) => ReactNode {
+  const lastLabelBottomByDepth = new Map<number, number>();
+
   return function SankeyNodeShape(props: unknown): ReactNode {
     const shape = props as Record<string, unknown>;
-    const payload = shape.payload as
-      | (SankeyNodeTooltipData & { depth?: number })
-      | undefined;
+    const payload = shape.payload as NodeRenderPayload;
     const x = Number(shape.x);
     const y = Number(shape.y);
     const width = Number(shape.width);
     const height = Number(shape.height);
 
-    if (
-      !payload ||
-      Number.isNaN(x) ||
-      Number.isNaN(y) ||
-      Number.isNaN(width) ||
-      Number.isNaN(height)
-    ) {
-      return null;
+    const isModeNode = payload.nodeType === 'mode';
+    const isSelectedNode = payload.nodeType === 'selected';
+
+    const nodeFill = isModeNode
+      ? SANKEY_MODE_NODE_COLOR[payload.mode!]
+      : colorNodesByModeShare && payload.tooltipBubbleColor
+        ? payload.tooltipBubbleColor
+        : SANKEY_TERMINAL_NODE_COLOR;
+
+    const countLabel = `${formatNumberOrDefault(payload.value)} commuters`;
+    const textX = renderLabelsOnLeft ? x - LABEL_OFFSET : x + width + LABEL_OFFSET;
+    const textAnchor = renderLabelsOnLeft ? 'end' : 'start';
+    const availableWidth = renderLabelsOnLeft
+      ? Math.max(0, x - LABEL_OFFSET - 2)
+      : Math.max(0, chartWidth - textX - 2);
+    const maxTitleChars = Math.max(
+      MIN_LABEL_CHARS,
+      Math.floor(availableWidth / (LABEL_TITLE_FONT_SIZE * 0.58)),
+    );
+    const maxSubtitleChars = Math.max(
+      MIN_LABEL_CHARS,
+      Math.floor(availableWidth / (LABEL_SUBTITLE_FONT_SIZE * 0.58)),
+    );
+    const titleText = truncateLabel(payload.name, maxTitleChars);
+    const subtitleText = truncateLabel(countLabel, maxSubtitleChars);
+
+    const fullBlockHeight =
+      LABEL_TITLE_FONT_SIZE + LABEL_ROW_GAP + LABEL_SUBTITLE_FONT_SIZE;
+    const singleBlockHeight = LABEL_TITLE_FONT_SIZE;
+
+    const centeredTop = y + height / 2 - fullBlockHeight / 2;
+    const depthKey = payload.depth ?? 0;
+    const previousBottom = lastLabelBottomByDepth.get(depthKey) ?? -Infinity;
+    const minTop = previousBottom + LABEL_GAP_BETWEEN_NODES;
+    const maxTopWithSubtitle =
+      chartHeight - fullBlockHeight - LABEL_BOTTOM_PADDING;
+    let blockTop = Math.max(centeredTop, minTop, LABEL_TOP_PADDING);
+    let showSubtitle = true;
+    let blockHeight = fullBlockHeight;
+
+    if (blockTop > maxTopWithSubtitle) {
+      showSubtitle = false;
+      blockHeight = singleBlockHeight;
+      const centeredSingleTop = y + height / 2 - singleBlockHeight / 2;
+      const maxTopSingle =
+        chartHeight - singleBlockHeight - LABEL_BOTTOM_PADDING;
+      blockTop = Math.min(
+        Math.max(centeredSingleTop, minTop, LABEL_TOP_PADDING),
+        maxTopSingle,
+      );
     }
 
-    const nodeName = payload.name ?? '';
-    const depth = payload.depth ?? 0;
-    const isLeftNode = depth === 0;
-    const isActiveNode = nodeName === activeRegionName;
-    const labelText = isActiveNode
-      ? `${
-          viewState.direction === CommuterDirection.Outbound
-            ? 'Origin'
-            : 'Destination'
-        }: ${nodeName}`
-      : nodeName;
-    const labelX = isLeftNode ? x + width + 8 : x - 8;
-    const textAnchor = isLeftNode ? 'start' : 'end';
-    const nodeFill = isActiveNode
-      ? SANKEY_NODE_COLOR.active
-      : payload.name === ALL_OTHERS_LABEL
-        ? SANKEY_NODE_COLOR.others
-        : SANKEY_NODE_COLOR.region;
+    lastLabelBottomByDepth.set(depthKey, blockTop + blockHeight);
+
+    const titleY = blockTop + LABEL_TITLE_FONT_SIZE * 0.78;
+    const subtitleY =
+      titleY + LABEL_ROW_GAP + LABEL_SUBTITLE_FONT_SIZE * 0.92;
 
     return h(
       'g',
@@ -459,29 +606,53 @@ function buildSankeyNodeRenderer(
         width,
         height,
         fill: nodeFill,
-        fillOpacity: isActiveNode ? 0.95 : 0.8,
+        fillOpacity: 1,
+        stroke: BLACK,
+        strokeOpacity: 0.14,
+        strokeWidth: 1,
+        rx: 3,
+        ry: 3,
       }),
       h(
         'text',
         {
-          x: labelX,
-          y: y + height / 2,
-          fill: isActiveNode ? '#f8fafc' : '#cbd5e1',
-          fontSize: isActiveNode ? 11 : 10,
-          fontWeight: isActiveNode ? 700 : 500,
-          alignmentBaseline: 'middle',
+          x: textX,
+          y: titleY,
+          fill: WHITE,
+          fontSize: LABEL_TITLE_FONT_SIZE,
+          fontWeight: isSelectedNode ? 700 : isModeNode ? 600 : 500,
+          alignmentBaseline: 'central',
           dominantBaseline: 'middle',
           textAnchor,
         },
-        labelText,
+        titleText,
       ),
+      showSubtitle
+        ? h(
+          'text',
+          {
+            x: textX,
+            y: subtitleY,
+            fill: WHITE,
+            fillOpacity: 0.72,
+            fontSize: LABEL_SUBTITLE_FONT_SIZE,
+            fontWeight: 500,
+            alignmentBaseline: 'central',
+            dominantBaseline: 'middle',
+            textAnchor,
+          },
+          subtitleText,
+        )
+        : null,
     );
   };
 }
 
 function buildSankeyLinkRenderer(
   h: typeof createElement,
-): (props: unknown) => any {
+  hoveredLinkIndex: number | null,
+  setHoveredLinkIndex: (index: number | null) => void,
+): (props: unknown) => ReactNode {
   return function SankeyLinkShape(props: unknown): ReactNode {
     const shape = props as Record<string, unknown>;
     const sourceX = Number(shape.sourceX);
@@ -491,15 +662,8 @@ function buildSankeyLinkRenderer(
     const sourceControlX = Number(shape.sourceControlX);
     const targetControlX = Number(shape.targetControlX);
     const width = Math.max(1, Number(shape.linkWidth) || 1);
-
-    if (
-      Number.isNaN(sourceX) ||
-      Number.isNaN(sourceY) ||
-      Number.isNaN(targetX) ||
-      Number.isNaN(targetY)
-    ) {
-      return null;
-    }
+    const index = Number(shape.index);
+    const payload = shape.payload as LinkRenderPayload;
 
     const controlLeft = Number.isNaN(sourceControlX)
       ? sourceX + (targetX - sourceX) * 0.35
@@ -508,123 +672,128 @@ function buildSankeyLinkRenderer(
       ? sourceX + (targetX - sourceX) * 0.65
       : targetControlX;
     const pathData = `M${sourceX},${sourceY}C${controlLeft},${sourceY} ${controlRight},${targetY} ${targetX},${targetY}`;
-    const payload = shape.payload as SankeyLinkData | undefined;
+
+    const hasHoveredLink = hoveredLinkIndex !== null;
+    const isHoveredLink = hasHoveredLink && hoveredLinkIndex === index;
+    const strokeOpacity = hasHoveredLink
+      ? isHoveredLink
+        ? 0.90
+        : 0.2
+      : 0.55;
+    const strokeWidth = isHoveredLink ? width + 1.6 : width;
 
     return h('path', {
       d: pathData,
       fill: 'none',
-      stroke: payload?.color ?? SANKEY_MODE_COLOR.neutral,
-      strokeOpacity: 0.78,
-      strokeWidth: width,
+      stroke: payload.displayColor,
+      strokeOpacity,
+      strokeWidth,
       vectorEffect: 'non-scaling-stroke',
+      onMouseEnter: Number.isNaN(index)
+        ? undefined
+        : () => setHoveredLinkIndex(index),
+      onMouseLeave: Number.isNaN(index)
+        ? undefined
+        : () => setHoveredLinkIndex(null),
     });
   };
 }
 
+function buildTooltipContainer(
+  h: typeof createElement,
+  title: ReactNode,
+  lineA: string,
+  lineB: string,
+  modeColor?: string,
+): ReactNode {
+  return h(
+    'div',
+    {
+      className:
+        'rounded-md border border-border/80 bg-background/95 shadow-md px-2.5 py-2 text-[0.72rem] leading-tight',
+    },
+    h(
+      'div',
+      { className: 'flex items-center gap-1.5 text-foreground font-semibold text-sm pb-1' },
+      modeColor
+        ? h('span', {
+          className: 'inline-block h-2 w-2 rounded-full shrink-0',
+          style: { backgroundColor: modeColor },
+        })
+        : null,
+      title,
+    ),
+    h('div', { className: 'text-foreground/90' }, lineA),
+    h('div', { className: 'text-muted-foreground pt-0.5' }, lineB),
+  );
+}
+
+function isLinkPayload(value: unknown): value is LinkRenderPayload {
+  if (!value || typeof value !== 'object') return false;
+  const entry = value as Record<string, unknown>;
+  return (
+    entry.tooltipKind === 'sankey-link' &&
+    typeof entry.mode === 'string' &&
+    typeof entry.displayName === 'string' &&
+    typeof entry.displayTotal === 'number' &&
+    typeof entry.value === 'number'
+  );
+}
+
+function extractTooltipPayloadValue(value: unknown): unknown {
+  let current = value;
+  while (current && typeof current === 'object') {
+    const entry = current as Record<string, unknown>;
+    if (entry.payload === undefined) return current;
+    current = entry.payload;
+  }
+  return current;
+}
+
 function buildSankeyTooltipRenderer(
   h: typeof createElement,
-): (props: unknown) => any {
+  totalCommuters: number,
+): (props: unknown) => ReactNode {
   return function SankeyTooltip(props: unknown): ReactNode {
     const tooltip = props as {
       active?: boolean;
-      payload?: Array<{ payload?: SankeyLinkData }>;
+      payload?: Array<{ payload?: LinkRenderPayload | NodeRenderPayload }>;
     };
-    if (!tooltip.active) return null;
 
-    const firstPayload = tooltip.payload?.[0];
-    if (!firstPayload) return null;
-    const rawPayload = (firstPayload as { payload?: unknown }).payload;
-    const tooltipData = (rawPayload ?? firstPayload) as unknown;
+    if (!tooltip.active || !tooltip.payload || tooltip.payload.length === 0) {
+      return null;
+    }
 
-    if (!isSankeyLinkData(tooltipData)) {
-      const nodeData = tooltipData as SankeyNodeTooltipData | undefined;
-      if (!nodeData || typeof nodeData.name !== 'string') {
-        return null;
-      }
-      const nodeValue =
-        typeof nodeData.value === 'number'
-          ? nodeData.value
-          : typeof (firstPayload as { value?: unknown }).value === 'number'
-            ? ((firstPayload as { value?: number }).value ?? 0)
-            : 0;
+    const payloadItem = tooltip.payload[0] as {
+      payload?: LinkRenderPayload | NodeRenderPayload | { payload?: unknown };
+    };
+    const tooltipPayload = extractTooltipPayloadValue(payloadItem);
 
-      return h(
-        'div',
-        {
-          className:
-            'rounded-md border border-border/80 bg-background/95 px-2 py-1.5 text-[0.68rem] shadow-md',
-        },
-        h('div', { className: 'font-semibold text-foreground pb-1' }, nodeData.name),
-        h(
-          'div',
-          { className: 'text-foreground/90' },
-          `Flow volume: ${formatNumberOrDefault(nodeValue)}`,
-        ),
+    const linkData = isLinkPayload(tooltipPayload) ? tooltipPayload : null;
+
+    if (linkData) {
+      const linkShare = (linkData.value / linkData.displayTotal) * 100;
+      return buildTooltipContainer(
+        h,
+        `${linkData.displayName} - ${MODE_LABEL[linkData.mode]}`,
+        `${formatNumberOrDefault(linkData.value)} commuters`,
+        `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} commuters`,
+        SANKEY_MODE_NODE_COLOR[linkData.mode],
       );
     }
-    const linkData = tooltipData;
 
-    const total = linkData.total;
-    const safeTotal = Math.max(total, 1);
-    const modeLabel =
-      linkData.mode === 'mixed'
-        ? 'All Modes'
-        : `${linkData.mode[0].toUpperCase()}${linkData.mode.slice(1)}`;
+    const nodeData = tooltipPayload as NodeRenderPayload;
+    const nodeTotal = typeof nodeData.value === 'number' ? nodeData.value : 0;
+    const nodeShare = (nodeTotal / totalCommuters) * 100;
 
-    return h(
-      'div',
-      {
-        className:
-          'rounded-md border border-border/80 bg-background/95 px-2 py-1.5 text-[0.68rem] shadow-md',
-      },
-      h(
-        'div',
-        { className: 'font-semibold text-foreground pb-1' },
-        `${linkData.sourceName} -> ${linkData.targetName}`,
-      ),
-      h(
-        'div',
-        { className: 'text-foreground/90' },
-        `${modeLabel}: ${formatNumberOrDefault(linkData.value)} commuters`,
-      ),
-      h(
-        'div',
-        { className: 'text-muted-foreground' },
-        `Transit: ${formatNumberOrDefault(linkData.transit)} (${formatPercentOrDefault((linkData.transit / safeTotal) * 100)})`,
-      ),
-      h(
-        'div',
-        { className: 'text-muted-foreground' },
-        `Driving: ${formatNumberOrDefault(linkData.driving)} (${formatPercentOrDefault((linkData.driving / safeTotal) * 100)})`,
-      ),
-      h(
-        'div',
-        { className: 'text-muted-foreground' },
-        `Walking: ${formatNumberOrDefault(linkData.walking)} (${formatPercentOrDefault((linkData.walking / safeTotal) * 100)})`,
-      ),
-      h(
-        'div',
-        { className: 'text-muted-foreground' },
-        `Unknown: ${formatNumberOrDefault(linkData.unknown)} (${formatPercentOrDefault((linkData.unknown / safeTotal) * 100)})`,
-      ),
-      linkData.isAggregated
-        ? h(
-            'div',
-            { className: 'pt-1 text-muted-foreground/90 italic' },
-            'Aggregated flow (All Others)',
-          )
-        : null,
+    return buildTooltipContainer(
+      h,
+      nodeData.name,
+      `${formatNumberOrDefault(nodeTotal)} commuters`,
+      `${formatPercentOrDefault(nodeShare)} of all commuters`,
+      nodeData.nodeType === 'mode'
+        ? SANKEY_MODE_NODE_COLOR[nodeData.mode!]
+        : nodeData.tooltipBubbleColor,
     );
   };
-}
-
-function isSankeyLinkData(value: unknown): value is SankeyLinkData {
-  if (!value || typeof value !== 'object') return false;
-  const data = value as Record<string, unknown>;
-  return (
-    typeof data.mode === 'string' &&
-    typeof data.sourceName === 'string' &&
-    typeof data.targetName === 'string' &&
-    typeof data.value === 'number'
-  );
 }
