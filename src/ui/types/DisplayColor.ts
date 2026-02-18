@@ -24,7 +24,6 @@ export const PRIMARY_FILL_COLORS: MapDisplayColor[] = [
   { hex: '#E76F51', name: 'Coral', hover: '#ED8369' },
 ];
 
-
 export const DEFAULT_CHART_COLOR: ChartDisplayColor = {
   hex: '#B6BABD',
   mutedHex: '#7B828B',
@@ -56,7 +55,9 @@ export const PRIMARY_CHART_COLORS: ChartDisplayColor[] = [
   { hex: '#C1CEDE', mutedHex: '#8A98AA', name: 'Pale Blue' },
   DEFAULT_CHART_COLOR,
 ];
-export function getPrimaryChartColorByName(colorName: string): ChartDisplayColor {
+export function getPrimaryChartColorByName(
+  colorName: string,
+): ChartDisplayColor {
   const color = PRIMARY_CHART_COLORS.find((entry) => entry.name === colorName);
   if (color) return color;
   else return DEFAULT_CHART_COLOR;
@@ -64,18 +65,20 @@ export function getPrimaryChartColorByName(colorName: string): ChartDisplayColor
 
 export const BLACK = getPrimaryChartColorByName('Black').hex;
 export const WHITE = getPrimaryChartColorByName('White').hex;
-export const SANKEY_TERMINAL_NODE_COLOR = getPrimaryChartColorByName('Pale Blue').hex;
+export const SANKEY_TERMINAL_NODE_COLOR =
+  getPrimaryChartColorByName('Pale Blue').hex;
 
 export function hexToRgb(hex: string): RGB | null {
   const normalized = hex.replace('#', '');
   if (!(normalized.length === 3 || normalized.length === 6)) return null;
 
-  const expanded = normalized.length === 3
-    ? normalized
-      .split('')
-      .map((char) => `${char}${char}`)
-      .join('')
-    : normalized;
+  const expanded =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((char) => `${char}${char}`)
+          .join('')
+      : normalized;
 
   const value = Number.parseInt(expanded, 16);
   if (Number.isNaN(value)) return null;
@@ -88,7 +91,9 @@ export function hexToRgb(hex: string): RGB | null {
 }
 
 export function rgbToHex(value: RGB): string {
-  const clamp = (component: number) => Math.max(0, Math.min(255, Math.round(component)));
-  const toHex = (component: number) => clamp(component).toString(16).padStart(2, '0');
+  const clamp = (component: number) =>
+    Math.max(0, Math.min(255, Math.round(component)));
+  const toHex = (component: number) =>
+    clamp(component).toString(16).padStart(2, '0');
   return `#${toHex(value.r)}${toHex(value.g)}${toHex(value.b)}`;
 }

@@ -85,13 +85,19 @@ export function RegionsInfoPanel({
 
   // Info panel should only be rendered when there's an active selection
   if (!uiState.isActive) {
-    console.error('[Regions] Info panel render invoked with no active selection: ', uiState);
+    console.error(
+      '[Regions] Info panel render invoked with no active selection: ',
+      uiState,
+    );
     return null;
   }
 
   const resolveRegionName = (regionId: string | number): string => {
-    return regionDataManager.resolveRegionName(activeDatasetIdentifier!, regionId);
-  }
+    return regionDataManager.resolveRegionName(
+      activeDatasetIdentifier!,
+      regionId,
+    );
+  };
 
   useEffect(() => {
     setGameData(getCurrentGameData(regionDataManager, uiState));
@@ -176,30 +182,30 @@ export function RegionsInfoPanel({
       content = gameData
         ? renderStatisticsView(createElement, gameData)
         : createElement(
-          'div',
-          { className: 'text-xs text-muted-foreground' },
-          'No game data set for info panel rendering',
-        );
+            'div',
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-            createElement,
-            useState,
-            gameData,
-            commutersViewState,
-            setCommutersViewState,
-            resolveRegionName,
-          )
+              createElement,
+              useState,
+              gameData,
+              commutersViewState,
+              setCommutersViewState,
+              resolveRegionName,
+            )
           : createElement(
-            'div',
-            {
-              className:
-                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-            },
-            LOADING_VALUE_DISPLAY,
-          );
+              'div',
+              {
+                className:
+                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+              },
+              LOADING_VALUE_DISPLAY,
+            );
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);

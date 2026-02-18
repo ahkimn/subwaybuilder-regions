@@ -63,7 +63,7 @@ export function renderCommutersView(
   gameData: RegionGameData,
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
-  resolveRegionName: (regionId: string | number) => string
+  resolveRegionName: (regionId: string | number) => string,
 ): ReactNode {
   const commuterSummaryData = gameData.commuterSummary!;
   const commuterDetailsData = gameData.commuterDetails!;
@@ -76,32 +76,37 @@ export function renderCommutersView(
     : commuterDetailsData.workerModeShareByRegion;
   const populationCount = ModeShare.total(aggregateModeShare);
   const rows = sortCommuterRows(
-    deriveCommuterRows(byRegionModeShare, populationCount, viewState, resolveRegionName),
+    deriveCommuterRows(
+      byRegionModeShare,
+      populationCount,
+      viewState,
+      resolveRegionName,
+    ),
     viewState,
   );
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
   const content =
     viewState.displayMode === CommuterDisplayMode.Sankey
       ? renderCommutersSankey(
-        h,
-        gameData,
-        viewState,
-        byRegionModeShare,
-        resolveRegionName,
-        {
-          labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
-          topFlowCount: SANKEY_FLOW_DISPLAY_COUNT,
-          colorNodesByModeShare: COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
-        },
-      )
+          h,
+          gameData,
+          viewState,
+          byRegionModeShare,
+          resolveRegionName,
+          {
+            labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
+            topFlowCount: SANKEY_FLOW_DISPLAY_COUNT,
+            colorNodesByModeShare: COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
+          },
+        )
       : buildCommutersTable(
-        h,
-        useStateHook,
-        viewState,
-        rows,
-        rowsToDisplay,
-        setViewState,
-      );
+          h,
+          useStateHook,
+          viewState,
+          rows,
+          rowsToDisplay,
+          setViewState,
+        );
 
   return h(
     'div',
@@ -192,7 +197,6 @@ function buildCommuterControls(
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
 ): ReactNode {
-
   const controlNodes: ReactNode[] = [];
 
   const dimensionConfigs: Map<string, SelectButtonConfig> = new Map();
@@ -222,8 +226,8 @@ function buildCommuterControls(
       'commutes-dimension',
       dimensionConfigs,
       viewState.dimension,
-    )
-  )
+    ),
+  );
 
   const viewConfigs: Map<string, SelectButtonConfig> = new Map();
   viewConfigs.set(CommuterDisplayMode.Table, {
@@ -252,11 +256,10 @@ function buildCommuterControls(
       'commutes-display-mode',
       viewConfigs,
       viewState.displayMode,
-    )
-  )
+    ),
+  );
 
   if (viewState.displayMode === CommuterDisplayMode.Table) {
-
     const layoutConfigs: Map<string, SelectButtonConfig> = new Map();
     layoutConfigs.set(ModeLayout.Transit, {
       label: 'Transit',
@@ -291,7 +294,8 @@ function buildCommuterControls(
         'commutes-mode-layout',
         layoutConfigs,
         viewState.modeShareLayout,
-      ))
+      ),
+    );
   }
 
   return h(
@@ -302,7 +306,8 @@ function buildCommuterControls(
     h(
       'div',
       {
-        className: 'inline-flex min-w-max flex-nowrap items-center justify-start gap-3',
+        className:
+          'inline-flex min-w-max flex-nowrap items-center justify-start gap-3',
       },
       ...controlNodes,
     ),
@@ -342,7 +347,7 @@ function deriveCommuterRows(
   byRegionModeShare: Map<string | number, ModeShare>,
   populationCount: number,
   viewState: CommutersViewState,
-  resolveRegionName: (regionId: string | number) => string
+  resolveRegionName: (regionId: string | number) => string,
 ): CommuterRowData[] {
   return Array.from(byRegionModeShare.entries()).map(
     ([regionId, modeShare]) => {
@@ -446,19 +451,19 @@ function buildCommutersTable(
     }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-        'div',
-        { className: 'pt-1 flex justify-center' },
-        ReactExtendButton(
-          h,
-          viewState.expanded ? 'Collapse' : 'Expand',
-          rows.length - DEFAULT_TABLE_ROWS,
-          () =>
-            setViewState((current) => ({
-              ...current,
-              expanded: !current.expanded,
-            })),
-        ),
-      )
+          'div',
+          { className: 'pt-1 flex justify-center' },
+          ReactExtendButton(
+            h,
+            viewState.expanded ? 'Collapse' : 'Expand',
+            rows.length - DEFAULT_TABLE_ROWS,
+            () =>
+              setViewState((current) => ({
+                ...current,
+                expanded: !current.expanded,
+              })),
+          ),
+        )
       : null,
   );
 }

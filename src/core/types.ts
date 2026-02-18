@@ -1,6 +1,11 @@
 // --- Statistics Types --- //
 
-export const MODE_ORDER: (keyof ModeShare)[] = ['transit', 'driving', 'walking', 'unknown'] as const;
+export const MODE_ORDER: (keyof ModeShare)[] = [
+  'transit',
+  'driving',
+  'walking',
+  'unknown',
+] as const;
 export type ModeKey = (typeof MODE_ORDER)[number];
 export const MODE_LABEL: Record<ModeKey, string> = {
   transit: 'Transit',
@@ -70,8 +75,8 @@ export const ModeShare = {
       driving: mode === 'driving' ? modeShare.driving : 0,
       walking: mode === 'walking' ? modeShare.walking : 0,
       unknown: mode === 'unknown' ? modeShare.unknown : 0,
-    }
-  }
+    };
+  },
 };
 
 // --- State Types --- //
@@ -120,8 +125,7 @@ export const CommuteType = {
   Home: 'Home',
 } as const satisfies Record<string, string>;
 
-export type CommuteType =
-  (typeof CommuteType)[keyof typeof CommuteType];
+export type CommuteType = (typeof CommuteType)[keyof typeof CommuteType];
 
 export type RegionCommuterSummaryData = {
   residentModeShare: ModeShare; // Mode share for all commuters living in the region, regardless of where they work
@@ -138,7 +142,7 @@ export type RegionCommuterDetailsData = {
   workerModeSharesByHour?: Map<number, Map<CommuteType, ModeShare>>; // hour of day to mode share for commuters working in the region by type of commute
 
   residentModeShareByCommuteDistance?: Map<number, ModeShare>; // commute distance bucket to mode share for commuters living in the region
-  workerModeShareByCommuteDistance?: Map<number, ModeShare>; // commute distance bucket to mode share for commuters working in the region  
+  workerModeShareByCommuteDistance?: Map<number, ModeShare>; // commute distance bucket to mode share for commuters working in the region
 
   metadata: RegionGameMetadata; // metadata
 };

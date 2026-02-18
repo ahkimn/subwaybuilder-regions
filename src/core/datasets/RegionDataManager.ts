@@ -25,7 +25,7 @@ export class RegionDataManager {
     private builder: RegionDataBuilder,
     private registry: RegionDatasetRegistry,
     private api: ModdingAPI,
-  ) { }
+  ) {}
 
   async ensureExistsDataForSelection(
     uiState: Readonly<UIState>,
@@ -303,7 +303,10 @@ export class RegionDataManager {
     return dataset.gameData;
   }
 
-  resolveRegionName(datasetIdentifier: string, featureId: string | number): string {
+  resolveRegionName(
+    datasetIdentifier: string,
+    featureId: string | number,
+  ): string {
     const dataset = this.registry.getDatasetByIdentifier(datasetIdentifier);
     return dataset.regionNameMap.get(featureId) ?? UNASSIGNED_REGION_ID;
   }

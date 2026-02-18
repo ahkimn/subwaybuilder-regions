@@ -116,7 +116,6 @@ export function renderCommutersSankey(
   resolveRegionName: (regionId: string | number) => string,
   options: SankeyRenderOptions,
 ): ReactNode {
-
   const sankeyData = buildSankeyData(
     gameData.displayName,
     byRegionModeShare,
@@ -230,36 +229,37 @@ function SankeyCanvas({
     },
     chartWidth > 0
       ? h(
-        Sankey as any,
-        {
-          width: chartWidth,
-          height: chartHeight,
-          data: sankeyData,
-          margin: sankeyMargins,
-          nodePadding: 18,
-          nodeWidth: 14,
-          sort: false,
-          node: buildSankeyNodeRenderer(
-            h,
-            chartWidth,
-            chartHeight,
-            renderLabelsOnLeft,
-            colorNodesByModeShare,
-          ),
-          link: buildSankeyLinkRenderer(h, hoveredLinkIndex, setHoveredLinkIndex),
-          onMouseLeave: () => setHoveredLinkIndex(null),
-        },
-        h(Tooltip as any, {
-          content: buildSankeyTooltipRenderer(
-            h,
-            sankeyData.totalCommuters,
-          ),
-          wrapperStyle: { outline: 'none' },
-          isAnimationActive: false,
-          animationDuration: 0,
-          offset: 8,
-        }),
-      )
+          Sankey as any,
+          {
+            width: chartWidth,
+            height: chartHeight,
+            data: sankeyData,
+            margin: sankeyMargins,
+            nodePadding: 18,
+            nodeWidth: 14,
+            sort: false,
+            node: buildSankeyNodeRenderer(
+              h,
+              chartWidth,
+              chartHeight,
+              renderLabelsOnLeft,
+              colorNodesByModeShare,
+            ),
+            link: buildSankeyLinkRenderer(
+              h,
+              hoveredLinkIndex,
+              setHoveredLinkIndex,
+            ),
+            onMouseLeave: () => setHoveredLinkIndex(null),
+          },
+          h(Tooltip as any, {
+            content: buildSankeyTooltipRenderer(h, sankeyData.totalCommuters),
+            wrapperStyle: { outline: 'none' },
+            isAnimationActive: false,
+            animationDuration: 0,
+            offset: 8,
+          }),
+        )
       : null,
   );
 }
@@ -272,7 +272,11 @@ function buildSankeyData(
   topFlowCount: number,
   _colorNodesByModeShare: boolean,
 ): SankeyData | null {
-  const displayFlows = getTopFlows(byRegionModeShare, resolveRegionName, topFlowCount);
+  const displayFlows = getTopFlows(
+    byRegionModeShare,
+    resolveRegionName,
+    topFlowCount,
+  );
   const activeModes = getActiveModes(displayFlows);
 
   if (displayFlows.length === 0 && activeModes.length === 0) {
@@ -305,7 +309,12 @@ function buildSankeyData(
   // Add nodes for the individual transit modes (to be displayed in the middle of the Sankey)
   const modeNodeIndex: Partial<Record<ModeKey, number>> = {};
   activeModes.forEach((mode) => {
-    modeNodeIndex[mode] = addNode(`mode:${mode}`, MODE_LABEL[mode], 'mode', mode);
+    modeNodeIndex[mode] = addNode(
+      `mode:${mode}`,
+      MODE_LABEL[mode],
+      'mode',
+      mode,
+    );
   });
 
   // Add node for the selected region (to be displayed on the left or right of the Sankey depending on flow direction)
@@ -492,7 +501,9 @@ function getActiveModes(entries: FlowParams[]): ModeKey[] {
 
 function calculateTotalModeShare(entries: FlowParams[]): ModeShare {
   const totalModeShare = ModeShare.createEmpty();
-  entries.forEach((entry) => ModeShare.addInPlace(totalModeShare, entry.modeShare));
+  entries.forEach((entry) =>
+    ModeShare.addInPlace(totalModeShare, entry.modeShare),
+  );
   return totalModeShare;
 }
 
@@ -549,7 +560,9 @@ function buildSankeyNodeRenderer(
         : SANKEY_TERMINAL_NODE_COLOR;
 
     const countLabel = `${formatNumberOrDefault(payload.value)} commuters`;
-    const textX = renderLabelsOnLeft ? x - LABEL_OFFSET : x + width + LABEL_OFFSET;
+    const textX = renderLabelsOnLeft
+      ? x - LABEL_OFFSET
+      : x + width + LABEL_OFFSET;
     const textAnchor = renderLabelsOnLeft ? 'end' : 'start';
     const availableWidth = renderLabelsOnLeft
       ? Math.max(0, x - LABEL_OFFSET - 2)
@@ -594,8 +607,7 @@ function buildSankeyNodeRenderer(
     lastLabelBottomByDepth.set(depthKey, blockTop + blockHeight);
 
     const titleY = blockTop + LABEL_TITLE_FONT_SIZE * 0.78;
-    const subtitleY =
-      titleY + LABEL_ROW_GAP + LABEL_SUBTITLE_FONT_SIZE * 0.92;
+    const subtitleY = titleY + LABEL_ROW_GAP + LABEL_SUBTITLE_FONT_SIZE * 0.92;
 
     return h(
       'g',
@@ -629,20 +641,20 @@ function buildSankeyNodeRenderer(
       ),
       showSubtitle
         ? h(
-          'text',
-          {
-            x: textX,
-            y: subtitleY,
-            fill: WHITE,
-            fillOpacity: 0.72,
-            fontSize: LABEL_SUBTITLE_FONT_SIZE,
-            fontWeight: 500,
-            alignmentBaseline: 'central',
-            dominantBaseline: 'middle',
-            textAnchor,
-          },
-          subtitleText,
-        )
+            'text',
+            {
+              x: textX,
+              y: subtitleY,
+              fill: WHITE,
+              fillOpacity: 0.72,
+              fontSize: LABEL_SUBTITLE_FONT_SIZE,
+              fontWeight: 500,
+              alignmentBaseline: 'central',
+              dominantBaseline: 'middle',
+              textAnchor,
+            },
+            subtitleText,
+          )
         : null,
     );
   };
@@ -675,11 +687,7 @@ function buildSankeyLinkRenderer(
 
     const hasHoveredLink = hoveredLinkIndex !== null;
     const isHoveredLink = hasHoveredLink && hoveredLinkIndex === index;
-    const strokeOpacity = hasHoveredLink
-      ? isHoveredLink
-        ? 0.90
-        : 0.2
-      : 0.55;
+    const strokeOpacity = hasHoveredLink ? (isHoveredLink ? 0.9 : 0.2) : 0.55;
     const strokeWidth = isHoveredLink ? width + 1.6 : width;
 
     return h('path', {
@@ -714,12 +722,15 @@ function buildTooltipContainer(
     },
     h(
       'div',
-      { className: 'flex items-center gap-1.5 text-foreground font-semibold text-sm pb-1' },
+      {
+        className:
+          'flex items-center gap-1.5 text-foreground font-semibold text-sm pb-1',
+      },
       modeColor
         ? h('span', {
-          className: 'inline-block h-2 w-2 rounded-full shrink-0',
-          style: { backgroundColor: modeColor },
-        })
+            className: 'inline-block h-2 w-2 rounded-full shrink-0',
+            style: { backgroundColor: modeColor },
+          })
         : null,
       title,
     ),

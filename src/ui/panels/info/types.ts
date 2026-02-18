@@ -16,7 +16,6 @@ export const CommuterDirection = {
 export type CommuterDirection =
   (typeof CommuterDirection)[keyof typeof CommuterDirection];
 
-
 export const CommuterDimension = {
   Region: 'Region',
   CommuteHour: 'Hour',
