@@ -29,9 +29,14 @@ import type {
   RouteBulletType,
   RouteDisplayParams,
 } from '../types';
-import { ModeShare } from '../types';
+import { CommuteType, ModeShare } from '../types';
 import { processInChunks } from '../utils';
 import type { RegionDataset } from './RegionDataset';
+
+export const COMMUTE_DISTANCE_BUCKET_SIZE_KM = 5;
+export const MAX_COMMUTE_DISTANCE_KM = 500;
+
+export const COMMUTE_TIME_BUCKET_SIZE_MIN = 60;
 
 type InfraDataFeatureContext = {
   feature: Feature<Polygon | MultiPolygon>;
@@ -47,6 +52,12 @@ type InfraDataAccumulator = {
   routeDisplayParams: Map<string, RouteDisplayParams>;
 };
 
+type CommuterDetailsAccumulator = {
+  regionModeShares: Map<string | number, ModeShare>;
+  distanceModeShares: Map<number, ModeShare>;
+  hourlyModeShares: Map<CommuteType, Map<number, ModeShare>>;
+};
+
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
   constructor(private api: ModdingAPI) {}
@@ -58,6 +69,16 @@ export class RegionDataBuilder {
     const updatedData = new Map<string | number, RegionCommuterSummaryData>();
     const workerModeShareMap = new Map<string | number, ModeShare>();
     const residentModeShareMap = new Map<string | number, ModeShare>();
+
+    const residentCommuteDistanceAccumulators = new Map<
+      string | number,
+      number
+    >();
+    const workerCommuteDistanceAccumulators = new Map<
+      string | number,
+      number
+    >();
+
     const demandData = this.api.gameState.getDemandData();
 
     if (!demandData) {
@@ -79,20 +100,52 @@ export class RegionDataBuilder {
         unknown: popData.size,
       };
 
-      if (residenceRegion !== undefined) {
-        ModeShare.addInPlace(
-          getOrCreateModeShare(residentModeShareMap, residenceRegion),
-          popModeShare,
-        );
-      }
-
-      if (jobRegion !== undefined) {
-        ModeShare.addInPlace(
-          getOrCreateModeShare(workerModeShareMap, jobRegion),
-          popModeShare,
-        );
-      }
+      accumulateSummaryModeShareAndDistance(
+        residenceRegion,
+        residentModeShareMap,
+        residentCommuteDistanceAccumulators,
+        popModeShare,
+        popData.size,
+        popData.drivingDistance / 1000,
+      );
+      accumulateSummaryModeShareAndDistance(
+        jobRegion,
+        workerModeShareMap,
+        workerCommuteDistanceAccumulators,
+        popModeShare,
+        popData.size,
+        popData.drivingDistance / 1000,
+      );
     }
+
+    const residentAverageCommuteDistanceByRegion = new Map<
+      string | number,
+      number
+    >();
+    const workerAverageCommuteDistanceByRegion = new Map<
+      string | number,
+      number
+    >();
+
+    residentCommuteDistanceAccumulators.forEach((distance, featureId) => {
+      const total = ModeShare.total(
+        residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+      );
+      residentAverageCommuteDistanceByRegion.set(
+        featureId,
+        total > 0 ? distance / total : 0,
+      );
+    });
+
+    workerCommuteDistanceAccumulators.forEach((distance, featureId) => {
+      const total = ModeShare.total(
+        workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+      );
+      workerAverageCommuteDistanceByRegion.set(
+        featureId,
+        total > 0 ? distance / total : 0,
+      );
+    });
 
     dataset.gameData.forEach((_, featureId) => {
       updatedData.set(featureId, {
@@ -100,6 +153,10 @@ export class RegionDataBuilder {
           residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
         workerModeShare:
           workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+        averageResidentCommuteDistance:
+          residentAverageCommuteDistanceByRegion.get(featureId) ?? null,
+        averageWorkerCommuteDistance:
+          workerAverageCommuteDistanceByRegion.get(featureId) ?? null,
         metadata: {
           lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
           dirty: false,
@@ -118,8 +175,8 @@ export class RegionDataBuilder {
   ): RegionCommuterDetailsData | null {
     const demandData = this.api.gameState.getDemandData();
 
-    const residentModeShares = new Map<string, ModeShare>();
-    const workerModeShares = new Map<string, ModeShare>();
+    const residentData = initializeCommuterDetailsAccumulator();
+    const workerData = initializeCommuterDetailsAccumulator();
 
     if (!demandData) {
       console.error('[Regions] Demand data not available');
@@ -135,11 +192,9 @@ export class RegionDataBuilder {
     }
 
     const demandPointIds = currentGameData.demandData.demandPointIds;
-    const regionNameMap = dataset.regionNameMap;
     const demandPointMap = dataset.regionDemandPointMap;
-    const selectedRegionName = regionNameMap.get(featureId)!;
-    const resolveRegion = (demandPointId: string): string | undefined => {
-      return regionNameMap.get(demandPointMap.get(demandPointId)!);
+    const resolveRegion = (demandPointId: string): string | number => {
+      return demandPointMap.get(demandPointId)!;
     };
 
     // Build commuter data iterating over demand points located within the region
@@ -154,6 +209,9 @@ export class RegionDataBuilder {
 
       const isResident = demandPointIds.has(popData.residenceId);
       const isWorker = demandPointIds.has(popData.jobId);
+      const drivingDistanceBucket = toDistanceBucketKm(popData.drivingDistance);
+      const homeCommuteBucket = toTimeBucketMinutes(popData.homeDepartureTime);
+      const workCommuteBucket = toTimeBucketMinutes(popData.workDepartureTime);
 
       if (!isResident && !isWorker) {
         console.error(
@@ -171,12 +229,12 @@ export class RegionDataBuilder {
         unknown: popData.size,
       };
 
-      let homeRegion: string | undefined; // Defined if the population works in this region
-      let workRegion: string | undefined; // Defined if the population lives in this region
+      let homeRegion: string | number | undefined; // Defined if the population works in this region
+      let workRegion: string | number | undefined; // Defined if the population lives in this region
 
       // Population both lives and works in region
       if (isResident && isWorker) {
-        homeRegion = workRegion = selectedRegionName;
+        homeRegion = workRegion = featureId;
       }
       // Population lives in region but works outside of it
       else if (isResident) {
@@ -185,7 +243,6 @@ export class RegionDataBuilder {
           console.error(
             `[Regions] Unable to find work region for population ID ${popId}`,
           );
-          continue;
         }
       }
       // Population works in region but lives outside of it
@@ -195,28 +252,74 @@ export class RegionDataBuilder {
           console.error(
             `[Regions] Unable to find home region for population ID ${popId}`,
           );
-          continue;
         }
       }
 
       // Update mode share by region maps
       if (homeRegion) {
-        ModeShare.addInPlace(
-          getOrCreateModeShare(workerModeShares, homeRegion),
+        addModeShareToMap(
+          workerData.regionModeShares,
+          homeRegion,
           popModeShare,
         );
       }
       if (workRegion) {
-        ModeShare.addInPlace(
-          getOrCreateModeShare(residentModeShares, workRegion),
+        addModeShareToMap(
+          residentData.regionModeShares,
+          workRegion,
+          popModeShare,
+        );
+      }
+
+      // Update mode share by commute distance & time maps
+      if (isResident) {
+        addModeShareToMap(
+          residentData.distanceModeShares,
+          drivingDistanceBucket,
+          popModeShare,
+        );
+        addHourlyModeShare(
+          residentData,
+          CommuteType.HomeToWork,
+          homeCommuteBucket,
+          popModeShare,
+        );
+        addHourlyModeShare(
+          residentData,
+          CommuteType.WorkToHome,
+          workCommuteBucket,
+          popModeShare,
+        );
+      }
+
+      if (isWorker) {
+        addModeShareToMap(
+          workerData.distanceModeShares,
+          drivingDistanceBucket,
+          popModeShare,
+        );
+        addHourlyModeShare(
+          workerData,
+          CommuteType.HomeToWork,
+          homeCommuteBucket,
+          popModeShare,
+        );
+        addHourlyModeShare(
+          workerData,
+          CommuteType.WorkToHome,
+          workCommuteBucket,
           popModeShare,
         );
       }
     }
 
     return {
-      residentModeShareByRegion: residentModeShares,
-      workerModeShareByRegion: workerModeShares,
+      residentModeShareByRegion: residentData.regionModeShares,
+      workerModeShareByRegion: workerData.regionModeShares,
+      residentModeSharesByHour: residentData.hourlyModeShares,
+      workerModeSharesByHour: workerData.hourlyModeShares,
+      residentModeShareByCommuteDistance: residentData.distanceModeShares,
+      workerModeShareByCommuteDistance: workerData.distanceModeShares,
       metadata: {
         lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
         dirty: false,
@@ -382,7 +485,7 @@ export class RegionDataBuilder {
     accumulators.forEach((accumulator, featureId) => {
       finalizedData.set(
         featureId,
-        this.resolveAccumulator(accumulator, resolvedUpdateTime),
+        resolveAccumulator(accumulator, resolvedUpdateTime),
       );
     });
 
@@ -489,7 +592,7 @@ export class RegionDataBuilder {
       if (!dataset.queryBoundaryCandidatesByBBox(trackBBox).has(featureId)) {
         return;
       }
-      const trackLengthInRegion = this.computeTrackLengthInBoundary(
+      const trackLengthInRegion = computeTrackLengthInBoundary(
         trackCoords,
         track.length,
         feature,
@@ -499,11 +602,7 @@ export class RegionDataBuilder {
 
       if (trackLengthInRegion > 0) {
         trackIds.set(track.id, trackLengthInRegion);
-        this.addTrackLength(
-          trackLengths,
-          track.trackType!,
-          trackLengthInRegion,
-        );
+        addTrackLength(trackLengths, track.trackType!, trackLengthInRegion);
       }
     });
     return { trackIds, trackLengths };
@@ -527,7 +626,7 @@ export class RegionDataBuilder {
         const context = featureContexts.get(featureId);
         if (!context) continue;
 
-        const trackLengthInRegion = this.computeTrackLengthInBoundary(
+        const trackLengthInRegion = computeTrackLengthInBoundary(
           trackCoords,
           track.length,
           context.feature,
@@ -539,7 +638,7 @@ export class RegionDataBuilder {
 
         const accumulator = accumulators.get(featureId)!;
         accumulator.trackIds.set(track.id, trackLengthInRegion);
-        this.addTrackLength(
+        addTrackLength(
           accumulator.trackLengths,
           track.trackType!,
           trackLengthInRegion,
@@ -557,7 +656,7 @@ export class RegionDataBuilder {
         continue;
       }
       routesWithinRegion.add(route.id);
-      routeDisplayParams.set(route.id, this.buildRouteDisplayParams(route));
+      routeDisplayParams.set(route.id, buildRouteDisplayParams(route));
     }
 
     return { routes: routesWithinRegion, routeDisplayParams };
@@ -577,7 +676,7 @@ export class RegionDataBuilder {
       });
       if (regionIds.size === 0) continue;
 
-      const displayParams = this.buildRouteDisplayParams(route);
+      const displayParams = buildRouteDisplayParams(route);
       regionIds.forEach((featureId) => {
         const accumulator = accumulators.get(featureId);
         if (!accumulator) return;
@@ -585,67 +684,6 @@ export class RegionDataBuilder {
         accumulator.routeDisplayParams.set(route.id, displayParams);
       });
     }
-  }
-
-  private buildRouteDisplayParams(route: Route): RouteDisplayParams {
-    return {
-      id: route.id,
-      bullet: route.bullet!,
-      color: route.color!,
-      textColor: route.textColor!,
-      shape: route.shape! as RouteBulletType,
-    };
-  }
-
-  private resolveAccumulator(
-    accumulator: InfraDataAccumulator,
-    lastUpdate: number,
-  ): RegionInfraData {
-    return {
-      stations: accumulator.stationNames,
-      tracks: accumulator.trackIds,
-      trackLengths: accumulator.trackLengths,
-      routes: accumulator.routes,
-      routeDisplayParams: accumulator.routeDisplayParams,
-      metadata: {
-        lastUpdate,
-        dirty: false,
-      },
-    };
-  }
-
-  private addTrackLength(
-    trackLengths: Map<string, number>,
-    trackType: string,
-    additionalLength: number,
-  ): void {
-    trackLengths.set(
-      trackType,
-      (trackLengths.get(trackType) ?? 0) + additionalLength,
-    );
-  }
-
-  private computeTrackLengthInBoundary(
-    trackCoords: Array<Coordinate>,
-    knownTrackLength: number | undefined,
-    feature: Feature<Polygon | MultiPolygon>,
-    boundaryParams: BoundaryParams,
-    forcePlanar: boolean,
-  ): number {
-    if (forcePlanar) {
-      return planarArcLengthInsideBoundary(
-        trackCoords,
-        knownTrackLength,
-        boundaryParams,
-      );
-    }
-
-    return geodesicArcLengthInsideBoundary(
-      trackCoords,
-      feature,
-      boundaryParams.bbox,
-      knownTrackLength,
-    );
   }
 }
 
@@ -660,9 +698,137 @@ function initializeInfraAccumulator(): InfraDataAccumulator {
   };
 }
 
+function initializeCommuterDetailsAccumulator(): CommuterDetailsAccumulator {
+  return {
+    regionModeShares: new Map<string | number, ModeShare>(),
+    distanceModeShares: new Map<number, ModeShare>(),
+    hourlyModeShares: new Map<CommuteType, Map<number, ModeShare>>([
+      [CommuteType.HomeToWork, new Map<number, ModeShare>()],
+      [CommuteType.WorkToHome, new Map<number, ModeShare>()],
+    ]),
+  };
+}
+
 function getCurrentMillis(): number {
   const perf = globalThis.performance;
   return perf?.now ? perf.now() : Date.now();
+}
+
+function toDistanceBucketKm(distanceMeters: number): number {
+  const distanceKm = Math.min(distanceMeters / 1000, MAX_COMMUTE_DISTANCE_KM);
+  return (
+    Math.floor(distanceKm / COMMUTE_DISTANCE_BUCKET_SIZE_KM) *
+    COMMUTE_DISTANCE_BUCKET_SIZE_KM
+  );
+}
+
+function toTimeBucketMinutes(timeSeconds: number): number {
+  const timeMinutes = timeSeconds / 60;
+  return (
+    Math.floor(timeMinutes / COMMUTE_TIME_BUCKET_SIZE_MIN) *
+    COMMUTE_TIME_BUCKET_SIZE_MIN
+  );
+}
+
+function accumulateSummaryModeShareAndDistance(
+  regionId: string | number | undefined,
+  modeShareMap: Map<string | number, ModeShare>,
+  distanceAccumulatorMap: Map<string | number, number>,
+  popModeShare: ModeShare,
+  popSize: number,
+  drivingDistanceKm: number,
+): void {
+  if (regionId === undefined) return;
+
+  addModeShareToMap(modeShareMap, regionId, popModeShare);
+
+  const currentDistance = distanceAccumulatorMap.get(regionId) ?? 0;
+  distanceAccumulatorMap.set(
+    regionId,
+    currentDistance + drivingDistanceKm * popSize,
+  );
+}
+
+function addModeShareToMap<K>(
+  map: Map<K, ModeShare>,
+  key: K,
+  modeShare: ModeShare,
+): void {
+  ModeShare.addInPlace(getOrCreateModeShare(map, key), modeShare);
+}
+
+function addHourlyModeShare(
+  data: CommuterDetailsAccumulator,
+  commuteType: CommuteType,
+  minuteBucket: number,
+  modeShare: ModeShare,
+): void {
+  addModeShareToMap(
+    data.hourlyModeShares.get(commuteType)!,
+    minuteBucket,
+    modeShare,
+  );
+}
+
+function buildRouteDisplayParams(route: Route): RouteDisplayParams {
+  return {
+    id: route.id,
+    bullet: route.bullet!,
+    color: route.color!,
+    textColor: route.textColor!,
+    shape: route.shape! as RouteBulletType,
+  };
+}
+
+function resolveAccumulator(
+  accumulator: InfraDataAccumulator,
+  lastUpdate: number,
+): RegionInfraData {
+  return {
+    stations: accumulator.stationNames,
+    tracks: accumulator.trackIds,
+    trackLengths: accumulator.trackLengths,
+    routes: accumulator.routes,
+    routeDisplayParams: accumulator.routeDisplayParams,
+    metadata: {
+      lastUpdate,
+      dirty: false,
+    },
+  };
+}
+
+function addTrackLength(
+  trackLengths: Map<string, number>,
+  trackType: string,
+  additionalLength: number,
+): void {
+  trackLengths.set(
+    trackType,
+    (trackLengths.get(trackType) ?? 0) + additionalLength,
+  );
+}
+
+function computeTrackLengthInBoundary(
+  trackCoords: Array<Coordinate>,
+  knownTrackLength: number | undefined,
+  feature: Feature<Polygon | MultiPolygon>,
+  boundaryParams: BoundaryParams,
+  forcePlanar: boolean,
+): number {
+  if (forcePlanar) {
+    return planarArcLengthInsideBoundary(
+      trackCoords,
+      knownTrackLength,
+      boundaryParams,
+    );
+  }
+
+  return geodesicArcLengthInsideBoundary(
+    trackCoords,
+    feature,
+    boundaryParams.bbox,
+    knownTrackLength,
+  );
 }
 
 function getOrCreateModeShare<K>(map: Map<K, ModeShare>, key: K): ModeShare {

@@ -1,5 +1,19 @@
 // --- Statistics Types --- //
 
+export const MODE_ORDER: (keyof ModeShare)[] = [
+  'transit',
+  'driving',
+  'walking',
+  'unknown',
+] as const;
+export type ModeKey = (typeof MODE_ORDER)[number];
+export const MODE_LABEL: Record<ModeKey, string> = {
+  transit: 'Transit',
+  driving: 'Driving',
+  walking: 'Walking',
+  unknown: 'Unknown',
+};
+
 export type ModeShare = {
   transit: number; // Number of commuters using transit
   driving: number; // Number of commuters driving
@@ -49,6 +63,14 @@ export const ModeShare = {
     }
     return modeShare[mode] / total;
   },
+  ofMode(mode: keyof ModeShare, modeShare: ModeShare): ModeShare {
+    return {
+      transit: mode === 'transit' ? modeShare.transit : 0,
+      driving: mode === 'driving' ? modeShare.driving : 0,
+      walking: mode === 'walking' ? modeShare.walking : 0,
+      unknown: mode === 'unknown' ? modeShare.unknown : 0,
+    };
+  },
 };
 
 // --- State Types --- //
@@ -92,29 +114,38 @@ export type DatasetSource = {
   writable: boolean; // whether or not the data can be overwritten by the user
 };
 
+// Commute type is the origin -> destination pair for a commute
+export const CommuteType = {
+  WorkToHome: 'WorkToHome',
+  HomeToWork: 'HomeToWork',
+  // Extend to leisure travel (e.g. Home to Leisure, Leisure to Home), etc. in the future
+} as const satisfies Record<string, string>;
+
+export type CommuteType = (typeof CommuteType)[keyof typeof CommuteType];
+
 export type RegionCommuterSummaryData = {
   residentModeShare: ModeShare; // Mode share for all commuters living in the region, regardless of where they work
   workerModeShare: ModeShare; // Mode share for all commuters working in the region, regardless of where they live
+  averageResidentCommuteDistance: number | null; // Average commute distance for commuters living in the region, in kilometers
+  averageWorkerCommuteDistance: number | null; // Average commute distance for commuters working in the region, in kilometers
   metadata: RegionGameMetadata; // metadata
 };
 
 export type RegionCommuterDetailsData = {
-  residentModeShareByRegion: Map<string, ModeShare>; // region name to mode share for commuters living in the region
-  workerModeShareByRegion: Map<string, ModeShare>; // region name to mode share for commuters working in the region
+  residentModeShareByRegion: Map<string | number, ModeShare>; // region ID to mode share for commuters living in the region
+  workerModeShareByRegion: Map<string | number, ModeShare>; // region ID to mode share for commuters working in the region
+
+  /* For hourly mode share breakdown, the map key is the departure-time bucket in minutes from midnight.
+    - For both residents / workers, this is the departure time from home for HomeToWork trips and the departure time from work for WorkToHome trips.
+    - Example with 60-minute buckets: 1200 -> 20:00. Example with 30-minute buckets: 1230 -> 20:30.
+  */
+  residentModeSharesByHour: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters living in the region by type of commute
+  workerModeSharesByHour: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters working in the region by type of commute
+
+  residentModeShareByCommuteDistance: Map<number, ModeShare>; // commute distance bucket to mode share for commuters living in the region
+  workerModeShareByCommuteDistance: Map<number, ModeShare>; // commute distance bucket to mode share for commuters working in the region
 
   metadata: RegionGameMetadata; // metadata
-
-  // Potential future data fields:
-  /*
-    averageCommuteDistance: number; // in kilometers
-    averageCommuteTime: number; // in in-game minutes
-
-    homeArrivalTimes: Map<number, number>; // hour of day to number of arrivals
-    homeDepartureTimes: Map<number, number>; // hour of day to number of departures
-
-    workArrivalTimes: Map<number, number>; // hour of day to number of arrivals
-    workDepartureTimes: Map<number, number>; // hour of day to number of departures
-  */
 };
 
 export type RegionInfraData = {

@@ -3,6 +3,7 @@ import {
   DEFAULT_CHUNK_SIZE,
   STALE_COMMUTER_DATA_THRESHOLD_SECONDS,
   STALE_INFRA_DATA_THRESHOLD_SECONDS,
+  UNASSIGNED_REGION_ID,
 } from '../constants';
 import type { RegionDataset } from '../datasets/RegionDataset';
 import type { RegionDatasetRegistry } from '../registry/RegionDatasetRegistry';
@@ -300,5 +301,13 @@ export class RegionDataManager {
   ): Map<string | number, RegionGameData> {
     const dataset = this.registry.getDatasetByIdentifier(datasetIdentifier);
     return dataset.gameData;
+  }
+
+  resolveRegionName(
+    datasetIdentifier: string,
+    featureId: string | number,
+  ): string {
+    const dataset = this.registry.getDatasetByIdentifier(datasetIdentifier);
+    return dataset.regionNameMap.get(featureId) ?? UNASSIGNED_REGION_ID;
   }
 }

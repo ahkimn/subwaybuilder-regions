@@ -232,7 +232,7 @@ export function renderRegionsOverviewPanel(
       className: 'p-3 flex flex-col gap-3 h-full min-h-0',
     },
     renderOverviewTabs(h, activeTab, onSetTab),
-    buildReactViewHeader(h, 'Dataset', [
+    buildReactViewHeader(h, 'Dataset', undefined, [
       renderLayerSelectorRow(
         h,
         props.availableDatasetIdentifiers,

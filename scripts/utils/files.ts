@@ -14,6 +14,93 @@ import { findOsmCountryConfig } from './osm-country-config';
 
 export type Row = Record<string, string>;
 
+const US_DATASET_ORDER = [
+  'counties',
+  'county-subdivisions',
+  'zctas',
+  'neighborhoods',
+] as const;
+const GB_DATASET_ORDER = ['districts', 'bua', 'wards'] as const;
+const KNOWN_DATASET_ORDERS = [US_DATASET_ORDER, GB_DATASET_ORDER] as const;
+
+function resolveDatasetOrder(country: string): readonly string[] {
+  if (country === 'US') {
+    return US_DATASET_ORDER;
+  }
+
+  if (country === 'GB') {
+    return GB_DATASET_ORDER;
+  }
+
+  const osmCountryConfig = findOsmCountryConfig(country);
+  if (!osmCountryConfig) {
+    return [];
+  }
+
+  return osmCountryConfig.availableBoundaryTypes.map(
+    (entry) => entry.datasetId,
+  );
+}
+
+function resolvePreferredDatasetOrderForCity(
+  entries: DatasetIndexEntry[],
+  fallbackCountryCode?: string,
+): readonly string[] {
+  const datasetIds = new Set(entries.map((entry) => entry.datasetId));
+  const matchingDatasetOrders = KNOWN_DATASET_ORDERS.filter((datasetOrder) =>
+    datasetOrder.some((datasetId) => datasetIds.has(datasetId)),
+  );
+
+  if (matchingDatasetOrders.length === 1) {
+    return matchingDatasetOrders[0];
+  }
+
+  if (fallbackCountryCode) {
+    return resolveDatasetOrder(fallbackCountryCode);
+  }
+
+  return [];
+}
+
+function buildDatasetOrderIndex(
+  preferredDatasetOrder: readonly string[],
+): Map<string, number> {
+  return new Map<string, number>(
+    preferredDatasetOrder.map((datasetId, orderIndex) => [
+      datasetId,
+      orderIndex,
+    ]),
+  );
+}
+
+function sortDatasetEntriesByDatasetOrder(
+  entries: DatasetIndexEntry[],
+  datasetOrderIndex: ReadonlyMap<string, number>,
+): DatasetIndexEntry[] {
+  if (datasetOrderIndex.size === 0) {
+    return entries;
+  }
+
+  return [...entries].sort((a, b) => {
+    const aOrder = datasetOrderIndex.get(a.datasetId);
+    const bOrder = datasetOrderIndex.get(b.datasetId);
+
+    if (aOrder != null && bOrder != null) {
+      return aOrder - bOrder;
+    }
+
+    if (aOrder != null) {
+      return -1;
+    }
+
+    if (bOrder != null) {
+      return 1;
+    }
+
+    return a.datasetId.localeCompare(b.datasetId);
+  });
+}
+
 // --- File Operations --- //
 
 export function validateFilePath(filePath: string): void {
@@ -194,57 +281,23 @@ export function updateIndexJson(
     );
   }
 
-  const sortedIndex: DatasetIndex = {};
   const sortedCityCodes = Object.keys(index).sort((a, b) => a.localeCompare(b));
-
-  const US_DATASET_ORDER = [
-    'counties',
-    'county-subdivisions',
-    'zctas',
-    'neighborhoods',
-  ];
-  const GB_DATASET_ORDER = ['districts', 'bua', 'wards'];
-
-  function resolveDatasetOrder(country: string): string[] {
-    if (country === 'US') {
-      return US_DATASET_ORDER;
-    }
-
-    if (country === 'GB') {
-      return GB_DATASET_ORDER;
-    }
-
-    const osmCountryConfig = findOsmCountryConfig(country);
-    if (!osmCountryConfig) {
-      return [];
-    }
-
-    return osmCountryConfig.availableBoundaryTypes.map(
-      (entry) => entry.datasetId,
-    );
-  }
-
-  const preferredDatasetOrder = resolveDatasetOrder(countryCode);
-  const datasetOrderIndex = new Map<string, number>(
-    preferredDatasetOrder.map((datasetId, orderIndex) => [
-      datasetId,
-      orderIndex,
-    ]),
-  );
-
-  for (const sortedCityCode of sortedCityCodes) {
-    const sortedEntries = [...(index[sortedCityCode] || [])].sort((a, b) => {
-      const aOrder = datasetOrderIndex.get(a.datasetId);
-      const bOrder = datasetOrderIndex.get(b.datasetId);
-
-      if (aOrder != null && bOrder != null) {
-        return aOrder - bOrder;
-      }
-
-      return a.datasetId.localeCompare(b.datasetId);
-    });
-    sortedIndex[sortedCityCode] = sortedEntries;
-  }
+  const sortedIndex = Object.fromEntries(
+    sortedCityCodes.map((sortedCityCode) => {
+      const cityEntries = index[sortedCityCode] || [];
+      const preferredDatasetOrderForCity = resolvePreferredDatasetOrderForCity(
+        cityEntries,
+        sortedCityCode === cityCode ? countryCode : undefined,
+      );
+      const datasetOrderIndex = buildDatasetOrderIndex(
+        preferredDatasetOrderForCity,
+      );
+      return [
+        sortedCityCode,
+        sortDatasetEntriesByDatasetOrder(cityEntries, datasetOrderIndex),
+      ];
+    }),
+  ) as DatasetIndex;
 
   fs.writeJsonSync(indexPath, sortedIndex, { spaces: 2 });
 }

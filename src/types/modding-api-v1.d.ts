@@ -286,6 +286,7 @@ export interface Pop {
   drivingDistance: number;
   drivingPath?: Coordinate[];
   homeDepartureTime: number;
+  workDepartureTime: number;
   lastCommute: CompletedPopCommute;
 }
 

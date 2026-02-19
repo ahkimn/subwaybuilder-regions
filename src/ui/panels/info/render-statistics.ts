@@ -20,6 +20,19 @@ export function renderStatisticsView(
   const residents = gameData.demandData?.residents ?? 0;
   const workers = gameData.demandData?.workers ?? 0;
 
+  const residentCommuteLength =
+    gameData.commuterSummary?.averageResidentCommuteDistance ?? null;
+  const workerCommuteLength =
+    gameData.commuterSummary?.averageWorkerCommuteDistance ?? null;
+
+  const averageCommuteLength =
+    residents + workers > 0 &&
+    residentCommuteLength !== null &&
+    workerCommuteLength !== null
+      ? (residentCommuteLength * residents + workerCommuteLength * workers) /
+        (residents + workers)
+      : null;
+
   const unitLabel = gameData.unitTypes?.singular;
 
   const infraData = gameData.infraData;
@@ -50,6 +63,11 @@ export function renderStatisticsView(
     ),
     ReactDetailRow(h, 'Residents', formatNumberOrDefault(residents)),
     ReactDetailRow(h, 'Jobs', formatNumberOrDefault(workers)),
+    ReactDetailRow(
+      h,
+      'Average Commute Distance',
+      `${formatNumberOrDefault(averageCommuteLength, 2)} km`,
+    ),
     ReactDivider(h),
     ReactDetailRow(
       h,

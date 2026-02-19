@@ -4,7 +4,7 @@ import {
 } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import { RegionSelection } from '../core/types';
-import type { DisplayColor } from '../ui/types/DisplayColor';
+import type { MapDisplayColor } from '../ui/types/DisplayColor';
 import { PRIMARY_FILL_COLORS } from '../ui/types/DisplayColor';
 import type { LayerToggleOptions } from '../ui/types/LayerToggleOptions';
 import type { LightMode } from './styles';
@@ -32,7 +32,7 @@ type MapLayerState = {
 };
 
 type MapLayerStyle = {
-  fillColor: DisplayColor;
+  fillColor: MapDisplayColor;
 };
 
 type LayerHandlers = {
@@ -619,6 +619,7 @@ export class RegionsMapLayers {
     mapRef.on('data', this.layerHandler);
   }
 
+  // This currently does not work as the game's default layers always seem to maintain priority on the map's z-axis :/
   private moveVisibleLabelsToTop(): void {
     const mapRef = this.getMapReference();
     if (!mapRef) return;
