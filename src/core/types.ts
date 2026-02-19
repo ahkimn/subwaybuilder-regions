@@ -13,12 +13,6 @@ export const MODE_LABEL: Record<ModeKey, string> = {
   walking: 'Walking',
   unknown: 'Unknown',
 };
-export const MODE_COLOR: Record<ModeKey, string> = {
-  transit: '#0000ff',
-  driving: '#ff0000',
-  walking: '#00ff00',
-  unknown: '#64748b',
-};
 
 export type ModeShare = {
   transit: number; // Number of commuters using transit
@@ -145,11 +139,11 @@ export type RegionCommuterDetailsData = {
     - For both residents / workers, this is the departure time from home for HomeToWork trips and the departure time from work for WorkToHome trips.
     - Example with 60-minute buckets: 1200 -> 20:00. Example with 30-minute buckets: 1230 -> 20:30.
   */
-  residentModeSharesByHour?: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters living in the region by type of commute
-  workerModeSharesByHour?: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters working in the region by type of commute
+  residentModeSharesByHour: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters living in the region by type of commute
+  workerModeSharesByHour: Map<CommuteType, Map<number, ModeShare>>; // minute-of-day bucket to mode share for commuters working in the region by type of commute
 
-  residentModeShareByCommuteDistance?: Map<number, ModeShare>; // commute distance bucket to mode share for commuters living in the region
-  workerModeShareByCommuteDistance?: Map<number, ModeShare>; // commute distance bucket to mode share for commuters working in the region
+  residentModeShareByCommuteDistance: Map<number, ModeShare>; // commute distance bucket to mode share for commuters living in the region
+  workerModeShareByCommuteDistance: Map<number, ModeShare>; // commute distance bucket to mode share for commuters working in the region
 
   metadata: RegionGameMetadata; // metadata
 };

@@ -8,6 +8,7 @@ import type {
 import { useEffect, useRef } from 'react';
 
 import {
+  AVAILABLE_BUCKET_SIZES_MINUTES,
   COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
   DISTANCE_BUCKET_COUNT,
   SANKEY_FLOW_DISPLAY_COUNT,
@@ -30,6 +31,14 @@ import {
   ReactSelectRow,
   type SelectButtonConfig,
 } from '../../elements/SelectRow';
+import {
+  bucketDistanceBreakdownModeShare,
+  bucketHourlyBreakdownModeShare,
+  formatCommuteTypeBreakdownUnitName,
+  formatDistanceBreakdownUnitName,
+  formatHourlyBreakdownUnitName,
+  getBreakdownSortOrder,
+} from '../shared/data-helpers';
 import { buildReactViewHeader } from '../shared/view-header';
 import { renderCommutersSankey } from './render-commuters-sankey';
 import {
@@ -44,12 +53,17 @@ import {
 
 const DEFAULT_TABLE_ROWS = 10; // Max number of rows to show in commuters by region table before truncation
 const DEFAULT_DISTANCE_BUCKET_SIZE_KM = 5;
+const DEFAULT_HOUR_BUCKET_SIZE_MINUTES = 120;
+const HOURLY_SANKEY_FLOW_DISPLAY_COUNT = 12;
 
 type CommuterBreakdownData = {
   modeShareByBreakdownUnit: Map<string | number, ModeShare>;
   resolveBreakdownUnitName: (unitId: string | number) => string;
   sankeyTopFlowCount: number;
+  sankeyDisplaySourceOnLeft: boolean;
   orderedSankeyUnitIds?: Array<string | number>;
+  sourceModeShareByBreakdownUnit?: Map<string | number, Map<string | number, ModeShare>>;
+  resolveSankeySourceUnitName?: (unitId: string | number) => string;
 };
 
 type CommuterRowData = {
@@ -75,7 +89,7 @@ export function renderCommutersView(
   gameData: RegionGameData,
   viewState: CommutersViewState,
   setViewState: Dispatch<SetStateAction<CommutersViewState>>,
-  resolveBreakdownUnitName: (unitId: string | number) => string,
+  resolveRegionName: (unitId: string | number) => string,
 ): ReactNode {
   const commuterSummaryData = gameData.commuterSummary!;
   const commuterDetailsData = gameData.commuterDetails!;
@@ -86,7 +100,7 @@ export function renderCommutersView(
   const breakdownData = resolveCommuterBreakdownData(
     commuterDetailsData,
     viewState,
-    resolveBreakdownUnitName,
+    resolveRegionName,
   );
   const byBreakdownModeShare = breakdownData.modeShareByBreakdownUnit;
   const populationCount = ModeShare.total(aggregateModeShare);
@@ -100,22 +114,42 @@ export function renderCommutersView(
     viewState,
   );
   const rowsToDisplay = viewState.expanded ? rows.length : DEFAULT_TABLE_ROWS;
-  const content =
-    viewState.displayMode === CommuterDisplayMode.Sankey
-      ? renderCommutersSankey(
+  let content: ReactNode;
+  switch (viewState.displayMode) {
+    case CommuterDisplayMode.Sankey:
+      content = renderCommutersSankey(
         h,
         gameData,
-        viewState,
         byBreakdownModeShare,
         breakdownData.resolveBreakdownUnitName,
         {
           labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
           topFlowCount: breakdownData.sankeyTopFlowCount,
+          displaySourceOnLeft: breakdownData.sankeyDisplaySourceOnLeft,
+          valueUnitLabel:
+            viewState.dimension === CommuterDimension.CommuteHour
+              ? 'commutes'
+              : 'commuters',
           colorNodesByModeShare: COLOR_COMMUTER_NODES_WITH_MODE_COLORS,
           orderedUnitIds: breakdownData.orderedSankeyUnitIds,
+          sourceModeShareByBreakdownUnit:
+            breakdownData.sourceModeShareByBreakdownUnit,
+          resolveSourceUnitName: breakdownData.resolveSankeySourceUnitName,
         },
-      )
-      : buildCommutersTable(
+      );
+      break;
+    case CommuterDisplayMode.BarChart:
+      content = h(
+        'div',
+        {
+          className:
+            'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+        },
+        'Bar Chart view coming soon',
+      );
+      break;
+    default:
+      content = buildCommutersTable(
         h,
         useStateHook,
         viewState,
@@ -123,6 +157,8 @@ export function renderCommutersView(
         rowsToDisplay,
         setViewState,
       );
+      break;
+  }
 
   return h(
     'div',
@@ -139,7 +175,7 @@ export function renderCommutersView(
 function resolveCommuterBreakdownData(
   commuterDetailsData: RegionCommuterDetailsData,
   viewState: CommutersViewState,
-  resolveBreakdownUnitName: (unitId: string | number) => string,
+  resolveRegionName: (unitId: string | number) => string,
 ): CommuterBreakdownData {
   const isOutbound = viewState.direction === CommuterDirection.Outbound;
 
@@ -160,85 +196,50 @@ function resolveCommuterBreakdownData(
           distanceBreakdown.bucketSizeKm,
         ),
       sankeyTopFlowCount: DISTANCE_BUCKET_COUNT + 1,
+      sankeyDisplaySourceOnLeft:
+        viewState.direction !== CommuterDirection.Inbound,
       orderedSankeyUnitIds: distanceBreakdown.orderedBucketIds,
     };
   }
 
-  // TODO: CommuteHour rendering path will be split from Region once hourly table/chart views are implemented.
+  if (viewState.dimension === CommuterDimension.CommuteHour) {
+    const sourceModeShareByHour = isOutbound
+      ? commuterDetailsData.residentModeSharesByHour
+      : commuterDetailsData.workerModeSharesByHour;
+    const hourBucketSizeMinutes = AVAILABLE_BUCKET_SIZES_MINUTES.includes(
+      DEFAULT_HOUR_BUCKET_SIZE_MINUTES,
+    )
+      ? DEFAULT_HOUR_BUCKET_SIZE_MINUTES
+      : AVAILABLE_BUCKET_SIZES_MINUTES[0];
+    const hourlyBreakdown = bucketHourlyBreakdownModeShare(
+      sourceModeShareByHour,
+      hourBucketSizeMinutes,
+      HOURLY_SANKEY_FLOW_DISPLAY_COUNT,
+    );
+
+    return {
+      modeShareByBreakdownUnit: hourlyBreakdown.modeShareByBucketStartMinutes,
+      resolveBreakdownUnitName: (unitId) =>
+        formatHourlyBreakdownUnitName(unitId, hourBucketSizeMinutes),
+      sankeyTopFlowCount: HOURLY_SANKEY_FLOW_DISPLAY_COUNT,
+      sankeyDisplaySourceOnLeft: true,
+      orderedSankeyUnitIds: hourlyBreakdown.orderedBucketIds,
+      sourceModeShareByBreakdownUnit:
+        hourlyBreakdown.modeShareByCommuteTypeByBucketStartMinutes,
+      resolveSankeySourceUnitName: formatCommuteTypeBreakdownUnitName,
+    };
+  }
+
   return {
     modeShareByBreakdownUnit: isOutbound
       ? commuterDetailsData.residentModeShareByRegion
       : commuterDetailsData.workerModeShareByRegion,
-    resolveBreakdownUnitName,
+    resolveBreakdownUnitName: resolveRegionName,
     sankeyTopFlowCount: SANKEY_FLOW_DISPLAY_COUNT,
+    sankeyDisplaySourceOnLeft:
+      !(viewState.dimension === CommuterDimension.Region &&
+        viewState.direction === CommuterDirection.Inbound),
   };
-}
-
-function bucketDistanceBreakdownModeShare(
-  modeShareByDistanceBucketStartKm: Map<number, ModeShare> | undefined,
-  bucketSizeKm: number,
-  bucketCount: number,
-): {
-  modeShareByBucketStartKm: Map<string | number, ModeShare>;
-  bucketSizeKm: number;
-  orderedBucketIds: Array<string | number>;
-} {
-  if (!modeShareByDistanceBucketStartKm || modeShareByDistanceBucketStartKm.size === 0) {
-    return {
-      modeShareByBucketStartKm: new Map<string | number, ModeShare>(),
-      bucketSizeKm,
-      orderedBucketIds: [],
-    };
-  }
-
-  const overflowBucketStartKm = bucketSizeKm * bucketCount;
-  const overflowBucketId = `${overflowBucketStartKm}+`;
-  const modeShareByBucketStartKm = new Map<string | number, ModeShare>();
-
-  modeShareByDistanceBucketStartKm.forEach((modeShare, bucketStartKm) => {
-    const bucketId: string | number =
-      bucketStartKm >= overflowBucketStartKm
-        ? overflowBucketId
-        : Math.floor(bucketStartKm / bucketSizeKm) * bucketSizeKm;
-    const existing = modeShareByBucketStartKm.get(bucketId);
-    if (existing) {
-      ModeShare.addInPlace(existing, modeShare);
-      return;
-    }
-    modeShareByBucketStartKm.set(
-      bucketId,
-      ModeShare.add(ModeShare.createEmpty(), modeShare),
-    );
-  });
-
-  const numericBucketIds = Array.from(modeShareByBucketStartKm.keys())
-    .filter((bucketId): bucketId is number => typeof bucketId === 'number')
-    .sort((a, b) => a - b);
-  const orderedBucketIds: Array<string | number> = [...numericBucketIds];
-  if (modeShareByBucketStartKm.has(overflowBucketId)) {
-    orderedBucketIds.push(overflowBucketId);
-  }
-
-  return {
-    modeShareByBucketStartKm,
-    bucketSizeKm,
-    orderedBucketIds,
-  };
-}
-
-function formatDistanceBreakdownUnitName(
-  bucketStartKmOrOverflowId: string | number,
-  bucketSizeKm: number,
-): string {
-  if (typeof bucketStartKmOrOverflowId === 'string') {
-    if (bucketStartKmOrOverflowId.endsWith('+')) {
-      return `${bucketStartKmOrOverflowId.slice(0, -1)}km+`;
-    }
-    return `${bucketStartKmOrOverflowId}km`;
-  }
-  const bucketStartKm = bucketStartKmOrOverflowId;
-  const bucketEndKm = bucketStartKm + bucketSizeKm;
-  return `${bucketStartKm}-${bucketEndKm}km`;
 }
 
 function buildCommutersHeader(
@@ -329,15 +330,6 @@ function buildCommuterControls(
           : { ...current, dimension: CommuterDimension.Region },
       ),
   });
-  dimensionConfigs.set(CommuterDimension.CommuteHour, {
-    label: 'Hour',
-    onSelect: () =>
-      setViewState((current) =>
-        current.dimension === CommuterDimension.CommuteHour
-          ? current
-          : { ...current, dimension: CommuterDimension.CommuteHour },
-      ),
-  });
   dimensionConfigs.set(CommuterDimension.CommuteLength, {
     label: 'Length',
     onSelect: () =>
@@ -345,6 +337,15 @@ function buildCommuterControls(
         current.dimension === CommuterDimension.CommuteLength
           ? current
           : { ...current, dimension: CommuterDimension.CommuteLength },
+      ),
+  });
+  dimensionConfigs.set(CommuterDimension.CommuteHour, {
+    label: 'Hour',
+    onSelect: () =>
+      setViewState((current) =>
+        current.dimension === CommuterDimension.CommuteHour
+          ? current
+          : { ...current, dimension: CommuterDimension.CommuteHour },
       ),
   });
   controlNodes.push(
@@ -546,7 +547,8 @@ function sortCommuterRows(
         return (b.walkingValue - a.walkingValue) * m;
       default:
         if (
-          viewState.dimension === CommuterDimension.CommuteLength &&
+          (viewState.dimension === CommuterDimension.CommuteLength ||
+            viewState.dimension === CommuterDimension.CommuteHour) &&
           a.breakdownSortOrder !== null &&
           b.breakdownSortOrder !== null
         ) {
@@ -571,18 +573,6 @@ function sortCommuterRows(
     }
     return result;
   });
-}
-
-function getBreakdownSortOrder(
-  dimension: CommuterDimension,
-  unitId: string | number,
-): number | null {
-  if (dimension !== CommuterDimension.CommuteLength) return null;
-  if (typeof unitId === 'number') return unitId;
-  if (typeof unitId === 'string' && unitId.endsWith('+')) {
-    return Number.parseFloat(unitId);
-  }
-  return null;
 }
 
 function buildCommutersTable(

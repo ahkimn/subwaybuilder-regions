@@ -92,7 +92,7 @@ export function RegionsInfoPanel({
     return null;
   }
 
-  const resolveBreakdownUnitName = (regionId: string | number): string => {
+  const resolveRegionName = (regionId: string | number): string => {
     return regionDataManager.resolveRegionName(
       activeDatasetIdentifier!,
       regionId,
@@ -196,7 +196,7 @@ export function RegionsInfoPanel({
             gameData,
             commutersViewState,
             setCommutersViewState,
-            resolveBreakdownUnitName,
+            resolveRegionName,
           )
           : createElement(
             'div',

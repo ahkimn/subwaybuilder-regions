@@ -248,7 +248,7 @@ export class RegionDataBuilder {
         );
       }
 
-      // Update mode share by commute distance maps
+      // Update mode share by commute distance & time maps
       if (isResident) {
         addModeShareToMap(
           residentData.distanceModeShares,
