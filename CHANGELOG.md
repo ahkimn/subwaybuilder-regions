@@ -2,6 +2,27 @@
 
 [Back to README](README.md)
 
+## v0.2.12 - 2026-02-19
+
+_Game version_ v1.0.3
+
+### New Features
+
+- Added additional dimensions for breaking down commuter data: `Time` and `Length`
+  - `Time` corresponds to the departure time of the populations. This includes both Work->Home and Home->Work trips and is bucketed by default to every hour
+  - `Length` corresponds to the commute distance of the population by driving. This is bucketed by default to every 5km
+- Added Sankey visualization as an alternative to `Table` form for each new dimension
+  - Each `Sankey` visualization has three columns of nodes, with one corresponding to commute/commuter sources (e.g. residents of the selected region), another corresponding to mode share, and a final corresponding to the breakdown unit (e.g. hours of the day)
+
+### Other Updates
+
+- Forced `Table` view to show all mode share columns by default to simplify controls
+- Updated `Info Panel` to use `useReducer` for better handling of React state
+
+### New Issues
+
+- `Sankey` display colors are not very compatible with Light mode.
+
 ## v0.2.11 - 2026-02-15
 
 _Game version_ v1.0.3

@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.2.11`  
-_Latest Tested Game Version:_ `v1.0.3`
-_Latest Changelog Entry:_ [v0.2.11](CHANGELOG.md#v0211---2026-02-15)
+_Latest Mod Version:_ `v0.2.12`  
+_Latest Tested Game Version:_ `v1.1.0`
+_Latest Changelog Entry:_ [v0.2.12](CHANGELOG.md#v0212---2026-02-19)
 
 ## Table of Contents
 
@@ -338,7 +338,21 @@ The commuters view for a region contains a breakdown of commuter counts and comm
 
 The upper portion of the view contains statistics of `Resident` and `Worker` counts and mode share aggregated for the selected region.
 
-The lower portion of the view consists of a table breaking this information down for other regions within the same dataset.
+The lower portion of the view consists of a data visualization section breaking this information down for a selected `Breakdown` of the selected region's commute data.
+
+There are three available data `Breakdown` options:
+
+- `Region`: Filter commuters by the region of destination / origin (for residents and workers respectively)
+- `Length`: Filter commuters by the length of their commute
+- `Time`: Filter commutes by the departure time of the commuter. Note that a commuter can have more than one commute (e.g. Work to Home and Home to Work)
+
+There are also three vailable data `View` options:
+
+- `Table`: A simple table containing the breakdown categories as well as transit mode shares
+- `Sankey`: A sankey diagram
+- `Bar`: A bar chart
+
+##### Table Visualization UX
 
 You can sort the table by clicking on column headers. If there is a tie, the previous sort column and/or the region name are used as tiebreakers.
 
