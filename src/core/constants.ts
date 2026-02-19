@@ -63,7 +63,6 @@ export const ENFORCE_ONE_DATASET_VISIBLE = true; // Whether to enforce that only
 
 export const SANKEY_FLOW_DISPLAY_COUNT = 10; // Number of flows to display in sankey diagrams by default, excluding "Other" and "Unassigned" aggregate categories
 export const SANKEY_LABEL_FLOW_SYNC = true; // Whether the labels of entries within a Sankey diagram should always be rendered on the right side of nodes, or if they should be conditionally rendered on the left side depending on the direction of flow
-export const COLOR_COMMUTER_NODES_WITH_MODE_COLORS = false; // Whether to color nodes in the commuter info view with their corresponding mode share color, or to use a single default color for all nodes
 export const DISTANCE_BUCKET_COUNT = 10; // Number of buckets to divide commute distances into display for in chart elements. Anything above the max distance (defined as bucket size * bucket count) will be grouped into an "xkm+" category
 export const AVAILABLE_BUCKET_SIZES_KM = [1, 2, 5, 10] as const; // Allowable size of commute distance buckets in kilometers
 export const AVAILABLE_BUCKET_SIZES_MINUTES = [60, 120, 180, 240, 360] as const;

@@ -1,10 +1,17 @@
-import { createElement, type ReactNode, useEffect, useState } from 'react';
+import {
+  createElement,
+  type ReactNode,
+  useEffect,
+  useReducer,
+  useState,
+} from 'react';
 
 import {
   INFO_PANEL_MIN_WIDTH,
   LOADING_VALUE_DISPLAY,
   REGIONS_INFO_PANEL_ID,
   REGIONS_INFO_PANEL_TITLE,
+  SANKEY_LABEL_FLOW_SYNC,
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import {
@@ -29,11 +36,12 @@ import {
   CommuterDimension,
   CommuterDirection,
   CommuterDisplayMode,
+  type CommutersViewAction,
   type CommutersViewState,
-  ModeLayout,
   NumberDisplay,
   RegionsInfoPanelView,
   SortDirection,
+  SortState,
 } from './types';
 
 export type RegionsInfoPanelProps = {
@@ -42,14 +50,6 @@ export type RegionsInfoPanelProps = {
   onClose: () => void;
   forceRefreshToken: number;
 };
-
-function getCurrentGameData(
-  regionDataManager: RegionDataManager,
-  uiState: Readonly<UIState>,
-): RegionGameData | null {
-  if (!uiState.isActive) return null;
-  return regionDataManager.getGameData(uiState);
-}
 
 export function RegionsInfoPanel({
   regionDataManager,
@@ -63,21 +63,11 @@ export function RegionsInfoPanel({
   const [gameData, setGameData] = useState<RegionGameData | null>(() =>
     getCurrentGameData(regionDataManager, uiState),
   );
-  const [commutersViewState, setCommutersViewState] =
-    useState<CommutersViewState>({
-      dimension: CommuterDimension.Region,
-      direction: CommuterDirection.Outbound,
-      commuterCountDisplay: NumberDisplay.Absolute,
-      modeShareDisplay: NumberDisplay.Absolute,
-      graphDisplay: NumberDisplay.Absolute,
-      modeShareLayout: ModeLayout.All,
-      displayMode: CommuterDisplayMode.Table,
-      expanded: false,
-      sortIndex: 1,
-      previousSortIndex: 0,
-      sortDirection: SortDirection.Desc,
-      previousSortDirection: SortDirection.Asc,
-    });
+  const [commutersViewState, dispatchCommutersViewAction] = useReducer(
+    commutersViewReducer,
+    undefined,
+    createDefaultCommutersViewState,
+  );
   const [, setRenderToken] = useState<number>(0);
 
   const activeDatasetIdentifier = uiState.activeSelection?.datasetIdentifier;
@@ -182,30 +172,30 @@ export function RegionsInfoPanel({
       content = gameData
         ? renderStatisticsView(createElement, gameData)
         : createElement(
-          'div',
-          { className: 'text-xs text-muted-foreground' },
-          'No game data set for info panel rendering',
-        );
+            'div',
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-            createElement,
-            useState,
-            gameData,
-            commutersViewState,
-            setCommutersViewState,
-            resolveRegionName,
-          )
+              createElement,
+              useState,
+              gameData,
+              commutersViewState,
+              dispatchCommutersViewAction,
+              resolveRegionName,
+            )
           : createElement(
-            'div',
-            {
-              className:
-                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-            },
-            LOADING_VALUE_DISPLAY,
-          );
+              'div',
+              {
+                className:
+                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+              },
+              LOADING_VALUE_DISPLAY,
+            );
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);
@@ -253,4 +243,122 @@ export function RegionsInfoPanel({
       ),
     ),
   );
+}
+
+const DEFAULT_SORT_STATE: SortState = {
+  sortIndex: 0,
+  sortDirection: SortDirection.Desc,
+  previousSortIndex: 1,
+  previousSortDirection: SortDirection.Desc,
+};
+
+function createDefaultCommuterSortStates(): Map<CommuterDimension, SortState> {
+  return new Map([
+    [CommuterDimension.Region, { ...DEFAULT_SORT_STATE }],
+    [CommuterDimension.CommuteHour, { ...DEFAULT_SORT_STATE }],
+    [CommuterDimension.CommuteLength, { ...DEFAULT_SORT_STATE }],
+  ]);
+}
+
+function createDefaultCommutersViewState(): CommutersViewState {
+  return {
+    dimension: CommuterDimension.Region,
+    direction: CommuterDirection.Outbound,
+    displayMode: CommuterDisplayMode.Table,
+    sortStates: createDefaultCommuterSortStates(),
+    tableOptions: {
+      commuterCountDisplay: NumberDisplay.Absolute,
+      modeShareDisplay: NumberDisplay.Absolute,
+      expanded: false,
+    },
+    sankeyOptions: {
+      labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
+    },
+  };
+}
+
+function commutersViewReducer(
+  current: CommutersViewState,
+  action: CommutersViewAction,
+): CommutersViewState {
+  switch (action.type) {
+    case 'set_dimension':
+      if (current.dimension === action.dimension) return current;
+      return { ...current, dimension: action.dimension };
+    case 'set_direction':
+      if (current.direction === action.direction) return current;
+      return { ...current, direction: action.direction };
+    case 'set_display_mode':
+      if (current.displayMode === action.displayMode) return current;
+      return { ...current, displayMode: action.displayMode };
+    case 'set_table_commuter_count_display':
+      if (
+        current.tableOptions.commuterCountDisplay ===
+        action.commuterCountDisplay
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        tableOptions: {
+          ...current.tableOptions,
+          commuterCountDisplay: action.commuterCountDisplay,
+        },
+      };
+    case 'set_table_mode_share_display':
+      if (current.tableOptions.modeShareDisplay === action.modeShareDisplay) {
+        return current;
+      }
+      return {
+        ...current,
+        tableOptions: {
+          ...current.tableOptions,
+          modeShareDisplay: action.modeShareDisplay,
+        },
+      };
+    case 'toggle_table_expanded':
+      return {
+        ...current,
+        tableOptions: {
+          ...current.tableOptions,
+          expanded: !current.tableOptions.expanded,
+        },
+      };
+    case 'set_sankey_labels_follow_flow_direction':
+      if (
+        current.sankeyOptions.labelsFollowFlowDirection ===
+        action.labelsFollowFlowDirection
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        sankeyOptions: {
+          ...current.sankeyOptions,
+          labelsFollowFlowDirection: action.labelsFollowFlowDirection,
+        },
+      };
+    case 'set_sort_for_dimension': {
+      const existingSort = current.sortStates.get(action.dimension);
+      if (existingSort && SortState.equals(existingSort, action.sortState)) {
+        return current;
+      }
+      const nextSortStates = new Map(current.sortStates);
+      nextSortStates.set(action.dimension, action.sortState);
+      return {
+        ...current,
+        sortStates: nextSortStates,
+      };
+    }
+    default:
+      return current;
+  }
+}
+
+function getCurrentGameData(
+  regionDataManager: RegionDataManager,
+  uiState: Readonly<UIState>,
+): RegionGameData | null {
+  if (!uiState.isActive) return null;
+  return regionDataManager.getGameData(uiState);
 }

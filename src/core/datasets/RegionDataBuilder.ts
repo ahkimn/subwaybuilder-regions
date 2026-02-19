@@ -33,7 +33,7 @@ import { CommuteType, ModeShare } from '../types';
 import { processInChunks } from '../utils';
 import type { RegionDataset } from './RegionDataset';
 
-export const COMMUTE_DISTANCE_BUCKET_SIZE_KM = 1;
+export const COMMUTE_DISTANCE_BUCKET_SIZE_KM = 5;
 export const MAX_COMMUTE_DISTANCE_KM = 500;
 
 export const COMMUTE_TIME_BUCKET_SIZE_MIN = 60;
@@ -60,7 +60,7 @@ type CommuterDetailsAccumulator = {
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
-  constructor(private api: ModdingAPI) { }
+  constructor(private api: ModdingAPI) {}
 
   async updateDatasetCommuteData(
     dataset: RegionDataset,
@@ -70,8 +70,14 @@ export class RegionDataBuilder {
     const workerModeShareMap = new Map<string | number, ModeShare>();
     const residentModeShareMap = new Map<string | number, ModeShare>();
 
-    const residentCommuteDistanceAccumulators = new Map<string | number, number>();
-    const workerCommuteDistanceAccumulators = new Map<string | number, number>();
+    const residentCommuteDistanceAccumulators = new Map<
+      string | number,
+      number
+    >();
+    const workerCommuteDistanceAccumulators = new Map<
+      string | number,
+      number
+    >();
 
     const demandData = this.api.gameState.getDemandData();
 
@@ -112,17 +118,33 @@ export class RegionDataBuilder {
       );
     }
 
-    const residentAverageCommuteDistanceByRegion = new Map<string | number, number>();
-    const workerAverageCommuteDistanceByRegion = new Map<string | number, number>();
+    const residentAverageCommuteDistanceByRegion = new Map<
+      string | number,
+      number
+    >();
+    const workerAverageCommuteDistanceByRegion = new Map<
+      string | number,
+      number
+    >();
 
     residentCommuteDistanceAccumulators.forEach((distance, featureId) => {
-      const total = ModeShare.total(residentModeShareMap.get(featureId) ?? ModeShare.createEmpty());
-      residentAverageCommuteDistanceByRegion.set(featureId, total > 0 ? distance / total : 0);
+      const total = ModeShare.total(
+        residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+      );
+      residentAverageCommuteDistanceByRegion.set(
+        featureId,
+        total > 0 ? distance / total : 0,
+      );
     });
 
     workerCommuteDistanceAccumulators.forEach((distance, featureId) => {
-      const total = ModeShare.total(workerModeShareMap.get(featureId) ?? ModeShare.createEmpty());
-      workerAverageCommuteDistanceByRegion.set(featureId, total > 0 ? distance / total : 0);
+      const total = ModeShare.total(
+        workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
+      );
+      workerAverageCommuteDistanceByRegion.set(
+        featureId,
+        total > 0 ? distance / total : 0,
+      );
     });
 
     dataset.gameData.forEach((_, featureId) => {
@@ -131,8 +153,10 @@ export class RegionDataBuilder {
           residentModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
         workerModeShare:
           workerModeShareMap.get(featureId) ?? ModeShare.createEmpty(),
-        averageResidentCommuteDistance: residentAverageCommuteDistanceByRegion.get(featureId) ?? null,
-        averageWorkerCommuteDistance: workerAverageCommuteDistanceByRegion.get(featureId) ?? null,
+        averageResidentCommuteDistance:
+          residentAverageCommuteDistanceByRegion.get(featureId) ?? null,
+        averageWorkerCommuteDistance:
+          workerAverageCommuteDistanceByRegion.get(featureId) ?? null,
         metadata: {
           lastUpdate: updateTime ?? this.api.gameState.getElapsedSeconds(),
           dirty: false,
@@ -207,7 +231,6 @@ export class RegionDataBuilder {
 
       let homeRegion: string | number | undefined; // Defined if the population works in this region
       let workRegion: string | number | undefined; // Defined if the population lives in this region
-
 
       // Population both lives and works in region
       if (isResident && isWorker) {
@@ -579,11 +602,7 @@ export class RegionDataBuilder {
 
       if (trackLengthInRegion > 0) {
         trackIds.set(track.id, trackLengthInRegion);
-        addTrackLength(
-          trackLengths,
-          track.trackType!,
-          trackLengthInRegion,
-        );
+        addTrackLength(trackLengths, track.trackType!, trackLengthInRegion);
       }
     });
     return { trackIds, trackLengths };
@@ -666,7 +685,6 @@ export class RegionDataBuilder {
       });
     }
   }
-
 }
 
 function initializeInfraAccumulator(): InfraDataAccumulator {

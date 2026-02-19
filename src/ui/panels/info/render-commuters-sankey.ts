@@ -1,11 +1,11 @@
-import {
-  type createElement,
-  type ReactNode,
-  useState,
-} from 'react';
+import { type createElement, type ReactNode, useState } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 
-import { UNASSIGNED_REGION_ID } from '../../../core/constants';
+import {
+  DISTANCE_BUCKET_COUNT,
+  SANKEY_FLOW_DISPLAY_COUNT,
+  UNASSIGNED_REGION_ID,
+} from '../../../core/constants';
 import type { ModeKey } from '../../../core/types';
 import {
   CommuteType,
@@ -25,12 +25,19 @@ import {
   hexToRgb,
   rgbToHex,
   SANKEY_TERMINAL_NODE_COLOR,
-  WHITE,
 } from '../../types/DisplayColor';
+import {
+  resolveOrderedUnitIds,
+  resolveSourceUnitName,
+  resolveValueUnitLabel,
+} from '../shared/commuter-data';
+import type { CommuterBreakdownData, CommutersViewState } from './types';
+import { CommuterDimension, CommuterDirection } from './types';
 
 const SANKEY_MIN_WIDTH_PX = 720;
 const SANKEY_EMPTY_MESSAGE = 'No commuter flow data available';
 const ALL_OTHERS_LABEL = 'Other Regions';
+const HOURLY_SANKEY_FLOW_DISPLAY_COUNT = 12;
 const LABEL_OFFSET = 6;
 const LABEL_TITLE_FONT_SIZE = 10;
 const LABEL_SUBTITLE_FONT_SIZE = 9;
@@ -143,34 +150,47 @@ type LinkRenderPayload = SankeyLinkData & {
   target?: NodeRenderPayload;
 };
 
-type SankeyRenderOptions = {
-  labelsFollowFlowDirection: boolean;
-  topFlowCount: number;
+type SankeyCanvasProps = {
+  h: typeof createElement;
+  sankeyData: SankeyData;
+  chartHeight: number;
   displaySourceOnLeft: boolean;
   valueUnitLabel: 'commuters' | 'commutes';
-  colorNodesByModeShare: boolean;
-  orderedUnitIds?: Array<string | number>;
-  sourceModeShareByBreakdownUnit?: Map<string | number, Map<string | number, ModeShare>>;
-  resolveSourceUnitName?: (unitId: string | number) => string;
+  labelsFollowFlowDirection: boolean;
 };
 
 export function renderCommutersSankey(
   h: typeof createElement,
   gameData: RegionGameData,
-  byBreakdownUnitModeShare: Map<string | number, ModeShare>,
-  resolveBreakdownUnitName: (unitId: string | number) => string,
-  options: SankeyRenderOptions,
+  viewState: CommutersViewState,
+  breakdownData: CommuterBreakdownData,
 ): ReactNode {
-  const sankeyData = buildSankeyData(
-    gameData.displayName,
+  const byBreakdownUnitModeShare = breakdownData.modeShareByBreakdownUnit;
+  const hasSplitSources = Boolean(breakdownData.sourceModeShareByBreakdownUnit);
+  const sourceModeShareByBreakdownUnit = hasSplitSources
+    ? breakdownData.sourceModeShareByBreakdownUnit!
+    : new Map<string | number, Map<string | number, ModeShare>>([
+        [gameData.displayName, byBreakdownUnitModeShare],
+      ]);
+  const topFlowCount = resolveSankeyTopFlowCount(viewState.dimension);
+  const displaySourceOnLeft = resolveSankeyDisplaySourceOnLeft(viewState);
+  const orderedUnitIds = resolveOrderedUnitIds(
+    viewState.dimension,
     byBreakdownUnitModeShare,
-    resolveBreakdownUnitName,
-    options.topFlowCount,
-    options.displaySourceOnLeft,
-    options.colorNodesByModeShare,
-    options.orderedUnitIds,
-    options.sourceModeShareByBreakdownUnit,
-    options.resolveSourceUnitName,
+  );
+  const valueUnitLabel = resolveValueUnitLabel(viewState.dimension);
+  const sankeyData = buildSankeyData(
+    byBreakdownUnitModeShare,
+    sourceModeShareByBreakdownUnit,
+    breakdownData.resolveBreakdownUnitName,
+    hasSplitSources
+      ? (unitId: string | number) =>
+          resolveSourceUnitName(viewState.dimension, unitId)
+      : () => gameData.displayName,
+    topFlowCount,
+    displaySourceOnLeft,
+    hasSplitSources,
+    orderedUnitIds,
   );
 
   if (sankeyData === null || sankeyData.links.length === 0) {
@@ -209,7 +229,6 @@ export function renderCommutersSankey(
         className: 'overflow-auto min-h-0 w-full',
         style: {
           maxHeight: '60vh',
-          // Likely unneeded as the sankey should never be tall enough to require scrolling
           scrollbarWidth: 'thin',
           scrollbarGutter: 'stable both-edges',
         },
@@ -218,10 +237,10 @@ export function renderCommutersSankey(
         h,
         sankeyData,
         chartHeight,
-        displaySourceOnLeft: options.displaySourceOnLeft,
-        valueUnitLabel: options.valueUnitLabel,
-        labelsFollowFlowDirection: options.labelsFollowFlowDirection,
-        colorNodesByModeShare: options.colorNodesByModeShare,
+        displaySourceOnLeft,
+        valueUnitLabel,
+        labelsFollowFlowDirection:
+          viewState.sankeyOptions.labelsFollowFlowDirection,
       } satisfies SankeyCanvasProps),
     ),
     h(
@@ -256,17 +275,28 @@ function buildLegendItem(
   );
 }
 
-type SankeyCanvasProps = {
-  h: typeof createElement;
-  sankeyData: SankeyData;
-  chartHeight: number;
-  displaySourceOnLeft: boolean;
-  valueUnitLabel: 'commuters' | 'commutes';
-  labelsFollowFlowDirection: boolean;
-  colorNodesByModeShare: boolean;
-};
+function resolveSankeyTopFlowCount(dimension: CommuterDimension): number {
+  switch (dimension) {
+    case CommuterDimension.CommuteLength:
+      return DISTANCE_BUCKET_COUNT + 1;
+    case CommuterDimension.CommuteHour:
+      return HOURLY_SANKEY_FLOW_DISPLAY_COUNT;
+    case CommuterDimension.Region:
+    default:
+      return SANKEY_FLOW_DISPLAY_COUNT;
+  }
+}
 
-// Thin wrapper class around the Sankey chart component to handle dynamic resizing (most notably on the initial render when we do not know the width of the container)
+export function resolveSankeyDisplaySourceOnLeft(
+  viewState: CommutersViewState,
+): boolean {
+  return !(
+    viewState.dimension === CommuterDimension.Region &&
+    viewState.direction === CommuterDirection.Inbound
+  );
+}
+
+// Wrapper around the Sankey chart to handle responsive sizing and link hover state.
 function SankeyCanvas({
   h,
   sankeyData,
@@ -274,12 +304,10 @@ function SankeyCanvas({
   displaySourceOnLeft,
   valueUnitLabel,
   labelsFollowFlowDirection,
-  colorNodesByModeShare,
 }: SankeyCanvasProps): ReactNode {
   const [chartWidth, setChartWidth] = useState<number>(SANKEY_MIN_WIDTH_PX);
   const [hoveredLinkIndex, setHoveredLinkIndex] = useState<number | null>(null);
-  const renderLabelsOnLeft =
-    labelsFollowFlowDirection && !displaySourceOnLeft;
+  const renderLabelsOnLeft = labelsFollowFlowDirection && !displaySourceOnLeft;
 
   // Horizontal padding is greater on the side the labels are intended to be rendered on.
   const sankeyMargins = renderLabelsOnLeft
@@ -307,7 +335,9 @@ function SankeyCanvas({
         },
         onResize: (width: number) => {
           const nextWidth = Math.max(width, SANKEY_MIN_WIDTH_PX);
-          setChartWidth((current) => (current === nextWidth ? current : nextWidth));
+          setChartWidth((current) =>
+            current === nextWidth ? current : nextWidth,
+          );
         },
       },
       h(
@@ -329,7 +359,6 @@ function SankeyCanvas({
             chartHeight,
             renderLabelsOnLeft,
             valueUnitLabel,
-            colorNodesByModeShare,
           ),
           link: buildSankeyLinkRenderer(
             h,
@@ -345,10 +374,12 @@ function SankeyCanvas({
             valueUnitLabel,
           ),
           wrapperStyle: { outline: 'none' },
-          allowEscapeViewBox: { x: true, y: true },
+          // Keep tooltip inside chart bounds and flip toward center near edges.
+          allowEscapeViewBox: { x: false, y: false },
+          reverseDirection: { x: true, y: true },
           isAnimationActive: false,
           animationDuration: 0,
-          offset: 8,
+          offset: 4,
         }),
       ),
     ),
@@ -356,50 +387,12 @@ function SankeyCanvas({
 }
 
 function buildSankeyData(
-  selectedRegionName: string,
   byBreakdownUnitModeShare: Map<string | number, ModeShare>,
-  resolveBreakdownUnitName: (unitId: string | number) => string,
-  topFlowCount: number,
-  displaySourceOnLeft: boolean,
-  _colorNodesByModeShare: boolean,
-  orderedUnitIds?: Array<string | number>,
-  sourceModeShareByBreakdownUnit?: Map<string | number, Map<string | number, ModeShare>>,
-  resolveSourceUnitName?: (unitId: string | number) => string,
-): SankeyData | null {
-  if (sourceModeShareByBreakdownUnit && resolveSourceUnitName) {
-    return buildSplitSourceSankeyData(
-      byBreakdownUnitModeShare,
-      resolveBreakdownUnitName,
-      sourceModeShareByBreakdownUnit,
-      resolveSourceUnitName,
-      topFlowCount,
-      displaySourceOnLeft,
-      true,
-      orderedUnitIds,
-    );
-  }
-
-  const syntheticSourceModeShareByBreakdownUnit = new Map<
+  sourceModeShareByBreakdownUnit: Map<
     string | number,
     Map<string | number, ModeShare>
-  >([[selectedRegionName, byBreakdownUnitModeShare]]);
-
-  return buildSplitSourceSankeyData(
-    byBreakdownUnitModeShare,
-    resolveBreakdownUnitName,
-    syntheticSourceModeShareByBreakdownUnit,
-    () => selectedRegionName,
-    topFlowCount,
-    displaySourceOnLeft,
-    false,
-    orderedUnitIds,
-  );
-}
-
-function buildSplitSourceSankeyData(
-  byBreakdownUnitModeShare: Map<string | number, ModeShare>,
+  >,
   resolveBreakdownUnitName: (unitId: string | number) => string,
-  sourceModeShareByBreakdownUnit: Map<string | number, Map<string | number, ModeShare>>,
   resolveSourceUnitName: (unitId: string | number) => string,
   topFlowCount: number,
   displaySourceOnLeft: boolean,
@@ -418,29 +411,27 @@ function buildSplitSourceSankeyData(
     displayFlows,
     byBreakdownUnitModeShare,
   );
-  const {
-    sourceTotalBreakdownBySinkUnit,
-    modeShareBySourceUnit,
-  } = buildSplitSourceAggregation(
-    displayFlows,
-    sourceModeShareByBreakdownUnit,
-    resolveSourceUnitName,
-    hiddenSinkUnitIds,
-  );
+  const { sourceTotalBreakdownBySinkUnit, modeShareBySourceUnit } =
+    buildSourceAggregation(
+      displayFlows,
+      sourceModeShareByBreakdownUnit,
+      resolveSourceUnitName,
+      hiddenSinkUnitIds,
+    );
   if (modeShareBySourceUnit.size === 0) return null;
 
   const totalModeShare = calculateTotalModeShare(displayFlows);
   const totalCommuters = ModeShare.total(totalModeShare);
   const activeModes = MODE_ORDER.filter((mode) => totalModeShare[mode] > 0);
 
-  const nodeData = buildSplitSourceSankeyNodes(
+  const nodeData = buildSankeyNodes(
     displayFlows,
     modeShareBySourceUnit,
     activeModes,
     useBreakdownMiddle,
     resolveSourceUnitName,
   );
-  const links = buildSplitSourceSankeyLinks(
+  const links = buildSankeyLinks(
     displayFlows,
     activeModes,
     modeShareBySourceUnit,
@@ -487,15 +478,17 @@ function getTopFlows(
       });
     });
   } else {
-    sortedRegions.push(...Array.from(byBreakdownUnitModeShare.entries())
-      .map(([regionId, modeShare]) => ({
-        regionId,
-        regionName: resolveBreakdownUnitName(regionId),
-        modeShare,
-        total: ModeShare.total(modeShare),
-        isAggregate: false,
-      }))
-      .filter((entry) => entry.total > 0));
+    sortedRegions.push(
+      ...Array.from(byBreakdownUnitModeShare.entries())
+        .map(([regionId, modeShare]) => ({
+          regionId,
+          regionName: resolveBreakdownUnitName(regionId),
+          modeShare,
+          total: ModeShare.total(modeShare),
+          isAggregate: false,
+        }))
+        .filter((entry) => entry.total > 0),
+    );
     sortedRegions.sort(orderRegions);
   }
 
@@ -573,13 +566,16 @@ function getHiddenSinkUnitIds(
   );
 }
 
-function resolveModeShareForSplitDisplayFlow(
+function resolveModeShare(
   modeShareByBreakdownUnit: Map<string | number, ModeShare>,
   displayFlow: FlowParams,
   hiddenSinkUnitIds: Set<string>,
 ): ModeShare {
   if (!displayFlow.isAggregate) {
-    return modeShareByBreakdownUnit.get(displayFlow.regionId) ?? ModeShare.createEmpty();
+    return (
+      modeShareByBreakdownUnit.get(displayFlow.regionId) ??
+      ModeShare.createEmpty()
+    );
   }
 
   const aggregateModeShare = ModeShare.createEmpty();
@@ -590,49 +586,57 @@ function resolveModeShareForSplitDisplayFlow(
   return aggregateModeShare;
 }
 
-function buildSplitSourceAggregation(
+function buildSourceAggregation(
   displayFlows: FlowParams[],
-  sourceModeShareByBreakdownUnit: Map<string | number, Map<string | number, ModeShare>>,
+  sourceModeShareByBreakdownUnit: Map<
+    string | number,
+    Map<string | number, ModeShare>
+  >,
   resolveSourceUnitName: (unitId: string | number) => string,
   hiddenSinkUnitIds: Set<string>,
 ): SplitSourceAggregation {
-  const sourceTotalBreakdownBySinkUnit = new Map<string | number, SourceBreakdownEntry[]>();
+  const sourceTotalBreakdownBySinkUnit = new Map<
+    string | number,
+    SourceBreakdownEntry[]
+  >();
   const modeShareBySourceUnit = new Map<string | number, ModeShare>();
 
   displayFlows.forEach((displayFlow) => {
     sourceTotalBreakdownBySinkUnit.set(displayFlow.regionId, []);
   });
 
-  sourceModeShareByBreakdownUnit.forEach((modeShareByBreakdownUnit, sourceId) => {
-    const sourceTotalModeShare = ModeShare.createEmpty();
-    const sourceName = resolveSourceUnitName(sourceId);
+  sourceModeShareByBreakdownUnit.forEach(
+    (modeShareByBreakdownUnit, sourceId) => {
+      const sourceTotalModeShare = ModeShare.createEmpty();
+      const sourceName = resolveSourceUnitName(sourceId);
 
-    displayFlows.forEach((displayFlow) => {
-      const modeShare = resolveModeShareForSplitDisplayFlow(
-        modeShareByBreakdownUnit,
-        displayFlow,
-        hiddenSinkUnitIds,
-      );
-      const totalForSink = ModeShare.total(modeShare);
-      if (totalForSink <= 0) return;
+      displayFlows.forEach((displayFlow) => {
+        const modeShare = resolveModeShare(
+          modeShareByBreakdownUnit,
+          displayFlow,
+          hiddenSinkUnitIds,
+        );
+        const totalForSink = ModeShare.total(modeShare);
+        if (totalForSink <= 0) return;
 
-      ModeShare.addInPlace(sourceTotalModeShare, modeShare);
-      sourceTotalBreakdownBySinkUnit.get(displayFlow.regionId)!.push({
-        sourceUnitId: sourceId,
-        sourceUnitName: sourceName,
-        value: totalForSink,
+        ModeShare.addInPlace(sourceTotalModeShare, modeShare);
+        sourceTotalBreakdownBySinkUnit.get(displayFlow.regionId)!.push({
+          sourceUnitId: sourceId,
+          sourceUnitName: sourceName,
+          value: totalForSink,
+        });
       });
-    });
 
-    if (ModeShare.total(sourceTotalModeShare) > 0) {
-      modeShareBySourceUnit.set(sourceId, sourceTotalModeShare);
-    }
-  });
+      if (ModeShare.total(sourceTotalModeShare) > 0) {
+        modeShareBySourceUnit.set(sourceId, sourceTotalModeShare);
+      }
+    },
+  );
 
   return { sourceTotalBreakdownBySinkUnit, modeShareBySourceUnit };
 }
 
-function buildSplitSourceSankeyNodes(
+function buildSankeyNodes(
   displayFlows: FlowParams[],
   modeShareBySourceUnit: Map<string | number, ModeShare>,
   activeModes: ModeKey[],
@@ -730,7 +734,7 @@ function buildSplitSourceSankeyNodes(
   };
 }
 
-function buildSplitSourceSankeyLinks(
+function buildSankeyLinks(
   displayFlows: FlowParams[],
   activeModes: ModeKey[],
   modeShareBySourceUnit: Map<string | number, ModeShare>,
@@ -890,7 +894,6 @@ function buildSankeyNodeRenderer(
   chartHeight: number,
   renderLabelsOnLeft: boolean,
   valueUnitLabel: 'commuters' | 'commutes',
-  colorNodesByModeShare: boolean,
 ): (props: unknown) => ReactNode {
   return function SankeyNodeShape(props: unknown): ReactNode {
     const shape = props as Record<string, unknown>;
@@ -903,10 +906,10 @@ function buildSankeyNodeRenderer(
     const isModeNode = payload.nodeType === 'mode';
     const isSelectedNode = payload.nodeType === 'selected';
 
-    const nodeFill = payload.fillColor ?? (isModeNode
-      ? SANKEY_MODE_NODE_COLOR[payload.mode!]
-      : colorNodesByModeShare && payload.tooltipBubbleColor
-        ? payload.tooltipBubbleColor
+    const nodeFill =
+      payload.fillColor ??
+      (isModeNode
+        ? SANKEY_MODE_NODE_COLOR[payload.mode!]
         : SANKEY_TERMINAL_NODE_COLOR);
 
     const countLabel = `${formatNumberOrDefault(payload.value)} ${valueUnitLabel}`;
@@ -1003,7 +1006,8 @@ function buildSankeyNodeRenderer(
         {
           x: textX,
           y: titleY,
-          fill: WHITE,
+          fill: 'currentColor',
+          className: 'text-foreground',
           fontSize: LABEL_TITLE_FONT_SIZE,
           fontWeight: isSelectedNode ? 700 : isModeNode ? 600 : 500,
           dominantBaseline: 'middle',
@@ -1013,19 +1017,19 @@ function buildSankeyNodeRenderer(
       ),
       showSubtitle
         ? h(
-          'text',
-          {
-            x: textX,
-            y: subtitleY,
-            fill: WHITE,
-            fillOpacity: 0.72,
-            fontSize: LABEL_SUBTITLE_FONT_SIZE,
-            fontWeight: 500,
-            dominantBaseline: 'middle',
-            textAnchor,
-          },
-          subtitleText,
-        )
+            'text',
+            {
+              x: textX,
+              y: subtitleY,
+              fill: 'currentColor',
+              className: 'text-muted-foreground',
+              fontSize: LABEL_SUBTITLE_FONT_SIZE,
+              fontWeight: 500,
+              dominantBaseline: 'middle',
+              textAnchor,
+            },
+            subtitleText,
+          )
         : null,
     );
   };
@@ -1098,9 +1102,9 @@ function buildTooltipContainer(
       },
       modeColor
         ? h('span', {
-          className: 'inline-block h-2 w-2 rounded-full shrink-0',
-          style: { backgroundColor: modeColor },
-        })
+            className: 'inline-block h-2 w-2 rounded-full shrink-0',
+            style: { backgroundColor: modeColor },
+          })
         : null,
       title,
     ),
@@ -1170,15 +1174,15 @@ function buildSankeyTooltipRenderer(
         `${formatPercentOrDefault(totalShare)} of all ${valueUnitLabel}`,
         ...(shouldShowUnitShare
           ? [
-            `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} ${valueUnitLabel}`,
-          ]
+              `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} ${valueUnitLabel}`,
+            ]
           : []),
       ];
       return buildTooltipContainer(
         h,
         linkData.isSelectedUnitLink
           ? linkData.sourceUnitName
-          : `${linkData.sourceUnitName} \u21D2 ${linkData.sinkUnitName}`,
+          : `${linkData.sourceUnitName} | ${linkData.sinkUnitName}`,
         tooltipLabelLines,
         SANKEY_MODE_NODE_COLOR[linkData.mode],
       );
@@ -1213,4 +1217,4 @@ function orderRegions(
     return String(a.regionId).localeCompare(String(b.regionId));
   }
   return b.total - a.total;
-};
+}
