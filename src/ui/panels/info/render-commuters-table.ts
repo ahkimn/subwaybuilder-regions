@@ -1,6 +1,7 @@
 import type { createElement, Dispatch, ReactNode, useState } from 'react';
 import { useEffect, useRef } from 'react';
 
+import { DEFAULT_TABLE_ROWS } from '../../../core/constants';
 import { ModeShare } from '../../../core/types';
 import {
   formatNumberOrDefault,
@@ -22,8 +23,6 @@ import {
   SortDirection,
   type SortState,
 } from './types';
-
-const DEFAULT_TABLE_ROWS = 12;
 
 type CommuterRowData = {
   breakdownUnitId: string | number;
@@ -102,15 +101,15 @@ export function renderCommutersTable(
     }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-          'div',
-          { className: 'pt-1 flex justify-center' },
-          ReactExtendButton(
-            h,
-            viewState.tableOptions.expanded ? 'Collapse' : 'Expand',
-            rows.length - DEFAULT_TABLE_ROWS,
-            () => dispatch({ type: 'toggle_table_expanded' }),
-          ),
-        )
+        'div',
+        { className: 'pt-1 flex justify-center' },
+        ReactExtendButton(
+          h,
+          viewState.tableOptions.expanded ? 'Collapse' : 'Expand',
+          rows.length - DEFAULT_TABLE_ROWS,
+          () => dispatch({ type: 'toggle_table_expanded' }),
+        ),
+      )
       : null,
   );
 }
@@ -287,19 +286,19 @@ function buildTableHeader(
     const nextSortState: SortState =
       currentSortState.sortIndex === columnIndex
         ? {
-            ...currentSortState,
-            sortDirection:
-              currentSortState.sortDirection === SortDirection.Asc
-                ? SortDirection.Desc
-                : SortDirection.Asc,
-          }
+          ...currentSortState,
+          sortDirection:
+            currentSortState.sortDirection === SortDirection.Asc
+              ? SortDirection.Desc
+              : SortDirection.Asc,
+        }
         : {
-            ...currentSortState,
-            previousSortIndex: currentSortState.sortIndex,
-            previousSortDirection: currentSortState.sortDirection,
-            sortIndex: columnIndex,
-            sortDirection: SortDirection.Desc,
-          };
+          ...currentSortState,
+          previousSortIndex: currentSortState.sortIndex,
+          previousSortDirection: currentSortState.sortDirection,
+          sortIndex: columnIndex,
+          sortDirection: SortDirection.Desc,
+        };
     dispatch({
       type: 'set_sort_for_dimension',
       dimension: viewState.dimension,
