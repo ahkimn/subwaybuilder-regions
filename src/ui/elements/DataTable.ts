@@ -46,8 +46,7 @@ const TABLE_DENSITY_SETTINGS: Record<TableDensity, string> = {
 export type TableOptions = {
   columnTemplate: string;
   density: TableDensity;
-  cellBorderClassName?: string;
-  cellPaddingClassName?: TableCellPaddingClassName;
+  tableCellOptions?: TableCellOptions;
 };
 
 // --- React Implementation --- //
@@ -59,6 +58,18 @@ export type ReactDataTableProps = {
   tableValues: ReactDataTableRow[];
 };
 
+export type TableCellOptions = {
+  cellBorderClassName?: string;
+  cellPaddingClassName?: TableCellPaddingClassName;
+  stickyHeaderRow?: boolean;
+  stickyFirstColumn?: boolean;
+  stickyClassName?: string;
+  stickyBorderClassName?: string;
+};
+
+const DEFAULT_STICKY_CLASS_NAME = 'bg-background/95 backdrop-blur-sm';
+const DEFAULT_STICKY_BORDER_CLASS_NAME = 'border-border/40';
+
 export function ReactDataTable({
   h,
   useStateHook,
@@ -69,8 +80,7 @@ export function ReactDataTable({
     null,
   );
   const cells: ReactNode[] = [];
-  const cellBorderClassName = tableOptions.cellBorderClassName;
-  const cellPaddingClassName = tableOptions.cellPaddingClassName ?? {};
+  const cellOptions = tableOptions.tableCellOptions ?? {};
 
   tableValues.forEach(({ rowValues, options }, rowIndex) => {
     const rowOptions = options ?? {};
@@ -82,10 +92,9 @@ export function ReactDataTable({
           h,
           value,
           rowOptions,
+          cellOptions,
           colIndex,
           isHeader,
-          cellBorderClassName,
-          cellPaddingClassName,
           rowIndex,
           hoveredRowIndex,
           setHoveredRowIndex,
@@ -110,10 +119,9 @@ function buildReactCell(
   h: typeof createElement,
   cellValue: ReactDataTableValue,
   rowOptions: DataRowOptions,
+  cellOptions: TableCellOptions,
   index: number,
   isHeader: boolean,
-  cellBorderClassName: string | undefined,
-  cellPaddingClassName: TableCellPaddingClassName,
   rowIndex: number,
   hoveredRowIndex: number | null,
   setHoveredRowIndex: Dispatch<SetStateAction<number | null>>,
@@ -122,10 +130,10 @@ function buildReactCell(
   const presentation = computeCellPresentation(
     cellValue,
     rowOptions,
+    cellOptions,
     index,
     isHeader,
-    cellBorderClassName,
-    cellPaddingClassName,
+    rowIndex,
   );
   const hasRowHoverClass =
     getClassTokens(rowOptions.rowHoverClassName).length > 0;
@@ -271,20 +279,25 @@ function isEventMovingWithinReactRow(
 function computeCellPresentation(
   cellValue: unknown,
   rowOptions: DataRowOptions,
-  index: number,
+  cellOptions: TableCellOptions,
+  colIndex: number,
   isHeader: boolean,
-  cellBorderClassName: string | undefined,
-  cellPaddingClassName: TableCellPaddingClassName,
+  rowIndex: number,
 ): {
   className: string;
   indicator?: string;
   style?: CSSProperties;
 } {
-  let indicator = getSortIndicator(rowOptions.sortState, index);
+  let indicator = getSortIndicator(rowOptions.sortState, colIndex);
 
-  const span = rowOptions.colSpan?.[index];
-  const align = rowOptions.align?.[index] ?? 'left';
-  const isSelectedSort = rowOptions.sortState?.index === index;
+  const span = rowOptions.colSpan?.[colIndex];
+  const align = rowOptions.align?.[colIndex] ?? 'left';
+  const isSelectedSort = rowOptions.sortState?.index === colIndex;
+  const isStickyHeaderCell =
+    (cellOptions.stickyHeaderRow ?? false) && rowIndex === 0;
+  const isStickyFirstColumnCell =
+    (cellOptions.stickyFirstColumn ?? false) && colIndex === 0;
+  const isStickyCell = isStickyHeaderCell || isStickyFirstColumnCell;
 
   // Truncate cell text if it's not a header, or if it's a string/number with content
   const shouldTruncate =
@@ -294,8 +307,12 @@ function computeCellPresentation(
     typeof cellValue === 'number';
 
   const classNames = [
-    getCellBaseClass(shouldTruncate, align, cellPaddingClassName),
-    getCellTextClass(isHeader, !isHeader && index > 0),
+    getCellBaseClass(
+      shouldTruncate,
+      align,
+      cellOptions.cellPaddingClassName ?? {},
+    ),
+    getCellTextClass(isHeader, !isHeader && colIndex > 0),
   ];
 
   if (isSelectedSort && rowOptions.sortState?.sortSelectedClass) {
@@ -306,21 +323,54 @@ function computeCellPresentation(
     classNames.push(rowOptions.rowClassName);
   }
 
-  if (rowOptions.onClick?.[index]) {
+  if (rowOptions.onClick?.[colIndex]) {
     classNames.push('cursor-pointer hover:text-foreground');
   }
   // Row boundary classes take precedence over cell (table-wide) border classes
   if (rowOptions.borderClassName !== undefined) {
     classNames.push(rowOptions.borderClassName);
-  } else if (cellBorderClassName) {
-    classNames.push(cellBorderClassName);
+  } else if (cellOptions.cellBorderClassName) {
+    classNames.push(cellOptions.cellBorderClassName);
   }
 
-  const style = span && span > 1 ? { gridColumn: `span ${span}` } : undefined;
+  if (isStickyCell) {
+    classNames.push(cellOptions.stickyClassName ?? DEFAULT_STICKY_CLASS_NAME);
+    if (cellOptions.stickyBorderClassName) {
+      classNames.push(
+        cellOptions.stickyBorderClassName ?? DEFAULT_STICKY_BORDER_CLASS_NAME,
+      );
+    }
+    if (isStickyHeaderCell) {
+      classNames.push('border-b');
+    }
+    if (isStickyFirstColumnCell) {
+      classNames.push('border-r');
+    }
+  }
+
+  const style: CSSProperties = {};
+  if (span && span > 1) {
+    style.gridColumn = `span ${span}`;
+  }
+  if (isStickyCell) {
+    style.position = 'sticky';
+    style.zIndex =
+      isStickyHeaderCell && isStickyFirstColumnCell
+        ? 30
+        : isStickyHeaderCell
+          ? 20
+          : 10;
+    if (isStickyHeaderCell) {
+      style.top = 0;
+    }
+    if (isStickyFirstColumnCell) {
+      style.left = 0;
+    }
+  }
 
   return {
     className: classNames.join(' '),
     indicator: indicator,
-    style: style,
+    style: Object.keys(style).length === 0 ? undefined : style,
   };
 }

@@ -192,7 +192,7 @@ function buildCommuterControls(
       }),
   });
   dimensionConfigs.set(CommuterDimension.CommuteHour, {
-    label: 'Hour',
+    label: 'Time',
     onSelect: () =>
       dispatch({
         type: 'set_dimension',

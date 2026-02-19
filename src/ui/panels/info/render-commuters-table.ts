@@ -15,13 +15,12 @@ import {
   getBreakdownSortOrder,
   resolveBreakdownSourceLabel,
 } from '../shared/commuter-data';
+import type { SortConfig, SortState } from '../types';
+import { NumberDisplay, SortDirection } from '../types';
 import {
   CommuterDimension,
   type CommutersViewAction,
   type CommutersViewState,
-  NumberDisplay,
-  SortDirection,
-  type SortState,
 } from './types';
 
 type CommuterRowData = {
@@ -33,6 +32,56 @@ type CommuterRowData = {
   drivingValue: number;
   walkingValue: number;
 };
+
+type CommuterSortMetrics = {
+  breakdownUnitId: string | number;
+  regionName: string;
+  breakdownSortOrder: number | null;
+  commuterValue: number;
+  transitValue: number;
+  drivingValue: number;
+  walkingValue: number;
+};
+
+const SORT_CONFIGS: ReadonlyArray<SortConfig<CommuterSortMetrics>> = [
+  {
+    index: 0,
+    defaultDirection: SortDirection.Desc,
+    compare: (aMetrics, bMetrics) => {
+      if (
+        aMetrics.breakdownSortOrder !== null &&
+        bMetrics.breakdownSortOrder !== null
+      ) {
+        return aMetrics.breakdownSortOrder - bMetrics.breakdownSortOrder;
+      }
+      return aMetrics.regionName.localeCompare(bMetrics.regionName);
+    },
+  },
+  {
+    index: 1,
+    defaultDirection: SortDirection.Desc,
+    compare: (aMetrics, bMetrics) =>
+      aMetrics.commuterValue - bMetrics.commuterValue,
+  },
+  {
+    index: 2,
+    defaultDirection: SortDirection.Desc,
+    compare: (aMetrics, bMetrics) =>
+      aMetrics.transitValue - bMetrics.transitValue,
+  },
+  {
+    index: 3,
+    defaultDirection: SortDirection.Desc,
+    compare: (aMetrics, bMetrics) =>
+      aMetrics.drivingValue - bMetrics.drivingValue,
+  },
+  {
+    index: 4,
+    defaultDirection: SortDirection.Desc,
+    compare: (aMetrics, bMetrics) =>
+      aMetrics.walkingValue - bMetrics.walkingValue,
+  },
+];
 
 type CommutersBodyTableProps = {
   h: typeof createElement;
@@ -101,15 +150,15 @@ export function renderCommutersTable(
     }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-        'div',
-        { className: 'pt-1 flex justify-center' },
-        ReactExtendButton(
-          h,
-          viewState.tableOptions.expanded ? 'Collapse' : 'Expand',
-          rows.length - DEFAULT_TABLE_ROWS,
-          () => dispatch({ type: 'toggle_table_expanded' }),
-        ),
-      )
+          'div',
+          { className: 'pt-1 flex justify-center' },
+          ReactExtendButton(
+            h,
+            viewState.tableOptions.expanded ? 'Collapse' : 'Expand',
+            rows.length - DEFAULT_TABLE_ROWS,
+            () => dispatch({ type: 'toggle_table_expanded' }),
+          ),
+        )
       : null,
   );
 }
@@ -152,44 +201,29 @@ function sortCommuterRows(
   viewState: CommutersViewState,
 ): CommuterRowData[] {
   const currentSortState = viewState.sortStates.get(viewState.dimension)!;
-  const applySort = (
+  const metricsByRow = buildCommuterSortMetrics(rows);
+  const applySortByConfig = (
     a: CommuterRowData,
     b: CommuterRowData,
     index: number,
     direction: SortDirection,
   ): number => {
-    const m = direction === SortDirection.Asc ? -1 : 1;
-    switch (index) {
-      case 1:
-        return (b.commuterValue - a.commuterValue) * m;
-      case 2:
-        return (b.transitValue - a.transitValue) * m;
-      case 3:
-        return (b.drivingValue - a.drivingValue) * m;
-      case 4:
-        return (b.walkingValue - a.walkingValue) * m;
-      default:
-        if (
-          (viewState.dimension === CommuterDimension.CommuteLength ||
-            viewState.dimension === CommuterDimension.CommuteHour) &&
-          a.breakdownSortOrder !== null &&
-          b.breakdownSortOrder !== null
-        ) {
-          return (a.breakdownSortOrder - b.breakdownSortOrder) * m;
-        }
-        return a.regionName.localeCompare(b.regionName) * m;
-    }
+    const sortConfig = resolveSortConfig(index);
+    const aMetrics = metricsByRow.get(a)!;
+    const bMetrics = metricsByRow.get(b)!;
+    const compareResult = sortConfig.compare(aMetrics, bMetrics);
+    return direction === SortDirection.Asc ? compareResult : -compareResult;
   };
 
   return [...rows].sort((a, b) => {
-    let result = applySort(
+    let result = applySortByConfig(
       a,
       b,
       currentSortState.sortIndex,
       currentSortState.sortDirection,
     );
     if (result === 0) {
-      result = applySort(
+      result = applySortByConfig(
         a,
         b,
         currentSortState.previousSortIndex,
@@ -197,10 +231,43 @@ function sortCommuterRows(
       );
     }
     if (result === 0) {
-      result = a.regionName.localeCompare(b.regionName);
+      const aMetrics = metricsByRow.get(a)!;
+      const bMetrics = metricsByRow.get(b)!;
+      result = aMetrics.regionName.localeCompare(bMetrics.regionName);
+      if (result === 0) {
+        result = String(aMetrics.breakdownUnitId).localeCompare(
+          String(bMetrics.breakdownUnitId),
+        );
+      }
     }
     return result;
   });
+}
+
+function resolveSortConfig(index: number): SortConfig<CommuterSortMetrics> {
+  return (
+    SORT_CONFIGS.find((sortConfig) => sortConfig.index === index) ??
+    SORT_CONFIGS[0]
+  );
+}
+
+function buildCommuterSortMetrics(
+  rows: CommuterRowData[],
+): Map<CommuterRowData, CommuterSortMetrics> {
+  return new Map(
+    rows.map((row) => [
+      row,
+      {
+        breakdownUnitId: row.breakdownUnitId,
+        regionName: row.regionName,
+        breakdownSortOrder: row.breakdownSortOrder,
+        commuterValue: row.commuterValue,
+        transitValue: row.transitValue,
+        drivingValue: row.drivingValue,
+        walkingValue: row.walkingValue,
+      },
+    ]),
+  );
 }
 
 function CommutersBodyTable({
@@ -286,19 +353,19 @@ function buildTableHeader(
     const nextSortState: SortState =
       currentSortState.sortIndex === columnIndex
         ? {
-          ...currentSortState,
-          sortDirection:
-            currentSortState.sortDirection === SortDirection.Asc
-              ? SortDirection.Desc
-              : SortDirection.Asc,
-        }
+            ...currentSortState,
+            sortDirection:
+              currentSortState.sortDirection === SortDirection.Asc
+                ? SortDirection.Desc
+                : SortDirection.Asc,
+          }
         : {
-          ...currentSortState,
-          previousSortIndex: currentSortState.sortIndex,
-          previousSortDirection: currentSortState.sortDirection,
-          sortIndex: columnIndex,
-          sortDirection: SortDirection.Desc,
-        };
+            ...currentSortState,
+            previousSortIndex: currentSortState.sortIndex,
+            previousSortDirection: currentSortState.sortDirection,
+            sortIndex: columnIndex,
+            sortDirection: SortDirection.Desc,
+          };
     dispatch({
       type: 'set_sort_for_dimension',
       dimension: viewState.dimension,

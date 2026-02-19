@@ -1,4 +1,8 @@
-import { AVAILABLE_BUCKET_SIZES_KM, AVAILABLE_BUCKET_SIZES_MINUTES, DISTANCE_BUCKET_COUNT } from '../../../core/constants';
+import {
+  AVAILABLE_BUCKET_SIZES_KM,
+  AVAILABLE_BUCKET_SIZES_MINUTES,
+  DISTANCE_BUCKET_COUNT,
+} from '../../../core/constants';
 import {
   CommuteType,
   ModeShare,
@@ -13,7 +17,9 @@ import {
 
 const DEFAULT_DISTANCE_BUCKET_SIZE_KM = AVAILABLE_BUCKET_SIZES_KM[2];
 const DEFAULT_HOUR_BUCKET_SIZE_MINUTES = AVAILABLE_BUCKET_SIZES_MINUTES[1];
-export const HOURLY_SANKEY_FLOW_DISPLAY_COUNT = Math.round(24 * 60 / DEFAULT_HOUR_BUCKET_SIZE_MINUTES);
+export const HOURLY_SANKEY_FLOW_DISPLAY_COUNT = Math.round(
+  (24 * 60) / DEFAULT_HOUR_BUCKET_SIZE_MINUTES,
+);
 
 // --- Derived Data Helpers --- //
 export function resolveCommuterBreakdownData(

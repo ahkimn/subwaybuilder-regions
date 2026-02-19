@@ -1,5 +1,5 @@
 import type { ModeShare } from '../../../core/types';
-import { NumberDisplay, SortDirection } from '../types';
+import type { NumberDisplay, SortState } from '../types';
 
 export const RegionsInfoPanelView = {
   Statistics: 'Statistics',
@@ -35,8 +35,6 @@ export const CommuterDisplayMode = {
 export type CommuterDisplayMode =
   (typeof CommuterDisplayMode)[keyof typeof CommuterDisplayMode];
 
-export { NumberDisplay, SortDirection };
-
 export type CommutersViewState = {
   dimension: CommuterDimension;
   direction: CommuterDirection;
@@ -54,24 +52,6 @@ export type TableDisplayOptions = {
 
 export type SankeyDisplayOptions = {
   labelsFollowFlowDirection: boolean;
-};
-
-export type SortState = {
-  sortIndex: number;
-  sortDirection: SortDirection;
-  previousSortIndex: number;
-  previousSortDirection: SortDirection;
-};
-
-export const SortState = {
-  equals(a: SortState, b: SortState): boolean {
-    return (
-      a.sortIndex === b.sortIndex &&
-      a.sortDirection === b.sortDirection &&
-      a.previousSortIndex === b.previousSortIndex &&
-      a.previousSortDirection === b.previousSortDirection
-    );
-  },
 };
 
 export type CommuterBreakdownData = {

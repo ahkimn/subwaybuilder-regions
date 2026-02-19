@@ -61,3 +61,6 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
 9. _Infrastructure Refresh Coverage_ (`🔴 Open`)
    - Infrastructure data now supports dataset-level build for Overview, but refresh is still request-driven (panel open / ensure calls) and not event-loop driven.
    - Infra values can therefore become stale until the user re-enters the Overview tab.
+10. _Multiple Simultaneous Data Requests_ (`🔴 Open`)
+    - On overview panel load of a dataset, all commuter summary / infra data is requested at a dataset level.
+      - Requests may not complete by the time the user navigates to a different tab; if they reopen the same tab again before the request completion, a duplicate request can be spawned

@@ -30,6 +30,7 @@ import {
   FileChartColumnIcon,
   TramFrontIcon,
 } from '../../elements/utils/get-icon';
+import { DEFAULT_SORT_STATE, NumberDisplay, SortState } from '../types';
 import { renderCommutersView } from './render-commuters';
 import { renderStatisticsView } from './render-statistics';
 import {
@@ -38,10 +39,7 @@ import {
   CommuterDisplayMode,
   type CommutersViewAction,
   type CommutersViewState,
-  NumberDisplay,
   RegionsInfoPanelView,
-  SortDirection,
-  SortState,
 } from './types';
 
 export type RegionsInfoPanelProps = {
@@ -244,13 +242,6 @@ export function RegionsInfoPanel({
     ),
   );
 }
-
-const DEFAULT_SORT_STATE: SortState = {
-  sortIndex: 0,
-  sortDirection: SortDirection.Desc,
-  previousSortIndex: 1,
-  previousSortDirection: SortDirection.Desc,
-};
 
 function createDefaultCommuterSortStates(): Map<CommuterDimension, SortState> {
   return new Map([
