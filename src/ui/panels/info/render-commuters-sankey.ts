@@ -282,28 +282,9 @@ function SankeyCanvas({
     labelsFollowFlowDirection && !displaySourceOnLeft;
 
   // Horizontal padding is greater on the side the labels are intended to be rendered on.
-  // Vertical margins are expanded slightly for imbalanced columns so sparse columns
-  // feel less top-packed in the viewport.
-  const laneCounts = {
-    source: sankeyData.nodes.filter((node) => node.lane === 'source').length,
-    middle: sankeyData.nodes.filter((node) => node.lane === 'middle').length,
-    sink: sankeyData.nodes.filter((node) => node.lane === 'sink').length,
-  };
-  const maxLaneCount = Math.max(
-    laneCounts.source,
-    laneCounts.middle,
-    laneCounts.sink,
-  );
-  const minLaneCount = Math.min(
-    laneCounts.source,
-    laneCounts.middle,
-    laneCounts.sink,
-  );
-  const laneImbalance = Math.max(0, maxLaneCount - minLaneCount);
-  const verticalInset = 10 + Math.min(20, laneImbalance * 2);
   const sankeyMargins = renderLabelsOnLeft
-    ? { top: verticalInset, right: 10, bottom: verticalInset, left: 108 }
-    : { top: verticalInset, right: 108, bottom: verticalInset, left: 10 };
+    ? { top: 10, right: 10, bottom: 10, left: 108 }
+    : { top: 10, right: 108, bottom: 10, left: 10 };
 
   return h(
     'div',
