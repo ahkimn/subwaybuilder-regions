@@ -11,11 +11,7 @@ import { RegionDataBuilder } from '../core/datasets/RegionDataBuilder';
 import { RegionDataManager } from '../core/datasets/RegionDataManager';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import type { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
-import {
-  RegionSelection,
-  UIState,
-  type UIStyle,
-} from '../core/types';
+import { RegionSelection, UIState, type UIStyle } from '../core/types';
 import type { RegionsMapLayers } from '../map/RegionsMapLayers';
 import type { ModdingAPI } from '../types/modding-api-v1';
 import { CommuterRefreshLoop } from './CommuterRefreshLoop';
@@ -248,12 +244,19 @@ export class RegionsUIManager {
     });
   }
 
-  private onOverviewSelect(selection: RegionSelection, toggleIfSame: boolean, focusRegion: boolean = false) {
+  private onOverviewSelect(
+    selection: RegionSelection,
+    toggleIfSame: boolean,
+    focusRegion: boolean = false,
+  ) {
     const dataset = this.datasetRegistry.getDatasetByIdentifier(
       selection.datasetIdentifier,
     );
     this.mapLayers.toggleOrSetVisibility(dataset, true);
-    this.setActiveSelection(selection, { toggleIfSame: toggleIfSame, showInfo: true });
+    this.setActiveSelection(selection, {
+      toggleIfSame: toggleIfSame,
+      showInfo: true,
+    });
     if (focusRegion) {
       this.mapLayers.focusRegion(dataset, selection.featureId);
     }

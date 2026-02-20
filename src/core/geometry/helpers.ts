@@ -133,11 +133,7 @@ export function buildBBoxFitState(
   const perSidePaddingRatio = (1 - targetCoverage) / 2;
   const basePaddingPx =
     Math.min(viewportWidth, viewportHeight) * perSidePaddingRatio;
-  const clampedPaddingPx = clamp(
-    basePaddingPx,
-    minPaddingPx,
-    maxPaddingPx,
-  );
+  const clampedPaddingPx = clamp(basePaddingPx, minPaddingPx, maxPaddingPx);
 
   return {
     bbox: bbox,

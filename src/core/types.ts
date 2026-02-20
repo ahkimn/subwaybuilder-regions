@@ -1,6 +1,6 @@
 // --- Statistics Types --- //
 
-import type { LightMode } from "../map/styles";
+import type { LightMode } from '../map/styles';
 
 export const MODE_ORDER: (keyof ModeShare)[] = [
   'transit',

@@ -2,6 +2,20 @@
 
 [Back to README](README.md)
 
+## v0.2.13 - 2026-02-19
+
+_Game version_ v1.1.0
+
+### Other Updates
+
+- Adding pan-to on region select from overview. Double clicking a region from the `Overview Panel` will automatically move the map to the selected region
+- Mod UI now adapts (somewhat) to changes in game theme
+- Map layers should be more visible in light mode
+
+### Bugfixes
+
+- `Overview Panel` top row / first column are now "sticky" and will remain visible through scrolling
+
 ## v0.2.12 - 2026-02-19
 
 _Game version_ v1.1.0

@@ -455,7 +455,8 @@ export class RegionsMapLayers {
     const viewportWidth = mapContainer?.clientWidth ?? 0;
     const viewportHeight = mapContainer?.clientHeight ?? 0;
     const minBBoxSpanDegrees =
-      options?.minBBoxSpanDegrees ?? OVERVIEW_REGION_FOCUS_MIN_BBOX_SPAN_DEGREES;
+      options?.minBBoxSpanDegrees ??
+      OVERVIEW_REGION_FOCUS_MIN_BBOX_SPAN_DEGREES;
 
     const normalizedBBox = normalizeBBox(
       boundaryParams.bbox,
@@ -485,10 +486,7 @@ export class RegionsMapLayers {
   }
 
   // --- Layer Render Helpers --- //
-  private updateMapLayers(
-    dataset: RegionDataset,
-    layerState: MapLayerState,
-  ) {
+  private updateMapLayers(dataset: RegionDataset, layerState: MapLayerState) {
     this.updateSource(layerState.sourceId, dataset.boundaryData!);
     this.updateSource(layerState.labelSourceId, dataset.labelData!);
 
