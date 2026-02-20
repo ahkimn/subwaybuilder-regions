@@ -31,6 +31,7 @@ import {
   FileChartColumnIcon,
   TramFrontIcon,
 } from '../../elements/utils/get-icon';
+import { renderInfoPlaceholder } from '../shared/info-placeholder';
 import { DEFAULT_SORT_STATE, NumberDisplay, SortState } from '../types';
 import { renderCommutersView } from './render-commuters';
 import { renderStatisticsView } from './render-statistics';
@@ -187,14 +188,7 @@ export function RegionsInfoPanel({
               dispatchCommutersViewAction,
               resolveRegionName,
             )
-          : createElement(
-              'div',
-              {
-                className:
-                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-              },
-              LOADING_VALUE_DISPLAY,
-            );
+          : renderInfoPlaceholder(createElement, LOADING_VALUE_DISPLAY);
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);
