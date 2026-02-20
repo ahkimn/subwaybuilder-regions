@@ -13,6 +13,7 @@ import {
   type SelectButtonConfig,
 } from '../../elements/SelectRow';
 import { resolveCommuterBreakdownData } from '../shared/commuter-data';
+import { renderInfoPlaceholder } from '../shared/info-placeholder';
 import { buildReactViewHeader } from '../shared/view-header';
 import { renderCommutersSankey } from './render-commuters-sankey';
 import { renderCommutersTable } from './render-commuters-table';
@@ -54,14 +55,7 @@ export function renderCommutersView(
       content = renderCommutersSankey(h, gameData, viewState, breakdownData);
       break;
     case CommuterDisplayMode.BarChart:
-      content = h(
-        'div',
-        {
-          className:
-            'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-        },
-        'Bar Chart view coming soon',
-      );
+      content = renderInfoPlaceholder(h, 'Bar Chart view coming soon');
       break;
     default:
       content = renderCommutersTable(

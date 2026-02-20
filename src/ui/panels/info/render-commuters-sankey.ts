@@ -32,6 +32,7 @@ import {
   resolveSourceUnitName,
   resolveValueUnitLabel,
 } from '../shared/commuter-data';
+import { renderInfoPlaceholder } from '../shared/info-placeholder';
 import type { CommuterBreakdownData, CommutersViewState } from './types';
 import { CommuterDimension, CommuterDirection } from './types';
 
@@ -194,14 +195,7 @@ export function renderCommutersSankey(
   );
 
   if (sankeyData === null || sankeyData.links.length === 0) {
-    return h(
-      'div',
-      {
-        className:
-          'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-      },
-      SANKEY_EMPTY_MESSAGE,
-    );
+    return renderInfoPlaceholder(h, SANKEY_EMPTY_MESSAGE);
   }
 
   const terminalNodeCount = sankeyData.nodes.filter(
