@@ -33,7 +33,7 @@
     "yaml": "^2.8.2"
   },
   "name": "subwaybuilder-regions",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "description": "Mod to show/store regions within the game and analyze region-level data.",
   "main": "index.js",
   "scripts": {

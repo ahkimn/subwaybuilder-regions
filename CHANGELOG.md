@@ -2,6 +2,14 @@
 
 [Back to README](README.md)
 
+## v0.2.14 - 2026-02-20
+
+_Game version_ v1.1.0
+
+### Bugfixes
+
+- `Info Panel` will now adapt to viewport and all content should be reachable via scrolling
+
 ## v0.2.13 - 2026-02-19
 
 _Game version_ v1.1.0
