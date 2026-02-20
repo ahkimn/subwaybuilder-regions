@@ -227,7 +227,7 @@ export function RegionsInfoPanel({
         createElement(
           'div',
           {
-            className: `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`,
+            className: `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0 flex-1 overflow-hidden`,
           },
           ReactSelectRow(
             createElement,
