@@ -7,7 +7,7 @@ import { parse as parseYaml } from 'yaml';
 import { DATA_INDEX_FILE } from '../../shared/constants';
 import type {
   DatasetIndex,
-  DatasetIndexEntry,
+  DatasetMetadata,
 } from '../../shared/dataset-index';
 import type { BoundaryBox } from './geometry';
 import { findOsmCountryConfig } from './osm-country-config';
@@ -43,7 +43,7 @@ function resolveDatasetOrder(country: string): readonly string[] {
 }
 
 function resolvePreferredDatasetOrderForCity(
-  entries: DatasetIndexEntry[],
+  entries: DatasetMetadata[],
   fallbackCountryCode?: string,
 ): readonly string[] {
   const datasetIds = new Set(entries.map((entry) => entry.datasetId));
@@ -74,9 +74,9 @@ function buildDatasetOrderIndex(
 }
 
 function sortDatasetEntriesByDatasetOrder(
-  entries: DatasetIndexEntry[],
+  entries: DatasetMetadata[],
   datasetOrderIndex: ReadonlyMap<string, number>,
-): DatasetIndexEntry[] {
+): DatasetMetadata[] {
   if (datasetOrderIndex.size === 0) {
     return entries;
   }
@@ -249,7 +249,7 @@ export function buildCSVIndex(
 export function updateIndexJson(
   indexPath: string,
   cityCode: string,
-  datasetEntry: DatasetIndexEntry,
+  datasetEntry: DatasetMetadata,
   countryCode: string,
 ): void {
   if (!fs.existsSync(indexPath)) {

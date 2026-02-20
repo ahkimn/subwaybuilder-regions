@@ -1,6 +1,6 @@
-import type { DatasetIndexEntry } from '@shared/dataset-index';
+import type { DatasetMetadata } from '@shared/dataset-index';
 
-export type StaticDatasetTemplate = Omit<DatasetIndexEntry, 'size'>;
+export type StaticDatasetTemplate = Omit<DatasetMetadata, 'size'>;
 
 const US_DATASET_TEMPLATES: readonly StaticDatasetTemplate[] = [
   {
