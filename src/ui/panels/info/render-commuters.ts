@@ -31,7 +31,6 @@ export function renderCommutersView(
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
   resolveRegionName: (unitId: string | number) => string,
-  isCompactViewport: boolean,
 ): ReactNode {
   const commuterSummaryData = gameData.commuterSummary!;
   const commuterDetailsData = gameData.commuterDetails!;
@@ -53,13 +52,7 @@ export function renderCommutersView(
   let content: ReactNode;
   switch (viewState.displayMode) {
     case CommuterDisplayMode.Sankey:
-      content = renderCommutersSankey(
-        h,
-        gameData,
-        viewState,
-        breakdownData,
-        isCompactViewport,
-      );
+      content = renderCommutersSankey(h, gameData, viewState, breakdownData);
       break;
     case CommuterDisplayMode.BarChart:
       content = h(
@@ -79,15 +72,12 @@ export function renderCommutersView(
         dispatch,
         byBreakdownModeShare,
         breakdownData.resolveBreakdownUnitName,
-        isCompactViewport,
       );
       break;
   }
   return h(
     'div',
-    {
-      className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'} text-xs min-h-0 h-full`,
-    },
+    { className: 'flex flex-col gap-2 text-xs min-h-0' },
     buildCommutersHeader(h, gameData, viewState, dispatch),
     ...buildSummaryStatistics(
       h,
@@ -96,9 +86,9 @@ export function renderCommutersView(
       averageCommuteLength,
     ),
     ReactDivider(h, 0.5),
-    buildCommuterControls(h, viewState, dispatch, isCompactViewport),
+    buildCommuterControls(h, viewState, dispatch),
     ReactDivider(h, 0.5),
-    h('div', { className: 'flex-1 min-h-0 overflow-hidden' }, content),
+    content,
   );
 }
 
@@ -182,7 +172,6 @@ function buildCommuterControls(
   h: typeof createElement,
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
-  isCompactViewport: boolean,
 ): ReactNode {
   const controlNodes: ReactNode[] = [];
   const dimensionConfigs: Map<string, SelectButtonConfig> = new Map();
@@ -267,7 +256,8 @@ function buildCommuterControls(
     h(
       'div',
       {
-        className: `flex min-w-max flex-nowrap items-center justify-start ${isCompactViewport ? 'gap-2' : 'gap-3'}`,
+        className:
+          'flex min-w-max flex-nowrap items-center justify-start gap-3',
       },
       ...controlNodes,
     ),

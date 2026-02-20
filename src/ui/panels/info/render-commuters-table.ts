@@ -105,7 +105,6 @@ export function renderCommutersTable(
   dispatch: Dispatch<CommutersViewAction>,
   modeShareByBreakdownUnit: Map<string | number, ModeShare>,
   resolveBreakdownUnitName: (unitId: string | number) => string,
-  isCompactViewport: boolean,
 ): ReactNode {
   const rows = sortCommuterRows(
     deriveCommuterRows(
@@ -121,7 +120,7 @@ export function renderCommutersTable(
     : DEFAULT_TABLE_ROWS;
   const tableOptions: TableOptions = {
     columnTemplate: getColumnTemplate(viewState),
-    density: isCompactViewport ? 'compact' : 'standard',
+    density: 'standard',
   };
   const tableHeaderData = buildTableHeader(
     h,
@@ -136,9 +135,7 @@ export function renderCommutersTable(
 
   return h(
     'div',
-    {
-      className: `border-t border-border/30 ${isCompactViewport ? 'pt-0.5' : 'pt-1'} flex flex-col min-h-0 h-full`,
-    },
+    { className: 'border-t border-border/30 pt-1' },
     h(ReactDataTable, {
       h,
       useStateHook,
@@ -154,7 +151,7 @@ export function renderCommutersTable(
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
           'div',
-          { className: `${isCompactViewport ? 'pt-0.5' : 'pt-1'} flex justify-center` },
+          { className: 'pt-1 flex justify-center' },
           ReactExtendButton(
             h,
             viewState.tableOptions.expanded ? 'Collapse' : 'Expand',
@@ -317,7 +314,7 @@ function CommutersBodyTable({
       },
       className: `overflow-y-auto min-h-0${hasOverflow ? ' pr-2' : ''}`,
       style: {
-        flex: 1,
+        maxHeight: '60vh',
         ...(hasOverflow
           ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' }
           : {}),

@@ -62,9 +62,6 @@ export const FLOATING_PANEL_OFFSET_X = 80;
 export const FLOATING_PANEL_OFFSET_Y = 80;
 
 export const INFO_PANEL_MIN_WIDTH = 80;
-export const INFO_PANEL_VIEWPORT_HEIGHT_OFFSET_PX = 100;
-export const INFO_PANEL_VIEWPORT_WIDTH_OFFSET_PX = 50;
-export const COMPACT_UI_THRESHOLD = 1080; // Use compacted layout for 1080p or smaller viewports
 
 // TODO: (Feature) add as config option
 export const SHOW_UNPOPULATED_REGIONS = false; // Whether to show regions with no demand data by default in the overview panel and layer.

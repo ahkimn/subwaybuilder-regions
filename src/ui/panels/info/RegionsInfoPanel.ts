@@ -7,10 +7,7 @@ import {
 } from 'react';
 
 import {
-  COMPACT_UI_THRESHOLD,
   INFO_PANEL_MIN_WIDTH,
-  INFO_PANEL_VIEWPORT_HEIGHT_OFFSET_PX,
-  INFO_PANEL_VIEWPORT_WIDTH_OFFSET_PX,
   LOADING_VALUE_DISPLAY,
   REGIONS_INFO_PANEL_ID,
   REGIONS_INFO_PANEL_TITLE,
@@ -69,23 +66,10 @@ export function RegionsInfoPanel({
     undefined,
     createDefaultCommutersViewState,
   );
-  const [viewportHeight, setViewportHeight] = useState<number>(
-    window.innerHeight,
-  );
   const [, setRenderToken] = useState<number>(0);
 
   const activeDatasetIdentifier = uiState.activeSelection?.datasetIdentifier;
   const activeFeatureId = uiState.activeSelection?.featureId;
-  const isCompactViewport = viewportHeight <= COMPACT_UI_THRESHOLD;
-  const infoPanelHeight = isCompactViewport
-    ? `calc(100vh - ${INFO_PANEL_VIEWPORT_HEIGHT_OFFSET_PX}px)`
-    : `min(calc(100vh - ${INFO_PANEL_VIEWPORT_HEIGHT_OFFSET_PX}px), 82vh)`;
-
-  useEffect(() => {
-    const handleResize = () => setViewportHeight(window.innerHeight);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Info panel should only be rendered when there's an active selection
   if (!uiState.isActive) {
@@ -184,33 +168,32 @@ export function RegionsInfoPanel({
   switch (activeView) {
     case RegionsInfoPanelView.Statistics:
       content = gameData
-        ? renderStatisticsView(createElement, gameData, isCompactViewport)
+        ? renderStatisticsView(createElement, gameData)
         : createElement(
-          'div',
-          { className: 'text-xs text-muted-foreground' },
-          'No game data set for info panel rendering',
-        );
+            'div',
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-            createElement,
-            useState,
-            gameData,
-            commutersViewState,
-            dispatchCommutersViewAction,
-            resolveRegionName,
-            isCompactViewport,
-          )
+              createElement,
+              useState,
+              gameData,
+              commutersViewState,
+              dispatchCommutersViewAction,
+              resolveRegionName,
+            )
           : createElement(
-            'div',
-            {
-              className:
-                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-            },
-            LOADING_VALUE_DISPLAY,
-          );
+              'div',
+              {
+                className:
+                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+              },
+              LOADING_VALUE_DISPLAY,
+            );
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);
@@ -224,14 +207,10 @@ export function RegionsInfoPanel({
         'pointer-events-auto',
         'backdrop-blur-sm bg-transparent',
         'border border-border/50',
-        'h-auto rounded-lg',
+        'h-fit rounded-lg',
         'text-sm shadow-lg overflow-hidden',
-        'w-full flex flex-col min-h-0',
+        'w-full max-h-full flex flex-col min-h-0',
       ].join(' '),
-      style: {
-        maxHeight: infoPanelHeight,
-        maxWidth: `calc(100vw - ${INFO_PANEL_VIEWPORT_WIDTH_OFFSET_PX}px)`,
-      },
     },
     ReactPanelHeader(createElement, REGIONS_INFO_PANEL_TITLE, onClose),
     createElement(
@@ -245,7 +224,7 @@ export function RegionsInfoPanel({
         createElement(
           'div',
           {
-            className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'} w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0 flex-1`,
+            className: `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`,
           },
           ReactSelectRow(
             createElement,
@@ -255,9 +234,7 @@ export function RegionsInfoPanel({
           ),
           createElement(
             'div',
-            {
-              className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'} min-h-0 flex-1 overflow-hidden`,
-            },
+            { className: 'flex flex-col gap-2 min-h-0' },
             content,
           ),
         ),
