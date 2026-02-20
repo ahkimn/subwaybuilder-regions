@@ -1,4 +1,4 @@
-import type { DatasetIndex, DatasetIndexEntry } from '@shared/dataset-index';
+import type { DatasetIndex, DatasetMetadata } from '@shared/dataset-index';
 
 import { RegionDataset } from '../datasets/RegionDataset';
 import {
@@ -65,7 +65,7 @@ export class RegionDatasetRegistry {
   // -- Setup -- //
   private assertDatasetIndexEntry(
     cityCode: string,
-    entry: DatasetIndexEntry,
+    entry: DatasetMetadata,
   ): void {
     if (
       !entry ||
@@ -84,7 +84,7 @@ export class RegionDatasetRegistry {
 
   private registerStaticDataset(
     cityCode: string,
-    entry: DatasetIndexEntry,
+    entry: DatasetMetadata,
     dataPath: string,
   ): void {
     this.assertDatasetIndexEntry(cityCode, entry);
@@ -193,7 +193,7 @@ export class RegionDatasetRegistry {
   private buildDatasetEntryFromTemplate(
     template: StaticDatasetTemplate,
     size: number,
-  ): DatasetIndexEntry {
+  ): DatasetMetadata {
     return {
       datasetId: template.datasetId,
       displayName: template.displayName,

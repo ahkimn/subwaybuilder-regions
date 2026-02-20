@@ -1,4 +1,4 @@
-import type { DatasetIndexEntry } from '@shared/dataset-index';
+import type { DatasetMetadata } from '@shared/dataset-index';
 import * as turf from '@turf/turf';
 import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 
@@ -70,7 +70,7 @@ export class RegionDataset {
   isUserEdited: boolean = false;
 
   constructor(
-    indexEntry: DatasetIndexEntry,
+    indexEntry: DatasetMetadata,
     cityCode: string,
     source: DatasetSource,
   ) {
