@@ -31,6 +31,7 @@ export function renderCommutersView(
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
   resolveRegionName: (unitId: string | number) => string,
+  isCompactViewport: boolean,
 ): ReactNode {
   const commuterSummaryData = gameData.commuterSummary!;
   const commuterDetailsData = gameData.commuterDetails!;
@@ -52,7 +53,13 @@ export function renderCommutersView(
   let content: ReactNode;
   switch (viewState.displayMode) {
     case CommuterDisplayMode.Sankey:
-      content = renderCommutersSankey(h, gameData, viewState, breakdownData);
+      content = renderCommutersSankey(
+        h,
+        gameData,
+        viewState,
+        breakdownData,
+        isCompactViewport,
+      );
       break;
     case CommuterDisplayMode.BarChart:
       content = h(
@@ -72,12 +79,15 @@ export function renderCommutersView(
         dispatch,
         byBreakdownModeShare,
         breakdownData.resolveBreakdownUnitName,
+        isCompactViewport,
       );
       break;
   }
   return h(
     'div',
-    { className: 'flex flex-col gap-2 text-xs min-h-0' },
+    {
+      className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'} text-xs min-h-0`,
+    },
     buildCommutersHeader(h, gameData, viewState, dispatch),
     ...buildSummaryStatistics(
       h,
@@ -86,7 +96,7 @@ export function renderCommutersView(
       averageCommuteLength,
     ),
     ReactDivider(h, 0.5),
-    buildCommuterControls(h, viewState, dispatch),
+    buildCommuterControls(h, viewState, dispatch, isCompactViewport),
     ReactDivider(h, 0.5),
     content,
   );
@@ -172,6 +182,7 @@ function buildCommuterControls(
   h: typeof createElement,
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
+  isCompactViewport: boolean,
 ): ReactNode {
   const controlNodes: ReactNode[] = [];
   const dimensionConfigs: Map<string, SelectButtonConfig> = new Map();
@@ -251,13 +262,12 @@ function buildCommuterControls(
   return h(
     'div',
     {
-      className: 'w-full overflow-x-auto overflow-y-hidden pb-1',
+      className: `w-full overflow-x-auto overflow-y-hidden ${isCompactViewport ? 'pb-0' : 'pb-1'}`,
     },
     h(
       'div',
       {
-        className:
-          'flex min-w-max flex-nowrap items-center justify-start gap-3',
+        className: `flex min-w-max flex-nowrap items-center justify-start ${isCompactViewport ? 'gap-2' : 'gap-3'}`,
       },
       ...controlNodes,
     ),
