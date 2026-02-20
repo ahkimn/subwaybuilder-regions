@@ -218,7 +218,7 @@ export function RegionsInfoPanel({
     ReactPanelHeader(createElement, REGIONS_INFO_PANEL_TITLE, onClose),
     createElement(
       'div',
-      { className: 'flex-1 min-h-0 overflow-hidden' },
+      { className: 'flex flex-col flex-1 min-h-0 overflow-hidden' },
       createElement(
         'div',
         {
