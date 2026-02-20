@@ -172,8 +172,8 @@ export function renderCommutersSankey(
   const sourceModeShareByBreakdownUnit = hasSplitSources
     ? breakdownData.sourceModeShareByBreakdownUnit!
     : new Map<string | number, Map<string | number, ModeShare>>([
-        [gameData.displayName, byBreakdownUnitModeShare],
-      ]);
+      [gameData.displayName, byBreakdownUnitModeShare],
+    ]);
   const topFlowCount = resolveSankeyTopFlowCount(viewState.dimension);
   const displaySourceOnLeft = resolveSankeyDisplaySourceOnLeft(viewState);
   const orderedUnitIds = resolveOrderedUnitIds(
@@ -187,7 +187,7 @@ export function renderCommutersSankey(
     breakdownData.resolveBreakdownUnitName,
     hasSplitSources
       ? (unitId: string | number) =>
-          resolveSourceUnitName(viewState.dimension, unitId)
+        resolveSourceUnitName(viewState.dimension, unitId)
       : () => gameData.displayName,
     topFlowCount,
     displaySourceOnLeft,
@@ -321,17 +321,17 @@ function SankeyCanvas({
   // Horizontal padding is greater on the side the labels are intended to be rendered on.
   const sankeyMargins = renderLabelsOnLeft
     ? {
-        top: isCompactViewport ? 6 : 10,
-        right: 10,
-        bottom: isCompactViewport ? 6 : 10,
-        left: 108,
-      }
+      top: isCompactViewport ? 6 : 10,
+      right: 10,
+      bottom: isCompactViewport ? 6 : 10,
+      left: 108,
+    }
     : {
-        top: isCompactViewport ? 6 : 10,
-        right: 108,
-        bottom: isCompactViewport ? 6 : 10,
-        left: 10,
-      };
+      top: isCompactViewport ? 6 : 10,
+      right: 108,
+      bottom: isCompactViewport ? 6 : 10,
+      left: 10,
+    };
 
   return h(
     'div',
@@ -367,7 +367,7 @@ function SankeyCanvas({
           data: sankeyData,
           align: 'justify',
           margin: sankeyMargins,
-          nodePadding: isCompactViewport ? 10 : 22,
+          nodePadding: isCompactViewport ? 15 : 22,
           nodeWidth: 14,
           sort: false,
           verticalAlign: 'justify',
@@ -1036,19 +1036,19 @@ function buildSankeyNodeRenderer(
       ),
       showSubtitle
         ? h(
-            'text',
-            {
-              x: textX,
-              y: subtitleY,
-              fill: 'currentColor',
-              className: 'text-muted-foreground',
-              fontSize: LABEL_SUBTITLE_FONT_SIZE,
-              fontWeight: 500,
-              dominantBaseline: 'middle',
-              textAnchor,
-            },
-            subtitleText,
-          )
+          'text',
+          {
+            x: textX,
+            y: subtitleY,
+            fill: 'currentColor',
+            className: 'text-muted-foreground',
+            fontSize: LABEL_SUBTITLE_FONT_SIZE,
+            fontWeight: 500,
+            dominantBaseline: 'middle',
+            textAnchor,
+          },
+          subtitleText,
+        )
         : null,
     );
   };
@@ -1121,9 +1121,9 @@ function buildTooltipContainer(
       },
       modeColor
         ? h('span', {
-            className: 'inline-block h-2 w-2 rounded-full shrink-0',
-            style: { backgroundColor: modeColor },
-          })
+          className: 'inline-block h-2 w-2 rounded-full shrink-0',
+          style: { backgroundColor: modeColor },
+        })
         : null,
       title,
     ),
@@ -1193,8 +1193,8 @@ function buildSankeyTooltipRenderer(
         `${formatPercentOrDefault(totalShare)} of all ${valueUnitLabel}`,
         ...(shouldShowUnitShare
           ? [
-              `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} ${valueUnitLabel}`,
-            ]
+            `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} ${valueUnitLabel}`,
+          ]
           : []),
       ];
       return buildTooltipContainer(
