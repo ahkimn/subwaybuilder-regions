@@ -181,7 +181,6 @@ export function RegionsInfoPanel({
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
               createElement,
-              useState,
               gameData,
               commutersViewState,
               dispatchCommutersViewAction,
