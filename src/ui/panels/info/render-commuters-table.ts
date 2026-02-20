@@ -1,5 +1,5 @@
-import type { createElement, Dispatch, ReactNode, useState } from 'react';
-import { useEffect, useRef } from 'react';
+import type { createElement, Dispatch, ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { DEFAULT_TABLE_ROWS } from '../../../core/constants';
 import { ModeShare } from '../../../core/types';
@@ -33,17 +33,7 @@ type CommuterRowData = {
   walkingValue: number;
 };
 
-type CommuterSortMetrics = {
-  breakdownUnitId: string | number;
-  regionName: string;
-  breakdownSortOrder: number | null;
-  commuterValue: number;
-  transitValue: number;
-  drivingValue: number;
-  walkingValue: number;
-};
-
-const SORT_CONFIGS: ReadonlyArray<SortConfig<CommuterSortMetrics>> = [
+const SORT_CONFIGS: ReadonlyArray<SortConfig<CommuterRowData>> = [
   {
     index: 0,
     defaultDirection: SortDirection.Desc,
@@ -85,7 +75,6 @@ const SORT_CONFIGS: ReadonlyArray<SortConfig<CommuterSortMetrics>> = [
 
 type CommutersBodyTableProps = {
   h: typeof createElement;
-  useStateHook: typeof useState;
   tableOptions: TableOptions;
   tableBodyData: ReactDataTableRow[];
 };
@@ -100,7 +89,6 @@ type ModeShareDisplayToggleState = {
 
 export function renderCommutersTable(
   h: typeof createElement,
-  useStateHook: typeof useState,
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
   modeShareByBreakdownUnit: Map<string | number, ModeShare>,
@@ -141,13 +129,12 @@ export function renderCommutersTable(
     },
     h(ReactDataTable, {
       h,
-      useStateHook,
+      useStateHook: useState,
       tableOptions,
       tableValues: tableHeaderData,
     }),
     h(CommutersBodyTable, {
       h,
-      useStateHook,
       tableOptions,
       tableBodyData,
     }),
@@ -204,7 +191,6 @@ function sortCommuterRows(
   viewState: CommutersViewState,
 ): CommuterRowData[] {
   const currentSortState = viewState.sortStates.get(viewState.dimension)!;
-  const metricsByRow = buildCommuterSortMetrics(rows);
   const applySortByConfig = (
     a: CommuterRowData,
     b: CommuterRowData,
@@ -212,9 +198,7 @@ function sortCommuterRows(
     direction: SortDirection,
   ): number => {
     const sortConfig = resolveSortConfig(index);
-    const aMetrics = metricsByRow.get(a)!;
-    const bMetrics = metricsByRow.get(b)!;
-    const compareResult = sortConfig.compare(aMetrics, bMetrics);
+    const compareResult = sortConfig.compare(a, b);
     return direction === SortDirection.Asc ? compareResult : -compareResult;
   };
 
@@ -234,12 +218,11 @@ function sortCommuterRows(
       );
     }
     if (result === 0) {
-      const aMetrics = metricsByRow.get(a)!;
-      const bMetrics = metricsByRow.get(b)!;
-      result = aMetrics.regionName.localeCompare(bMetrics.regionName);
+      // Apply stable tie-breakers so equal metric rows always render in deterministic order.
+      result = a.regionName.localeCompare(b.regionName);
       if (result === 0) {
-        result = String(aMetrics.breakdownUnitId).localeCompare(
-          String(bMetrics.breakdownUnitId),
+        result = String(a.breakdownUnitId).localeCompare(
+          String(b.breakdownUnitId),
         );
       }
     }
@@ -247,40 +230,20 @@ function sortCommuterRows(
   });
 }
 
-function resolveSortConfig(index: number): SortConfig<CommuterSortMetrics> {
+function resolveSortConfig(index: number): SortConfig<CommuterRowData> {
   return (
     SORT_CONFIGS.find((sortConfig) => sortConfig.index === index) ??
     SORT_CONFIGS[0]
   );
 }
 
-function buildCommuterSortMetrics(
-  rows: CommuterRowData[],
-): Map<CommuterRowData, CommuterSortMetrics> {
-  return new Map(
-    rows.map((row) => [
-      row,
-      {
-        breakdownUnitId: row.breakdownUnitId,
-        regionName: row.regionName,
-        breakdownSortOrder: row.breakdownSortOrder,
-        commuterValue: row.commuterValue,
-        transitValue: row.transitValue,
-        drivingValue: row.drivingValue,
-        walkingValue: row.walkingValue,
-      },
-    ]),
-  );
-}
-
 function CommutersBodyTable({
   h,
-  useStateHook,
   tableOptions,
   tableBodyData,
 }: CommutersBodyTableProps): ReactNode {
   const containerRef = useRef<HTMLElement | null>(null);
-  const [hasOverflow, setHasOverflow] = useStateHook<boolean>(false);
+  const [hasOverflow, setHasOverflow] = useState<boolean>(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -324,7 +287,7 @@ function CommutersBodyTable({
     },
     h(ReactDataTable, {
       h,
-      useStateHook,
+      useStateHook: useState,
       tableOptions,
       tableValues: tableBodyData,
     }),

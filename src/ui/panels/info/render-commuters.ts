@@ -1,4 +1,4 @@
-import type { createElement, Dispatch, ReactNode, useState } from 'react';
+import type { createElement, Dispatch, ReactNode } from 'react';
 
 import { ModeShare, type RegionGameData } from '../../../core/types';
 import {
@@ -27,7 +27,6 @@ import {
 
 export function renderCommutersView(
   h: typeof createElement,
-  useStateHook: typeof useState,
   gameData: RegionGameData,
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
@@ -61,7 +60,6 @@ export function renderCommutersView(
     default:
       content = renderCommutersTable(
         h,
-        useStateHook,
         viewState,
         dispatch,
         byBreakdownModeShare,

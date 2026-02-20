@@ -32,7 +32,12 @@ import {
   TramFrontIcon,
 } from '../../elements/utils/get-icon';
 import { renderInfoPlaceholder } from '../shared/info-placeholder';
-import { DEFAULT_SORT_STATE, NumberDisplay, SortState } from '../types';
+import {
+  DEFAULT_SORT_STATE,
+  NumberDisplay,
+  SortDirection,
+  SortState,
+} from '../types';
 import { renderCommutersView } from './render-commuters';
 import { renderStatisticsView } from './render-statistics';
 import {
@@ -182,7 +187,6 @@ export function RegionsInfoPanel({
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
               createElement,
-              useState,
               gameData,
               commutersViewState,
               dispatchCommutersViewAction,
@@ -243,7 +247,10 @@ export function RegionsInfoPanel({
 
 function createDefaultCommuterSortStates(): Map<CommuterDimension, SortState> {
   return new Map([
-    [CommuterDimension.Region, { ...DEFAULT_SORT_STATE }],
+    [
+      CommuterDimension.Region,
+      { ...DEFAULT_SORT_STATE, sortDirection: SortDirection.Asc },
+    ],
     [CommuterDimension.CommuteHour, { ...DEFAULT_SORT_STATE }],
     [CommuterDimension.CommuteLength, { ...DEFAULT_SORT_STATE }],
   ]);
