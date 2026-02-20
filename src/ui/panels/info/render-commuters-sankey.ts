@@ -157,6 +157,7 @@ type SankeyCanvasProps = {
   displaySourceOnLeft: boolean;
   valueUnitLabel: 'commuters' | 'commutes';
   labelsFollowFlowDirection: boolean;
+  isCompactViewport: boolean;
 };
 
 export function renderCommutersSankey(
@@ -164,6 +165,7 @@ export function renderCommutersSankey(
   gameData: RegionGameData,
   viewState: CommutersViewState,
   breakdownData: CommuterBreakdownData,
+  isCompactViewport: boolean,
 ): ReactNode {
   const byBreakdownUnitModeShare = breakdownData.modeShareByBreakdownUnit;
   const hasSplitSources = Boolean(breakdownData.sourceModeShareByBreakdownUnit);
@@ -216,13 +218,18 @@ export function renderCommutersSankey(
     12;
   // Estimate required height from terminal label count (2-line labels), not raw node count.
   const chartHeight = Math.max(
-    360,
-    Math.min(760, estimatedLabelRows * perLabelRowHeight + 96),
+    isCompactViewport ? 320 : 360,
+    Math.min(
+      isCompactViewport ? 700 : 760,
+      estimatedLabelRows * perLabelRowHeight + (isCompactViewport ? 72 : 96),
+    ),
   );
 
   return h(
     'div',
-    { className: 'border-t border-border/30 pt-1 w-full' },
+    {
+      className: `border-t border-border/30 ${isCompactViewport ? 'pt-0.5' : 'pt-1'} w-full`,
+    },
     h(
       'div',
       {
@@ -241,13 +248,14 @@ export function renderCommutersSankey(
         valueUnitLabel,
         labelsFollowFlowDirection:
           viewState.sankeyOptions.labelsFollowFlowDirection,
+        isCompactViewport,
       } satisfies SankeyCanvasProps),
     ),
     h(
       'div',
       {
         className:
-          'flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] font-medium text-foreground',
+          `flex flex-wrap items-center justify-center ${isCompactViewport ? 'gap-x-4 gap-y-1 pt-1' : 'gap-x-6 gap-y-2 pt-2'} text-[10px] font-medium text-foreground`,
       },
       ...sankeyData.sourceLegendEntries.map((entry) =>
         buildLegendItem(h, entry.label, entry.color),
@@ -304,6 +312,7 @@ function SankeyCanvas({
   displaySourceOnLeft,
   valueUnitLabel,
   labelsFollowFlowDirection,
+  isCompactViewport,
 }: SankeyCanvasProps): ReactNode {
   const [chartWidth, setChartWidth] = useState<number>(SANKEY_MIN_WIDTH_PX);
   const [hoveredLinkIndex, setHoveredLinkIndex] = useState<number | null>(null);
@@ -311,8 +320,18 @@ function SankeyCanvas({
 
   // Horizontal padding is greater on the side the labels are intended to be rendered on.
   const sankeyMargins = renderLabelsOnLeft
-    ? { top: 10, right: 10, bottom: 10, left: 108 }
-    : { top: 10, right: 108, bottom: 10, left: 10 };
+    ? {
+        top: isCompactViewport ? 6 : 10,
+        right: 10,
+        bottom: isCompactViewport ? 6 : 10,
+        left: 108,
+      }
+    : {
+        top: isCompactViewport ? 6 : 10,
+        right: 108,
+        bottom: isCompactViewport ? 6 : 10,
+        left: 10,
+      };
 
   return h(
     'div',
@@ -348,7 +367,7 @@ function SankeyCanvas({
           data: sankeyData,
           align: 'justify',
           margin: sankeyMargins,
-          nodePadding: 22,
+          nodePadding: isCompactViewport ? 10 : 22,
           nodeWidth: 14,
           sort: false,
           verticalAlign: 'justify',

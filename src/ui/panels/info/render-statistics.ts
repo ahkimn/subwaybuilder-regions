@@ -14,6 +14,7 @@ import { buildReactViewHeader } from '../shared/view-header';
 export function renderStatisticsView(
   h: typeof createElement,
   gameData: RegionGameData,
+  isCompactViewport: boolean,
 ): ReactNode {
   const realPopulation = gameData.realPopulation;
   const demandPoints = gameData.demandData?.demandPoints ?? 0;
@@ -40,7 +41,7 @@ export function renderStatisticsView(
 
   return h(
     'div',
-    { className: 'flex flex-col gap-2' },
+    { className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'}` },
     buildReactViewHeader(h, gameData.displayName),
     ReactDetailRow(
       h,
