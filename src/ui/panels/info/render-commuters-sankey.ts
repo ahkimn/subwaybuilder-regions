@@ -222,13 +222,15 @@ export function renderCommutersSankey(
 
   return h(
     'div',
-    { className: 'border-t border-border/30 pt-1 w-full' },
+    {
+      className:
+        'border-t border-border/30 pt-1 w-full min-h-0 flex flex-col flex-1 overflow-hidden',
+    },
     h(
       'div',
       {
-        className: 'overflow-auto min-h-0 w-full',
+        className: 'overflow-auto min-h-0 w-full flex-1',
         style: {
-          maxHeight: '60vh',
           scrollbarWidth: 'thin',
           scrollbarGutter: 'stable both-edges',
         },
