@@ -3,7 +3,6 @@ import type { createElement } from 'react';
 
 import type { SelectButtonConfig } from '../../elements/SelectRow';
 import { ReactSelectRow } from '../../elements/SelectRow';
-import { renderInfoPlaceholder } from '../shared/info-placeholder';
 import type { RegionsOverviewTab } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
 
@@ -60,11 +59,4 @@ export function renderOverviewTabs(
     'regions-overview-tab-select',
     true,
   );
-}
-
-export function renderPlaceholderTab(
-  h: typeof createElement,
-  description: string,
-): React.ReactNode {
-  return renderInfoPlaceholder(h, description);
 }
