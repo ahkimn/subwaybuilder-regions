@@ -7,6 +7,7 @@ import {
 } from 'react';
 
 import {
+  INFO_PANEL_MIN_VERTICAL_OFFSET,
   INFO_PANEL_MIN_WIDTH,
   LOADING_VALUE_DISPLAY,
   REGIONS_INFO_PANEL_ID,
@@ -212,7 +213,7 @@ export function RegionsInfoPanel({
         'w-full flex flex-col min-h-0',
       ].join(' '),
       style: {
-        maxHeight: 'calc(100vh - 100px)',
+        maxHeight: `calc(100vh - ${INFO_PANEL_MIN_VERTICAL_OFFSET}px)`,
       },
     },
     ReactPanelHeader(createElement, REGIONS_INFO_PANEL_TITLE, onClose),

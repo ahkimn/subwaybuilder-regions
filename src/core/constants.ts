@@ -62,6 +62,7 @@ export const FLOATING_PANEL_OFFSET_X = 80;
 export const FLOATING_PANEL_OFFSET_Y = 80;
 
 export const INFO_PANEL_MIN_WIDTH = 80;
+export const INFO_PANEL_MIN_VERTICAL_OFFSET = 100; // Minimum vertical offset from bottom of viewport to avoid rendering over the bottom bar
 
 // TODO: (Feature) add as config option
 export const SHOW_UNPOPULATED_REGIONS = false; // Whether to show regions with no demand data by default in the overview panel and layer.
