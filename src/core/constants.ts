@@ -51,6 +51,12 @@ export const REGIONS_OVERVIEW_PANEL_TITLE = 'Regions Overview';
 export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
 export const REGIONS_OVERVIEW_PANEL_CONTENT_ID =
   'regions-overview-panel-content';
+export const OVERVIEW_REGION_FOCUS_TARGET_COVERAGE = 0.5; // Target map coverage for overview row focus action (roughly half of viewport width/height)
+export const OVERVIEW_REGION_FOCUS_MIN_PADDING_PX = 48; // Minimum fitBounds padding on each side for overview row focus
+export const OVERVIEW_REGION_FOCUS_MAX_PADDING_PX = 280; // Maximum fitBounds padding on each side for overview row focus
+export const OVERVIEW_REGION_FOCUS_MAX_ZOOM = 12; // Max zoom when focusing a region from overview to avoid over-zooming very small regions
+export const OVERVIEW_REGION_FOCUS_DURATION_MS = 700; // Camera transition duration for overview row focus
+export const OVERVIEW_REGION_FOCUS_MIN_BBOX_SPAN_DEGREES = 0.0025; // Minimum lng/lat span used when normalizing tiny or degenerate region bboxes
 
 export const FLOATING_PANEL_OFFSET_X = 80;
 export const FLOATING_PANEL_OFFSET_Y = 80;

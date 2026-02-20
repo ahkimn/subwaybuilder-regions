@@ -1,20 +1,28 @@
 import {
   ENFORCE_ONE_DATASET_VISIBLE,
+  OVERVIEW_REGION_FOCUS_DURATION_MS,
+  OVERVIEW_REGION_FOCUS_MAX_PADDING_PX,
+  OVERVIEW_REGION_FOCUS_MAX_ZOOM,
+  OVERVIEW_REGION_FOCUS_MIN_BBOX_SPAN_DEGREES,
+  OVERVIEW_REGION_FOCUS_MIN_PADDING_PX,
+  OVERVIEW_REGION_FOCUS_TARGET_COVERAGE,
   SHOW_UNPOPULATED_REGIONS,
 } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
+import {
+  buildBBoxFitState as fitBBox,
+  normalizeBBox,
+} from '../core/geometry/helpers';
 import { RegionSelection } from '../core/types';
 import type { MapDisplayColor } from '../ui/types/DisplayColor';
 import { PRIMARY_FILL_COLORS } from '../ui/types/DisplayColor';
 import type { LayerToggleOptions } from '../ui/types/LayerToggleOptions';
 import type { LightMode } from './styles';
 import {
-  BASE_FILL_OPACITY,
   DEFAULT_DARK_MODE_BOUNDARY_SETTINGS,
   DEFAULT_DARK_MODE_LABEL_SETTINGS,
   DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS,
   DEFAULT_LIGHT_MODE_LABEL_SETTINGS,
-  HOVER_FILL_OPACITY,
   stateBoolean,
 } from './styles';
 
@@ -47,6 +55,15 @@ type RegionSelectPayload = {
   featureId: string | number;
 };
 
+type RegionFocusOptions = {
+  targetCoverage: number;
+  minPaddingPx: number;
+  maxPaddingPx: number;
+  maxZoom: number;
+  durationMs: number;
+  minBBoxSpanDegrees: number;
+};
+
 export type RegionsMapLayersEvents = {
   onRegionSelect?: (payload: RegionSelectPayload) => void;
   onLayerStateSync?: () => void;
@@ -58,6 +75,7 @@ export type RegionsMapLayersEvents = {
 
 export class RegionsMapLayers {
   private map: maplibregl.Map;
+  private lightMode: LightMode = 'dark';
   private nextColorIndex = 0;
   private layerStates = new Map<string, MapLayerState>();
   private layerStyles = new Map<string, MapLayerStyle>();
@@ -202,11 +220,7 @@ export class RegionsMapLayers {
 
     const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     if (this.layerStates.has(datasetIdentifier)) {
-      this.updateMapLayers(
-        dataset,
-        this.layerStates.get(datasetIdentifier)!,
-        'dark',
-      );
+      this.updateMapLayers(dataset, this.layerStates.get(datasetIdentifier)!);
       return;
     }
 
@@ -225,7 +239,7 @@ export class RegionsMapLayers {
       labelLayerId,
       visible: false,
     };
-    this.updateMapLayers(dataset, state, 'dark');
+    this.updateMapLayers(dataset, state);
     this.layerStates.set(datasetIdentifier, state);
   }
 
@@ -419,17 +433,68 @@ export class RegionsMapLayers {
     return mapRef.getStyle().layers?.map((layer) => layer.id) ?? [];
   }
 
+  focusRegion(
+    dataset: RegionDataset,
+    featureId: string | number,
+    options?: Partial<RegionFocusOptions>,
+  ): void {
+    const mapRef = this.getMapReference();
+    if (!mapRef) return;
+
+    const boundaryParams = dataset.regionBoundaryParamsMap.get(featureId);
+    if (!boundaryParams) {
+      console.warn(
+        `[Regions] No cached boundary params for feature ${String(
+          featureId,
+        )} in dataset ${RegionDataset.getIdentifier(dataset)}`,
+      );
+      return;
+    }
+
+    const mapContainer = mapRef.getContainer();
+    const viewportWidth = mapContainer?.clientWidth ?? 0;
+    const viewportHeight = mapContainer?.clientHeight ?? 0;
+    const minBBoxSpanDegrees =
+      options?.minBBoxSpanDegrees ?? OVERVIEW_REGION_FOCUS_MIN_BBOX_SPAN_DEGREES;
+
+    const normalizedBBox = normalizeBBox(
+      boundaryParams.bbox,
+      minBBoxSpanDegrees,
+      minBBoxSpanDegrees,
+    );
+    const bboxFit = fitBBox(
+      normalizedBBox,
+      viewportWidth,
+      viewportHeight,
+      options?.targetCoverage ?? OVERVIEW_REGION_FOCUS_TARGET_COVERAGE,
+      options?.minPaddingPx ?? OVERVIEW_REGION_FOCUS_MIN_PADDING_PX,
+      options?.maxPaddingPx ?? OVERVIEW_REGION_FOCUS_MAX_PADDING_PX,
+    );
+
+    mapRef.fitBounds(
+      [
+        [bboxFit.bbox[0], bboxFit.bbox[1]],
+        [bboxFit.bbox[2], bboxFit.bbox[3]],
+      ],
+      {
+        padding: bboxFit.padding,
+        maxZoom: options?.maxZoom ?? OVERVIEW_REGION_FOCUS_MAX_ZOOM,
+        duration: options?.durationMs ?? OVERVIEW_REGION_FOCUS_DURATION_MS,
+      },
+    );
+  }
+
   // --- Layer Render Helpers --- //
   private updateMapLayers(
     dataset: RegionDataset,
     layerState: MapLayerState,
-    lightMode: LightMode,
   ) {
     this.updateSource(layerState.sourceId, dataset.boundaryData!);
     this.updateSource(layerState.labelSourceId, dataset.labelData!);
 
-    this.addBoundaryLayers(layerState, lightMode);
-    this.addLabelLayer(layerState, lightMode);
+    this.addBoundaryLayer(layerState);
+    this.addLabelLayer(layerState);
+    this.applyLightModeToLayerState(layerState);
   }
 
   private buildDemandExistsFilter(): maplibregl.FilterSpecification {
@@ -466,11 +531,7 @@ export class RegionsMapLayers {
     return style;
   }
 
-  private addBoundaryLayers(layerState: MapLayerState, lightMode: LightMode) {
-    const boundarySettings =
-      lightMode === 'light'
-        ? DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS
-        : DEFAULT_DARK_MODE_BOUNDARY_SETTINGS;
+  private addBoundaryLayer(layerState: MapLayerState) {
     const style = this.determineStyle(layerState.datasetIdentifier);
     if (!this.tryGetLayer(layerState.boundaryLayerId)) {
       this.map.addLayer({
@@ -487,11 +548,6 @@ export class RegionsMapLayers {
             style.fillColor.hover,
             stateBoolean('hover', style.fillColor.hover, style.fillColor.hex),
           ),
-          'fill-opacity': stateBoolean(
-            'selected',
-            HOVER_FILL_OPACITY,
-            stateBoolean('hover', HOVER_FILL_OPACITY, BASE_FILL_OPACITY),
-          ),
         },
       });
     }
@@ -505,20 +561,12 @@ export class RegionsMapLayers {
         layout: {
           visibility: 'none',
         },
-        paint: {
-          'line-color': boundarySettings['line-color'],
-          'line-width': boundarySettings['line-width'],
-          'line-opacity': boundarySettings['line-opacity'],
-        },
+        paint: {},
       });
     }
   }
 
-  private addLabelLayer(layerState: MapLayerState, lightMode: LightMode) {
-    const labelSettings =
-      lightMode === 'light'
-        ? DEFAULT_LIGHT_MODE_LABEL_SETTINGS
-        : DEFAULT_DARK_MODE_LABEL_SETTINGS;
+  private addLabelLayer(layerState: MapLayerState) {
     if (!this.tryGetLayer(layerState.labelLayerId)) {
       this.map.addLayer({
         id: layerState.labelLayerId,
@@ -527,28 +575,124 @@ export class RegionsMapLayers {
         filter: this.buildDemandExistsFilter(),
         layout: {
           'text-field': ['get', 'NAME'],
-          'text-size': labelSettings['text-size'],
-          'text-font': ['Noto Sans Regular'],
           'text-anchor': 'center',
           'text-allow-overlap': false,
           'text-ignore-placement': false,
           visibility: 'none',
         },
-        paint: {
-          'text-color': stateBoolean(
-            'hover',
-            labelSettings['hover-text-color'],
-            labelSettings['text-color'],
-          ),
-          'text-halo-color': labelSettings['text-halo-color'],
-          'text-halo-width': stateBoolean(
-            'hover',
-            labelSettings['hover-halo-width'],
-            labelSettings['text-halo-width'],
-          ),
-          'text-halo-blur': labelSettings['text-halo-blur'],
-        },
+        paint: {},
       });
+    }
+  }
+
+  // --- Style Handlers --- //
+  setLightMode(mode: LightMode): void {
+    if (this.lightMode === mode) {
+      return;
+    }
+    this.lightMode = mode;
+    for (const layerState of this.layerStates.values()) {
+      this.applyLightModeToLayerState(layerState);
+    }
+  }
+
+  private resolveBoundarySettings(mode: LightMode) {
+    return mode === 'light'
+      ? DEFAULT_LIGHT_MODE_BOUNDARY_SETTINGS
+      : DEFAULT_DARK_MODE_BOUNDARY_SETTINGS;
+  }
+
+  private resolveLabelSettings(mode: LightMode) {
+    return mode === 'light'
+      ? DEFAULT_LIGHT_MODE_LABEL_SETTINGS
+      : DEFAULT_DARK_MODE_LABEL_SETTINGS;
+  }
+
+  private applyLightModeToLayerState(layerState: MapLayerState): void {
+    const mapRef = this.getMapReference();
+    if (!mapRef) return;
+
+    const boundarySettings = this.resolveBoundarySettings(this.lightMode);
+    const labelSettings = this.resolveLabelSettings(this.lightMode);
+
+    if (this.tryGetLayer(layerState.boundaryLineLayerId)) {
+      mapRef.setPaintProperty(
+        layerState.boundaryLineLayerId,
+        'line-color',
+        boundarySettings['line-color'],
+      );
+      mapRef.setPaintProperty(
+        layerState.boundaryLineLayerId,
+        'line-opacity',
+        boundarySettings['line-opacity'],
+      );
+      mapRef.setPaintProperty(
+        layerState.boundaryLineLayerId,
+        'line-width',
+        boundarySettings['line-width'],
+      );
+    }
+
+    if (this.tryGetLayer(layerState.boundaryLayerId)) {
+      mapRef.setPaintProperty(
+        layerState.boundaryLayerId,
+        'fill-opacity',
+        stateBoolean(
+          'selected',
+          boundarySettings['selected-fill-opacity'],
+          stateBoolean(
+            'hover',
+            boundarySettings['hover-fill-opacity'],
+            boundarySettings['fill-opacity'],
+          ),
+        ),
+      );
+    }
+
+    if (this.tryGetLayer(layerState.labelLayerId)) {
+      mapRef.setLayoutProperty(
+        layerState.labelLayerId,
+        'text-size',
+        labelSettings['text-size'],
+      );
+      mapRef.setLayoutProperty(
+        layerState.labelLayerId,
+        'text-font',
+        labelSettings['text-font'],
+      );
+      mapRef.setLayoutProperty(
+        layerState.labelLayerId,
+        'text-letter-spacing',
+        labelSettings['text-letter-spacing'],
+      );
+      mapRef.setPaintProperty(
+        layerState.labelLayerId,
+        'text-color',
+        stateBoolean(
+          'hover',
+          labelSettings['hover-text-color'],
+          labelSettings['text-color'],
+        ),
+      );
+      mapRef.setPaintProperty(
+        layerState.labelLayerId,
+        'text-halo-color',
+        labelSettings['text-halo-color'],
+      );
+      mapRef.setPaintProperty(
+        layerState.labelLayerId,
+        'text-halo-width',
+        stateBoolean(
+          'hover',
+          labelSettings['hover-halo-width'],
+          labelSettings['text-halo-width'],
+        ),
+      );
+      mapRef.setPaintProperty(
+        layerState.labelLayerId,
+        'text-halo-blur',
+        labelSettings['text-halo-blur'],
+      );
     }
   }
 

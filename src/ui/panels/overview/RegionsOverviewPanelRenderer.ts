@@ -11,7 +11,8 @@ import { renderRegionsOverviewPanel } from './RegionsOverviewPanel';
 import type { RegionsOverviewPanelState } from './types';
 
 export type RegionsOverviewPanelEvents = {
-  onRegionSelect?: (payload: RegionSelection) => void;
+  onRegionSelect?: (payload: RegionSelection, toggleIfSame: boolean) => void;
+  onRegionDoubleClick?: (payload: RegionSelection) => void;
 };
 
 export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
@@ -64,7 +65,8 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
         uiState: this.state,
         regionDataManager: this.dataManager,
         availableDatasetIdentifiers: currentDatasetIds,
-        onRegionSelect: this.events.onRegionSelect ?? (() => {}),
+        onRegionSelect: this.events.onRegionSelect ?? (() => { }),
+        onRegionDoubleClick: this.events.onRegionDoubleClick ?? (() => { }),
         initialState: this.panelStateSnapshot,
         onStateChange: (nextState) => {
           this.panelStateSnapshot = nextState;

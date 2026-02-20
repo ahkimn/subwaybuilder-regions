@@ -180,7 +180,8 @@ export function renderOverviewTabContent(
   searchTerm: string,
   onSearchTermChange: (value: string) => void,
   onSortChange: (columnIndex: number) => void,
-  onSelectRow: (selection: RegionSelection) => void,
+  onSelectRow: (selection: RegionSelection, toggleIfSame: boolean) => void,
+  onDoubleClickRow: (selection: RegionSelection) => void,
 ): React.ReactNode {
   const rows = sortRows(
     filterRows(
@@ -202,6 +203,7 @@ export function renderOverviewTabContent(
       sortState,
       onSortChange,
       onSelectRow,
+      onDoubleClickRow,
     ),
   );
 }
@@ -241,7 +243,8 @@ function renderOverviewTable(
   activeSelection: RegionSelection | null,
   sortState: SortState,
   onSortChange: (columnIndex: number) => void,
-  onSelectRow: (selection: RegionSelection) => void,
+  onSelectRow: (selection: RegionSelection, toggleIfSame: boolean) => void,
+  onDoubleClickRow: (selection: RegionSelection) => void,
 ): React.ReactNode {
   const shouldFillAvailableHeight = rows.length > MIN_ROWS_FOR_FULL_HEIGHT;
 
@@ -301,18 +304,16 @@ function renderOverviewTable(
       const isActive =
         activeSelection !== null &&
         RegionSelectionUtils.isEqual(activeSelection, row.selection);
-      const rowAction = () => onSelectRow(row.selection);
-      // TODO (Game Bug): Resident worker counts from the demand data are currently inaccurate. Using the commuter summary mode share values (if present) until it is fixed.
-      const residentsFromCommuterSummary = ModeShare.totalOrUndefined(
-        row.gameData.commuterSummary?.residentModeShare,
-      );
-      const workersFromCommuterSummary = ModeShare.totalOrUndefined(
-        row.gameData.commuterSummary?.workerModeShare,
-      );
-      const residents =
-        residentsFromCommuterSummary ?? row.gameData.demandData?.residents ?? 0;
-      const workers =
-        workersFromCommuterSummary ?? row.gameData.demandData?.workers ?? 0;
+      const rowClickAction = (event?: React.MouseEvent<HTMLDivElement>) => {
+        const isModifierClick =
+          event?.ctrlKey === true ||
+          event?.shiftKey === true ||
+          event?.metaKey === true;
+        onSelectRow(row.selection, isModifierClick);
+      };
+      const rowDoubleClickAction = () => onDoubleClickRow(row.selection);
+      const residents = row.gameData.demandData?.residents ?? 0;
+      const workers = row.gameData.demandData?.workers ?? 0;
       const totalCommuters = residents + workers;
 
       const commuterSummary = row.gameData.commuterSummary;
@@ -322,12 +323,19 @@ function renderOverviewTable(
         : null;
       const totalModeShare = commuterSummary
         ? ModeShare.add(
-            commuterSummary.residentModeShare,
-            commuterSummary.workerModeShare,
-          )
+          commuterSummary.residentModeShare,
+          commuterSummary.workerModeShare,
+        )
         : null;
       const rowOptions: DataRowOptions = {
-        onClick: Array.from({ length: OVERVIEW_COLUMN_COUNT }, () => rowAction),
+        onClick: Array.from(
+          { length: OVERVIEW_COLUMN_COUNT },
+          () => rowClickAction,
+        ),
+        onDoubleClick: Array.from(
+          { length: OVERVIEW_COLUMN_COUNT },
+          () => rowDoubleClickAction,
+        ),
         align: tableAlign,
         rowClassName: isActive
           ? 'bg-accent text-accent-foreground transition-colors cursor-pointer'
@@ -345,18 +353,18 @@ function renderOverviewTable(
           formatNumberOrDefault(workers),
           totalModeShare
             ? formatPercentOrDefault(
-                ModeShare.share(totalModeShare, 'transit') * 100,
-              )
+              ModeShare.share(totalModeShare, 'transit') * 100,
+            )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
             ? formatPercentOrDefault(
-                ModeShare.share(totalModeShare, 'driving') * 100,
-              )
+              ModeShare.share(totalModeShare, 'driving') * 100,
+            )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
             ? formatPercentOrDefault(
-                ModeShare.share(totalModeShare, 'walking') * 100,
-              )
+              ModeShare.share(totalModeShare, 'walking') * 100,
+            )
             : LOADING_VALUE_DISPLAY,
           infraData
             ? formatNumberOrDefault(infraData.stations.size)
@@ -407,8 +415,8 @@ function buildRows(
   const rowsData = SHOW_UNPOPULATED_REGIONS
     ? Array.from(datasetGameData.values())
     : Array.from(datasetGameData.values()).filter((gameData) =>
-        RegionGameDataUtils.isPopulated(gameData),
-      );
+      RegionGameDataUtils.isPopulated(gameData),
+    );
 
   return rowsData.map((gameData) => {
     return {
@@ -502,15 +510,15 @@ function buildOverviewSortMetrics(
       const workers = row.gameData.demandData?.workers ?? 0;
       const combinedModeShare = ModeShare.add(
         row.gameData.commuterSummary?.residentModeShare ??
-          ModeShare.createEmpty(),
+        ModeShare.createEmpty(),
         row.gameData.commuterSummary?.workerModeShare ??
-          ModeShare.createEmpty(),
+        ModeShare.createEmpty(),
       );
       const trackLengthTotal = row.gameData.infraData
         ? Array.from(row.gameData.infraData.trackLengths.values()).reduce(
-            (sum, length) => sum + length,
-            0,
-          )
+          (sum, length) => sum + length,
+          0,
+        )
         : 0;
 
       const metrics: OverviewSortMetrics = {

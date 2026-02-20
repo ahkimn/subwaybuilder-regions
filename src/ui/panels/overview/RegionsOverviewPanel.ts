@@ -28,7 +28,8 @@ export type RegionsOverviewPanelProps = {
   uiState: Readonly<UIState>;
   regionDataManager: RegionDataManager;
   availableDatasetIdentifiers: string[];
-  onRegionSelect: (selection: RegionSelection) => void;
+  onRegionSelect: (selection: RegionSelection, toggleIfSame: boolean) => void;
+  onRegionDoubleClick: (selection: RegionSelection) => void;
   initialState?: RegionsOverviewPanelState | null;
   onStateChange?: (nextState: RegionsOverviewPanelState) => void;
 };
@@ -164,6 +165,7 @@ export function renderRegionsOverviewPanel(
         setSearchTerm,
         onSortChange,
         props.onRegionSelect,
+        props.onRegionDoubleClick,
       );
       break;
     case RegionsOverviewTabs.HistoricalData:

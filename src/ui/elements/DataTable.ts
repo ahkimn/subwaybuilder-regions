@@ -3,6 +3,7 @@ import {
   type createElement,
   type CSSProperties,
   type Dispatch,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type SetStateAction,
 } from 'react';
@@ -19,7 +20,8 @@ export type DataRowOptions = {
   rowClassName?: string;
   rowHoverClassName?: string;
   colSpan?: number[];
-  onClick?: (() => void)[];
+  onClick?: ((event?: ReactMouseEvent<HTMLDivElement>) => void)[];
+  onDoubleClick?: ((event?: ReactMouseEvent<HTMLDivElement>) => void)[];
   sortState?: SortState;
   align?: ('left' | 'right' | 'center')[];
 };
@@ -176,6 +178,8 @@ function buildReactCell(
         key,
         className,
         'data-table-row': rowIndex,
+        onClick: rowOptions.onClick?.[index],
+        onDoubleClick: rowOptions.onDoubleClick?.[index],
         onMouseEnter,
         onMouseLeave,
       },
@@ -197,6 +201,7 @@ function buildReactCell(
       style: presentation.style,
       'data-table-row': rowIndex,
       onClick: rowOptions.onClick?.[index],
+      onDoubleClick: rowOptions.onDoubleClick?.[index],
       onMouseEnter,
       onMouseLeave,
     },
@@ -323,7 +328,7 @@ function computeCellPresentation(
     classNames.push(rowOptions.rowClassName);
   }
 
-  if (rowOptions.onClick?.[colIndex]) {
+  if (rowOptions.onClick?.[colIndex] || rowOptions.onDoubleClick?.[colIndex]) {
     classNames.push('cursor-pointer hover:text-foreground');
   }
   // Row boundary classes take precedence over cell (table-wide) border classes
