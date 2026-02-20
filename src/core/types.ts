@@ -1,5 +1,7 @@
 // --- Statistics Types --- //
 
+import type { LightMode } from '../map/styles';
+
 export const MODE_ORDER: (keyof ModeShare)[] = [
   'transit',
   'driving',
@@ -82,10 +84,15 @@ export enum DatasetStatus {
   Error = 'error',
 }
 
+export type UIStyle = {
+  lightMode: LightMode;
+};
+
 export class UIState {
   cityCode: string | null = null;
   lastInjectedCity: string | null = null;
   activeSelection: RegionSelection | null = null;
+  style: UIStyle = { lightMode: 'dark' };
 
   get isActive(): boolean {
     return this.cityCode !== null && this.activeSelection !== null;

@@ -27,6 +27,7 @@ import {
   SANKEY_TERMINAL_NODE_COLOR,
 } from '../../types/DisplayColor';
 import {
+  HOURLY_SANKEY_FLOW_DISPLAY_COUNT,
   resolveOrderedUnitIds,
   resolveSourceUnitName,
   resolveValueUnitLabel,
@@ -37,7 +38,6 @@ import { CommuterDimension, CommuterDirection } from './types';
 const SANKEY_MIN_WIDTH_PX = 720;
 const SANKEY_EMPTY_MESSAGE = 'No commuter flow data available';
 const ALL_OTHERS_LABEL = 'Other Regions';
-const HOURLY_SANKEY_FLOW_DISPLAY_COUNT = 12;
 const LABEL_OFFSET = 6;
 const LABEL_TITLE_FONT_SIZE = 10;
 const LABEL_SUBTITLE_FONT_SIZE = 9;

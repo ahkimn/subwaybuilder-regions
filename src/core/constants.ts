@@ -51,6 +51,12 @@ export const REGIONS_OVERVIEW_PANEL_TITLE = 'Regions Overview';
 export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
 export const REGIONS_OVERVIEW_PANEL_CONTENT_ID =
   'regions-overview-panel-content';
+export const OVERVIEW_REGION_FOCUS_TARGET_COVERAGE = 0.5; // Target map coverage for overview row focus action (roughly half of viewport width/height)
+export const OVERVIEW_REGION_FOCUS_MIN_PADDING_PX = 48; // Minimum fitBounds padding on each side for overview row focus
+export const OVERVIEW_REGION_FOCUS_MAX_PADDING_PX = 280; // Maximum fitBounds padding on each side for overview row focus
+export const OVERVIEW_REGION_FOCUS_MAX_ZOOM = 12; // Max zoom when focusing a region from overview to avoid over-zooming very small regions
+export const OVERVIEW_REGION_FOCUS_DURATION_MS = 700; // Camera transition duration for overview row focus
+export const OVERVIEW_REGION_FOCUS_MIN_BBOX_SPAN_DEGREES = 0.0025; // Minimum lng/lat span used when normalizing tiny or degenerate region bboxes
 
 export const FLOATING_PANEL_OFFSET_X = 80;
 export const FLOATING_PANEL_OFFSET_Y = 80;
@@ -65,4 +71,5 @@ export const SANKEY_FLOW_DISPLAY_COUNT = 10; // Number of flows to display in sa
 export const SANKEY_LABEL_FLOW_SYNC = true; // Whether the labels of entries within a Sankey diagram should always be rendered on the right side of nodes, or if they should be conditionally rendered on the left side depending on the direction of flow
 export const DISTANCE_BUCKET_COUNT = 10; // Number of buckets to divide commute distances into display for in chart elements. Anything above the max distance (defined as bucket size * bucket count) will be grouped into an "xkm+" category
 export const AVAILABLE_BUCKET_SIZES_KM = [1, 2, 5, 10] as const; // Allowable size of commute distance buckets in kilometers
-export const AVAILABLE_BUCKET_SIZES_MINUTES = [60, 120, 180, 240, 360] as const; export const DEFAULT_TABLE_ROWS = 12;
+export const AVAILABLE_BUCKET_SIZES_MINUTES = [60, 120, 180, 240, 360] as const;
+export const DEFAULT_TABLE_ROWS = 12;

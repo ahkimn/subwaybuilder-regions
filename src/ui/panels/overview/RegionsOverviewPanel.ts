@@ -1,51 +1,35 @@
 import type React from 'react';
 import { type createElement, type useEffect, type useState } from 'react';
 
-import {
-  REGIONS_OVERVIEW_PANEL_CONTENT_ID,
-  SHOW_UNPOPULATED_REGIONS,
-} from '../../../core/constants';
+import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import {
-  ModeShare,
   RegionDataType,
-  type RegionGameData,
-  RegionGameData as RegionGameDataUtils,
   type RegionSelection,
   type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import { buildReactViewHeader } from '../shared/view-header';
-import { SortDirection } from '../types';
-import type { InputFieldProperties } from './render';
+import type { SortState } from '../types';
+import { DEFAULT_SORT_STATE } from '../types';
+import { renderLayerSelectorRow, renderOverviewTabs } from './render';
+import { renderHistoricalTabContent } from './render-historical';
+import type { InputFieldProperties } from './render-overview';
 import {
-  renderLayerSelectorRow,
-  renderOverviewSearchField,
-  renderOverviewTable,
-  renderOverviewTabs,
-  renderPlaceholderTab,
-} from './render';
-import type {
-  RegionsOverviewPanelState,
-  RegionsOverviewRow,
-  RegionsOverviewSortState,
-  RegionsOverviewTab,
-} from './types';
+  getNextOverviewSortState,
+  renderOverviewTabContent,
+} from './render-overview';
+import { renderRidershipTabContent } from './render-ridership';
+import type { RegionsOverviewPanelState, RegionsOverviewTab } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
-
-const INITIAL_SORT_STATE: RegionsOverviewSortState = {
-  sortIndex: 0,
-  previousSortIndex: 1,
-  sortDirection: SortDirection.Asc,
-  previousSortDirection: SortDirection.Desc,
-};
 
 export type RegionsOverviewPanelProps = {
   api: ModdingAPI;
   uiState: Readonly<UIState>;
   regionDataManager: RegionDataManager;
   availableDatasetIdentifiers: string[];
-  onRegionSelect: (selection: RegionSelection) => void;
+  onRegionSelect: (selection: RegionSelection, toggleIfSame: boolean) => void;
+  onRegionDoubleClick: (selection: RegionSelection) => void;
   initialState?: RegionsOverviewPanelState | null;
   onStateChange?: (nextState: RegionsOverviewPanelState) => void;
 };
@@ -85,8 +69,8 @@ export function renderRegionsOverviewPanel(
     () => props.initialState?.activeTab ?? RegionsOverviewTabs.Overview,
   );
   const [, setSummaryRenderToken] = useStateHook<number>(0);
-  const [sortState, setSortState] = useStateHook<RegionsOverviewSortState>(
-    props.initialState?.sortState ?? INITIAL_SORT_STATE,
+  const [sortState, setSortState] = useStateHook<SortState>(
+    props.initialState?.sortState ?? DEFAULT_SORT_STATE,
   );
 
   useEffectHook(() => {
@@ -153,34 +137,8 @@ export function renderRegionsOverviewPanel(
   );
   const activeSelection = props.uiState.activeSelection;
 
-  const rows = sortRows(
-    filterRows(
-      buildRows(datasetGameData, selectedDatasetIdentifier),
-      searchTerm,
-    ),
-    sortState,
-  );
-
   const onSortChange = (columnIndex: number) => {
-    setSortState((current) => {
-      if (current.sortIndex === columnIndex) {
-        return {
-          ...current,
-          sortDirection:
-            current.sortDirection === SortDirection.Asc
-              ? SortDirection.Desc
-              : SortDirection.Asc,
-        };
-      }
-
-      return {
-        previousSortIndex: current.sortIndex,
-        previousSortDirection: current.sortDirection,
-        sortIndex: columnIndex,
-        sortDirection:
-          columnIndex === 0 ? SortDirection.Asc : SortDirection.Desc,
-      };
-    });
+    setSortState((current) => getNextOverviewSortState(current, columnIndex));
   };
 
   const onSetTab = (tab: RegionsOverviewTab) => {
@@ -195,33 +153,27 @@ export function renderRegionsOverviewPanel(
   let tabContent: React.ReactNode;
   switch (activeTab) {
     case RegionsOverviewTabs.Overview:
-      tabContent = h(
-        'div',
-        { className: 'flex flex-col gap-2 min-h-0 flex-1' },
-        renderOverviewSearchField(h, Input, searchTerm, setSearchTerm),
-        renderOverviewTable(
-          h,
-          useStateHook,
-          rows,
-          activeSelection,
-          sortState,
-          onSortChange,
-          props.onRegionSelect,
-        ),
+      tabContent = renderOverviewTabContent(
+        h,
+        useStateHook,
+        Input,
+        datasetGameData,
+        selectedDatasetIdentifier,
+        activeSelection,
+        sortState,
+        searchTerm,
+        setSearchTerm,
+        onSortChange,
+        props.onRegionSelect,
+        props.onRegionDoubleClick,
       );
       break;
-    case RegionsOverviewTabs.CommuterFlows:
-      tabContent = renderPlaceholderTab(
-        h,
-        'Commuter flow analysis is under construction.',
-      );
+    case RegionsOverviewTabs.HistoricalData:
+      tabContent = renderHistoricalTabContent(h);
       break;
     case RegionsOverviewTabs.Ridership:
     default:
-      tabContent = renderPlaceholderTab(
-        h,
-        'Ridership analysis is under construction.',
-      );
+      tabContent = renderRidershipTabContent(h);
       break;
   }
 
@@ -244,159 +196,4 @@ export function renderRegionsOverviewPanel(
     ]),
     tabContent,
   );
-}
-
-function buildRows(
-  datasetGameData: Map<string | number, RegionGameData>,
-  selectedDatasetIdentifier: string,
-): RegionsOverviewRow[] {
-  const rowsData = SHOW_UNPOPULATED_REGIONS
-    ? Array.from(datasetGameData.values())
-    : Array.from(datasetGameData.values()).filter((gameData) =>
-        RegionGameDataUtils.isPopulated(gameData),
-      );
-
-  return rowsData.map((gameData) => {
-    return {
-      selection: {
-        datasetIdentifier: selectedDatasetIdentifier,
-        featureId: gameData.featureId,
-      },
-      gameData,
-    };
-  });
-}
-
-function filterRows(
-  rows: RegionsOverviewRow[],
-  searchTerm: string,
-): RegionsOverviewRow[] {
-  const trimmed = searchTerm.trim().toLowerCase();
-  if (!trimmed) {
-    return rows;
-  }
-
-  return rows.filter(
-    (row) =>
-      row.gameData.displayName.toLowerCase().includes(trimmed) ||
-      row.gameData.fullName.toLowerCase().includes(trimmed),
-  );
-}
-
-function sortRows(
-  rows: RegionsOverviewRow[],
-  sortState: RegionsOverviewSortState,
-): RegionsOverviewRow[] {
-  const getTotalCommuters = (row: RegionsOverviewRow): number => {
-    const residents = row.gameData.demandData?.residents;
-    const workers = row.gameData.demandData?.workers;
-    return (residents ?? 0) + (workers ?? 0);
-  };
-
-  const applySort = (
-    a: RegionsOverviewRow,
-    b: RegionsOverviewRow,
-    index: number,
-    direction: SortDirection,
-  ): number => {
-    const multiplier = direction === SortDirection.Asc ? 1 : -1;
-    const aCommuterModeShare = ModeShare.add(
-      a.gameData.commuterSummary?.residentModeShare ?? ModeShare.createEmpty(),
-      a.gameData.commuterSummary?.workerModeShare ?? ModeShare.createEmpty(),
-    );
-    const bCommuterModeShare = ModeShare.add(
-      b.gameData.commuterSummary?.residentModeShare ?? ModeShare.createEmpty(),
-      b.gameData.commuterSummary?.workerModeShare ?? ModeShare.createEmpty(),
-    );
-    const aTrackLengths = a.gameData.infraData
-      ? Array.from(a.gameData.infraData.trackLengths.values()).reduce(
-          (sum, length) => sum + length,
-          0,
-        )
-      : 0;
-    const bTrackLengths = b.gameData.infraData
-      ? Array.from(b.gameData.infraData.trackLengths.values()).reduce(
-          (sum, length) => sum + length,
-          0,
-        )
-      : 0;
-
-    switch (index) {
-      case 1:
-        return (
-          ((a.gameData.realPopulation ?? 0) -
-            (b.gameData.realPopulation ?? 0)) *
-          multiplier
-        );
-      case 2:
-        return ((a.gameData.area ?? 0) - (b.gameData.area ?? 0)) * multiplier;
-      case 3:
-        return (getTotalCommuters(a) - getTotalCommuters(b)) * multiplier;
-      case 4:
-        return (
-          ((a.gameData.demandData?.residents ?? 0) -
-            (b.gameData.demandData?.residents ?? 0)) *
-          multiplier
-        );
-      case 5:
-        return (
-          ((a.gameData.demandData?.workers ?? 0) -
-            (b.gameData.demandData?.workers ?? 0)) *
-          multiplier
-        );
-      case 6:
-        return (
-          (ModeShare.share(aCommuterModeShare, 'transit') -
-            ModeShare.share(bCommuterModeShare, 'transit')) *
-          multiplier
-        );
-      case 7:
-        return (
-          (ModeShare.share(aCommuterModeShare, 'driving') -
-            ModeShare.share(bCommuterModeShare, 'driving')) *
-          multiplier
-        );
-      case 8:
-        return (
-          (ModeShare.share(aCommuterModeShare, 'walking') -
-            ModeShare.share(bCommuterModeShare, 'walking')) *
-          multiplier
-        );
-      case 9:
-        return (
-          ((a.gameData.infraData?.stations.size ?? 0) -
-            (b.gameData.infraData?.stations.size ?? 0)) *
-          multiplier
-        );
-      case 10:
-        return (aTrackLengths - bTrackLengths) * multiplier;
-      case 11:
-        return (
-          ((a.gameData.infraData?.routes.size ?? 0) -
-            (b.gameData.infraData?.routes.size ?? 0)) *
-          multiplier
-        );
-      default:
-        return (
-          a.gameData.displayName.localeCompare(b.gameData.displayName) *
-          multiplier
-        );
-    }
-  };
-
-  return [...rows].sort((a, b) => {
-    let result = applySort(a, b, sortState.sortIndex, sortState.sortDirection);
-    if (result === 0) {
-      result = applySort(
-        a,
-        b,
-        sortState.previousSortIndex,
-        sortState.previousSortDirection,
-      );
-    }
-    if (result === 0) {
-      result = a.gameData.displayName.localeCompare(b.gameData.displayName);
-    }
-    return result;
-  });
 }

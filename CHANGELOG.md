@@ -2,15 +2,29 @@
 
 [Back to README](README.md)
 
+## v0.2.13 - 2026-02-19
+
+_Game version_ v1.1.0
+
+### Other Updates
+
+- Adding pan-to on region select from overview. Double clicking a region from the `Overview Panel` will automatically move the map to the selected region
+- Mod UI now adapts (somewhat) to changes in game theme
+- Map layers should be more visible in light mode
+
+### Bugfixes
+
+- `Overview Panel` top row / first column are now "sticky" and will remain visible through scrolling
+
 ## v0.2.12 - 2026-02-19
 
-_Game version_ v1.0.3
+_Game version_ v1.1.0
 
 ### New Features
 
-- Added additional dimensions for breaking down commuter data: `Time` and `Length`
-  - `Time` corresponds to the departure time of the populations. This includes both Work->Home and Home->Work trips and is bucketed by default to every hour
+- Added additional dimensions for breaking down commuter data: `Time` and `Length` - `Time` corresponds to the departure time of the populations. This includes both Work->Home and Home->Work trips and is bucketed by default to every hour
   - `Length` corresponds to the commute distance of the population by driving. This is bucketed by default to every 5km
+
 - Added Sankey visualization as an alternative to `Table` form for each new dimension
   - Each `Sankey` visualization has three columns of nodes, with one corresponding to commute/commuter sources (e.g. residents of the selected region), another corresponding to mode share, and a final corresponding to the breakdown unit (e.g. hours of the day)
 

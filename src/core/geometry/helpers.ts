@@ -5,6 +5,18 @@ export type Coordinate = [number, number]; // [lng, lat]
 export type RingCoordinate = Coordinate[]; // Closed loop of coordinates
 export type PolygonCoordinates = RingCoordinate[]; // First ring is outer boundary, subsequent rings are holes
 
+export type BBoxPadding = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
+export type BBoxFit = {
+  bbox: BBox;
+  padding: BBoxPadding;
+};
+
 const R_E = 6371008.8; // Earth's radius in meters
 const DEG = Math.PI / 180; // Convert geographic degrees to radians
 
@@ -87,6 +99,51 @@ export function bboxIntersects(a: BBox, b: BBox): boolean {
     a[3] < b[1] || // a.maxY < b.minY
     a[1] > b[3] // a.minY > b.maxY
   );
+}
+
+export function normalizeBBox(
+  bbox: BBox,
+  // Minimum width in degrees of normalized bbox
+  minLngSpan: number,
+  // Minimum height in degrees of normalized bbox
+  minLatSpan: number,
+): BBox {
+  const [minLng, minLat, maxLng, maxLat] = bbox;
+
+  // Calculate additional padding needed in each dimension to meet minimum view span requirement
+  const lngPadding = Math.max(minLngSpan - (maxLng - minLng), 0) / 2;
+  const latPadding = Math.max(minLatSpan - (maxLat - minLat), 0) / 2;
+
+  return [
+    minLng - lngPadding,
+    minLat - latPadding,
+    maxLng + lngPadding,
+    maxLat + latPadding,
+  ];
+}
+
+export function buildBBoxFitState(
+  bbox: BBox, // Normalized bbox to fit
+  viewportWidth: number,
+  viewportHeight: number,
+  targetCoverage: number, // Desired dimensional percentage of viewport to fill with the bbox (0.01-1)
+  minPaddingPx: number, // Min padding in pixels around bbox to ensure it's not too close to viewport edges
+  maxPaddingPx: number, // Max padding in pixels around bbox to ensure it fills enough of the viewport
+): BBoxFit {
+  const perSidePaddingRatio = (1 - targetCoverage) / 2;
+  const basePaddingPx =
+    Math.min(viewportWidth, viewportHeight) * perSidePaddingRatio;
+  const clampedPaddingPx = clamp(basePaddingPx, minPaddingPx, maxPaddingPx);
+
+  return {
+    bbox: bbox,
+    padding: {
+      top: clampedPaddingPx,
+      right: clampedPaddingPx,
+      bottom: clampedPaddingPx,
+      left: clampedPaddingPx,
+    },
+  };
 }
 
 // Get bounding box for a line segment defined by two coordinates
@@ -268,4 +325,8 @@ export function segmentMidpoint(
 ): Coordinate {
   const t = (t0 + t1) * 0.5;
   return interpolatePoint(a, b, t);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
