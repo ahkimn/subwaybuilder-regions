@@ -209,13 +209,16 @@ export function RegionsInfoPanel({
         'border border-border/50',
         'h-fit rounded-lg',
         'text-sm shadow-lg overflow-hidden',
-        'w-full max-h-full flex flex-col min-h-0',
+        'w-full flex flex-col min-h-0',
       ].join(' '),
+      style: {
+        maxHeight: 'calc(100vh - 100px)',
+      },
     },
     ReactPanelHeader(createElement, REGIONS_INFO_PANEL_TITLE, onClose),
     createElement(
       'div',
-      { className: 'flex-1 min-h-0 overflow-hidden' },
+      { className: 'flex flex-col flex-1 min-h-0 overflow-hidden' },
       createElement(
         'div',
         {
@@ -224,7 +227,7 @@ export function RegionsInfoPanel({
         createElement(
           'div',
           {
-            className: `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`,
+            className: `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0 flex-1 overflow-hidden`,
           },
           ReactSelectRow(
             createElement,
@@ -234,7 +237,7 @@ export function RegionsInfoPanel({
           ),
           createElement(
             'div',
-            { className: 'flex flex-col gap-2 min-h-0' },
+            { className: 'flex flex-col gap-2 min-h-0 flex-1 overflow-hidden' },
             content,
           ),
         ),

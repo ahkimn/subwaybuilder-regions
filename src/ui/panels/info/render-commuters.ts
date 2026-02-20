@@ -77,7 +77,7 @@ export function renderCommutersView(
   }
   return h(
     'div',
-    { className: 'flex flex-col gap-2 text-xs min-h-0' },
+    { className: 'flex flex-col gap-2 text-xs min-h-0 flex-1 overflow-hidden' },
     buildCommutersHeader(h, gameData, viewState, dispatch),
     ...buildSummaryStatistics(
       h,

@@ -135,7 +135,10 @@ export function renderCommutersTable(
 
   return h(
     'div',
-    { className: 'border-t border-border/30 pt-1' },
+    {
+      className:
+        'border-t border-border/30 pt-1 min-h-0 flex flex-col flex-1 overflow-hidden',
+    },
     h(ReactDataTable, {
       h,
       useStateHook,
@@ -312,9 +315,8 @@ function CommutersBodyTable({
       ref: (node: HTMLElement | null) => {
         containerRef.current = node;
       },
-      className: `overflow-y-auto min-h-0${hasOverflow ? ' pr-2' : ''}`,
+      className: `overflow-y-auto min-h-0 flex-1${hasOverflow ? ' pr-2' : ''}`,
       style: {
-        maxHeight: '60vh',
         ...(hasOverflow
           ? { scrollbarWidth: 'thin', scrollbarGutter: 'stable' }
           : {}),
