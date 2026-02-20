@@ -31,7 +31,12 @@ import {
   FileChartColumnIcon,
   TramFrontIcon,
 } from '../../elements/utils/get-icon';
-import { DEFAULT_SORT_STATE, NumberDisplay, SortDirection, SortState } from '../types';
+import {
+  DEFAULT_SORT_STATE,
+  NumberDisplay,
+  SortDirection,
+  SortState,
+} from '../types';
 import { renderCommutersView } from './render-commuters';
 import { renderStatisticsView } from './render-statistics';
 import {
@@ -171,29 +176,29 @@ export function RegionsInfoPanel({
       content = gameData
         ? renderStatisticsView(createElement, gameData)
         : createElement(
-          'div',
-          { className: 'text-xs text-muted-foreground' },
-          'No game data set for info panel rendering',
-        );
+            'div',
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-            createElement,
-            gameData,
-            commutersViewState,
-            dispatchCommutersViewAction,
-            resolveRegionName,
-          )
+              createElement,
+              gameData,
+              commutersViewState,
+              dispatchCommutersViewAction,
+              resolveRegionName,
+            )
           : createElement(
-            'div',
-            {
-              className:
-                'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
-            },
-            LOADING_VALUE_DISPLAY,
-          );
+              'div',
+              {
+                className:
+                  'rounded-md border border-border/60 px-2 py-3 text-xs text-muted-foreground',
+              },
+              LOADING_VALUE_DISPLAY,
+            );
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);
@@ -248,7 +253,10 @@ export function RegionsInfoPanel({
 
 function createDefaultCommuterSortStates(): Map<CommuterDimension, SortState> {
   return new Map([
-    [CommuterDimension.Region, { ...DEFAULT_SORT_STATE, sortDirection: SortDirection.Asc }],
+    [
+      CommuterDimension.Region,
+      { ...DEFAULT_SORT_STATE, sortDirection: SortDirection.Asc },
+    ],
     [CommuterDimension.CommuteHour, { ...DEFAULT_SORT_STATE }],
     [CommuterDimension.CommuteLength, { ...DEFAULT_SORT_STATE }],
   ]);

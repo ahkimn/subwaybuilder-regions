@@ -221,7 +221,9 @@ function sortCommuterRows(
       // Apply stable tie-breakers so equal metric rows always render in deterministic order.
       result = a.regionName.localeCompare(b.regionName);
       if (result === 0) {
-        result = String(a.breakdownUnitId).localeCompare(String(b.breakdownUnitId));
+        result = String(a.breakdownUnitId).localeCompare(
+          String(b.breakdownUnitId),
+        );
       }
     }
     return result;
