@@ -1,5 +1,5 @@
-import type { createElement, Dispatch, ReactNode, useState } from 'react';
-import { useEffect, useRef } from 'react';
+import type { createElement, Dispatch, ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { DEFAULT_TABLE_ROWS } from '../../../core/constants';
 import { ModeShare } from '../../../core/types';
@@ -85,7 +85,6 @@ const SORT_CONFIGS: ReadonlyArray<SortConfig<CommuterSortMetrics>> = [
 
 type CommutersBodyTableProps = {
   h: typeof createElement;
-  useStateHook: typeof useState;
   tableOptions: TableOptions;
   tableBodyData: ReactDataTableRow[];
 };
@@ -100,7 +99,6 @@ type ModeShareDisplayToggleState = {
 
 export function renderCommutersTable(
   h: typeof createElement,
-  useStateHook: typeof useState,
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
   modeShareByBreakdownUnit: Map<string | number, ModeShare>,
@@ -141,13 +139,12 @@ export function renderCommutersTable(
     },
     h(ReactDataTable, {
       h,
-      useStateHook,
+      useStateHook: useState,
       tableOptions,
       tableValues: tableHeaderData,
     }),
     h(CommutersBodyTable, {
       h,
-      useStateHook,
       tableOptions,
       tableBodyData,
     }),
@@ -275,12 +272,11 @@ function buildCommuterSortMetrics(
 
 function CommutersBodyTable({
   h,
-  useStateHook,
   tableOptions,
   tableBodyData,
 }: CommutersBodyTableProps): ReactNode {
   const containerRef = useRef<HTMLElement | null>(null);
-  const [hasOverflow, setHasOverflow] = useStateHook<boolean>(false);
+  const [hasOverflow, setHasOverflow] = useState<boolean>(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -324,7 +320,7 @@ function CommutersBodyTable({
     },
     h(ReactDataTable, {
       h,
-      useStateHook,
+      useStateHook: useState,
       tableOptions,
       tableValues: tableBodyData,
     }),
