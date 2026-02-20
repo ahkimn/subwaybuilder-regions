@@ -14,6 +14,7 @@ import { buildReactViewHeader } from '../shared/view-header';
 export function renderStatisticsView(
   h: typeof createElement,
   gameData: RegionGameData,
+  isCompactViewport: boolean,
 ): ReactNode {
   const realPopulation = gameData.realPopulation;
   const demandPoints = gameData.demandData?.demandPoints ?? 0;
@@ -27,10 +28,10 @@ export function renderStatisticsView(
 
   const averageCommuteLength =
     residents + workers > 0 &&
-    residentCommuteLength !== null &&
-    workerCommuteLength !== null
+      residentCommuteLength !== null &&
+      workerCommuteLength !== null
       ? (residentCommuteLength * residents + workerCommuteLength * workers) /
-        (residents + workers)
+      (residents + workers)
       : null;
 
   const unitLabel = gameData.unitTypes?.singular;
@@ -40,7 +41,7 @@ export function renderStatisticsView(
 
   return h(
     'div',
-    { className: 'flex flex-col gap-2' },
+    { className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'}` },
     buildReactViewHeader(h, gameData.displayName),
     ReactDetailRow(
       h,
@@ -81,12 +82,12 @@ export function renderStatisticsView(
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-            Array.from(infraData!.trackLengths.values()).reduce(
-              (a, b) => a + b,
-              0,
-            ),
-            2,
-          )} km`
+          Array.from(infraData!.trackLengths.values()).reduce(
+            (a, b) => a + b,
+            0,
+          ),
+          2,
+        )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     ReactDetailRow(

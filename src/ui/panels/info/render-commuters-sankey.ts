@@ -157,6 +157,7 @@ type SankeyCanvasProps = {
   displaySourceOnLeft: boolean;
   valueUnitLabel: 'commuters' | 'commutes';
   labelsFollowFlowDirection: boolean;
+  isCompactViewport: boolean;
 };
 
 export function renderCommutersSankey(
@@ -164,14 +165,15 @@ export function renderCommutersSankey(
   gameData: RegionGameData,
   viewState: CommutersViewState,
   breakdownData: CommuterBreakdownData,
+  isCompactViewport: boolean,
 ): ReactNode {
   const byBreakdownUnitModeShare = breakdownData.modeShareByBreakdownUnit;
   const hasSplitSources = Boolean(breakdownData.sourceModeShareByBreakdownUnit);
   const sourceModeShareByBreakdownUnit = hasSplitSources
     ? breakdownData.sourceModeShareByBreakdownUnit!
     : new Map<string | number, Map<string | number, ModeShare>>([
-        [gameData.displayName, byBreakdownUnitModeShare],
-      ]);
+      [gameData.displayName, byBreakdownUnitModeShare],
+    ]);
   const topFlowCount = resolveSankeyTopFlowCount(viewState.dimension);
   const displaySourceOnLeft = resolveSankeyDisplaySourceOnLeft(viewState);
   const orderedUnitIds = resolveOrderedUnitIds(
@@ -185,7 +187,7 @@ export function renderCommutersSankey(
     breakdownData.resolveBreakdownUnitName,
     hasSplitSources
       ? (unitId: string | number) =>
-          resolveSourceUnitName(viewState.dimension, unitId)
+        resolveSourceUnitName(viewState.dimension, unitId)
       : () => gameData.displayName,
     topFlowCount,
     displaySourceOnLeft,
@@ -216,19 +218,23 @@ export function renderCommutersSankey(
     12;
   // Estimate required height from terminal label count (2-line labels), not raw node count.
   const chartHeight = Math.max(
-    360,
-    Math.min(760, estimatedLabelRows * perLabelRowHeight + 96),
+    isCompactViewport ? 320 : 360,
+    Math.min(
+      isCompactViewport ? 700 : 760,
+      estimatedLabelRows * perLabelRowHeight + (isCompactViewport ? 72 : 96),
+    ),
   );
 
   return h(
     'div',
-    { className: 'border-t border-border/30 pt-1 w-full' },
+    {
+      className: `border-t border-border/30 ${isCompactViewport ? 'pt-0.5' : 'pt-1'} w-full flex flex-col min-h-0 h-full`,
+    },
     h(
       'div',
       {
-        className: 'overflow-auto min-h-0 w-full',
+        className: 'overflow-auto min-h-0 w-full flex-1',
         style: {
-          maxHeight: '60vh',
           scrollbarWidth: 'thin',
           scrollbarGutter: 'stable both-edges',
         },
@@ -241,13 +247,14 @@ export function renderCommutersSankey(
         valueUnitLabel,
         labelsFollowFlowDirection:
           viewState.sankeyOptions.labelsFollowFlowDirection,
+        isCompactViewport,
       } satisfies SankeyCanvasProps),
     ),
     h(
       'div',
       {
         className:
-          'flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] font-medium text-foreground',
+          `flex flex-wrap items-center justify-center ${isCompactViewport ? 'gap-x-4 gap-y-1 pt-1' : 'gap-x-6 gap-y-2 pt-2'} text-[10px] font-medium text-foreground`,
       },
       ...sankeyData.sourceLegendEntries.map((entry) =>
         buildLegendItem(h, entry.label, entry.color),
@@ -304,6 +311,7 @@ function SankeyCanvas({
   displaySourceOnLeft,
   valueUnitLabel,
   labelsFollowFlowDirection,
+  isCompactViewport,
 }: SankeyCanvasProps): ReactNode {
   const [chartWidth, setChartWidth] = useState<number>(SANKEY_MIN_WIDTH_PX);
   const [hoveredLinkIndex, setHoveredLinkIndex] = useState<number | null>(null);
@@ -311,8 +319,18 @@ function SankeyCanvas({
 
   // Horizontal padding is greater on the side the labels are intended to be rendered on.
   const sankeyMargins = renderLabelsOnLeft
-    ? { top: 10, right: 10, bottom: 10, left: 108 }
-    : { top: 10, right: 108, bottom: 10, left: 10 };
+    ? {
+      top: isCompactViewport ? 6 : 10,
+      right: 10,
+      bottom: isCompactViewport ? 6 : 10,
+      left: 108,
+    }
+    : {
+      top: isCompactViewport ? 6 : 10,
+      right: 108,
+      bottom: isCompactViewport ? 6 : 10,
+      left: 10,
+    };
 
   return h(
     'div',
@@ -348,7 +366,7 @@ function SankeyCanvas({
           data: sankeyData,
           align: 'justify',
           margin: sankeyMargins,
-          nodePadding: 22,
+          nodePadding: isCompactViewport ? 10 : 22,
           nodeWidth: 14,
           sort: false,
           verticalAlign: 'justify',
@@ -1017,19 +1035,19 @@ function buildSankeyNodeRenderer(
       ),
       showSubtitle
         ? h(
-            'text',
-            {
-              x: textX,
-              y: subtitleY,
-              fill: 'currentColor',
-              className: 'text-muted-foreground',
-              fontSize: LABEL_SUBTITLE_FONT_SIZE,
-              fontWeight: 500,
-              dominantBaseline: 'middle',
-              textAnchor,
-            },
-            subtitleText,
-          )
+          'text',
+          {
+            x: textX,
+            y: subtitleY,
+            fill: 'currentColor',
+            className: 'text-muted-foreground',
+            fontSize: LABEL_SUBTITLE_FONT_SIZE,
+            fontWeight: 500,
+            dominantBaseline: 'middle',
+            textAnchor,
+          },
+          subtitleText,
+        )
         : null,
     );
   };
@@ -1102,9 +1120,9 @@ function buildTooltipContainer(
       },
       modeColor
         ? h('span', {
-            className: 'inline-block h-2 w-2 rounded-full shrink-0',
-            style: { backgroundColor: modeColor },
-          })
+          className: 'inline-block h-2 w-2 rounded-full shrink-0',
+          style: { backgroundColor: modeColor },
+        })
         : null,
       title,
     ),
@@ -1174,8 +1192,8 @@ function buildSankeyTooltipRenderer(
         `${formatPercentOrDefault(totalShare)} of all ${valueUnitLabel}`,
         ...(shouldShowUnitShare
           ? [
-              `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} ${valueUnitLabel}`,
-            ]
+            `${formatPercentOrDefault(linkShare)} of ${linkData.displayName} ${valueUnitLabel}`,
+          ]
           : []),
       ];
       return buildTooltipContainer(
