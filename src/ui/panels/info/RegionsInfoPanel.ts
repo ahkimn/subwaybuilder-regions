@@ -7,7 +7,6 @@ import {
 } from 'react';
 
 import {
-  COMPACT_UI_THRESHOLD,
   INFO_PANEL_MIN_WIDTH,
   LOADING_VALUE_DISPLAY,
   REGIONS_INFO_PANEL_ID,
@@ -67,20 +66,10 @@ export function RegionsInfoPanel({
     undefined,
     createDefaultCommutersViewState,
   );
-  const [viewportHeight, setViewportHeight] = useState<number>(
-    window.innerHeight,
-  );
   const [, setRenderToken] = useState<number>(0);
 
   const activeDatasetIdentifier = uiState.activeSelection?.datasetIdentifier;
   const activeFeatureId = uiState.activeSelection?.featureId;
-  const isCompactViewport = viewportHeight <= COMPACT_UI_THRESHOLD;
-
-  useEffect(() => {
-    const handleResize = () => setViewportHeight(window.innerHeight);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Info panel should only be rendered when there's an active selection
   if (!uiState.isActive) {
@@ -179,7 +168,7 @@ export function RegionsInfoPanel({
   switch (activeView) {
     case RegionsInfoPanelView.Statistics:
       content = gameData
-        ? renderStatisticsView(createElement, gameData, isCompactViewport)
+        ? renderStatisticsView(createElement, gameData)
         : createElement(
             'div',
             { className: 'text-xs text-muted-foreground' },
@@ -196,7 +185,6 @@ export function RegionsInfoPanel({
               commutersViewState,
               dispatchCommutersViewAction,
               resolveRegionName,
-              isCompactViewport,
             )
           : createElement(
               'div',
@@ -236,7 +224,7 @@ export function RegionsInfoPanel({
         createElement(
           'div',
           {
-            className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'} w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`,
+            className: `flex flex-col gap-2 w-full min-w-${INFO_PANEL_MIN_WIDTH} min-h-0`,
           },
           ReactSelectRow(
             createElement,
@@ -246,9 +234,7 @@ export function RegionsInfoPanel({
           ),
           createElement(
             'div',
-            {
-              className: `flex flex-col ${isCompactViewport ? 'gap-1' : 'gap-2'} min-h-0`,
-            },
+            { className: 'flex flex-col gap-2 min-h-0' },
             content,
           ),
         ),
