@@ -1,18 +1,18 @@
 import {
-  ENFORCE_ONE_DATASET_VISIBLE,
   OVERVIEW_REGION_FOCUS_DURATION_MS,
   OVERVIEW_REGION_FOCUS_MAX_PADDING_PX,
   OVERVIEW_REGION_FOCUS_MAX_ZOOM,
   OVERVIEW_REGION_FOCUS_MIN_BBOX_SPAN_DEGREES,
   OVERVIEW_REGION_FOCUS_MIN_PADDING_PX,
   OVERVIEW_REGION_FOCUS_TARGET_COVERAGE,
-  SHOW_UNPOPULATED_REGIONS,
 } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import {
   buildBBoxFitState as fitBBox,
   normalizeBBox,
 } from '../core/geometry/helpers';
+import { DEFAULT_REGIONS_SETTINGS } from '../core/settings/defaults';
+import { RegionsSettings, type RegionsSettings as RegionsSettingsValue } from '../core/settings/types';
 import { RegionSelection } from '../core/types';
 import type { MapDisplayColor } from '../ui/types/DisplayColor';
 import { PRIMARY_FILL_COLORS } from '../ui/types/DisplayColor';
@@ -76,6 +76,7 @@ export type RegionsMapLayersEvents = {
 export class RegionsMapLayers {
   private map: maplibregl.Map;
   private lightMode: LightMode = 'dark';
+  private settings: RegionsSettingsValue = { ...DEFAULT_REGIONS_SETTINGS };
   private nextColorIndex = 0;
   private layerStates = new Map<string, MapLayerState>();
   private layerStyles = new Map<string, MapLayerStyle>();
@@ -182,6 +183,22 @@ export class RegionsMapLayers {
     this.selectionProvider = provider;
   }
 
+  setSettings(settings: RegionsSettingsValue): void {
+    if (RegionsSettings.equals(this.settings, settings)) {
+      return;
+    }
+
+    const showUnpopulatedRegionsChanged =
+      this.settings.showUnpopulatedRegions !== settings.showUnpopulatedRegions;
+    this.settings = { ...settings };
+
+    if (showUnpopulatedRegionsChanged) {
+      for (const layerState of this.layerStates.values()) {
+        this.applyDemandExistsFilterToLayerState(layerState);
+      }
+    }
+  }
+
   updateSelection(
     previousSelection: RegionSelection | null,
     newSelection: RegionSelection | null,
@@ -258,7 +275,7 @@ export class RegionsMapLayers {
     const nextVisible = visible !== undefined ? visible : !layerState.visible;
     if (nextVisible === layerState.visible) return;
 
-    if (nextVisible && ENFORCE_ONE_DATASET_VISIBLE) {
+    if (nextVisible) {
       this.hideOtherVisibleLayers(datasetIdentifier);
     }
 
@@ -315,6 +332,24 @@ export class RegionsMapLayers {
     ) {
       mapRef.moveLayer(layerState.labelLayerId);
     }
+  }
+
+  private applyDemandExistsFilterToLayerState(layerState: MapLayerState): void {
+    const mapRef = this.getMapReference();
+    if (!mapRef) {
+      return;
+    }
+
+    const demandFilter = this.buildDemandExistsFilter();
+    [
+      layerState.boundaryLayerId,
+      layerState.boundaryLineLayerId,
+      layerState.labelLayerId,
+    ].forEach((layerId) => {
+      if (this.tryGetLayer(layerId)) {
+        mapRef.setFilter(layerId, demandFilter);
+      }
+    });
   }
 
   removeDatasetMapLayers(identifier: string) {
@@ -492,11 +527,12 @@ export class RegionsMapLayers {
 
     this.addBoundaryLayer(layerState);
     this.addLabelLayer(layerState);
+    this.applyDemandExistsFilterToLayerState(layerState);
     this.applyLightModeToLayerState(layerState);
   }
 
   private buildDemandExistsFilter(): maplibregl.FilterSpecification {
-    if (SHOW_UNPOPULATED_REGIONS) {
+    if (this.settings.showUnpopulatedRegions) {
       return ['all'];
     }
 

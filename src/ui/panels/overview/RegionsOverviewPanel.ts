@@ -166,6 +166,7 @@ export function renderRegionsOverviewPanel(
         onSortChange,
         props.onRegionSelect,
         props.onRegionDoubleClick,
+        props.uiState.settings.showUnpopulatedRegions,
       );
       break;
     case RegionsOverviewTabs.HistoricalData:

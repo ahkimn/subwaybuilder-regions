@@ -18,6 +18,7 @@ export type RegionsOverviewPanelEvents = {
 export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
   private initialized = false;
+  // Store state snapshot for the OverviewPanel to retain state even if the panel is closed by the user
   private panelStateSnapshot: RegionsOverviewPanelState | null = null;
   private activeCityCode: string | null = null;
 
@@ -65,8 +66,8 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
         uiState: this.state,
         regionDataManager: this.dataManager,
         availableDatasetIdentifiers: currentDatasetIds,
-        onRegionSelect: this.events.onRegionSelect ?? (() => {}),
-        onRegionDoubleClick: this.events.onRegionDoubleClick ?? (() => {}),
+        onRegionSelect: this.events.onRegionSelect ?? (() => { }),
+        onRegionDoubleClick: this.events.onRegionDoubleClick ?? (() => { }),
         initialState: this.panelStateSnapshot,
         onStateChange: (nextState) => {
           this.panelStateSnapshot = nextState;
