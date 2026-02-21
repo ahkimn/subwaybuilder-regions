@@ -28,6 +28,7 @@ import {
 import { RegionsInfoPanelRenderer } from './panels/info/RegionsInfoPanelRenderer';
 import { RegionsOverviewPanelRenderer } from './panels/overview/RegionsOverviewPanelRenderer';
 import { RegionsSettingsPanelRenderer } from './panels/settings/RegionsSettingsPanelRenderer';
+import type { RegionsPanelRenderer } from './panels/types';
 import { resolveInfoPanelRoot } from './resolve/resolve-info-panel';
 
 export class RegionsUIManager {
@@ -36,6 +37,7 @@ export class RegionsUIManager {
   private infoPanelRenderer: RegionsInfoPanelRenderer;
   private overviewPanelRenderer: RegionsOverviewPanelRenderer;
   private settingsPanelRenderer: RegionsSettingsPanelRenderer;
+  private renderers: RegionsPanelRenderer[] = [];
 
   private regionDataManager: RegionDataManager;
   private commuterRefreshLoop: CommuterRefreshLoop;
@@ -87,6 +89,11 @@ export class RegionsUIManager {
       settingsStore,
       this.datasetRegistry,
     );
+    this.renderers = [
+      this.infoPanelRenderer,
+      this.overviewPanelRenderer,
+      this.settingsPanelRenderer,
+    ];
 
     this.commuterRefreshLoop = new CommuterRefreshLoop(
       this.api,
@@ -356,7 +363,6 @@ export class RegionsUIManager {
     this.mapLayers?.setSettings(this.state.settings);
     this.tryInjectLayerPanel(true);
     this.refreshVisiblePanels();
-    this.settingsPanelRenderer.tryUpdatePanel();
   }
 
   // --- State Mutations --- //
@@ -371,22 +377,30 @@ export class RegionsUIManager {
     this.syncResolvedTheme();
     this.tryInjectLayerPanel();
     this.ensureLayerPanelObserver();
-    this.settingsPanelRenderer.tryUpdatePanel();
   }
 
   reset() {
     this.commuterRefreshLoop.stop();
     this.disconnectObservers();
     this.clearSelection();
+    this.infoPanelRenderer.tearDown();
     this.overviewPanelRenderer.tearDown();
+    this.state.cityCode = null;
+    this.state.lastInjectedCity = null;
+  }
+
+  onGameEnd(): void {
+    this.reset();
+    this.mapLayers = null;
+    this.layerPanelRoot = null;
+    this.infoPanelRoot = null;
+    this.settingsPanelRenderer.reattachMainMenuComponent();
   }
 
   tearDown(): void {
     this.reset();
     this.layerPanelRoot = null;
     this.infoPanelRoot = null;
-    this.state.cityCode = null;
-    this.state.lastInjectedCity = null;
     this.mapLayers = null;
     this.initialized = false;
     this.settingsPanelRenderer.tearDown();
@@ -413,12 +427,10 @@ export class RegionsUIManager {
   }
 
   private refreshVisiblePanels(): void {
-    if (this.infoPanelRenderer.isVisible()) {
-      this.infoPanelRenderer.tryUpdatePanel();
+    for (const renderer of this.renderers) {
+      if (renderer.isVisible()) {
+        renderer.tryUpdatePanel();
+      }
     }
-    if (this.overviewPanelRenderer.isVisible()) {
-      this.overviewPanelRenderer.tryUpdatePanel();
-    }
-    this.settingsPanelRenderer.tryUpdatePanel();
   }
 }

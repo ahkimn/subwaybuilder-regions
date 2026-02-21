@@ -94,12 +94,20 @@ export class RegionsMod {
 
     api.hooks.onCityLoad(this.onCityLoad.bind(this));
     api.hooks.onMapReady(this.onMapReady.bind(this));
+    api.hooks.onGameEnd(this.onGameEnd.bind(this));
 
     console.log('[Regions] Mod Initialized');
   }
 
-  private onGameEnd() {
-    // TODO: Try to reattach main menu buttons and deactivate city / cleanup
+  private onGameEnd(_result: unknown) {
+    if (this.currentCityCode) {
+      this.clearCityData(this.currentCityCode);
+      this.currentCityCode = null;
+    }
+
+    this.mapLayers?.reset();
+    this.mapLayers = null;
+    this.uiManager?.onGameEnd();
   }
 
   private onMapReady = (map: maplibregl.Map | null) => {
@@ -193,10 +201,7 @@ export class RegionsMod {
       return;
     }
 
-    const cityDatasets = this.registry.getCityDatasets(this.currentCityCode);
-    for (const dataset of cityDatasets) {
-      dataset.clearData();
-    }
+    this.clearCityData(this.currentCityCode);
 
     this.mapLayers?.reset();
     this.uiManager?.reset();
@@ -205,6 +210,13 @@ export class RegionsMod {
       `[Regions] Deactivated previous city data for: ${this.currentCityCode}`,
     );
     this.currentCityCode = null;
+  }
+
+  private clearCityData(cityCode: string): void {
+    const cityDatasets = this.registry.getCityDatasets(cityCode);
+    for (const dataset of cityDatasets) {
+      dataset.clearData();
+    }
   }
 
   private applySettings(settings: RegionsSettings): void {
