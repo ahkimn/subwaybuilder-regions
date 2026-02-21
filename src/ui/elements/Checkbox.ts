@@ -1,6 +1,6 @@
 import type { LayerToggleOptions } from '../types/LayerToggleOptions';
 import { Label } from './Label';
-import { CheckboxIcon, createIconElement } from './utils/get-icon';
+import { CheckboxIcon, createIconElement } from './utils/Icons';
 
 export function Checkbox(
   options: LayerToggleOptions,
@@ -22,15 +22,12 @@ export function Checkbox(
     button.setAttribute('aria-checked', String(visible));
     button.dataset.state = visible ? 'checked' : 'unchecked';
 
+    console.log(`[Regions] Syncing checkbox state for ${options.id}, visible: ${visible}`);
+
     if (visible && !button.contains(icon)) {
       button.appendChild(icon);
     } else if (!visible && button.contains(icon)) {
       icon.remove();
-    } else {
-      console.warn(
-        '[Regions] Unexpected state in toggle button with id: ',
-        button.id,
-      );
     }
 
     icon.dataset.state = visible ? 'checked' : 'unchecked';

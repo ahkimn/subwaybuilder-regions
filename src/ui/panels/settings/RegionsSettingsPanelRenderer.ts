@@ -1,4 +1,4 @@
-import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID } from '../../../core/constants';
+import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID as REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID } from '../../../core/constants';
 import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsSettingsStore } from '../../../core/settings/RegionsSettingsStore';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
@@ -12,13 +12,13 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
     private readonly api: ModdingAPI,
     private readonly settingsStore: RegionsSettingsStore,
     private readonly datasetRegistry: RegionDatasetRegistry,
-  ) {}
+  ) { }
 
   initialize(): void {
     if (this.initialized) {
       return;
     }
-    this.reattachMainMenuComponent();
+    this.registerMainMenuEntry();
   }
 
   tearDown(): void {
@@ -27,7 +27,7 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
     }
     this.api.ui.unregisterComponent(
       'main-menu',
-      REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID,
+      REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID,
     );
     this.initialized = false;
   }
@@ -36,12 +36,8 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
     return this.initialized;
   }
 
-  reattachMainMenuComponent(): void {
-    if (!this.initialized) {
-      this.initialize();
-      return;
-    }
-    this.attachMainMenuComponent();
+  reattachMainMenuEntry(): void {
+    this.registerMainMenuEntry();
   }
 
   tryUpdatePanel(): void {
@@ -51,22 +47,22 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
     this.api.ui.forceUpdate();
   }
 
-  private attachMainMenuComponent(): void {
+  private registerMainMenuEntry(): void {
     // Avoid re-registering the main menu component if the panel already exists.
-    // Swallowing this keeps startup/game-end reattach idempotent.
     try {
       this.api.ui.unregisterComponent(
         'main-menu',
-        REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID,
+        REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID,
       );
     } catch (error) {
+      // Swallow error to maintain idempotency of the method
       console.warn(
         `[Regions] Swallowing error ${error}. No existing settings menu component to unregister, proceeding to register new component`,
       );
     }
 
     this.api.ui.registerComponent('main-menu', {
-      id: REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID,
+      id: REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID,
       component: RegionsSettingsPanel({
         api: this.api,
         settingsStore: this.settingsStore,

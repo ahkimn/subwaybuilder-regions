@@ -1075,6 +1075,7 @@ export interface ModdingAPI {
 
   // Utilities
   utils: {
+    getCityCode(): string;
     getCities(): City[];
     getConstants(): GameConstants;
     getMap(): MapLibreMap | null;

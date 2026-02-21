@@ -79,7 +79,7 @@ export class RegionsSettingsStore {
         return;
       }
 
-      const stored = resolveStoredSettings(storedValue);
+      const stored = resolveStoredSettingsPayload(storedValue);
       if (stored === null) {
         console.error(
           `[Regions] Invalid stored settings payload at key ${this.storageKey}; falling back to defaults.`,
@@ -120,4 +120,17 @@ export class RegionsSettingsStore {
       `[Regions] electron.${apiMethod} is unavailable`,
     );
   }
+}
+
+function resolveStoredSettingsPayload(
+  storedValue: unknown,
+): Partial<RegionsSettingsValue> | null {
+  if (isObjectRecord(storedValue) && 'data' in storedValue) {
+    return resolveStoredSettings(storedValue.data);
+  }
+  return resolveStoredSettings(storedValue);
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }

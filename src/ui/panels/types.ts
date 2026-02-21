@@ -28,6 +28,15 @@ export const SortState = {
       a.previousSortDirection === b.previousSortDirection
     );
   },
+  reverseDirection(a: SortState): SortState {
+    return {
+      ...a,
+      sortDirection:
+        a.sortDirection === SortDirection.Asc
+          ? SortDirection.Desc
+          : SortDirection.Asc,
+    };
+  }
 };
 
 export type SortConfig<T> = {

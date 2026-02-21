@@ -394,7 +394,7 @@ export class RegionsUIManager {
     this.mapLayers = null;
     this.layerPanelRoot = null;
     this.infoPanelRoot = null;
-    this.settingsPanelRenderer.reattachMainMenuComponent();
+    this.settingsPanelRenderer.reattachMainMenuEntry();
   }
 
   tearDown(): void {

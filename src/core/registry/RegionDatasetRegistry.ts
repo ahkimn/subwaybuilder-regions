@@ -1,5 +1,7 @@
 import type { DatasetIndex, DatasetMetadata } from '@shared/dataset-index';
 
+import type { ModdingAPI } from '../../types/modding-api-v1';
+import { REGIONS_REGISTRY_STORAGE_KEY } from '../constants';
 import { RegionDataset } from '../datasets/RegionDataset';
 import {
   RegistryMissingDatasetError,
@@ -7,21 +9,37 @@ import {
 } from '../errors';
 import {
   buildLocalDatasetUrl,
-  getFeatureCount,
+  datasetFileExists,
   resolveLocalModsDataRoot,
-  STATIC_BASE_GAME_CITY_CODES,
-  STATIC_BASE_GAME_DATASET_TEMPLATES,
-  type StaticDatasetTemplate,
-} from './static';
+} from './fetch-local';
+import { STATIC_TEMPLATES } from './static';
+
+type ElectronStorageApi = {
+  getStorageItem?: (key: string) => Promise<unknown>;
+  setStorageItem?: (key: string, value: unknown) => Promise<void>;
+};
+
+type StaticRegistryCacheEntry = {
+  cityCode: string;
+  datasetId: string;
+  displayName: string;
+  unitSingular: string;
+  unitPlural: string;
+  source: string;
+  dataPath: string;
+};
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
-  private indexFile: string;
-  private serveUrl: string;
 
-  constructor(indexFile: string, serveUrl: string) {
-    this.indexFile = indexFile;
-    this.serveUrl = serveUrl;
+  constructor(
+    private api: ModdingAPI,
+    private indexFile: string,
+    private serveUrl: string,
+    private readonly storageKey: string = REGIONS_REGISTRY_STORAGE_KEY,
+    private readonly electronApi: ElectronStorageApi | undefined = window
+      .electron as ElectronStorageApi | undefined,
+  ) {
     this.datasets = new Map<string, RegionDataset>();
   }
 
@@ -86,8 +104,11 @@ export class RegionDatasetRegistry {
     cityCode: string,
     entry: DatasetMetadata,
     dataPath: string,
+    options?: { skipValidation?: boolean },
   ): void {
-    this.assertDatasetIndexEntry(cityCode, entry);
+    if (!options?.skipValidation) {
+      this.assertDatasetIndexEntry(cityCode, entry);
+    }
     this.registerDataset(
       new RegionDataset(entry, cityCode, {
         type: 'static',
@@ -154,53 +175,152 @@ export class RegionDatasetRegistry {
   // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
   async buildStatic(): Promise<void> {
     this.clear();
-    const registered = await this.buildFromStaticLocalFiles();
+
+    const cachedEntries = await this.loadStaticRegistryCache();
+    if (cachedEntries && cachedEntries.length > 0) {
+      for (const entry of cachedEntries) {
+        this.registerStaticDataset(
+          entry.cityCode,
+          this.buildDatasetEntryFromCachedEntry(entry),
+          entry.dataPath,
+          { skipValidation: true },
+        );
+      }
+      return;
+    }
+
+    const discoveredEntries = await this.discoverStaticLocalDatasets();
+    await this.persistStaticRegistryCache(discoveredEntries);
+
+    for (const entry of discoveredEntries) {
+      this.registerStaticDataset(
+        entry.cityCode,
+        this.buildDatasetEntryFromCachedEntry(entry),
+        entry.dataPath,
+        { skipValidation: true },
+      );
+    }
+
+    const registered = discoveredEntries.length;
     if (registered === 0) {
       throw new Error('[Regions] No local datasets found in static mapping');
     }
   }
 
-  private async buildFromStaticLocalFiles(): Promise<number> {
-    const localModsDataRoot = await resolveLocalModsDataRoot();
-    let registeredDatasets = 0;
+  async refreshStaticRegistryCache(): Promise<number> {
+    const discoveredEntries = await this.discoverStaticLocalDatasets();
+    await this.persistStaticRegistryCache(discoveredEntries);
+    return discoveredEntries.length;
+  }
 
-    for (const cityCode of STATIC_BASE_GAME_CITY_CODES) {
-      const datasetTemplates = STATIC_BASE_GAME_DATASET_TEMPLATES[cityCode];
+  private async discoverStaticLocalDatasets(): Promise<StaticRegistryCacheEntry[]> {
+    const localModsDataRoot = await resolveLocalModsDataRoot();
+    const discoveredEntries: StaticRegistryCacheEntry[] = [];
+
+    const currentCities = this.api.utils.getCities();
+
+    for (const city of currentCities) {
+      const datasetTemplates = city.country ? STATIC_TEMPLATES.get(city.country) ?? [] : [];
       for (const template of datasetTemplates) {
         const dataPath = buildLocalDatasetUrl(
           localModsDataRoot,
-          cityCode,
+          city.code,
           template.datasetId,
         );
 
-        const size = await getFeatureCount(dataPath);
-        if (size === null) {
+        const exists = await datasetFileExists(dataPath);
+        if (!exists) {
           continue;
         }
 
-        this.registerStaticDataset(
-          cityCode,
-          this.buildDatasetEntryFromTemplate(template, size),
+        discoveredEntries.push({
+          cityCode: city.code,
+          datasetId: template.datasetId,
+          displayName: template.displayName,
+          unitSingular: template.unitSingular,
+          unitPlural: template.unitPlural,
+          source: template.source,
           dataPath,
-        );
-        registeredDatasets += 1;
+        });
       }
     }
 
-    return registeredDatasets;
+    return discoveredEntries;
   }
 
-  private buildDatasetEntryFromTemplate(
-    template: StaticDatasetTemplate,
-    size: number,
+  private buildDatasetEntryFromCachedEntry(
+    entry: StaticRegistryCacheEntry,
   ): DatasetMetadata {
     return {
-      datasetId: template.datasetId,
-      displayName: template.displayName,
-      unitSingular: template.unitSingular,
-      unitPlural: template.unitPlural,
-      source: template.source,
-      size,
+      datasetId: entry.datasetId,
+      displayName: entry.displayName,
+      unitSingular: entry.unitSingular,
+      unitPlural: entry.unitPlural,
+      source: entry.source,
+      size: 0,
     };
   }
+
+  private async loadStaticRegistryCache(): Promise<StaticRegistryCacheEntry[] | null> {
+    if (!this.electronApi?.getStorageItem) {
+      return null;
+    }
+
+    try {
+      const storedValue = await this.electronApi.getStorageItem(this.storageKey);
+      const payload = resolveStoragePayload(storedValue);
+      if (!Array.isArray(payload)) {
+        return null;
+      }
+
+      const entries = payload.filter(isStaticRegistryCacheEntry);
+      if (entries.length !== payload.length) {
+        console.warn('[Regions] Ignoring malformed entries in stored regions registry cache');
+      }
+      return entries.length > 0 ? entries : null;
+    } catch (error) {
+      console.warn('[Regions] Failed to load regions registry cache from storage', error);
+      return null;
+    }
+  }
+
+  private async persistStaticRegistryCache(entries: StaticRegistryCacheEntry[]): Promise<void> {
+    if (!this.electronApi?.setStorageItem) {
+      return;
+    }
+
+    try {
+      await this.electronApi.setStorageItem(this.storageKey, entries);
+    } catch (error) {
+      console.warn('[Regions] Failed to persist regions registry cache to storage', error);
+    }
+  }
+
+}
+
+function resolveStoragePayload(storedValue: unknown): unknown {
+  if (isObjectRecord(storedValue) && 'data' in storedValue) {
+    return storedValue.data;
+  }
+  return storedValue;
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isStaticRegistryCacheEntry(value: unknown): value is StaticRegistryCacheEntry {
+  if (!isObjectRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.cityCode === 'string' &&
+    typeof value.datasetId === 'string' &&
+    typeof value.displayName === 'string' &&
+    typeof value.unitSingular === 'string' &&
+    typeof value.unitPlural === 'string' &&
+    typeof value.source === 'string' &&
+    typeof value.dataPath === 'string'
+  );
 }

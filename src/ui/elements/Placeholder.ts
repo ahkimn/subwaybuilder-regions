@@ -1,6 +1,6 @@
 import type { createElement, ReactNode } from 'react';
 
-export function renderInfoPlaceholder(
+export function Placeholder(
   h: typeof createElement,
   message: ReactNode,
 ): ReactNode {

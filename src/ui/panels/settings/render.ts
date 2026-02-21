@@ -9,7 +9,12 @@ import type {
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
-import type { SortConfig, SortState } from '../types';
+import { ReactButton } from '../../elements/ReactButton';
+import { ReactSearchInput } from '../../elements/SearchInput';
+import { ReactSectionCard } from '../../elements/SectionCard';
+import { Arrow, MapPinnedIcon, RefreshIcon } from '../../elements/utils/Icons';
+import type { SortConfig } from '../types';
+import type { SortState } from '../types';
 import { SortDirection } from '../types';
 
 export type InputFieldProperties = {
@@ -19,11 +24,25 @@ export type InputFieldProperties = {
   className?: string;
 };
 
+export type SwitchProperties = {
+  checked?: boolean;
+  disabled?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  onChange?: (e: Event) => void;
+  id?: string;
+};
+
+export type LabelProperties = {
+  htmlFor?: string;
+  className?: string;
+  children?: React.ReactNode;
+};
+
 export type SettingsDatasetRow = {
   cityCode: string;
   datasetId: string;
   displayName: string;
-  expectedSize: number;
+  expectedSize: number | null;
   status: string;
 };
 
@@ -59,8 +78,11 @@ const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
   {
     index: 3,
     defaultDirection: SortDirection.Desc,
-    compare: (aMetrics, bMetrics) =>
-      aMetrics.expectedSize - bMetrics.expectedSize,
+    compare: (aMetrics, bMetrics) => {
+      const aSize = aMetrics.expectedSize ?? -1;
+      const bSize = bMetrics.expectedSize ?? -1;
+      return aSize - bSize;
+    },
   },
   {
     index: 4,
@@ -93,28 +115,6 @@ export const DEFAULT_SETTINGS_SORT_STATE: SortState = {
   previousSortDirection: SortDirection.Asc,
 };
 
-export function getNextSettingsSortState(
-  current: SortState,
-  columnIndex: number,
-): SortState {
-  if (current.sortIndex === columnIndex) {
-    return {
-      ...current,
-      sortDirection:
-        current.sortDirection === SortDirection.Asc
-          ? SortDirection.Desc
-          : SortDirection.Asc,
-    };
-  }
-
-  const nextSortConfig = resolveRegistrySortConfig(columnIndex);
-  return {
-    previousSortIndex: current.sortIndex,
-    previousSortDirection: current.sortDirection,
-    sortIndex: columnIndex,
-    sortDirection: nextSortConfig.defaultDirection,
-  };
-}
 
 export function filterSettingsRows(
   rows: SettingsDatasetRow[],
@@ -186,19 +186,22 @@ export function renderSettingsEntry(
   onOpen: () => void,
 ): React.ReactNode {
   return h('div', { key: 'entry', className: 'flex flex-col gap-1' }, [
-    h(
-      'button',
-      {
-        className:
-          'inline-flex items-center justify-between gap-2 w-full px-3 py-2 rounded-sm border border-border bg-background hover:bg-accent text-left transition-colors',
-        type: 'button',
-        onClick: onOpen,
+    ReactButton(h, {
+      label: 'Regions',
+      ariaLabel: 'Open Regions Settings',
+      onClick: onOpen,
+      icon: MapPinnedIcon,
+      iconPlacement: 'start',
+      wrapperClassName: 'w-full',
+      buttonClassName:
+        'max-w-full font-bold group flex items-center bg-primary text-primary-foreground cursor-pointer ' +
+        'justify-start gap-1.5 w-full h-9 hover:bg-primary/90 transition-colors rounded-none px-1',
+      labelClassName: 'h-full text-3xl',
+      iconOptions: {
+        size: 20,
+        className: 'min-w-fit transition-all duration-150 h-9 w-9 ml-1 group-hover:scale-110',
       },
-      [
-        h('span', { className: 'font-medium text-sm' }, 'Regions Settings'),
-        h('span', { className: 'text-xs text-muted-foreground' }, 'Open'),
-      ],
-    ),
+    }),
     h(
       'p',
       { className: 'text-xs text-muted-foreground truncate pl-1' },
@@ -211,6 +214,8 @@ export function renderSettingsOverlay(
   h: typeof createElement,
   useStateHook: typeof useState,
   Input: React.ComponentType<InputFieldProperties>,
+  Switch: React.ComponentType<SwitchProperties>,
+  Label: React.ComponentType<LabelProperties>,
   params: {
     settings: RegionsSettings;
     isUpdating: boolean;
@@ -221,6 +226,8 @@ export function renderSettingsOverlay(
     onSearchTermChange: (searchTerm: string) => void;
     onSortChange: (columnIndex: number) => void;
     onToggleShowUnpopulatedRegions: (nextValue: boolean) => void;
+    onRefreshRegistry: () => void;
+    isRefreshingRegistry: boolean;
   },
 ): React.ReactNode {
   const {
@@ -233,6 +240,8 @@ export function renderSettingsOverlay(
     onSearchTermChange,
     onSortChange,
     onToggleShowUnpopulatedRegions,
+    onRefreshRegistry,
+    isRefreshingRegistry,
   } = params;
 
   return h(
@@ -244,16 +253,20 @@ export function renderSettingsOverlay(
     },
     [
       h('div', { className: 'max-w-5xl mx-auto flex flex-col gap-4' }, [
-        h(
-          'button',
-          {
-            className:
-              'w-fit px-2 py-1 text-sm rounded-sm border border-border bg-background hover:bg-accent',
-            type: 'button',
-            onClick: onClose,
+        ReactButton(h, {
+          label: 'Back',
+          ariaLabel: 'Back',
+          onClick: onClose,
+          icon: Arrow,
+          iconOptions: {
+            size: 16,
+            className: 'h-4 w-4 shrink-0',
+            transform: 'rotate(180deg)',
           },
-          'Back',
-        ),
+          wrapperClassName: 'w-fit',
+          buttonClassName:
+            'inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded-sm bg-background hover:bg-accent',
+        }),
         h('div', { className: 'flex flex-col gap-1' }, [
           h('h1', { className: 'text-xl font-semibold' }, 'Regions Settings'),
           h(
@@ -264,6 +277,8 @@ export function renderSettingsOverlay(
         ]),
         renderGlobalSettingsSection(
           h,
+          Switch,
+          Label,
           settings,
           isUpdating,
           onToggleShowUnpopulatedRegions,
@@ -277,6 +292,8 @@ export function renderSettingsOverlay(
           onSearchTermChange,
           sortState,
           onSortChange,
+          onRefreshRegistry,
+          isRefreshingRegistry,
         ),
         renderFetchDatasetsSection(h),
       ]),
@@ -286,44 +303,42 @@ export function renderSettingsOverlay(
 
 function renderGlobalSettingsSection(
   h: typeof createElement,
+  Switch: React.ComponentType<SwitchProperties>,
+  Label: React.ComponentType<LabelProperties>,
   settings: RegionsSettings,
   isUpdating: boolean,
   onToggleShowUnpopulatedRegions: (nextValue: boolean) => void,
 ): React.ReactNode {
-  return h(
-    'section',
-    { className: 'rounded-md border border-border/60 p-3 flex flex-col gap-3' },
-    [
-      h('h2', { className: 'text-sm font-semibold' }, 'Global Settings'),
-      h('label', { className: 'flex items-start gap-2 text-sm' }, [
-        h('input', {
-          key: 'show-unpopulated-input',
-          type: 'checkbox',
-          checked: settings.showUnpopulatedRegions,
-          disabled: isUpdating,
-          onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-            onToggleShowUnpopulatedRegions(event.target.checked);
-          },
-        }),
+  const toggleId = 'regions-show-unpopulated-toggle';
+  return ReactSectionCard(h, 'Global Settings', [
+    h('div', { className: 'flex items-start justify-between gap-3 text-sm' }, [
+      h('div', { className: 'flex flex-col gap-0.5' }, [
         h(
-          'div',
-          { key: 'show-unpopulated-text', className: 'flex flex-col gap-0.5' },
-          [
-            h(
-              'span',
-              { className: 'font-medium text-foreground' },
-              'Show unpopulated regions',
-            ),
-            h(
-              'span',
-              { className: 'text-xs text-muted-foreground' },
-              'Include regions without demand in map labels and table data.',
-            ),
-          ],
+          Label,
+          {
+            htmlFor: toggleId,
+            className: 'font-medium text-foreground',
+          },
+          'Show unpopulated regions',
+        ),
+        h(
+          'span',
+          { className: 'text-xs text-muted-foreground' },
+          'Include regions without demand in map labels and table data.',
         ),
       ]),
-    ],
-  );
+      h(Switch, {
+        id: toggleId,
+        checked: settings.showUnpopulatedRegions,
+        disabled: isUpdating,
+        onCheckedChange: onToggleShowUnpopulatedRegions,
+        onChange: (event: Event) => {
+          const target = event.target as HTMLInputElement;
+          onToggleShowUnpopulatedRegions(Boolean(target.checked));
+        },
+      }),
+    ]),
+  ]);
 }
 
 function renderDatasetRegistrySection(
@@ -335,36 +350,43 @@ function renderDatasetRegistrySection(
   onSearchTermChange: (searchTerm: string) => void,
   sortState: SortState,
   onSortChange: (columnIndex: number) => void,
+  onRefreshRegistry: () => void,
+  isRefreshingRegistry: boolean,
 ): React.ReactNode {
-  return h(
-    'section',
-    { className: 'rounded-md border border-border/60 p-3 flex flex-col gap-3' },
-    [
-      h(
-        'h2',
-        { className: 'text-sm font-semibold' },
-        `Dataset Registry (${rows.length})`,
-      ),
-      h(Input, {
-        value: searchTerm,
-        placeholder: 'Search city, dataset, display name...',
-        onChange: (event: Event) => {
-          const target = event.target as HTMLInputElement;
-          onSearchTermChange(target.value);
-        },
-      }),
-      h(
-        'div',
-        { className: 'overflow-auto max-h-[40vh] rounded border border-border/40' },
-        h(ReactDataTable, {
+  return ReactSectionCard(h, `Dataset Registry (${rows.length})`, [
+    h('div', { className: 'flex items-center justify-between gap-2' }, [
+      h('div', { className: 'min-w-0 flex-1' }, [
+        ReactSearchInput({
           h,
-          useStateHook,
-          tableOptions: REGISTRY_TABLE_OPTIONS,
-          tableValues: buildRegistryTableRows(rows, sortState, onSortChange),
+          Input,
+          value: searchTerm,
+          placeholder: 'Search city, dataset, display name...',
+          onValueChange: onSearchTermChange,
         }),
-      ),
-    ],
-  );
+      ]),
+      ReactButton(h, {
+        label: isRefreshingRegistry ? 'Refreshing' : 'Refresh',
+        ariaLabel: 'Refresh local registry cache',
+        onClick: onRefreshRegistry,
+        icon: RefreshIcon,
+        iconPlacement: 'start',
+        wrapperClassName: 'w-fit',
+        buttonClassName:
+          'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm border border-border bg-background hover:bg-accent transition-colors',
+        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+      }),
+    ]),
+    h(
+      'div',
+      { className: 'overflow-auto max-h-[40vh] rounded border border-border/40' },
+      h(ReactDataTable, {
+        h,
+        useStateHook,
+        tableOptions: REGISTRY_TABLE_OPTIONS,
+        tableValues: buildRegistryTableRows(rows, sortState, onSortChange),
+      }),
+    ),
+  ]);
 }
 
 function buildRegistryTableRows(
@@ -444,21 +466,16 @@ function buildRegistryTableRows(
 }
 
 function renderFetchDatasetsSection(h: typeof createElement): React.ReactNode {
-  return h(
-    'section',
-    { className: 'rounded-md border border-border/60 p-3 flex flex-col gap-1' },
-    [
-      h('h2', { className: 'text-sm font-semibold' }, 'Fetch Datasets'),
-      h(
-        'p',
-        { className: 'text-xs text-muted-foreground' },
-        'Coming soon. Dataset download/import flow will be integrated in a future update.',
-      ),
-    ],
-  );
+  return ReactSectionCard(h, 'Fetch Datasets', [
+    h(
+      'p',
+      { className: 'text-xs text-muted-foreground' },
+      'Coming soon. Dataset download/import flow will be integrated in a future update.',
+    ),
+  ]);
 }
 
-function resolveRegistrySortConfig(
+export function resolveRegistrySortConfig(
   sortIndex: number,
 ): SortConfig<SettingsDatasetRow> {
   return (

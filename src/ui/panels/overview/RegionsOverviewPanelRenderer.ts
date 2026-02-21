@@ -31,7 +31,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   ) {
     this.host = new ReactToolbarPanelHost(api, {
       id: REGIONS_OVERVIEW_PANEL_ID,
-      icon: 'Table2',
+      icon: 'MapPinned',
       title: REGIONS_OVERVIEW_PANEL_TITLE,
       width: 720,
     });

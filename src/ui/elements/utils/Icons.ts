@@ -1,29 +1,32 @@
 import type { createElement, ReactNode } from 'react';
 
 type SVGNode =
-  | { tag: 'path'; d: string }
+  | { tag: 'path'; d: string, strokeWidth?: string, strokeLinecap?: string }
   | {
-      tag: 'rect';
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      rx?: number;
-    };
+    tag: 'rect';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rx?: number;
+  } | { tag: 'circle'; cx: number; cy: number; r: number };
 
 export interface IconDefinition {
   nodes: SVGNode[];
   viewBox?: string;
 }
 
+export interface IconRenderOptions {
+  size?: number;
+  className?: string;
+  transform?: string;
+}
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export function createIconElement(
   icon: IconDefinition,
-  options?: {
-    size?: number;
-    className?: string;
-  },
+  options?: IconRenderOptions,
 ): SVGElement {
   const { size = 24, className = 'h-4 w-4 shrink-0' } = options ?? {};
 
@@ -40,6 +43,9 @@ export function createIconElement(
 
   if (className) {
     svg.setAttribute('class', className);
+  }
+  if (options?.transform) {
+    svg.style.transform = options.transform;
   }
 
   for (const node of icon.nodes) {
@@ -60,10 +66,7 @@ export function createIconElement(
 export function createReactIconElement(
   h: typeof createElement,
   icon: IconDefinition,
-  options?: {
-    size?: number;
-    className?: string;
-  },
+  options?: IconRenderOptions,
 ): ReactNode {
   const { size = 24, className = 'h-4 w-4 shrink-0' } = options ?? {};
 
@@ -80,12 +83,20 @@ export function createReactIconElement(
       strokeLinecap: 'round',
       strokeLinejoin: 'round',
       className,
+      style: options?.transform ? { transform: options.transform } : undefined,
     },
     icon.nodes.map((node, index) => {
       if (node.tag === 'path') {
         return h('path', {
           key: `path-${index}`,
           d: node.d,
+        });
+      } else if (node.tag === 'circle') {
+        return h('circle', {
+          key: `circle-${index}`,
+          cx: node.cx,
+          cy: node.cy,
+          r: node.r,
         });
       }
 
@@ -153,3 +164,35 @@ export const ChevronDownIcon: IconDefinition = {
 export const ChevronUpIcon: IconDefinition = {
   nodes: [{ tag: 'path', d: 'm18 15-6-6-6 6' }],
 };
+
+export const Arrow: IconDefinition = {
+  nodes: [
+    {
+      tag: 'path',
+      d: 'M12 4L20 12L12 20',
+      strokeWidth: "4",
+      strokeLinecap: "butt"
+    },
+    {
+      tag: 'path',
+      d: 'M4 12H18',
+      strokeWidth: "4",
+      strokeLinecap: "square"
+    },
+  ],
+};
+
+export const MapPinnedIcon: IconDefinition = {
+  nodes: [
+    {
+      tag: 'path',
+      d: 'M18 8c0 3.613-3.869 7.429-5.393 8.795a1 1 0 0 1-1.214 0C9.87 15.429 6 11.613 6 8a6 6 0 0 1 12 0',
+    },
+    { tag: 'circle', cx: 12, cy: 8, r: 2 },
+    {
+      tag: 'path',
+      d: 'M8.714 14h-3.71a1 1 0 0 0-.948.683l-2.004 6A1 1 0 0 0 3 22h18a1 1 0 0 0 .948-1.316l-2-6a1 1 0 0 0-.949-.684h-3.712',
+    },
+  ],
+};
+

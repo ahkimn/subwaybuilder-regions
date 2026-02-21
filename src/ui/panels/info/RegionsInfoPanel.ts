@@ -22,6 +22,7 @@ import {
   type UIState,
 } from '../../../core/types';
 import { ReactPanelHeader } from '../../elements/PanelHeader';
+import { Placeholder } from '../../elements/Placeholder';
 import {
   ReactSelectRow,
   type SelectButtonConfig,
@@ -30,8 +31,7 @@ import {
   createReactIconElement,
   FileChartColumnIcon,
   TramFrontIcon,
-} from '../../elements/utils/get-icon';
-import { renderInfoPlaceholder } from '../shared/info-placeholder';
+} from '../../elements/utils/Icons';
 import {
   DEFAULT_SORT_STATE,
   NumberDisplay,
@@ -199,7 +199,7 @@ export function RegionsInfoPanel({
             dispatchCommutersViewAction,
             resolveRegionName,
           )
-          : renderInfoPlaceholder(createElement, LOADING_VALUE_DISPLAY);
+          : Placeholder(createElement, LOADING_VALUE_DISPLAY);
       break;
     default:
       throw new Error(`Unsupported view ${activeView}`);

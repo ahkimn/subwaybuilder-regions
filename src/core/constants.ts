@@ -55,6 +55,7 @@ export const REGIONS_OVERVIEW_PANEL_CONTENT_ID =
 export const REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID =
   'regions-settings-main-menu-component';
 export const REGIONS_SETTINGS_STORAGE_KEY = 'regions.settings.v1';
+export const REGIONS_REGISTRY_STORAGE_KEY = 'regions.registry.v1';
 export const OVERVIEW_REGION_FOCUS_TARGET_COVERAGE = 0.5; // Target map coverage for overview row focus action (roughly half of viewport width/height)
 export const OVERVIEW_REGION_FOCUS_MIN_PADDING_PX = 48; // Minimum fitBounds padding on each side for overview row focus
 export const OVERVIEW_REGION_FOCUS_MAX_PADDING_PX = 280; // Maximum fitBounds padding on each side for overview row focus

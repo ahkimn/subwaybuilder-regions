@@ -108,12 +108,14 @@ export class RegionDataset {
     }
 
     const loadedSize = this.boundaryData.features.length;
-    if (loadedSize !== this.expectedSize) {
+    if (loadedSize === 0) {
+      throw new DatasetEmptyError(this.id);
+    }
+
+    if (this.expectedSize > 0 && loadedSize !== this.expectedSize) {
       console.warn(
         `[Regions] Dataset size mismatch for ${this.id} in ${this.cityCode}: expected ${this.expectedSize}, loaded ${loadedSize}`,
       );
-    } else if (loadedSize === 0) {
-      throw new DatasetEmptyError(this.id);
     }
   }
 

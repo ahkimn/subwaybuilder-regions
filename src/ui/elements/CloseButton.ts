@@ -1,6 +1,6 @@
 import type { createElement, ReactNode } from 'react';
 
-import { CloseIcon, createReactIconElement } from './utils/get-icon';
+import { CloseIcon, createReactIconElement } from './utils/Icons';
 
 export function ReactCloseButton(
   h: typeof createElement,

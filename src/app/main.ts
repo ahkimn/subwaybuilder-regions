@@ -23,10 +23,13 @@ export class RegionsMod {
   private settings: RegionsSettings = { ...DEFAULT_REGIONS_SETTINGS };
 
   // TODO (Bug 2): These are guards against unexpected states; however, full hot-reload support will require more robust handling of these edge cases.
-  private cityLoadToken = 0;
+  private cityLoadToken: number;
+  private newCityLoadToken: number;
 
   constructor() {
-    this.registry = new RegionDatasetRegistry(INDEX_FILE, SERVE_URL);
+    this.registry = new RegionDatasetRegistry(api, INDEX_FILE, SERVE_URL);
+    this.cityLoadToken = 0;
+    this.newCityLoadToken = 0;
   }
 
   // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
@@ -96,18 +99,10 @@ export class RegionsMod {
     api.hooks.onMapReady(this.onMapReady.bind(this));
     api.hooks.onGameEnd(this.onGameEnd.bind(this));
 
+
+    // TODO: Handle hot reload by forcing life cycle via fallback city code retrieval (gated on mod initialization)
+
     console.log('[Regions] Mod Initialized');
-  }
-
-  private onGameEnd(_result: unknown) {
-    if (this.currentCityCode) {
-      this.clearCityData(this.currentCityCode);
-      this.currentCityCode = null;
-    }
-
-    this.mapLayers?.reset();
-    this.mapLayers = null;
-    this.uiManager?.onGameEnd();
   }
 
   private onMapReady = (map: maplibregl.Map | null) => {
@@ -137,10 +132,25 @@ export class RegionsMod {
 
     this.uiManager.attachMapLayers(this.mapLayers);
 
+    console.log('load tokens: ', this.cityLoadToken, this.newCityLoadToken);
+
     if (this.currentCityCode) {
       this.activateCity(this.currentCityCode);
+      // On reload of an existing save, a new cityLoad hook may not trigger; however, we can recover the city code from a separate API call
+    } else if (this.cityLoadToken !== this.newCityLoadToken && this.tryGetCityCode()) {
+      this.onCityLoad(this.currentCityCode!);
     }
   };
+
+  private tryGetCityCode(): boolean {
+    const cityCodeFromAPI = api.utils.getCityCode();
+    console.warn('[Regions] Map ready invoked without city code; resolved city code from API: ', cityCodeFromAPI ?? 'N/A');
+    if (cityCodeFromAPI) {
+      this.currentCityCode = cityCodeFromAPI;
+      return true
+    }
+    return false;
+  }
 
   private onCityLoad = async (cityCode: string) => {
     // TODO (Issue 2): Add mechanism to determine BoundaryBox from SubwayBuilderAPI for dynamic generation of datasets
@@ -196,11 +206,27 @@ export class RegionsMod {
     this.mapLayers?.observeMapLayersForDatasets(datasets);
   }
 
+  private onGameEnd(_result: unknown) {
+    console.log('[Regions] Handling game end, clearing city data and resetting state');
+    this.newCityLoadToken = this.cityLoadToken;
+
+    if (this.currentCityCode) {
+      this.clearCityData(this.currentCityCode);
+      this.currentCityCode = null;
+    }
+
+    this.mapLayers?.reset();
+    this.mapLayers = null;
+    this.uiManager?.onGameEnd();
+  }
+
+
+  // This should rarely if ever be called (only in cases where a user is able to switch cities without ending a game)
   private deactivateCity() {
+    console.warn(`[Regions] Deactivating current city data for: ${this.currentCityCode}`);
     if (!this.currentCityCode) {
       return;
     }
-
     this.clearCityData(this.currentCityCode);
 
     this.mapLayers?.reset();
@@ -222,6 +248,10 @@ export class RegionsMod {
   private applySettings(settings: RegionsSettings): void {
     this.settings = { ...settings };
     this.uiManager?.applySettings(this.settings);
+  }
+
+  printSettings() {
+    console.log('[Regions] Current settings', this.settings);
   }
 
   // --- Debugging Helpers --- //
@@ -271,6 +301,7 @@ const mod = new RegionsMod();
 (window as any).SubwayBuilderRegions = {
   debug: {
     printRegistry: () => mod.printRegistry(),
+    printSettings: () => mod.printSettings(),
     getCurrentCityCode: () => mod.getCurrentCityCode(),
     getActiveSelection: () => mod.getActiveSelection(),
     tearDownUIManager: () => mod.tearDownUIManager(),

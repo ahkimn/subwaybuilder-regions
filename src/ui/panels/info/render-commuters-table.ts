@@ -15,7 +15,8 @@ import {
   getBreakdownSortOrder,
   resolveBreakdownSourceLabel,
 } from '../shared/commuter-data';
-import type { SortConfig, SortState } from '../types';
+import type { SortConfig } from '../types';
+import { SortState } from '../types';
 import { NumberDisplay, SortDirection } from '../types';
 import {
   CommuterDimension,
@@ -140,15 +141,15 @@ export function renderCommutersTable(
     }),
     rows.length > DEFAULT_TABLE_ROWS
       ? h(
-          'div',
-          { className: 'pt-1 flex justify-center' },
-          ReactExtendButton(
-            h,
-            viewState.tableOptions.expanded ? 'Collapse' : 'Expand',
-            rows.length - DEFAULT_TABLE_ROWS,
-            () => dispatch({ type: 'toggle_table_expanded' }),
-          ),
-        )
+        'div',
+        { className: 'pt-1 flex justify-center' },
+        ReactExtendButton(
+          h,
+          viewState.tableOptions.expanded ? 'Collapse' : 'Expand',
+          rows.length - DEFAULT_TABLE_ROWS,
+          () => dispatch({ type: 'toggle_table_expanded' }),
+        ),
+      )
       : null,
   );
 }
@@ -317,20 +318,14 @@ function buildTableHeader(
   function changeSort(columnIndex: number) {
     const nextSortState: SortState =
       currentSortState.sortIndex === columnIndex
-        ? {
-            ...currentSortState,
-            sortDirection:
-              currentSortState.sortDirection === SortDirection.Asc
-                ? SortDirection.Desc
-                : SortDirection.Asc,
-          }
+        ? SortState.reverseDirection(currentSortState)
         : {
-            ...currentSortState,
-            previousSortIndex: currentSortState.sortIndex,
-            previousSortDirection: currentSortState.sortDirection,
-            sortIndex: columnIndex,
-            sortDirection: SortDirection.Desc,
-          };
+          ...currentSortState,
+          previousSortIndex: currentSortState.sortIndex,
+          previousSortDirection: currentSortState.sortDirection,
+          sortIndex: columnIndex,
+          sortDirection: SortDirection.Desc,
+        };
     dispatch({
       type: 'set_sort_for_dimension',
       dimension: viewState.dimension,
