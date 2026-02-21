@@ -87,6 +87,7 @@ export function RegionsInfoPanel({
     return null;
   }
 
+  // Helper function to resolve display name from feature ID (used by the UI state for unique identification)
   const resolveRegionName = (regionId: string | number): string => {
     return regionDataManager.resolveRegionName(
       activeDatasetIdentifier!,
@@ -96,15 +97,18 @@ export function RegionsInfoPanel({
 
   useEffect(() => {
     setGameData(getCurrentGameData(regionDataManager, uiState));
+    // Since some operations are asynchronous and the active selection could change before completion, take a snapshot of the active selection at time of effect invocation
     const selectionSnapshot = uiState.activeSelection!;
     let cancelled = false;
     if (activeView === RegionsInfoPanelView.Statistics) {
+      // For statistics view, we require the Infrastructure data + Ridership (TODO) data to populated summary fields
       void regionDataManager
         .ensureExistsDataForSelection(uiState, RegionDataType.Infra, {
           forceBuild: false,
         })
         .then(() => {
           if (cancelled) return;
+          // Infra data specifically takes significant time to populate; if the active selection has changed we do not want to update with a potentially stale state
           if (
             !RegionSelection.isEqual(selectionSnapshot, uiState.activeSelection)
           )
@@ -116,6 +120,7 @@ export function RegionsInfoPanel({
         });
     } else if (activeView === RegionsInfoPanelView.Commuters) {
       const activeDatasetIdentifier = selectionSnapshot.datasetIdentifier;
+      // For the commuters tab we require both the commuter summary and details data to populate the various views 
       void Promise.all([
         regionDataManager.ensureExistsDataForDataset(
           activeDatasetIdentifier,
@@ -154,6 +159,7 @@ export function RegionsInfoPanel({
     uiState,
   ]);
 
+  // Buttons for tab selection
   const viewButtonConfigs: Map<string, SelectButtonConfig> = new Map();
   viewButtonConfigs.set(RegionsInfoPanelView.Statistics, {
     label: 'Summary',
@@ -172,26 +178,27 @@ export function RegionsInfoPanel({
 
   let content: ReactNode;
 
+  // Tab selection
   switch (activeView) {
     case RegionsInfoPanelView.Statistics:
       content = gameData
         ? renderStatisticsView(createElement, gameData)
         : createElement(
-            'div',
-            { className: 'text-xs text-muted-foreground' },
-            'No game data set for info panel rendering',
-          );
+          'div',
+          { className: 'text-xs text-muted-foreground' },
+          'No game data set for info panel rendering',
+        );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-              createElement,
-              gameData,
-              commutersViewState,
-              dispatchCommutersViewAction,
-              resolveRegionName,
-            )
+            createElement,
+            gameData,
+            commutersViewState,
+            dispatchCommutersViewAction,
+            resolveRegionName,
+          )
           : renderInfoPlaceholder(createElement, LOADING_VALUE_DISPLAY);
       break;
     default:
@@ -211,6 +218,7 @@ export function RegionsInfoPanel({
         'w-full flex flex-col min-h-0',
       ].join(' '),
       style: {
+        // Leave offset at bottom of viewport to avoid rendering over the bottom bar and to ensure that all content in the panel is fully visible
         maxHeight: `calc(100vh - ${INFO_PANEL_MIN_VERTICAL_OFFSET}px)`,
       },
     },
@@ -247,6 +255,7 @@ export function RegionsInfoPanel({
 
 function createDefaultCommuterSortStates(): Map<CommuterDimension, SortState> {
   return new Map([
+    // By default sort regions by name ascending (alphabetical order); other dimensions should be based on natural number order (descending)
     [
       CommuterDimension.Region,
       { ...DEFAULT_SORT_STATE, sortDirection: SortDirection.Asc },

@@ -1,6 +1,8 @@
 // --- Statistics Types --- //
 
 import type { LightMode } from '../map/styles';
+import { DEFAULT_REGIONS_SETTINGS } from './settings/defaults';
+import type { RegionsSettings } from './settings/types';
 
 export const MODE_ORDER: (keyof ModeShare)[] = [
   'transit',
@@ -93,6 +95,7 @@ export class UIState {
   lastInjectedCity: string | null = null;
   activeSelection: RegionSelection | null = null;
   style: UIStyle = { lightMode: 'dark' };
+  settings: RegionsSettings = { ...DEFAULT_REGIONS_SETTINGS };
 
   get isActive(): boolean {
     return this.cityCode !== null && this.activeSelection !== null;

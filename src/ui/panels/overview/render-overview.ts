@@ -1,10 +1,7 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
-import {
-  LOADING_VALUE_DISPLAY,
-  SHOW_UNPOPULATED_REGIONS,
-} from '../../../core/constants';
+import { LOADING_VALUE_DISPLAY } from '../../../core/constants';
 import {
   ModeShare,
   type RegionGameData,
@@ -182,10 +179,15 @@ export function renderOverviewTabContent(
   onSortChange: (columnIndex: number) => void,
   onSelectRow: (selection: RegionSelection, toggleIfSame: boolean) => void,
   onDoubleClickRow: (selection: RegionSelection) => void,
+  showUnpopulatedRegions: boolean,
 ): React.ReactNode {
   const rows = sortRows(
     filterRows(
-      buildRows(datasetGameData, selectedDatasetIdentifier),
+      buildRows(
+        datasetGameData,
+        selectedDatasetIdentifier,
+        showUnpopulatedRegions,
+      ),
       searchTerm,
     ),
     sortState,
@@ -411,8 +413,9 @@ function renderOverviewTable(
 function buildRows(
   datasetGameData: Map<string | number, RegionGameData>,
   selectedDatasetIdentifier: string,
+  showUnpopulatedRegions: boolean,
 ): RegionsOverviewRow[] {
-  const rowsData = SHOW_UNPOPULATED_REGIONS
+  const rowsData = showUnpopulatedRegions
     ? Array.from(datasetGameData.values())
     : Array.from(datasetGameData.values()).filter((gameData) =>
         RegionGameDataUtils.isPopulated(gameData),

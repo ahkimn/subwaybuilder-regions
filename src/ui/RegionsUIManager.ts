@@ -11,6 +11,11 @@ import { RegionDataBuilder } from '../core/datasets/RegionDataBuilder';
 import { RegionDataManager } from '../core/datasets/RegionDataManager';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import type { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
+import type { RegionsSettingsStore } from '../core/settings/RegionsSettingsStore';
+import {
+  RegionsSettings,
+  type RegionsSettings as RegionsSettingsValue,
+} from '../core/settings/types';
 import { RegionSelection, UIState, type UIStyle } from '../core/types';
 import type { RegionsMapLayers } from '../map/RegionsMapLayers';
 import type { ModdingAPI } from '../types/modding-api-v1';
@@ -22,11 +27,15 @@ import {
 } from './observers/observers';
 import { RegionsInfoPanelRenderer } from './panels/info/RegionsInfoPanelRenderer';
 import { RegionsOverviewPanelRenderer } from './panels/overview/RegionsOverviewPanelRenderer';
+import { RegionsSettingsPanelRenderer } from './panels/settings/RegionsSettingsPanelRenderer';
 import { resolveInfoPanelRoot } from './resolve/resolve-info-panel';
 
 export class RegionsUIManager {
+  private mapLayers: RegionsMapLayers | null = null;
+
   private infoPanelRenderer: RegionsInfoPanelRenderer;
   private overviewPanelRenderer: RegionsOverviewPanelRenderer;
+  private settingsPanelRenderer: RegionsSettingsPanelRenderer;
 
   private regionDataManager: RegionDataManager;
   private commuterRefreshLoop: CommuterRefreshLoop;
@@ -45,10 +54,14 @@ export class RegionsUIManager {
 
   constructor(
     private readonly api: ModdingAPI,
-    private mapLayers: RegionsMapLayers,
     private datasetRegistry: RegionDatasetRegistry,
+    settingsStore: RegionsSettingsStore,
+    initialSettings?: RegionsSettingsValue,
   ) {
     this.state = new UIState();
+    if (initialSettings) {
+      this.state.settings = { ...initialSettings };
+    }
 
     const regionDataBuilder = new RegionDataBuilder(this.api);
     this.regionDataManager = new RegionDataManager(
@@ -69,6 +82,11 @@ export class RegionsUIManager {
       this.state,
       this.regionDataManager,
     );
+    this.settingsPanelRenderer = new RegionsSettingsPanelRenderer(
+      this.api,
+      settingsStore,
+      this.datasetRegistry,
+    );
 
     this.commuterRefreshLoop = new CommuterRefreshLoop(
       this.api,
@@ -87,27 +105,34 @@ export class RegionsUIManager {
     }
     this.initialized = true;
 
-    this.mapLayers.setEvents({
-      onRegionSelect: this.onRegionSelect.bind(this),
-      onLayerStateSync: () => this.tryInjectLayerPanel(true),
-      onLayerVisibilityChange: ({ datasetIdentifier, visible }) =>
-        this.onLayerVisibilityChange(datasetIdentifier, visible),
-    });
-
     this.overviewPanelRenderer.setEvents({
       onRegionSelect: (selection: RegionSelection, toggleIfSame: boolean) =>
         this.onOverviewSelect(selection, toggleIfSame),
       onRegionDoubleClick: (selection: RegionSelection) =>
         this.onOverviewSelect(selection, false, true),
     });
-
-    this.mapLayers.setSelectionProvider(
-      (): RegionSelection | null => this.state.activeSelection,
-    );
-
+    this.settingsPanelRenderer.initialize();
     this.syncResolvedTheme();
     this.infoPanelRenderer.initialize();
     this.ensureLayerPanelObserver();
+    this.settingsPanelRenderer.tryUpdatePanel();
+  }
+
+  attachMapLayers(mapLayers: RegionsMapLayers): void {
+    this.mapLayers = mapLayers;
+    this.mapLayers.setEvents({
+      onRegionSelect: this.onRegionSelect.bind(this),
+      onLayerStateSync: () => this.tryInjectLayerPanel(true),
+      onLayerVisibilityChange: ({ datasetIdentifier, visible }) =>
+        this.onLayerVisibilityChange(datasetIdentifier, visible),
+    });
+    this.mapLayers.setSelectionProvider(
+      (): RegionSelection | null => this.state.activeSelection,
+    );
+    this.mapLayers.setSettings(this.state.settings);
+    this.mapLayers.setLightMode(this.state.style.lightMode);
+    this.tryInjectLayerPanel(true);
+    this.settingsPanelRenderer.tryUpdatePanel();
   }
 
   // --- Observers Management --- //
@@ -184,7 +209,10 @@ export class RegionsUIManager {
   }
 
   tryInjectLayerPanel(force: boolean = false) {
-    if (!this.layerPanelRoot || !this.state.cityCode) return;
+    if (!this.layerPanelRoot || !this.state.cityCode || !this.mapLayers) {
+      return;
+    }
+    const mapLayers = this.mapLayers;
     if (!document.contains(this.layerPanelRoot)) {
       this.layerPanelRoot = null;
       return;
@@ -206,10 +234,10 @@ export class RegionsUIManager {
       this.state.cityCode,
     );
     cityDatasets.forEach((ds) => {
-      this.mapLayers!.ensureDatasetLayers(ds);
+      mapLayers.ensureDatasetLayers(ds);
     });
     const toggleOptions = cityDatasets.map((ds) =>
-      this.mapLayers!.getDatasetToggleOptions(ds),
+      mapLayers.getDatasetToggleOptions(ds),
     );
 
     // Map layers reset on theme change. For now we can use this as our "hook" to propagate theme updates to the rest of the game's UI
@@ -252,12 +280,12 @@ export class RegionsUIManager {
     const dataset = this.datasetRegistry.getDatasetByIdentifier(
       selection.datasetIdentifier,
     );
-    this.mapLayers.toggleOrSetVisibility(dataset, true);
+    this.mapLayers?.toggleOrSetVisibility(dataset, true);
     this.setActiveSelection(selection, {
       toggleIfSame: toggleIfSame,
       showInfo: true,
     });
-    if (focusRegion) {
+    if (focusRegion && this.mapLayers) {
       this.mapLayers.focusRegion(dataset, selection.featureId);
     }
   }
@@ -289,10 +317,7 @@ export class RegionsUIManager {
     }
 
     this.state.activeSelection = nextSelection;
-    this.mapLayers.updateSelection(
-      previousSelection,
-      this.state.activeSelection,
-    );
+    this.mapLayers?.updateSelection(previousSelection, this.state.activeSelection);
 
     if (options.showInfo) {
       this.infoPanelRenderer.showFeatureData();
@@ -311,7 +336,7 @@ export class RegionsUIManager {
     }
 
     this.state.style = { ...this.state.style, lightMode: style.lightMode };
-    this.mapLayers.setLightMode(style.lightMode);
+    this.mapLayers?.setLightMode(style.lightMode);
     this.refreshVisiblePanels();
   }
 
@@ -322,6 +347,18 @@ export class RegionsUIManager {
     this.setStyle({ ...this.state.style, lightMode: patch.lightMode });
   }
 
+  public applySettings(settings: RegionsSettingsValue): void {
+    if (RegionsSettings.equals(this.state.settings, settings)) {
+      return;
+    }
+
+    this.state.settings = { ...settings };
+    this.mapLayers?.setSettings(this.state.settings);
+    this.tryInjectLayerPanel(true);
+    this.refreshVisiblePanels();
+    this.settingsPanelRenderer.tryUpdatePanel();
+  }
+
   // --- State Mutations --- //
   onCityChange(cityCode: string) {
     this.reset();
@@ -330,9 +367,11 @@ export class RegionsUIManager {
     this.infoPanelRenderer.initialize();
     this.overviewPanelRenderer.initialize();
 
+    this.mapLayers?.setSettings(this.state.settings);
     this.syncResolvedTheme();
     this.tryInjectLayerPanel();
     this.ensureLayerPanelObserver();
+    this.settingsPanelRenderer.tryUpdatePanel();
   }
 
   reset() {
@@ -348,17 +387,16 @@ export class RegionsUIManager {
     this.infoPanelRoot = null;
     this.state.cityCode = null;
     this.state.lastInjectedCity = null;
+    this.mapLayers = null;
     this.initialized = false;
+    this.settingsPanelRenderer.tearDown();
   }
 
   private clearSelection() {
     const previousSelection = this.state.activeSelection;
     this.state.activeSelection = null;
 
-    this.mapLayers.updateSelection(
-      previousSelection,
-      this.state.activeSelection,
-    );
+    this.mapLayers?.updateSelection(previousSelection, this.state.activeSelection);
     this.infoPanelRenderer.tearDown();
     this.overviewPanelRenderer.tryUpdatePanel();
   }
@@ -381,5 +419,6 @@ export class RegionsUIManager {
     if (this.overviewPanelRenderer.isVisible()) {
       this.overviewPanelRenderer.tryUpdatePanel();
     }
+    this.settingsPanelRenderer.tryUpdatePanel();
   }
 }

@@ -2,6 +2,9 @@ import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/constants';
 
 import { REGIONS_DESELECT_KEY } from '../core/constants';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
+import { DEFAULT_REGIONS_SETTINGS } from '../core/settings/defaults';
+import { RegionsSettingsStore } from '../core/settings/RegionsSettingsStore';
+import type { RegionsSettings } from '../core/settings/types';
 import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
 
@@ -17,10 +20,10 @@ export class RegionsMod {
   private mapLayers: RegionsMapLayers | null = null;
 
   private uiManager: RegionsUIManager | null = null;
+  private settings: RegionsSettings = { ...DEFAULT_REGIONS_SETTINGS };
 
   // TODO (Bug 2): These are guards against unexpected states; however, full hot-reload support will require more robust handling of these edge cases.
   private cityLoadToken = 0;
-  private mapInitialized = false;
 
   constructor() {
     this.registry = new RegionDatasetRegistry(INDEX_FILE, SERVE_URL);
@@ -68,6 +71,25 @@ export class RegionsMod {
       throw registryBuildError;
     }
 
+    const settingsStore = new RegionsSettingsStore();
+    this.settings = await settingsStore.initialize();
+    settingsStore.listen((nextSettings) => {
+      this.applySettings(nextSettings);
+    });
+
+    this.uiManager = new RegionsUIManager(
+      api,
+      this.registry,
+      settingsStore,
+      this.settings,
+    );
+    this.uiManager.initialize();
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key !== REGIONS_DESELECT_KEY) return;
+      this.uiManager?.handleDeselect();
+    });
+
     api.hooks.onCityLoad(this.onCityLoad.bind(this));
     api.hooks.onMapReady(this.onMapReady.bind(this));
 
@@ -82,44 +104,28 @@ export class RegionsMod {
       return;
     }
 
-    if (!this.mapInitialized) {
-      this.mapInitialized = true;
+    if (!this.mapLayers) {
       this.mapLayers = new RegionsMapLayers(resolvedMap);
-      this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
-
-      console.log('[Regions] Map Layers and UI Manager initialized');
-
-      this.uiManager.initialize();
-
-      window.addEventListener('keydown', (event) => {
-        if (event.key !== REGIONS_DESELECT_KEY) return;
-        this.uiManager?.handleDeselect();
-      });
-
-      if (this.currentCityCode) {
-        this.activateCity(this.currentCityCode);
-      }
-      return;
-    } else if (!this.mapLayers || !this.uiManager) {
-      console.error(
-        '[Regions] Rebuilding map and UI managers after unexpected missing state',
+      console.log('[Regions] Map Layers initialized');
+    } else {
+      this.mapLayers.setMap(resolvedMap);
+      console.warn(
+        '[Regions] onMapReady called with a new map instance; rebound map references',
       );
-      this.mapLayers = new RegionsMapLayers(resolvedMap);
-      this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
-      this.uiManager.initialize();
+    }
 
-      if (this.currentCityCode) {
-        this.activateCity(this.currentCityCode);
-      }
+    this.mapLayers.setSettings(this.settings);
+
+    if (!this.uiManager) {
+      console.error('[Regions] UI Manager is missing during map attach');
       return;
     }
 
-    // City transitions can provide a new map instance in onMapReady.
-    // Rebind existing map-layer manager without creating new manager instances.
-    this.mapLayers.setMap(resolvedMap);
-    console.warn(
-      '[Regions] onMapReady called with a new map instance; rebound map references',
-    );
+    this.uiManager.attachMapLayers(this.mapLayers);
+
+    if (this.currentCityCode) {
+      this.activateCity(this.currentCityCode);
+    }
   };
 
   private onCityLoad = async (cityCode: string) => {
@@ -151,10 +157,9 @@ export class RegionsMod {
 
   // Activate city datasets in map layers and UI. Should only be called once per city
   private activateCity(cityCode: string) {
-    if (!this.mapLayers || !this.uiManager) {
-      // Unexpected state. Both should be initialized in onMapReady before this is called.
+    if (!this.uiManager) {
       console.error(
-        '[Regions] Cannot activate city: Map layers or UI manager not initialized',
+        '[Regions] Cannot activate city: UI manager not initialized',
       );
       return;
     }
@@ -173,12 +178,16 @@ export class RegionsMod {
 
     datasets.forEach((dataset) => dataset.updateWithDemandData(demandData));
 
-    this.uiManager!.onCityChange(cityCode);
-    this.mapLayers!.observeMapLayersForDatasets(datasets);
+    this.uiManager.onCityChange(cityCode);
+    this.mapLayers?.observeMapLayersForDatasets(datasets);
   }
 
   private deactivateCity() {
-    const cityDatasets = this.registry.getCityDatasets(this.currentCityCode!);
+    if (!this.currentCityCode) {
+      return;
+    }
+
+    const cityDatasets = this.registry.getCityDatasets(this.currentCityCode);
     for (const dataset of cityDatasets) {
       dataset.clearData();
     }
@@ -190,6 +199,11 @@ export class RegionsMod {
       `[Regions] Deactivated previous city data for: ${this.currentCityCode}`,
     );
     this.currentCityCode = null;
+  }
+
+  private applySettings(settings: RegionsSettings): void {
+    this.settings = { ...settings };
+    this.uiManager?.applySettings(this.settings);
   }
 
   // --- Debugging Helpers --- //
