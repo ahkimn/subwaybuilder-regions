@@ -9,7 +9,7 @@ import type { RegionGameData } from '../../../core/types';
 import { formatNumberOrDefault } from '../../../core/utils';
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
-import { buildReactViewHeader } from '../shared/view-header';
+import { ViewHeader } from '../../elements/ViewHeader';
 
 export function renderStatisticsView(
   h: typeof createElement,
@@ -27,10 +27,10 @@ export function renderStatisticsView(
 
   const averageCommuteLength =
     residents + workers > 0 &&
-    residentCommuteLength !== null &&
-    workerCommuteLength !== null
+      residentCommuteLength !== null &&
+      workerCommuteLength !== null
       ? (residentCommuteLength * residents + workerCommuteLength * workers) /
-        (residents + workers)
+      (residents + workers)
       : null;
 
   const unitLabel = gameData.unitTypes?.singular;
@@ -41,7 +41,7 @@ export function renderStatisticsView(
   return h(
     'div',
     { className: 'flex flex-col gap-2' },
-    buildReactViewHeader(h, gameData.displayName),
+    ViewHeader(h, gameData.displayName),
     ReactDetailRow(
       h,
       'Type',
@@ -81,12 +81,12 @@ export function renderStatisticsView(
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-            Array.from(infraData!.trackLengths.values()).reduce(
-              (a, b) => a + b,
-              0,
-            ),
-            2,
-          )} km`
+          Array.from(infraData!.trackLengths.values()).reduce(
+            (a, b) => a + b,
+            0,
+          ),
+          2,
+        )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     ReactDetailRow(

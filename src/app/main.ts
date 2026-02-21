@@ -83,8 +83,10 @@ export class RegionsMod {
       settingsStore,
       this.settings,
     );
+
     this.uiManager.initialize();
 
+    // Global key listener for deselection -- band-aid solution until we are able to make more targeted keybinds that do not clash with in-game
     window.addEventListener('keydown', (event) => {
       if (event.key !== REGIONS_DESELECT_KEY) return;
       this.uiManager?.handleDeselect();
@@ -94,6 +96,10 @@ export class RegionsMod {
     api.hooks.onMapReady(this.onMapReady.bind(this));
 
     console.log('[Regions] Mod Initialized');
+  }
+
+  private onGameEnd() {
+    // TODO: Try to reattach main menu buttons and deactivate city / cleanup
   }
 
   private onMapReady = (map: maplibregl.Map | null) => {

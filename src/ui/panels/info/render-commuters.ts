@@ -12,9 +12,9 @@ import {
   ReactSelectRow,
   type SelectButtonConfig,
 } from '../../elements/SelectRow';
+import { ViewHeader } from '../../elements/ViewHeader';
 import { resolveCommuterBreakdownData } from '../shared/commuter-data';
 import { renderInfoPlaceholder } from '../shared/info-placeholder';
-import { buildReactViewHeader } from '../shared/view-header';
 import { renderCommutersSankey } from './render-commuters-sankey';
 import { renderCommutersTable } from './render-commuters-table';
 import {
@@ -108,7 +108,7 @@ function buildCommutersHeader(
       }),
   });
 
-  return buildReactViewHeader(h, gameData.displayName, undefined, [
+  return ViewHeader(h, gameData.displayName, undefined, [
     ReactSelectRow(
       h,
       directionConfigs,

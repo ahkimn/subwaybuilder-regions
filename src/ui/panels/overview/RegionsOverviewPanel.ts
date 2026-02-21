@@ -9,7 +9,7 @@ import {
   type UIState,
 } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
-import { buildReactViewHeader } from '../shared/view-header';
+import { ViewHeader } from '../../elements/ViewHeader';
 import type { SortState } from '../types';
 import { DEFAULT_SORT_STATE } from '../types';
 import { renderLayerSelectorRow, renderOverviewTabs } from './render';
@@ -185,7 +185,7 @@ export function renderRegionsOverviewPanel(
       className: 'p-3 flex flex-col gap-3 h-full min-h-0',
     },
     renderOverviewTabs(h, activeTab, onSetTab),
-    buildReactViewHeader(h, 'Dataset', undefined, [
+    ViewHeader(h, 'Dataset', undefined, [
       renderLayerSelectorRow(
         h,
         props.availableDatasetIdentifiers,
