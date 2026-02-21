@@ -120,7 +120,7 @@ export function RegionsInfoPanel({
         });
     } else if (activeView === RegionsInfoPanelView.Commuters) {
       const activeDatasetIdentifier = selectionSnapshot.datasetIdentifier;
-      // For the commuters tab we require both the commuter summary and details data to populate the various views 
+      // For the commuters tab we require both the commuter summary and details data to populate the various views
       void Promise.all([
         regionDataManager.ensureExistsDataForDataset(
           activeDatasetIdentifier,
@@ -184,21 +184,21 @@ export function RegionsInfoPanel({
       content = gameData
         ? renderStatisticsView(createElement, gameData)
         : createElement(
-          'div',
-          { className: 'text-xs text-muted-foreground' },
-          'No game data set for info panel rendering',
-        );
+            'div',
+            { className: 'text-xs text-muted-foreground' },
+            'No game data set for info panel rendering',
+          );
       break;
     case RegionsInfoPanelView.Commuters:
       content =
         gameData && gameData.commuterSummary && gameData.commuterDetails
           ? renderCommutersView(
-            createElement,
-            gameData,
-            commutersViewState,
-            dispatchCommutersViewAction,
-            resolveRegionName,
-          )
+              createElement,
+              gameData,
+              commutersViewState,
+              dispatchCommutersViewAction,
+              resolveRegionName,
+            )
           : Placeholder(createElement, LOADING_VALUE_DISPLAY);
       break;
     default:

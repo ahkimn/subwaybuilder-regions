@@ -5,10 +5,7 @@ import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
 
 import { DATA_INDEX_FILE } from '../../shared/constants';
-import type {
-  DatasetIndex,
-  DatasetMetadata,
-} from '../../shared/dataset-index';
+import type { DatasetIndex, DatasetMetadata } from '../../shared/dataset-index';
 import type { BoundaryBox } from './geometry';
 import { findOsmCountryConfig } from './osm-country-config';
 

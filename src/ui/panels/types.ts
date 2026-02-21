@@ -36,7 +36,7 @@ export const SortState = {
           ? SortDirection.Desc
           : SortDirection.Asc,
     };
-  }
+  },
 };
 
 export type SortConfig<T> = {

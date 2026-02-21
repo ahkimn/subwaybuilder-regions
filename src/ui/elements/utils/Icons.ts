@@ -1,15 +1,16 @@
 import type { createElement, ReactNode } from 'react';
 
 type SVGNode =
-  | { tag: 'path'; d: string, strokeWidth?: string, strokeLinecap?: string }
+  | { tag: 'path'; d: string; strokeWidth?: string; strokeLinecap?: string }
   | {
-    tag: 'rect';
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rx?: number;
-  } | { tag: 'circle'; cx: number; cy: number; r: number };
+      tag: 'rect';
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rx?: number;
+    }
+  | { tag: 'circle'; cx: number; cy: number; r: number };
 
 export interface IconDefinition {
   nodes: SVGNode[];
@@ -170,14 +171,14 @@ export const Arrow: IconDefinition = {
     {
       tag: 'path',
       d: 'M12 4L20 12L12 20',
-      strokeWidth: "4",
-      strokeLinecap: "butt"
+      strokeWidth: '4',
+      strokeLinecap: 'butt',
     },
     {
       tag: 'path',
       d: 'M4 12H18',
-      strokeWidth: "4",
-      strokeLinecap: "square"
+      strokeWidth: '4',
+      strokeLinecap: 'square',
     },
   ],
 };
@@ -195,4 +196,3 @@ export const MapPinnedIcon: IconDefinition = {
     },
   ],
 };
-

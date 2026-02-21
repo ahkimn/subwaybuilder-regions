@@ -16,8 +16,8 @@ export type RegionsMetadata = {
   cityCode: string; // City code this dataset is associated with
   datasetMetadata: Record<RegionTypeKey, DatasetIndex>; // Metadata for all available region datasets for this city, keyed by region type
   [k: string]: unknown; // Allow for additional fields in the future
-}
+};
 
 export type FeatureCollectionWithMetadata = GeoJSON.FeatureCollection & {
-  metadata?: RegionsMetadata
-}
+  metadata?: RegionsMetadata;
+};

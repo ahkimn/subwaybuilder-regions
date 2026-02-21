@@ -22,7 +22,7 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     private readonly dataManager: RegionDataManager,
     private readonly getParentContainer: () => HTMLElement | null,
     private readonly onClose: () => void,
-  ) { }
+  ) {}
 
   initialize(): void {
     if (this.initialized) return;

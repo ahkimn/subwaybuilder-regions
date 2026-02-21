@@ -16,17 +16,16 @@ type SettingsListener = (settings: RegionsSettingsValue) => void;
 
 // Class to manage user settings for the Regions mod. Persists settings using the Electron API if available
 export class RegionsSettingsStore {
-  private settings: RegionsSettingsValue = clone(
-    DEFAULT_REGIONS_SETTINGS,
-  );
+  private settings: RegionsSettingsValue = clone(DEFAULT_REGIONS_SETTINGS);
   private initialized = false;
   private readonly listeners = new Set<SettingsListener>();
 
   constructor(
     private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
-    private readonly electronApi: ElectronSettingsApi | undefined = window
-      .electron as ElectronSettingsApi | undefined,
-  ) { }
+    private readonly electronApi:
+      | ElectronSettingsApi
+      | undefined = window.electron as ElectronSettingsApi | undefined,
+  ) {}
 
   async initialize(): Promise<RegionsSettingsValue> {
     if (this.initialized) {
@@ -74,7 +73,9 @@ export class RegionsSettingsStore {
     }
 
     try {
-      const storedValue = await this.electronApi.getStorageItem(this.storageKey);
+      const storedValue = await this.electronApi.getStorageItem(
+        this.storageKey,
+      );
       if (storedValue == null) {
         return;
       }
@@ -116,9 +117,7 @@ export class RegionsSettingsStore {
   }
 
   private warnMissingElectronAPI(apiMethod: string): void {
-    console.warn(
-      `[Regions] electron.${apiMethod} is unavailable`,
-    );
+    console.warn(`[Regions] electron.${apiMethod} is unavailable`);
   }
 }
 

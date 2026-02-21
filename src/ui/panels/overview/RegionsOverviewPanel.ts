@@ -15,11 +15,11 @@ import type { SortState } from '../types';
 import { DEFAULT_SORT_STATE } from '../types';
 import { renderLayerSelectorRow, renderOverviewTabs } from './render';
 import { renderHistoricalTabContent } from './render-historical';
-import type { InputFieldProperties, OverviewSortMetrics } from './render-overview';
-import {
-  renderOverviewTabContent,
-  resolveSortConfig,
+import type {
+  InputFieldProperties,
+  OverviewSortMetrics,
 } from './render-overview';
+import { renderOverviewTabContent, resolveSortConfig } from './render-overview';
 import { renderRidershipTabContent } from './render-ridership';
 import type { RegionsOverviewPanelState, RegionsOverviewTab } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
@@ -139,7 +139,13 @@ export function renderRegionsOverviewPanel(
   const activeSelection = props.uiState.activeSelection;
 
   const onSortChange = (columnIndex: number) => {
-    setSortState((current) => getNextSortState<OverviewSortMetrics>(current, columnIndex, resolveSortConfig));
+    setSortState((current) =>
+      getNextSortState<OverviewSortMetrics>(
+        current,
+        columnIndex,
+        resolveSortConfig,
+      ),
+    );
   };
 
   const onSetTab = (tab: RegionsOverviewTab) => {

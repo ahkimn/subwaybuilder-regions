@@ -9,6 +9,7 @@ export async function resolveLocalModsDataRoot(): Promise<string> {
   }
 
   const modsDir = (await electronApi.getModsFolder()).replace(/\\/g, '/');
+  // TODO: Let the user configure this path in case they wish to save the mod in a different folder (currently this is a brittle contract)
   return `${modsDir}/regions/data`;
 }
 
@@ -22,7 +23,7 @@ export function buildLocalDatasetUrl(
   );
 }
 
-export async function datasetFileExists(dataPath: string): Promise<boolean> {
+export async function localFileExists(dataPath: string): Promise<boolean> {
   try {
     const response = await fetch(dataPath);
     return response.ok;
@@ -31,7 +32,8 @@ export async function datasetFileExists(dataPath: string): Promise<boolean> {
   }
 }
 
-export async function getFeatureCount(
+// Helper function to read a local GeoJSON file and return its feature count whilst also validating the GeoJSON format
+export async function getFeatureCountForLocalDataset(
   dataPath: string,
 ): Promise<number | null> {
   try {

@@ -27,10 +27,10 @@ export function renderStatisticsView(
 
   const averageCommuteLength =
     residents + workers > 0 &&
-      residentCommuteLength !== null &&
-      workerCommuteLength !== null
+    residentCommuteLength !== null &&
+    workerCommuteLength !== null
       ? (residentCommuteLength * residents + workerCommuteLength * workers) /
-      (residents + workers)
+        (residents + workers)
       : null;
 
   const unitLabel = gameData.unitTypes?.singular;
@@ -81,12 +81,12 @@ export function renderStatisticsView(
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(
-          Array.from(infraData!.trackLengths.values()).reduce(
-            (a, b) => a + b,
-            0,
-          ),
-          2,
-        )} km`
+            Array.from(infraData!.trackLengths.values()).reduce(
+              (a, b) => a + b,
+              0,
+            ),
+            2,
+          )} km`
         : LOADING_VALUE_DISPLAY,
     ),
     ReactDetailRow(

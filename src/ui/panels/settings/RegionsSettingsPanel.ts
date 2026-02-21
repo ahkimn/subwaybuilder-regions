@@ -105,7 +105,10 @@ export function RegionsSettingsPanel({
           );
         })
         .catch((error) => {
-          console.error('[Regions] Failed to refresh local registry cache', error);
+          console.error(
+            '[Regions] Failed to refresh local registry cache',
+            error,
+          );
           api.ui.showNotification(
             '[Regions] Failed to refresh local registry cache. Check logs for details.',
             'error',
@@ -120,24 +123,28 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => setIsOpen(true)),
       isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-          settings,
-          isUpdating,
-          searchTerm,
-          sortState,
-          rows: sortedRows,
-          onClose: () => setIsOpen(false),
-          onSearchTermChange: setSearchTerm,
-          onSortChange: (columnIndex: number) => {
-            setSortState((current) =>
-              getNextSortState<SettingsDatasetRow>(current, columnIndex, resolveRegistrySortConfig),
-            );
-          },
-          onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-            updateSettings({ showUnpopulatedRegions: nextValue });
-          },
-          onRefreshRegistry: refreshRegistry,
-          isRefreshingRegistry,
-        })
+            settings,
+            isUpdating,
+            searchTerm,
+            sortState,
+            rows: sortedRows,
+            onClose: () => setIsOpen(false),
+            onSearchTermChange: setSearchTerm,
+            onSortChange: (columnIndex: number) => {
+              setSortState((current) =>
+                getNextSortState<SettingsDatasetRow>(
+                  current,
+                  columnIndex,
+                  resolveRegistrySortConfig,
+                ),
+              );
+            },
+            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+              updateSettings({ showUnpopulatedRegions: nextValue });
+            },
+            onRefreshRegistry: refreshRegistry,
+            isRefreshingRegistry,
+          })
         : null,
     ]);
   };

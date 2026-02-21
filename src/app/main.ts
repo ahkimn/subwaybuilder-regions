@@ -99,7 +99,6 @@ export class RegionsMod {
     api.hooks.onMapReady(this.onMapReady.bind(this));
     api.hooks.onGameEnd(this.onGameEnd.bind(this));
 
-
     // TODO: Handle hot reload by forcing life cycle via fallback city code retrieval (gated on mod initialization)
 
     console.log('[Regions] Mod Initialized');
@@ -137,17 +136,23 @@ export class RegionsMod {
     if (this.currentCityCode) {
       this.activateCity(this.currentCityCode);
       // On reload of an existing save, a new cityLoad hook may not trigger; however, we can recover the city code from a separate API call
-    } else if (this.cityLoadToken !== this.newCityLoadToken && this.tryGetCityCode()) {
+    } else if (
+      this.cityLoadToken !== this.newCityLoadToken &&
+      this.tryGetCityCode()
+    ) {
       this.onCityLoad(this.currentCityCode!);
     }
   };
 
   private tryGetCityCode(): boolean {
     const cityCodeFromAPI = api.utils.getCityCode();
-    console.warn('[Regions] Map ready invoked without city code; resolved city code from API: ', cityCodeFromAPI ?? 'N/A');
+    console.warn(
+      '[Regions] Map ready invoked without city code; resolved city code from API: ',
+      cityCodeFromAPI ?? 'N/A',
+    );
     if (cityCodeFromAPI) {
       this.currentCityCode = cityCodeFromAPI;
-      return true
+      return true;
     }
     return false;
   }
@@ -207,7 +212,9 @@ export class RegionsMod {
   }
 
   private onGameEnd(_result: unknown) {
-    console.log('[Regions] Handling game end, clearing city data and resetting state');
+    console.log(
+      '[Regions] Handling game end, clearing city data and resetting state',
+    );
     this.newCityLoadToken = this.cityLoadToken;
 
     if (this.currentCityCode) {
@@ -220,10 +227,11 @@ export class RegionsMod {
     this.uiManager?.onGameEnd();
   }
 
-
   // This should rarely if ever be called (only in cases where a user is able to switch cities without ending a game)
   private deactivateCity() {
-    console.warn(`[Regions] Deactivating current city data for: ${this.currentCityCode}`);
+    console.warn(
+      `[Regions] Deactivating current city data for: ${this.currentCityCode}`,
+    );
     if (!this.currentCityCode) {
       return;
     }

@@ -12,7 +12,7 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
     private readonly api: ModdingAPI,
     private readonly settingsStore: RegionsSettingsStore,
     private readonly datasetRegistry: RegionDatasetRegistry,
-  ) { }
+  ) {}
 
   initialize(): void {
     if (this.initialized) {

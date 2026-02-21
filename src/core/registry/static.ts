@@ -50,7 +50,8 @@ const GB_DATASET_TEMPLATES: readonly StaticDatasetTemplate[] = [
   },
 ];
 
-export const STATIC_TEMPLATES: Map<string, readonly StaticDatasetTemplate[]> = new Map([
-  ['US', US_DATASET_TEMPLATES],
-  ['GB', GB_DATASET_TEMPLATES],
-]);
+export const STATIC_TEMPLATES: Map<string, readonly StaticDatasetTemplate[]> =
+  new Map([
+    ['US', US_DATASET_TEMPLATES],
+    ['GB', GB_DATASET_TEMPLATES],
+  ]);

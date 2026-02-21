@@ -1,4 +1,3 @@
-
 export type RegionsSettings = {
   showUnpopulatedRegions: boolean; // Whether to show regions with no demand data by default in the overview panel and layer.
 };

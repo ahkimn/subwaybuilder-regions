@@ -40,10 +40,10 @@ export function ReactButton(
   const labelElement = h('span', { className: labelClassName }, label);
   const iconElement = icon
     ? createReactIconElement(h, icon, {
-      size: 16,
-      className: 'h-4 w-4 shrink-0',
-      ...iconOptions,
-    })
+        size: 16,
+        className: 'h-4 w-4 shrink-0',
+        ...iconOptions,
+      })
     : null;
 
   const children: ReactNode[] = [];

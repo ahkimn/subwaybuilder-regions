@@ -9,7 +9,7 @@ import {
 } from '../errors';
 import {
   buildLocalDatasetUrl,
-  datasetFileExists,
+  localFileExists,
   resolveLocalModsDataRoot,
 } from './fetch-local';
 import { STATIC_TEMPLATES } from './static';
@@ -37,8 +37,9 @@ export class RegionDatasetRegistry {
     private indexFile: string,
     private serveUrl: string,
     private readonly storageKey: string = REGIONS_REGISTRY_STORAGE_KEY,
-    private readonly electronApi: ElectronStorageApi | undefined = window
-      .electron as ElectronStorageApi | undefined,
+    private readonly electronApi:
+      | ElectronStorageApi
+      | undefined = window.electron as ElectronStorageApi | undefined,
   ) {
     this.datasets = new Map<string, RegionDataset>();
   }
@@ -213,14 +214,18 @@ export class RegionDatasetRegistry {
     return discoveredEntries.length;
   }
 
-  private async discoverStaticLocalDatasets(): Promise<StaticRegistryCacheEntry[]> {
+  private async discoverStaticLocalDatasets(): Promise<
+    StaticRegistryCacheEntry[]
+  > {
     const localModsDataRoot = await resolveLocalModsDataRoot();
     const discoveredEntries: StaticRegistryCacheEntry[] = [];
 
     const currentCities = this.api.utils.getCities();
 
     for (const city of currentCities) {
-      const datasetTemplates = city.country ? STATIC_TEMPLATES.get(city.country) ?? [] : [];
+      const datasetTemplates = city.country
+        ? (STATIC_TEMPLATES.get(city.country) ?? [])
+        : [];
       for (const template of datasetTemplates) {
         const dataPath = buildLocalDatasetUrl(
           localModsDataRoot,
@@ -228,7 +233,7 @@ export class RegionDatasetRegistry {
           template.datasetId,
         );
 
-        const exists = await datasetFileExists(dataPath);
+        const exists = await localFileExists(dataPath);
         if (!exists) {
           continue;
         }
@@ -261,13 +266,17 @@ export class RegionDatasetRegistry {
     };
   }
 
-  private async loadStaticRegistryCache(): Promise<StaticRegistryCacheEntry[] | null> {
+  private async loadStaticRegistryCache(): Promise<
+    StaticRegistryCacheEntry[] | null
+  > {
     if (!this.electronApi?.getStorageItem) {
       return null;
     }
 
     try {
-      const storedValue = await this.electronApi.getStorageItem(this.storageKey);
+      const storedValue = await this.electronApi.getStorageItem(
+        this.storageKey,
+      );
       const payload = resolveStoragePayload(storedValue);
       if (!Array.isArray(payload)) {
         return null;
@@ -275,16 +284,23 @@ export class RegionDatasetRegistry {
 
       const entries = payload.filter(isStaticRegistryCacheEntry);
       if (entries.length !== payload.length) {
-        console.warn('[Regions] Ignoring malformed entries in stored regions registry cache');
+        console.warn(
+          '[Regions] Ignoring malformed entries in stored regions registry cache',
+        );
       }
       return entries.length > 0 ? entries : null;
     } catch (error) {
-      console.warn('[Regions] Failed to load regions registry cache from storage', error);
+      console.warn(
+        '[Regions] Failed to load regions registry cache from storage',
+        error,
+      );
       return null;
     }
   }
 
-  private async persistStaticRegistryCache(entries: StaticRegistryCacheEntry[]): Promise<void> {
+  private async persistStaticRegistryCache(
+    entries: StaticRegistryCacheEntry[],
+  ): Promise<void> {
     if (!this.electronApi?.setStorageItem) {
       return;
     }
@@ -292,10 +308,12 @@ export class RegionDatasetRegistry {
     try {
       await this.electronApi.setStorageItem(this.storageKey, entries);
     } catch (error) {
-      console.warn('[Regions] Failed to persist regions registry cache to storage', error);
+      console.warn(
+        '[Regions] Failed to persist regions registry cache to storage',
+        error,
+      );
     }
   }
-
 }
 
 function resolveStoragePayload(storedValue: unknown): unknown {
@@ -309,7 +327,9 @@ function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function isStaticRegistryCacheEntry(value: unknown): value is StaticRegistryCacheEntry {
+function isStaticRegistryCacheEntry(
+  value: unknown,
+): value is StaticRegistryCacheEntry {
   if (!isObjectRecord(value)) {
     return false;
   }

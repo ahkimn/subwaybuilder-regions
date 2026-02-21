@@ -22,7 +22,9 @@ export function Checkbox(
     button.setAttribute('aria-checked', String(visible));
     button.dataset.state = visible ? 'checked' : 'unchecked';
 
-    console.log(`[Regions] Syncing checkbox state for ${options.id}, visible: ${visible}`);
+    console.log(
+      `[Regions] Syncing checkbox state for ${options.id}, visible: ${visible}`,
+    );
 
     if (visible && !button.contains(icon)) {
       button.appendChild(icon);

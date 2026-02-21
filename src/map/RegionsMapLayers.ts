@@ -12,7 +12,10 @@ import {
   normalizeBBox,
 } from '../core/geometry/helpers';
 import { DEFAULT_REGIONS_SETTINGS } from '../core/settings/defaults';
-import { RegionsSettings, type RegionsSettings as RegionsSettingsValue } from '../core/settings/types';
+import {
+  RegionsSettings,
+  type RegionsSettings as RegionsSettingsValue,
+} from '../core/settings/types';
 import { RegionSelection } from '../core/types';
 import type { MapDisplayColor } from '../ui/types/DisplayColor';
 import { PRIMARY_FILL_COLORS } from '../ui/types/DisplayColor';

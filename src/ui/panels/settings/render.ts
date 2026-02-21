@@ -115,7 +115,6 @@ export const DEFAULT_SETTINGS_SORT_STATE: SortState = {
   previousSortDirection: SortDirection.Asc,
 };
 
-
 export function filterSettingsRows(
   rows: SettingsDatasetRow[],
   searchTerm: string,
@@ -138,7 +137,6 @@ export function sortSettingsRows(
   rows: SettingsDatasetRow[],
   sortState: SortState,
 ): SettingsDatasetRow[] {
-
   const applySortByConfig = (
     a: SettingsDatasetRow,
     b: SettingsDatasetRow,
@@ -199,7 +197,8 @@ export function renderSettingsEntry(
       labelClassName: 'h-full text-3xl',
       iconOptions: {
         size: 20,
-        className: 'min-w-fit transition-all duration-150 h-9 w-9 ml-1 group-hover:scale-110',
+        className:
+          'min-w-fit transition-all duration-150 h-9 w-9 ml-1 group-hover:scale-110',
       },
     }),
     h(
@@ -378,7 +377,9 @@ function renderDatasetRegistrySection(
     ]),
     h(
       'div',
-      { className: 'overflow-auto max-h-[40vh] rounded border border-border/40' },
+      {
+        className: 'overflow-auto max-h-[40vh] rounded border border-border/40',
+      },
       h(ReactDataTable, {
         h,
         useStateHook,

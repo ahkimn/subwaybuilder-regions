@@ -324,7 +324,10 @@ export class RegionsUIManager {
     }
 
     this.state.activeSelection = nextSelection;
-    this.mapLayers?.updateSelection(previousSelection, this.state.activeSelection);
+    this.mapLayers?.updateSelection(
+      previousSelection,
+      this.state.activeSelection,
+    );
 
     if (options.showInfo) {
       this.infoPanelRenderer.showFeatureData();
@@ -410,7 +413,10 @@ export class RegionsUIManager {
     const previousSelection = this.state.activeSelection;
     this.state.activeSelection = null;
 
-    this.mapLayers?.updateSelection(previousSelection, this.state.activeSelection);
+    this.mapLayers?.updateSelection(
+      previousSelection,
+      this.state.activeSelection,
+    );
     this.infoPanelRenderer.tearDown();
     this.overviewPanelRenderer.tryUpdatePanel();
   }
