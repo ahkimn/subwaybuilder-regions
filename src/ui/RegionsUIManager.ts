@@ -3,7 +3,6 @@ import {
   modIdSelector,
   modRoleSelector,
   REGIONS_INFO_CONTAINER_ID,
-  REGIONS_INFO_PANEL_MOD_ID,
   REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID,
   REGIONS_LAYER_TOGGLE_MOD_ROLE,
 } from '../core/constants';
@@ -165,22 +164,18 @@ export class RegionsUIManager {
     if (this.infoPanelObserver && this.infoPanelObserverRoot === root) return;
 
     this.infoPanelObserver?.disconnect();
-    this.infoPanelObserver = observeInfoPanelRoot(root, (node: HTMLElement) => {
-      if (
-        node.id === REGIONS_INFO_CONTAINER_ID ||
-        node.querySelector(`#${REGIONS_INFO_CONTAINER_ID}`) !== null
-      ) {
-        return;
-      }
+    this.infoPanelObserver = observeInfoPanelRoot(root, (mutations) => {
+      const wasInfoContainerRemoved = mutations.some((mutation) =>
+        Array.from(mutation.removedNodes).some(
+          (node) =>
+            node instanceof HTMLElement &&
+            (node.id === REGIONS_INFO_CONTAINER_ID ||
+              node.querySelector(`#${REGIONS_INFO_CONTAINER_ID}`) !== null),
+        ),
+      );
 
-      const infoPanelSelector = modIdSelector(REGIONS_INFO_PANEL_MOD_ID);
-      // Ignore mutations to the info panel itself
-      if (
-        node.matches(infoPanelSelector) ||
-        node.querySelector(infoPanelSelector) !== null
-      ) {
-        return;
-      }
+      if (!wasInfoContainerRemoved) return;
+
       // If there is an active selection, clear the selection to prevent a state where the info panel is not shown but a region is still selected (and highlighted on the map)
       if (this.state.activeSelection !== null) {
         this.clearSelection();
