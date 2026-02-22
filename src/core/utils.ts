@@ -44,6 +44,7 @@ export async function fetchGeoJSON(
   try {
     return await fetchGeoJSONFromPath(dataPath);
   } catch (error) {
+    // Check the compressed path in case the file was expected to be uncompressed but is actually compressed
     if (!dataPath.endsWith('.gz') && dataPath.endsWith('.geojson')) {
       const gzPath = `${dataPath}.gz`;
       try {
@@ -84,19 +85,7 @@ async function decompressGzipResponse(
   response: Response,
   dataPath: string,
 ): Promise<string> {
-  const streamCtor = (
-    globalThis as unknown as {
-      DecompressionStream?: new (
-        format: 'gzip' | 'deflate' | 'deflate-raw',
-      ) => TransformStream<Uint8Array, Uint8Array>;
-    }
-  ).DecompressionStream;
-
-  if (!streamCtor) {
-    throw new Error(
-      `Failed to fetch GeoJSON from ${dataPath}: DecompressionStream is unavailable in this runtime.`,
-    );
-  }
+  const stream = new DecompressionStream('gzip');
 
   if (!response.body) {
     throw new Error(
@@ -104,7 +93,7 @@ async function decompressGzipResponse(
     );
   }
 
-  const decompressed = response.body.pipeThrough(new streamCtor('gzip'));
+  const decompressed = response.body.pipeThrough(stream);
   return await new Response(decompressed).text();
 }
 
