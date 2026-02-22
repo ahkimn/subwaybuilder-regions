@@ -83,6 +83,10 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
     this.host.clear();
   }
 
+  markHostDetached(): void {
+    this.host.markDetached();
+  }
+
   isVisible(): boolean {
     return this.host.isVisible();
   }

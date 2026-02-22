@@ -165,7 +165,8 @@ export class RegionsUIManager {
 
     this.infoPanelObserver?.disconnect();
     this.infoPanelObserver = observeInfoPanelRoot(root, (mutations) => {
-      const wasInfoContainerRemoved = mutations.some((mutation) =>
+      // Check if the info panel container was removed in this mutation
+      const containerRemoved = mutations.some((mutation) =>
         Array.from(mutation.removedNodes).some(
           (node) =>
             node instanceof HTMLElement &&
@@ -174,7 +175,7 @@ export class RegionsUIManager {
         ),
       );
 
-      if (!wasInfoContainerRemoved) return;
+      if (!containerRemoved) return;
 
       // If there is an active selection, clear the selection to prevent a state where the info panel is not shown but a region is still selected (and highlighted on the map)
       if (this.state.activeSelection !== null) {
@@ -390,6 +391,7 @@ export class RegionsUIManager {
 
   onGameEnd(): void {
     this.reset();
+    this.overviewPanelRenderer.markHostDetached();
     this.mapLayers = null;
     this.layerPanelRoot = null;
     this.infoPanelRoot = null;
