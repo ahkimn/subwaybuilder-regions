@@ -68,6 +68,7 @@ export class RegionDataset {
 
   status: DatasetStatus = DatasetStatus.Unloaded;
   isUserEdited: boolean = false;
+  private loadPromise: Promise<boolean> | null = null;
 
   constructor(
     indexEntry: DatasetMetadata,
@@ -130,11 +131,11 @@ export class RegionDataset {
       return true;
     }
 
-    if (this.status === DatasetStatus.Loading) {
+    if (this.loadPromise) {
       console.warn(
-        `[Regions] Skipping duplicate load request for dataset: ${this.id} for city ${this.cityCode}.`,
+        `[Regions] Awaiting in-flight load request for dataset: ${this.id} for city ${this.cityCode}.`,
       );
-      return false;
+      return this.loadPromise;
     }
 
     console.log(
@@ -142,25 +143,30 @@ export class RegionDataset {
     );
 
     this.status = DatasetStatus.Loading;
+    this.loadPromise = (async () => {
+      try {
+        await this.loadBoundaryData();
+        this.validateBoundarySize();
+        this.buildBoundaryHelpers();
+        this.buildLabelData();
+        this.populateStaticData();
+        this.status = DatasetStatus.Loaded;
+        this.isUserEdited = false;
+        return true;
+      } catch (err) {
+        console.warn(
+          `[Regions] Failed to load dataset: ${this.id} for city ${this.cityCode}: `,
+          err,
+        );
+        this.status = DatasetStatus.Error;
+        this.unloadData();
+        return false;
+      } finally {
+        this.loadPromise = null;
+      }
+    })();
 
-    try {
-      await this.loadBoundaryData();
-      this.validateBoundarySize();
-      this.buildBoundaryHelpers();
-      this.buildLabelData();
-      this.populateStaticData();
-      this.status = DatasetStatus.Loaded;
-      this.isUserEdited = false;
-      return true;
-    } catch (err) {
-      console.warn(
-        `[Regions] Failed to load dataset: ${this.id} for city ${this.cityCode}: `,
-        err,
-      );
-      this.status = DatasetStatus.Error;
-      this.unloadData();
-      return false;
-    }
+    return this.loadPromise;
   }
 
   clearData(): void {
