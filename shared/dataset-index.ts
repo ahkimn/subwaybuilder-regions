@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { DatasetOrigin } from '../src/core/types';
+
 export type DatasetMetadata = {
   datasetId: string;
   displayName: string;
@@ -10,11 +12,19 @@ export type DatasetMetadata = {
 };
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
+export type RegistryOrigin = Extract<
+  // We do not want to persist served dataset in registry cache as they are not related to actual files within the mod or game directory
+  DatasetOrigin,
+  'static' | 'dynamic' | 'user'
+>;
 
 export type RegistryCacheEntry = DatasetMetadata & {
   cityCode: string;
   dataPath: string;
   isPresent: boolean;
+  origin: RegistryOrigin;
+  fileSizeMB: number | null;
+  compressed: boolean;
 };
 
 export const StaticRegistryCacheEntrySchema = z.object({
@@ -27,6 +37,9 @@ export const StaticRegistryCacheEntrySchema = z.object({
   size: z.number(),
   dataPath: z.string(),
   isPresent: z.boolean(),
+  origin: z.enum(['static', 'dynamic', 'user']),
+  fileSizeMB: z.number().nullable(),
+  compressed: z.boolean(),
 });
 
 export type RegionsRegistryCache = {

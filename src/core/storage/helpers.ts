@@ -1,23 +1,88 @@
-export async function localFileExists(dataPath: string): Promise<boolean> {
-  try {
-    const response = await fetch(dataPath);
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
+export type LocalDatasetProps = {
+  dataPath: string;
+  isPresent: boolean;
+  compressed: boolean;
+  fileSizeMB: number | null;
+};
 
-export function buildLocalDatasetUrl(
+export function buildLocalDatasetPath(
   localModsDataRoot: string,
   cityCode: string,
   datasetId: string,
+  extension: '.geojson' | '.geojson.gz' = '.geojson',
 ): string {
   return encodeURI(
-    `file:///${localModsDataRoot}/${cityCode}/${datasetId}.geojson`,
+    `file:///${localModsDataRoot}/${cityCode}/${datasetId}${extension}`,
   );
 }
-// Helper function to read a local GeoJSON file and return its feature count whilst also validating the GeoJSON format
 
+export function buildLocalDatasetCandidatePaths(
+  localModsDataRoot: string,
+  cityCode: string,
+  datasetId: string,
+): [string, string] {
+  return [
+    // Add support for both compressed (.gz) and uncompressed GeoJSON files, with a preference for compressed files
+    buildLocalDatasetPath(
+      localModsDataRoot,
+      cityCode,
+      datasetId,
+      '.geojson.gz',
+    ),
+    buildLocalDatasetPath(localModsDataRoot, cityCode, datasetId, '.geojson'),
+  ];
+}
+
+export async function tryLocalDatasetPaths(
+  paths: readonly string[],
+): Promise<LocalDatasetProps> {
+  for (const path of paths) {
+    const probed = await tryDatasetPath(path);
+    if (probed.isPresent) {
+      return probed;
+    }
+  }
+
+  const defaultPath = paths[0] ?? '';
+  return {
+    dataPath: defaultPath,
+    isPresent: false,
+    compressed: defaultPath.endsWith('.gz'),
+    fileSizeMB: null,
+  };
+}
+
+export async function tryDatasetPath(
+  dataPath: string,
+): Promise<LocalDatasetProps> {
+  try {
+    const response = await fetch(dataPath);
+    if (!response.ok) {
+      return {
+        dataPath,
+        isPresent: false,
+        compressed: dataPath.endsWith('.gz'),
+        fileSizeMB: null,
+      };
+    }
+
+    return {
+      dataPath,
+      isPresent: true,
+      compressed: dataPath.endsWith('.gz'),
+      fileSizeMB: await resolveFileSizeMB(response),
+    };
+  } catch {
+    return {
+      dataPath,
+      isPresent: false,
+      compressed: dataPath.endsWith('.gz'),
+      fileSizeMB: null,
+    };
+  }
+}
+
+// Helper function to read a local GeoJSON file and return its feature count whilst also validating the GeoJSON format
 export async function getFeatureCountForLocalDataset(
   dataPath: string,
 ): Promise<number | null> {
@@ -51,4 +116,26 @@ export async function getFeatureCountForLocalDataset(
   } catch {
     return null;
   }
+}
+
+// Small helper function to resolve a local file's size in MB for user information and logging purposes.
+async function resolveFileSizeMB(response: Response): Promise<number | null> {
+  const headerValue = response.headers.get('content-length');
+  if (headerValue) {
+    const parsed = Number.parseInt(headerValue, 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return bytesToMB(parsed);
+    }
+  }
+
+  try {
+    const bytes = (await response.clone().arrayBuffer()).byteLength;
+    return bytes > 0 ? bytesToMB(bytes) : null;
+  } catch {
+    return null;
+  }
+}
+
+function bytesToMB(bytes: number): number {
+  return bytes / (1024 * 1024);
 }
