@@ -1,9 +1,9 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
 import type React from 'react';
 import { type createElement, type useEffect, type useState } from 'react';
-import type { RegionDatasetRegistry } from 'src/core/storage/helpers';
 
 import type { RegionDataset } from '../../../core/datasets/RegionDataset';
+import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import { getNextSortState } from '../shared/helpers';
@@ -122,19 +122,9 @@ export function RegionsSettingsPanel({
           console.warn('[Regions] Failed to load dataset index from server');
         })
         .then(({ servedCount, localCount }) => {
-          if (servedCount > 0 && localCount > 0) {
+          if (servedCount > 0 || localCount > 0) {
             api.ui.showNotification(
               `[Regions] Refreshed registry: ${servedCount} served + ${localCount} local datasets.`,
-              'success',
-            );
-          } else if (servedCount > 0) {
-            api.ui.showNotification(
-              `[Regions] Refreshed registry: ${servedCount} served dataset${servedCount === 1 ? '' : 's'}.`,
-              'success',
-            );
-          } else {
-            api.ui.showNotification(
-              `[Regions] Refreshed registry: ${localCount} local dataset${localCount === 1 ? '' : 's'}.`,
               'success',
             );
           }
