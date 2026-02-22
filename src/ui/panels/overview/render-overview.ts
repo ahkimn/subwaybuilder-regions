@@ -20,6 +20,7 @@ import type {
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
+import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header';
 import { ReactSearchInput } from '../../elements/SearchInput';
 import type { InputFieldProperties, SortConfig } from '../types';
 import type { SortState } from '../types';
@@ -233,34 +234,21 @@ function renderOverviewTable(
     },
   };
 
-  const sortHandlers = Array.from(
-    { length: OVERVIEW_COLUMN_COUNT },
-    (_, index) => () => onSortChange(index),
-  );
-
   const tableAlign: ('left' | 'right' | 'center')[] = [
     'left',
     ...Array(OVERVIEW_COLUMN_COUNT - 1).fill('right'),
   ];
 
   const tableRows: ReactDataTableRow[] = [
-    {
-      rowValues: [...OVERVIEW_HEADER_LABELS],
-      options: {
-        header: true,
-        onClick: sortHandlers,
-        align: tableAlign,
+    buildSortableHeaderRow({
+      headerLabels: OVERVIEW_HEADER_LABELS,
+      sortState,
+      onSortChange,
+      align: tableAlign,
+      classOverrides: {
         borderClassName: '',
-        sortState: {
-          index: sortState.sortIndex,
-          directionLabel:
-            sortState.sortDirection === SortDirection.Asc
-              ? ' \u25B2'
-              : ' \u25BC',
-          sortSelectedClass: 'text-foreground',
-        },
       },
-    },
+    }),
   ];
 
   if (rows.length === 0) {

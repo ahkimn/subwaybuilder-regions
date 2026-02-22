@@ -9,6 +9,7 @@ import type {
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
+import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header';
 import { ReactButton } from '../../elements/ReactButton';
 import { ReactSearchInput } from '../../elements/SearchInput';
 import { ReactSectionCard } from '../../elements/SectionCard';
@@ -387,27 +388,16 @@ function buildRegistryTableRows(
     'left',
   ];
 
-  const sortHandlers = Array.from(
-    { length: REGISTRY_COLUMN_COUNT },
-    (_, index) => () => onSortChange(index),
-  );
-
   const tableRows: ReactDataTableRow[] = [
-    {
-      rowValues: [...REGISTRY_TABLE_COLUMN_LABELS],
-      options: {
-        header: true,
-        onClick: sortHandlers,
-        align: headerAlign,
+    buildSortableHeaderRow({
+      headerLabels: REGISTRY_TABLE_COLUMN_LABELS,
+      sortState,
+      onSortChange,
+      align: headerAlign,
+      classOverrides: {
         borderClassName: '',
-        sortState: {
-          index: sortState.sortIndex,
-          directionLabel:
-            sortState.sortDirection === SortDirection.Asc ? ' ▲' : ' ▼',
-          sortSelectedClass: 'text-foreground',
-        },
       },
-    },
+    }),
   ];
 
   // Empty search state handling
