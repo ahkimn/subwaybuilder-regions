@@ -372,7 +372,7 @@ function renderDatasetRegistrySection(
         wrapperClassName: 'w-fit',
         buttonClassName:
           'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm border border-border bg-background hover:bg-accent transition-colors',
-        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        iconOptions: { size: 20, className: 'h-3.5 w-3.5 shrink-0' },
       }),
     ]),
     h(

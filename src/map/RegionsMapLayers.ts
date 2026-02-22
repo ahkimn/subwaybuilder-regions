@@ -190,12 +190,11 @@ export class RegionsMapLayers {
     if (RegionsSettings.equals(this.settings, settings)) {
       return;
     }
-
-    const showUnpopulatedRegionsChanged =
+    const existsUpdate =
       this.settings.showUnpopulatedRegions !== settings.showUnpopulatedRegions;
     this.settings = { ...settings };
 
-    if (showUnpopulatedRegionsChanged) {
+    if (existsUpdate) {
       for (const layerState of this.layerStates.values()) {
         this.applyDemandExistsFilterToLayerState(layerState);
       }
@@ -337,11 +336,18 @@ export class RegionsMapLayers {
     }
   }
 
+  // TODO (Feature): This function currently should not trigger as the settings panel is never called when there exists a map; however, once we introduce the Regions settings to the settings menu, we must validate this function's behavior
   private applyDemandExistsFilterToLayerState(layerState: MapLayerState): void {
     const mapRef = this.getMapReference();
     if (!mapRef) {
       return;
     }
+
+    // DEBUG Warning for now
+    console.warn(
+      '[Regions] Applying demand exists filter to layer state',
+      layerState,
+    );
 
     const demandFilter = this.buildDemandExistsFilter();
     [
