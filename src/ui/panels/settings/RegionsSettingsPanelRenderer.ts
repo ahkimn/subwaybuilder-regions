@@ -1,5 +1,6 @@
+import type { RegionDatasetRegistry } from 'src/core/storage/helpers';
+
 import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID as REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID } from '../../../core/constants';
-import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import type { RegionsPanelRenderer } from '../types';

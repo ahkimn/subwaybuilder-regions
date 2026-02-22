@@ -1,9 +1,9 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
 import type React from 'react';
 import { type createElement, type useEffect, type useState } from 'react';
+import type { RegionDatasetRegistry } from 'src/core/storage/helpers';
 
 import type { RegionDataset } from '../../../core/datasets/RegionDataset';
-import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import { getNextSortState } from '../shared/helpers';

@@ -11,9 +11,10 @@ import {
   RegistryMissingIndexError,
 } from '../errors';
 import {
+  buildLocalCityPath,
   buildLocalDatasetCandidatePaths,
-  probeDatasetPath,
-  probeLocalDatasetCandidates,
+  tryDatasetPath,
+  tryLocalDatasetPaths,
 } from '../storage/helpers';
 import type { RegionsStorage } from '../storage/RegionsStorage';
 import { STATIC_TEMPLATES } from './static';
@@ -89,23 +90,7 @@ export class RegionDatasetRegistry {
     onComplete();
   }
 
-  // -- Setup -- //
-  private validateIndexEntry(cityCode: string, entry: DatasetMetadata): void {
-    if (
-      !entry.datasetId ||
-      !entry.displayName ||
-      !entry.unitSingular ||
-      !entry.unitPlural ||
-      !entry.source ||
-      !Number.isInteger(entry.size) ||
-      entry.size <= 0
-    ) {
-      throw new Error(
-        `[Regions] Invalid dataset index entry for city ${cityCode}: ${JSON.stringify(entry)}`,
-      );
-    }
-  }
-
+  // --- Dataset Registry --- //
   private registerDatasetFromMetadata(
     cityCode: string,
     entry: DatasetMetadata,
@@ -128,6 +113,35 @@ export class RegionDatasetRegistry {
     );
   }
 
+  private registerLocalEntries(entries: RegistryCacheEntry[]): number {
+    let registered = 0;
+
+    const registerbyOrigin = (origin: 'static' | 'dynamic') => {
+      entries
+        .filter((entry) => entry.origin === origin && entry.isPresent)
+        .forEach((entry) => {
+          this.registerDatasetFromMetadata(
+            entry.cityCode,
+            this.buildDatasetEntryFromStorage(entry),
+            entry.dataPath,
+            {
+              skipValidation: true,
+              sourceType: entry.origin === 'dynamic' ? 'user' : 'static',
+              writable: entry.origin === 'dynamic',
+            },
+          );
+          registered += 1;
+        });
+    };
+
+    // Dynamically created/updated entries should override local static entries.
+    registerbyOrigin('static');
+    registerbyOrigin('dynamic');
+
+    return registered;
+  }
+
+  // --- Registry Building --- //
   private buildFromIndex(index: DatasetIndex): number {
     let registeredDatasets = 0;
     for (const [cityCode, datasets] of Object.entries(index)) {
@@ -149,7 +163,7 @@ export class RegionDatasetRegistry {
   }> {
     this.clear();
 
-    const localEntries = await this.resolveAndPersistLocalRegistryEntries();
+    const localEntries = await this.resolveAndPersistLocalCacheEntries();
     const localCount = this.registerLocalEntries(localEntries);
 
     let servedCount = 0;
@@ -168,14 +182,31 @@ export class RegionDatasetRegistry {
     return { servedCount, localCount };
   }
 
+  async buildStatic(): Promise<void> {
+    this.clear();
+
+    const localEntries = await this.resolveAndPersistLocalCacheEntries();
+    const localCount = this.registerLocalEntries(localEntries);
+    if (localCount === 0) {
+      throw new Error(
+        '[Regions] No local datasets found in static mapping or dynamic cache',
+      );
+    }
+  }
+
   async buildFromCache(onFetchError: () => void): Promise<{
     servedCount: number;
     localCount: number;
   }> {
     this.clear();
 
-    const cachedLocalEntries = await this.loadCachedLocalRegistryEntries();
-    const localCount = this.registerLocalEntries(cachedLocalEntries);
+    const storedRegistry = await this.storage.loadStoredRegistry();
+    // On first registry build, there will be no cache so we will need to attempt to resolve local datasets from disk and build an initial cache
+    const localEntries =
+      storedRegistry === null
+        ? await this.resolveAndPersistLocalCacheEntries()
+        : dedupeRegistryEntries(storedRegistry.entries);
+    const localCount = this.registerLocalEntries(localEntries);
 
     let servedCount = 0;
     const servedIndex = await this.fetchServedIndex(onFetchError);
@@ -184,6 +215,7 @@ export class RegionDatasetRegistry {
       servedCount = this.buildFromIndex(servedIndex);
     }
 
+    // TODO (Feature): This should be an error only once in-game downloads are made available
     if (this.datasets.size === 0) {
       throw new Error(
         '[Regions] No datasets available from server index or cached local registry',
@@ -208,69 +240,7 @@ export class RegionDatasetRegistry {
     }
   }
 
-  // -- Static Fallback Helpers -- //
-
-  // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
-  async buildStatic(): Promise<void> {
-    this.clear();
-
-    const localEntries = await this.resolveAndPersistLocalRegistryEntries();
-    const localCount = this.registerLocalEntries(localEntries);
-    if (localCount === 0) {
-      throw new Error(
-        '[Regions] No local datasets found in static mapping or dynamic cache',
-      );
-    }
-  }
-
-  async refreshStaticRegistryCache(): Promise<number> {
-    const discoveredEntries = await this.resolveLocalRegistryEntries();
-    await this.storage.saveRegistry({
-      updatedAt: Date.now(),
-      entries: discoveredEntries,
-    });
-    return discoveredEntries.filter((entry) => entry.isPresent).length;
-  }
-
-  private async locateStaticLocalDatasets(): Promise<RegistryCacheEntry[]> {
-    const localModsDataRoot = await this.storage.resolveLocalModsDataRoot();
-    const discoveredEntries: RegistryCacheEntry[] = [];
-
-    const currentCities = this.api.utils.getCities();
-
-    for (const city of currentCities) {
-      const datasetTemplates = city.country
-        ? (STATIC_TEMPLATES.get(city.country) ?? [])
-        : [];
-      for (const template of datasetTemplates) {
-        const candidatePaths = buildLocalDatasetCandidatePaths(
-          localModsDataRoot,
-          city.code,
-          template.datasetId,
-        );
-        const probeResult = await probeLocalDatasetCandidates(candidatePaths);
-        if (!probeResult.isPresent) {
-          continue;
-        }
-        discoveredEntries.push({
-          cityCode: city.code,
-          datasetId: template.datasetId,
-          displayName: template.displayName,
-          unitSingular: template.unitSingular,
-          unitPlural: template.unitPlural,
-          source: template.source,
-          size: 0,
-          dataPath: probeResult.dataPath,
-          isPresent: probeResult.isPresent,
-          origin: 'static',
-          fileSizeMB: probeResult.fileSizeMB,
-          compressed: probeResult.compressed,
-        });
-      }
-    }
-    return discoveredEntries;
-  }
-
+  // --- Served Index Helpers --- //
   private async fetchServedIndex(
     onFetchError: () => void,
   ): Promise<DatasetIndex | null> {
@@ -287,10 +257,88 @@ export class RegionDatasetRegistry {
     }
   }
 
-  private async resolveAndPersistLocalRegistryEntries(): Promise<
+  private validateIndexEntry(cityCode: string, entry: DatasetMetadata): void {
+    if (
+      !entry.datasetId ||
+      !entry.displayName ||
+      !entry.unitSingular ||
+      !entry.unitPlural ||
+      !entry.source ||
+      !Number.isInteger(entry.size) ||
+      entry.size <= 0
+    ) {
+      throw new Error(
+        `[Regions] Invalid dataset index entry for city ${cityCode}: ${JSON.stringify(entry)}`,
+      );
+    }
+  }
+
+  // --- Static Fallback Helpers --- //
+  // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
+  async refreshRegistryCache(): Promise<number> {
+    const localEntries = await this.resolveLocalCacheEntries();
+    await this.storage.saveRegistry({
+      updatedAt: Date.now(),
+      entries: localEntries,
+    });
+    return localEntries.filter((entry) => entry.isPresent).length;
+  }
+
+  /*
+    Helper function to brute-force probe the mod's data directory for the presence of datasets based on a known set of filename templates and return registry entries for any that are found.
+
+    This is necessary to support users who do not have access to a served dataset index; however, this approach is not be scalable to large numbers of datasets and should only be run when necessary (e.g. on first registry build and/or user-initiated refreshes)
+    */
+  private async locateStaticLocalDatasets(): Promise<RegistryCacheEntry[]> {
+    const localModsDataRoot = await this.storage.resolveLocalModsDataRoot();
+    const entries: RegistryCacheEntry[] = [];
+
+    // Limit discovery to cities currently present in the game.
+    const currentCities = this.api.utils.getCities();
+
+    for (const city of currentCities) {
+      const cityDataPath = buildLocalCityPath(localModsDataRoot, city.code);
+      // First check to see if the city's directory exists before attempting to locate individual dataset paths
+      if (!(await tryDatasetPath(cityDataPath)).isPresent) continue;
+      const datasetTemplates = city.country
+        ? // Custom cities do not have a country property so these will be skipped by the discovery process
+          (STATIC_TEMPLATES.get(city.country) ?? [])
+        : [];
+      for (const template of datasetTemplates) {
+        const candidatePaths = buildLocalDatasetCandidatePaths(
+          localModsDataRoot,
+          city.code,
+          template.datasetId,
+        );
+        const result = await tryLocalDatasetPaths(candidatePaths);
+        if (!result.isPresent) {
+          continue;
+        }
+        entries.push({
+          cityCode: city.code,
+          datasetId: template.datasetId,
+          displayName: template.displayName,
+          unitSingular: template.unitSingular,
+          unitPlural: template.unitPlural,
+          source: template.source,
+          size: 0,
+          dataPath: result.dataPath,
+          isPresent: result.isPresent,
+          origin: 'static',
+          fileSizeMB: result.fileSizeMB,
+          compressed: result.compressed,
+        });
+      }
+    }
+    return entries;
+  }
+
+  // --- Local Cache Helpers --- //
+
+  private async resolveAndPersistLocalCacheEntries(): Promise<
     RegistryCacheEntry[]
   > {
-    const entries = await this.resolveLocalRegistryEntries();
+    const entries = await this.resolveLocalCacheEntries();
     await this.storage.saveRegistry({
       updatedAt: Date.now(),
       entries,
@@ -298,59 +346,53 @@ export class RegionDatasetRegistry {
     return entries;
   }
 
-  private async loadCachedLocalRegistryEntries(): Promise<
-    RegistryCacheEntry[]
-  > {
-    const storedRegistry = await this.storage.loadStoredRegistry();
-    return dedupeRegistryEntries(storedRegistry?.entries ?? []);
-  }
-
-  private async resolveLocalRegistryEntries(): Promise<RegistryCacheEntry[]> {
+  private async resolveLocalCacheEntries(): Promise<RegistryCacheEntry[]> {
     const storedRegistry = await this.storage.loadStoredRegistry();
     const storedEntries = storedRegistry?.entries ?? [];
 
-    const discoveredStaticEntries = await this.locateStaticLocalDatasets();
-    const discoveredStaticKeySet = new Set(
-      discoveredStaticEntries.map((entry) =>
-        this.getDatasetKey(entry.cityCode, entry.datasetId),
+    const locatedEntries = await this.locateStaticLocalDatasets();
+    // In the registry, datasets are uniquely identified by their cityCode/datasetId pair
+    const locatedKeySet = new Set(
+      locatedEntries.map((entry) =>
+        getEntryKey(entry.cityCode, entry.datasetId),
       ),
     );
 
-    const supplementalStoredStatic = await Promise.all(
+    // Retain any previously stored static entries that were not located on disk via the discovery process -- the user may opt to purge these entries from the cache manually but we do not want to automatically discard them
+    const missingStoredEntries = await Promise.all(
       storedEntries
         .filter((entry) => entry.origin === 'static')
         .filter(
           (entry) =>
-            !discoveredStaticKeySet.has(
-              this.getDatasetKey(entry.cityCode, entry.datasetId),
-            ),
+            !locatedKeySet.has(getEntryKey(entry.cityCode, entry.datasetId)),
         )
-        .map((entry) => this.revalidateStoredEntry(entry)),
+        .map((entry) => this.validateStoredEntry(entry)),
     );
-    const retainedStoredStatic = supplementalStoredStatic.filter(
+    const retainedStoredStatic = missingStoredEntries.filter(
       (entry) => entry.isPresent || entry.fileSizeMB !== null,
     );
 
+    // (TODO): We do not yet have any dynamic datasets but will need to further expand on this logic when they are added to include user-created datasets that may not be included in the static discovery process
     const revalidatedDynamicEntries = await Promise.all(
       storedEntries
         .filter((entry) => entry.origin === 'dynamic')
-        .map((entry) => this.revalidateStoredEntry(entry)),
+        .map((entry) => this.validateStoredEntry(entry)),
     );
     const retainedDynamicEntries = revalidatedDynamicEntries.filter(
       (entry) => entry.isPresent || entry.fileSizeMB !== null,
     );
 
     return dedupeRegistryEntries([
-      ...discoveredStaticEntries,
+      ...locatedEntries,
       ...retainedStoredStatic,
       ...retainedDynamicEntries,
     ]);
   }
 
-  private async revalidateStoredEntry(
+  private async validateStoredEntry(
     entry: RegistryCacheEntry,
   ): Promise<RegistryCacheEntry> {
-    const probeResult = await probeDatasetPath(entry.dataPath);
+    const probeResult = await tryDatasetPath(entry.dataPath);
     return {
       ...entry,
       dataPath: probeResult.dataPath,
@@ -360,38 +402,6 @@ export class RegionDatasetRegistry {
         ? probeResult.compressed
         : entry.compressed,
     };
-  }
-
-  private registerLocalEntries(entries: RegistryCacheEntry[]): number {
-    let registered = 0;
-
-    const registerOrigin = (origin: 'static' | 'dynamic') => {
-      entries
-        .filter((entry) => entry.origin === origin && entry.isPresent)
-        .forEach((entry) => {
-          this.registerDatasetFromMetadata(
-            entry.cityCode,
-            this.buildDatasetEntryFromStorage(entry),
-            entry.dataPath,
-            {
-              skipValidation: true,
-              sourceType: entry.origin === 'dynamic' ? 'user' : 'static',
-              writable: entry.origin === 'dynamic',
-            },
-          );
-          registered += 1;
-        });
-    };
-
-    // Local dynamic entries should override local static entries.
-    registerOrigin('static');
-    registerOrigin('dynamic');
-
-    return registered;
-  }
-
-  private getDatasetKey(cityCode: string, datasetId: string): string {
-    return `${cityCode}::${datasetId}`;
   }
 
   private buildDatasetEntryFromStorage(
@@ -412,15 +422,16 @@ export class RegionDatasetRegistry {
   }
 }
 
+function getEntryKey(cityCode: string, datasetId: string): string {
+  return `${cityCode}-${datasetId}`;
+}
+
 function dedupeRegistryEntries(
   entries: RegistryCacheEntry[],
 ): RegistryCacheEntry[] {
   const deduped = new Map<string, RegistryCacheEntry>();
   entries.forEach((entry) => {
-    deduped.set(
-      `${entry.cityCode}::${entry.datasetId}::${entry.origin}`,
-      entry,
-    );
+    deduped.set(`${entry.cityCode}-${entry.datasetId}-${entry.origin}`, entry);
   });
   return Array.from(deduped.values());
 }

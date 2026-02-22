@@ -6,7 +6,7 @@ import {
   UNASSIGNED_REGION_ID,
 } from '../constants';
 import type { RegionDataset } from '../datasets/RegionDataset';
-import type { RegionDatasetRegistry } from '../registry/RegionDatasetRegistry';
+import type { RegionDatasetRegistry } from '../storage/helpers';
 import type {
   RegionCommuterDetailsData,
   RegionCommuterSummaryData,

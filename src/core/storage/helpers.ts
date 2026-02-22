@@ -1,4 +1,4 @@
-export type LocalDatasetProbeResult = {
+export type LocalDatasetProps = {
   dataPath: string;
   isPresent: boolean;
   compressed: boolean;
@@ -16,12 +16,20 @@ export function buildLocalDatasetPath(
   );
 }
 
+export function buildLocalCityPath(
+  localModsDataRoot: string,
+  cityCode: string,
+): string {
+  return encodeURI(`file:///${localModsDataRoot}/${cityCode}/`);
+}
+
 export function buildLocalDatasetCandidatePaths(
   localModsDataRoot: string,
   cityCode: string,
   datasetId: string,
 ): [string, string] {
   return [
+    // Add support for both compressed (.gz) and uncompressed GeoJSON files, with a preference for compressed files
     buildLocalDatasetPath(
       localModsDataRoot,
       cityCode,
@@ -32,17 +40,17 @@ export function buildLocalDatasetCandidatePaths(
   ];
 }
 
-export async function probeLocalDatasetCandidates(
-  candidatePaths: readonly string[],
-): Promise<LocalDatasetProbeResult> {
-  for (const path of candidatePaths) {
-    const probed = await probeDatasetPath(path);
+export async function tryLocalDatasetPaths(
+  paths: readonly string[],
+): Promise<LocalDatasetProps> {
+  for (const path of paths) {
+    const probed = await tryDatasetPath(path);
     if (probed.isPresent) {
       return probed;
     }
   }
 
-  const defaultPath = candidatePaths[0] ?? '';
+  const defaultPath = paths[0] ?? '';
   return {
     dataPath: defaultPath,
     isPresent: false,
@@ -51,9 +59,9 @@ export async function probeLocalDatasetCandidates(
   };
 }
 
-export async function probeDatasetPath(
+export async function tryDatasetPath(
   dataPath: string,
-): Promise<LocalDatasetProbeResult> {
+): Promise<LocalDatasetProps> {
   try {
     const response = await fetch(dataPath);
     if (!response.ok) {
@@ -82,7 +90,6 @@ export async function probeDatasetPath(
 }
 
 // Helper function to read a local GeoJSON file and return its feature count whilst also validating the GeoJSON format
-
 export async function getFeatureCountForLocalDataset(
   dataPath: string,
 ): Promise<number | null> {
@@ -118,6 +125,7 @@ export async function getFeatureCountForLocalDataset(
   }
 }
 
+// Small helper function to resolve a local file's size in MB for user information and logging purposes.
 async function resolveFileSizeMB(response: Response): Promise<number | null> {
   const headerValue = response.headers.get('content-length');
   if (headerValue) {

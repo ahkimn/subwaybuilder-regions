@@ -20,6 +20,7 @@ _Game version_ v1.1.0
 
 - For static datasets, the mod no longer attempts to read the entire dataset file on mod initialization
 - Served and static datasets can now be loaded simultaneously
+- Mod now accepts compressed GeoJSON files (namely .gz) for more storage efficiency
 
 ### Bugfixes
 
