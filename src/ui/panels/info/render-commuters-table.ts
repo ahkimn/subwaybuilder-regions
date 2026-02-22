@@ -15,8 +15,8 @@ import {
   getBreakdownSortOrder,
   resolveBreakdownSourceLabel,
 } from '../shared/commuter-data';
+import { getNextSortState } from '../shared/helpers';
 import type { SortConfig } from '../types';
-import { SortState } from '../types';
 import { NumberDisplay, SortDirection } from '../types';
 import {
   CommuterDimension,
@@ -316,20 +316,14 @@ function buildTableHeader(
 ): ReactDataTableRow[] {
   const currentSortState = viewState.sortStates.get(viewState.dimension)!;
   function changeSort(columnIndex: number) {
-    const nextSortState: SortState =
-      currentSortState.sortIndex === columnIndex
-        ? SortState.reverseDirection(currentSortState)
-        : {
-            ...currentSortState,
-            previousSortIndex: currentSortState.sortIndex,
-            previousSortDirection: currentSortState.sortDirection,
-            sortIndex: columnIndex,
-            sortDirection: SortDirection.Desc,
-          };
     dispatch({
       type: 'set_sort_for_dimension',
       dimension: viewState.dimension,
-      sortState: nextSortState,
+      sortState: getNextSortState<CommuterRowData>(
+        currentSortState,
+        columnIndex,
+        resolveSortConfig,
+      ),
     });
   }
 
