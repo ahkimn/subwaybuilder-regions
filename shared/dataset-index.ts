@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type DatasetMetadata = {
   datasetId: string;
   displayName: string;
@@ -8,6 +10,29 @@ export type DatasetMetadata = {
 };
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
+
+export type StaticRegistryCacheEntry = DatasetMetadata & {
+  cityCode: string;
+  dataPath: string;
+  isPresent: boolean;
+};
+
+export const StaticRegistryCacheEntrySchema = z.object({
+  cityCode: z.string(),
+  datasetId: z.string(),
+  displayName: z.string(),
+  unitSingular: z.string(),
+  unitPlural: z.string(),
+  source: z.string(),
+  size: z.number(),
+  dataPath: z.string(),
+  isPresent: z.boolean(),
+});
+
+export type RegionsRegistryCache = {
+  updatedAt: number;
+  entries: StaticRegistryCacheEntry[];
+};
 
 type RegionTypeKey = string;
 

@@ -14,7 +14,8 @@ const INDEX_FILE = `${DATA_INDEX_FILE}`;
 const api = window.SubwayBuilderAPI;
 
 export class RegionsMod {
-  private registry: RegionDatasetRegistry;
+  private registry!: RegionDatasetRegistry;
+  private readonly settingsStore: RegionsSettingsStore;
   private currentCityCode: string | null = null;
 
   private mapLayers: RegionsMapLayers | null = null;
@@ -27,7 +28,7 @@ export class RegionsMod {
   private newCityLoadToken: number;
 
   constructor() {
-    this.registry = new RegionDatasetRegistry(api, INDEX_FILE, SERVE_URL);
+    this.settingsStore = new RegionsSettingsStore();
     this.cityLoadToken = 0;
     this.newCityLoadToken = 0;
   }
@@ -64,26 +65,21 @@ export class RegionsMod {
       return;
     }
 
-    try {
-      await this.buildRegistryWithFallback();
-    } catch (registryBuildError) {
-      api.ui.showNotification(
-        '[Regions] Failed to load region data index and local region files.',
-        'error',
-      );
-      throw registryBuildError;
-    }
-
-    const settingsStore = new RegionsSettingsStore();
-    this.settings = await settingsStore.initialize();
-    settingsStore.listen((nextSettings) => {
+    this.settings = await this.settingsStore.initialize();
+    this.settingsStore.listen((nextSettings) => {
       this.applySettings(nextSettings);
     });
+    this.registry = new RegionDatasetRegistry(
+      api,
+      INDEX_FILE,
+      SERVE_URL,
+      this.settingsStore,
+    );
 
     this.uiManager = new RegionsUIManager(
       api,
       this.registry,
-      settingsStore,
+      this.settingsStore,
       this.settings,
     );
 
@@ -98,6 +94,16 @@ export class RegionsMod {
     api.hooks.onCityLoad(this.onCityLoad.bind(this));
     api.hooks.onMapReady(this.onMapReady.bind(this));
     api.hooks.onGameEnd(this.onGameEnd.bind(this));
+
+    try {
+      await this.buildRegistryWithFallback();
+    } catch (registryBuildError) {
+      api.ui.showNotification(
+        '[Regions] Failed to load region data index and local region files.',
+        'error',
+      );
+      throw registryBuildError;
+    }
 
     // TODO: Handle hot reload by forcing life cycle via fallback city code retrieval (gated on mod initialization)
 
