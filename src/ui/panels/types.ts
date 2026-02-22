@@ -81,3 +81,5 @@ export type LabelProperties = {
   className?: string;
   children?: React.ReactNode;
 };
+
+export type TableAlign = 'left' | 'right' | 'center'

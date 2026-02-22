@@ -1,10 +1,9 @@
+import type { TableAlign } from '../../panels/types';
 import { SortDirection, type SortState } from '../../panels/types';
 import type {
   ReactDataTableRow,
   ReactDataTableValue,
 } from '../DataTable';
-
-type TableAlign = 'left' | 'right' | 'center';
 
 type HeaderClassOverrides = {
   borderClassName?: string;

@@ -19,6 +19,7 @@ import type {
   LabelProperties,
   SortConfig,
   SwitchProperties,
+  TableAlign,
 } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
@@ -373,14 +374,7 @@ function buildRegistryTableRows(
   sortState: SortState,
   onSortChange: (columnIndex: number) => void,
 ): ReactDataTableRow[] {
-  const headerAlign: ('left' | 'right' | 'center')[] = [
-    'left',
-    'left',
-    'left',
-    'right',
-    'left',
-  ];
-  const bodyAlign: ('left' | 'right' | 'center')[] = [
+  const tableAlign: TableAlign[] = [
     'left',
     'left',
     'left',
@@ -393,7 +387,7 @@ function buildRegistryTableRows(
       headerLabels: REGISTRY_TABLE_COLUMN_LABELS,
       sortState,
       onSortChange,
-      align: headerAlign,
+      align: tableAlign,
       classOverrides: {
         borderClassName: '',
       },
@@ -423,7 +417,7 @@ function buildRegistryTableRows(
         formatStatusLabel(row.status),
       ],
       options: {
-        align: bodyAlign,
+        align: tableAlign,
         rowClassName: 'transition-colors',
         rowHoverClassName: 'bg-muted/30',
       },
