@@ -2,6 +2,15 @@
 
 [Back to README](README.md)
 
+## v0.3.1 - 2026-02-22
+
+_Game version_ v1.1.0
+
+### Bugfixes
+
+- Fixed multiple buttons for the `Overview Panel` appearing on initial city load
+- Fixed overzealous panel mutation observer causing Recharts diagrams to not render in the `Info Panel`
+
 ## v0.3.0 - 2026-02-22
 
 _Game version_ v1.1.0
