@@ -13,6 +13,7 @@ export type DatasetMetadata = {
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
 export type RegistryOrigin = Extract<
+  // We do not want to persist served dataset in registry cache as they are not related to actual files within the mod or game directory
   DatasetOrigin,
   'static' | 'dynamic' | 'user'
 >;
