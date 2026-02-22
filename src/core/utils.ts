@@ -41,6 +41,24 @@ export function formatPercentOrDefault(
 export async function fetchGeoJSON(
   dataPath: string,
 ): Promise<GeoJSON.FeatureCollection> {
+  try {
+    return await fetchGeoJSONFromPath(dataPath);
+  } catch (error) {
+    if (!dataPath.endsWith('.gz') && dataPath.endsWith('.geojson')) {
+      const gzPath = `${dataPath}.gz`;
+      try {
+        return await fetchGeoJSONFromPath(gzPath);
+      } catch {
+        throw error;
+      }
+    }
+    throw error;
+  }
+}
+
+async function fetchGeoJSONFromPath(
+  dataPath: string,
+): Promise<GeoJSON.FeatureCollection> {
   const response = await fetch(dataPath);
   if (!response.ok) {
     throw new Error(
@@ -48,7 +66,10 @@ export async function fetchGeoJSON(
     );
   }
 
-  const raw = await response.text();
+  const raw = dataPath.endsWith('.gz')
+    ? await decompressGzipResponse(response, dataPath)
+    : await response.text();
+
   try {
     return JSON.parse(raw) as GeoJSON.FeatureCollection;
   } catch (error) {
@@ -57,6 +78,34 @@ export async function fetchGeoJSON(
       `Failed to parse GeoJSON from ${dataPath}. Preview: ${preview}. Error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+}
+
+async function decompressGzipResponse(
+  response: Response,
+  dataPath: string,
+): Promise<string> {
+  const streamCtor = (
+    globalThis as unknown as {
+      DecompressionStream?: new (
+        format: 'gzip' | 'deflate' | 'deflate-raw',
+      ) => TransformStream<Uint8Array, Uint8Array>;
+    }
+  ).DecompressionStream;
+
+  if (!streamCtor) {
+    throw new Error(
+      `Failed to fetch GeoJSON from ${dataPath}: DecompressionStream is unavailable in this runtime.`,
+    );
+  }
+
+  if (!response.body) {
+    throw new Error(
+      `Failed to fetch GeoJSON from ${dataPath}: response body is empty.`,
+    );
+  }
+
+  const decompressed = response.body.pipeThrough(new streamCtor('gzip'));
+  return await new Response(decompressed).text();
 }
 
 export async function yieldToEventLoop(): Promise<void> {

@@ -8,6 +8,8 @@ import {
   type SetStateAction,
 } from 'react';
 
+import type { TableAlign } from '../panels/types';
+
 export type SortState = {
   index: number;
   directionLabel: string;
@@ -23,7 +25,7 @@ export type DataRowOptions = {
   onClick?: ((event?: ReactMouseEvent<HTMLDivElement>) => void)[];
   onDoubleClick?: ((event?: ReactMouseEvent<HTMLDivElement>) => void)[];
   sortState?: SortState;
-  align?: ('left' | 'right' | 'center')[];
+  align?: TableAlign[];
 };
 
 export type ReactDataTableValue = ReactNode | HTMLElement;
@@ -34,9 +36,7 @@ export type ReactDataTableRow = {
 };
 
 export type TableDensity = 'compact' | 'standard' | 'relaxed';
-export type TableCellPaddingClassName = Partial<
-  Record<'left' | 'right' | 'center', string>
->;
+export type TableCellPaddingClassName = Partial<Record<TableAlign, string>>;
 
 // Mapping of CSS classes for several default table "denssity" options
 const TABLE_DENSITY_SETTINGS: Record<TableDensity, string> = {
@@ -211,7 +211,7 @@ function buildReactCell(
 
 // --- Helper Functions --- //
 
-function getCellAlignmentClass(align: 'left' | 'right' | 'center'): string {
+function getCellAlignmentClass(align: TableAlign): string {
   if (align === 'right') {
     return 'text-right tabular-nums';
   }
@@ -223,7 +223,7 @@ function getCellAlignmentClass(align: 'left' | 'right' | 'center'): string {
 
 function getCellBaseClass(
   shouldTruncate: boolean,
-  align: 'left' | 'right' | 'center',
+  align: TableAlign,
   cellPaddingClassNames: TableCellPaddingClassName,
 ): string {
   const horizontalPaddingClass = getCellPaddingClass(
@@ -241,7 +241,7 @@ function getCellBaseClass(
 }
 
 function getCellPaddingClass(
-  align: 'left' | 'right' | 'center',
+  align: TableAlign,
   cellPaddingClassNames: TableCellPaddingClassName,
 ): string {
   return cellPaddingClassNames[align] ?? '';

@@ -11,10 +11,15 @@ export type DatasetMetadata = {
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
 
+export type RegistryOrigin = 'static' | 'dynamic';
+
 export type RegistryCacheEntry = DatasetMetadata & {
   cityCode: string;
   dataPath: string;
   isPresent: boolean;
+  origin: RegistryOrigin;
+  fileSizeMB: number | null;
+  compressed: boolean;
 };
 
 export const StaticRegistryCacheEntrySchema = z.object({
@@ -27,6 +32,9 @@ export const StaticRegistryCacheEntrySchema = z.object({
   size: z.number(),
   dataPath: z.string(),
   isPresent: z.boolean(),
+  origin: z.enum(['static', 'dynamic']),
+  fileSizeMB: z.number().nullable(),
+  compressed: z.boolean(),
 });
 
 export type RegionsRegistryCache = {

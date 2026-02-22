@@ -22,7 +22,7 @@ import type {
 import { ReactDataTable } from '../../elements/DataTable';
 import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header';
 import { ReactSearchInput } from '../../elements/SearchInput';
-import type { InputFieldProperties, SortConfig } from '../types';
+import type { InputFieldProperties, SortConfig, TableAlign } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
 import type { RegionsOverviewRow } from './types';
@@ -234,7 +234,7 @@ function renderOverviewTable(
     },
   };
 
-  const tableAlign: ('left' | 'right' | 'center')[] = [
+  const tableAlign: TableAlign[] = [
     'left',
     ...Array(OVERVIEW_COLUMN_COUNT - 1).fill('right'),
   ];
