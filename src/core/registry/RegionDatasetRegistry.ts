@@ -72,7 +72,20 @@ export class RegionDatasetRegistry {
   // -- Dataset Mutations -- //
   async loadCityDatasets(cityCode: string, onComplete: () => void) {
     const datasets = this.getCityDatasets(cityCode);
-    await Promise.all(datasets.map((dataset) => dataset.load()));
+    const loadResults = await Promise.all(
+      datasets.map((dataset) => dataset.load()),
+    );
+    const unresolvedDatasets = datasets.filter(
+      (_, index) => !loadResults[index],
+    );
+    if (unresolvedDatasets.length > 0) {
+      const unresolvedSummary = unresolvedDatasets.map((dataset) => {
+        return `${RegionDataset.getIdentifier(dataset)} (${dataset.status})`;
+      });
+      console.warn(
+        `[Regions] City ${cityCode} completed load with unresolved datasets: ${unresolvedSummary.join(', ')}`,
+      );
+    }
     onComplete();
   }
 

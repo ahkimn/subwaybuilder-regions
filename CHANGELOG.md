@@ -2,6 +2,32 @@
 
 [Back to README](README.md)
 
+## v0.3.0 - 2026-02-22
+
+_Game version_ v1.1.0
+
+### New Features
+
+- Added Settings Menu, available from the main menu under a new `Regions` button
+  - Exposes global settings, currently limited to `Show unpopulated regions` which determines if regions with no demand points are shown in map layers and mod panels
+  - Adds a tabular display of all current datasets, broken down by their `Origin` (`static` or `served`) as well as warnings if a dataset may not be usable by the mod
+    - Datasets are displayed as unusable if either the city they apply to is no longer available in the game, or if the mod cannot detect the dataset file
+      ![Settings Screen Preview](img/settings_preview.png)
+- A snapshot of available datasets are now persisted to game storage via Electron API, so the mod no longer has to traverse the mod directory to find static datasets each time the game is initialized
+  - :warning: This snapshot must be manually refreshed within Regions settings menu
+
+### Other Updates
+
+- For static datasets, the mod no longer attempts to read the entire dataset file on mod initialization
+- Served and static datasets can now be loaded simultaneously
+
+### Bugfixes
+
+- City activation should now be idempotent
+  - City activation no longer fails when the same city / save is reloaded after exit to menu
+  - Hot reload should now properly trigger city activation cascade
+- Improved label visibility by applying fixed layer ordering on visiblity toggle (behind in-game demand data)
+
 ## v0.2.14 - 2026-02-20
 
 _Game version_ v1.1.0

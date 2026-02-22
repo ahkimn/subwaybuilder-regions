@@ -1,6 +1,7 @@
 import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/constants';
 
 import { REGIONS_DESELECT_KEY } from '../core/constants';
+import { RegionDataset } from '../core/datasets/RegionDataset';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
 import { DEFAULT_REGIONS_SETTINGS } from '../core/storage/defaults';
 import { RegionsStorage } from '../core/storage/RegionsStorage';
@@ -23,14 +24,12 @@ export class RegionsMod {
   private uiManager: RegionsUIManager | null = null;
   private settings: RegionsSettings = { ...DEFAULT_REGIONS_SETTINGS };
 
-  // TODO (Bug 2): These are guards against unexpected states; however, full hot-reload support will require more robust handling of these edge cases.
   private cityLoadToken: number;
-  private newCityLoadToken: number;
+  private mapReadyToken: number = 0;
 
   constructor() {
     this.storage = new RegionsStorage();
     this.cityLoadToken = 0;
-    this.newCityLoadToken = 0;
   }
 
   // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
@@ -41,26 +40,13 @@ export class RegionsMod {
       },
     );
 
-    if (servedCount > 0 && localCount > 0) {
+    if (servedCount > 0 || localCount > 0) {
       api.ui.showNotification(
         `[Regions] Loaded ${servedCount} served and ${localCount} local datasets.`,
         'success',
       );
       return;
     }
-
-    if (servedCount > 0) {
-      api.ui.showNotification(
-        '[Regions] Loaded region datasets from local server.',
-        'success',
-      );
-      return;
-    }
-
-    api.ui.showNotification(
-      '[Regions] Loaded region datasets from local mod data files.',
-      'success',
-    );
   }
 
   async initialize() {
@@ -101,22 +87,46 @@ export class RegionsMod {
     api.hooks.onMapReady(this.onMapReady.bind(this));
     api.hooks.onGameEnd(this.onGameEnd.bind(this));
 
-    try {
-      await this.buildRegistryWithFallback();
-    } catch (registryBuildError) {
-      api.ui.showNotification(
-        '[Regions] Failed to load region data index and local region files.',
-        'error',
-      );
-      throw registryBuildError;
-    }
+    void this.buildRegistryWithFallback()
+      // Handle edge case when registry fails to build before hooks are attached. This can occur on mod initialization and/or hot-reload
+      .then(() => {
+        // For hot reload specifically, hooks may not replay if the game is already in-city. Reconcile behavior should only occur once --  when no city load has started yet.
+        if (this.cityLoadToken !== 0) {
+          return;
+        }
 
-    // TODO: Handle hot reload by forcing life cycle via fallback city code retrieval (gated on mod initialization)
+        // If map ready hook didn't replay, attach using current API map reference if it exists
+        if (!this.mapLayers) {
+          const mapFromApi = api.utils.getMap();
+          if (mapFromApi) {
+            this.onMapReady(mapFromApi);
+          }
+        }
+
+        if (
+          (this.currentCityCode || this.tryGetCityCode()) &&
+          this.cityLoadToken === 0
+        ) {
+          void this.onCityLoad(this.currentCityCode!);
+          return;
+        }
+      })
+      .catch((registryBuildError) => {
+        api.ui.showNotification(
+          '[Regions] Failed to load region data index and local region files.',
+          'error',
+        );
+        console.error(
+          '[Regions] Failed to build registry during initialization',
+          registryBuildError,
+        );
+      });
 
     console.log('[Regions] Mod Initialized');
   }
 
   private onMapReady = (map: maplibregl.Map | null) => {
+    ++this.mapReadyToken;
     const resolvedMap = map ?? api.utils.getMap();
 
     if (!resolvedMap) {
@@ -142,24 +152,22 @@ export class RegionsMod {
     }
 
     this.uiManager.attachMapLayers(this.mapLayers);
-
-    console.log('load tokens: ', this.cityLoadToken, this.newCityLoadToken);
-
     if (this.currentCityCode) {
+      console.log('[Regions] Activating city data onMapReady');
       this.activateCity(this.currentCityCode);
-      // On reload of an existing save, a new cityLoad hook may not trigger; however, we can recover the city code from a separate API call
     } else if (
-      this.cityLoadToken !== this.newCityLoadToken &&
+      // On reload of an existing save, a new cityLoad hook may not trigger; however, we can recover the city code from a separate API call
+      this.cityLoadToken === 0 &&
       this.tryGetCityCode()
     ) {
-      this.onCityLoad(this.currentCityCode!);
+      void this.onCityLoad(this.currentCityCode!);
     }
   };
 
   private tryGetCityCode(): boolean {
     const cityCodeFromAPI = api.utils.getCityCode();
     console.warn(
-      '[Regions] Map ready invoked without city code; resolved city code from API: ',
+      '[Regions] Resolved city code from API: ',
       cityCodeFromAPI ?? 'N/A',
     );
     if (cityCodeFromAPI) {
@@ -172,7 +180,8 @@ export class RegionsMod {
   private onCityLoad = async (cityCode: string) => {
     // TODO (Issue 2): Add mechanism to determine BoundaryBox from SubwayBuilderAPI for dynamic generation of datasets
     const loadToken = ++this.cityLoadToken;
-    if (this.currentCityCode) {
+    // Unload data from previous city (if it exists or if it differs from the city to be loaded)
+    if (this.currentCityCode && this.currentCityCode !== cityCode) {
       this.deactivateCity();
     }
     console.log(`[Regions] Loading data for city: ${cityCode}`);
@@ -190,6 +199,7 @@ export class RegionsMod {
       );
       this.currentCityCode = cityCode;
       if (this.mapLayers) {
+        console.log('[Regions] Activating city data onCityLoad');
         this.activateCity(cityCode);
       }
     });
@@ -212,28 +222,51 @@ export class RegionsMod {
     }
 
     const datasets = this.registry.getCityDatasets(cityCode);
-    if (datasets.length === 0) {
-      console.warn('[Regions] No region data available for current city');
+    const loadedDatasets = datasets.filter((dataset) => dataset.isLoaded);
+    if (loadedDatasets.length === 0) {
+      console.warn(
+        `[Regions] No datasets loaded for city ${cityCode}; skipping activation`,
+      );
+      api.ui.showNotification(
+        `[Regions] No region loaded for city ${cityCode}.`,
+        'warning',
+      );
       return;
     }
+    if (loadedDatasets.length !== datasets.length) {
+      const skippedDatasets = datasets
+        .filter((dataset) => !dataset.isLoaded)
+        .map(
+          (dataset) =>
+            `${RegionDataset.getIdentifier(dataset)} (${dataset.status})`,
+        );
+      console.warn(
+        `[Regions] Skipping unloaded datasets for city ${cityCode}: ${skippedDatasets.join(', ')}`,
+      );
+    }
 
-    datasets.forEach((dataset) => dataset.updateWithDemandData(demandData));
+    loadedDatasets.forEach((dataset) =>
+      dataset.updateWithDemandData(demandData),
+    );
 
     this.uiManager.onCityChange(cityCode);
-    this.mapLayers?.observeMapLayersForDatasets(datasets);
+    this.mapLayers?.observeMapLayersForDatasets(loadedDatasets);
   }
 
-  private onGameEnd(_result: unknown) {
+  private async onGameEnd(result: unknown) {
     console.log(
-      '[Regions] Handling game end, clearing city data and resetting state',
+      '[Regions] Handling game end, clearing city data and resetting state. Result: ',
+      await result,
     );
-    this.newCityLoadToken = this.cityLoadToken;
 
     if (this.currentCityCode) {
       this.clearCityData(this.currentCityCode);
       this.currentCityCode = null;
     }
 
+    // Reset tokens to allow for proper reconciliation in same city-load edge cases
+    this.cityLoadToken = 0;
+    this.mapReadyToken = 0;
     this.mapLayers?.reset();
     this.mapLayers = null;
     this.uiManager?.onGameEnd();

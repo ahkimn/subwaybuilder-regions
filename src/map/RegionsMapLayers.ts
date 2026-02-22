@@ -334,11 +334,10 @@ export class RegionsMapLayers {
       layerState.labelLayerId &&
       this.tryGetLayer(layerState.labelLayerId)
     ) {
-      this.tryMoveLayer(
-        mapRef,
-        layerState.labelLayerId,
-        new Set(['road-labels', 'demand-points']),
-      );
+      this.tryMoveLayer(mapRef, layerState.labelLayerId, [
+        'demand-points',
+        'road-labels',
+      ]);
     }
   }
 
@@ -435,7 +434,7 @@ export class RegionsMapLayers {
       this.layerHandler = null;
       this.observedDatasets = [];
     }
-    // TODO (Bug 3): Verify that style and source handlers work when map-layering isn't overriden in game.
+    // TODO (Bug 1): Verify that style and source handlers work when map-layering isn't overriden in game.
     if (this.styleHandler) {
       mapRef.off('styledata', this.styleHandler);
       this.styleHandler = null;
@@ -637,6 +636,8 @@ export class RegionsMapLayers {
           'text-anchor': 'center',
           'text-allow-overlap': false,
           'text-ignore-placement': false,
+          'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
+          'text-radial-offset': 0.01,
           visibility: 'none',
         },
         paint: {},
@@ -771,16 +772,16 @@ export class RegionsMapLayers {
     this.observedDatasets = datasets;
     if (this.layerHandler) return;
 
-    // TODO (Bug 3): Verify that style and source handlers work when map-layering isn't overriden in game
+    // TODO (Bug 1): Verify that style and source handlers work when map-layering isn't overriden in game
     this.styleHandler = () => {
       this.moveVisibleLabelsToTop();
     };
     mapRef.on('styledata', this.styleHandler);
 
-    this.sourceHandler = () => {
-      this.moveVisibleLabelsToTop();
-    };
-    mapRef.on('sourcedata', this.sourceHandler);
+    // this.sourceHandler = () => {
+    //   this.moveVisibleLabelsToTop();
+    // };
+    // mapRef.on('sourcedata', this.sourceHandler);
 
     this.layerHandler = () => {
       let syncLayerState = false;
@@ -834,11 +835,10 @@ export class RegionsMapLayers {
         continue;
       }
       if (this.tryGetLayer(layerState.labelLayerId)) {
-        this.tryMoveLayer(
-          mapRef,
-          layerState.labelLayerId,
-          new Set(['road-labels', 'demand-points']),
-        );
+        this.tryMoveLayer(mapRef, layerState.labelLayerId, [
+          'demand-points',
+          'road-labels',
+        ]);
       }
     }
   }
@@ -846,7 +846,7 @@ export class RegionsMapLayers {
   private tryMoveLayer(
     mapRef: maplibregl.Map,
     layerId: string,
-    beforeLayerIds: Set<string>,
+    beforeLayerIds: string[],
   ): void {
     if (!this.tryGetLayer(layerId)) {
       console.warn(`[Regions] Cannot move layer ${layerId}: layer not found`);

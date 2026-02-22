@@ -126,17 +126,20 @@ export class RegionDataset {
   }
 
   async load(): Promise<boolean> {
-    console.log(
-      `[Regions] Loading dataset: ${this.id} for city ${this.cityCode} (${this.metadataSource})`,
-    );
-
     if (this.status === DatasetStatus.Loaded) {
       return true;
     }
 
     if (this.status === DatasetStatus.Loading) {
+      console.warn(
+        `[Regions] Skipping duplicate load request for dataset: ${this.id} for city ${this.cityCode}.`,
+      );
       return false;
     }
+
+    console.log(
+      `[Regions] Loading dataset: ${this.id} for city ${this.cityCode} (${this.metadataSource})`,
+    );
 
     this.status = DatasetStatus.Loading;
 
