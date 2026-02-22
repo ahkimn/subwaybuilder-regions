@@ -117,9 +117,11 @@ export const RegionSelection = {
   },
 };
 
+export type DatasetOrigin = 'served' | 'dynamic' | 'static' | 'user';
+
 // --- Dataset Types --- //
 export type DatasetSource = {
-  type: 'static' | 'user';
+  type: DatasetOrigin;
   dataPath: string; // relative path of Dataset from mod serve or user data directory
   writable: boolean; // whether or not the data can be overwritten by the user
 };

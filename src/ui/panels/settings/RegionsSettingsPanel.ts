@@ -1,10 +1,16 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
 import type React from 'react';
-import { type createElement, type useEffect, type useState } from 'react';
+import {
+  type createElement,
+  type useEffect,
+  type useReducer,
+  type useState,
+} from 'react';
 
 import type { RegionDataset } from '../../../core/datasets/RegionDataset';
 import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
+import type { DatasetOrigin } from '../../../core/types';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import { getNextSortState } from '../shared/helpers';
 import {
@@ -30,6 +36,133 @@ type SettingsMenuComponentParams = {
   datasetRegistry: RegionDatasetRegistry;
 };
 
+type PendingFlags = {
+  updating: boolean;
+  refreshingRegistry: boolean;
+  clearingMissing: boolean;
+};
+
+type RegionsSettingsState = {
+  isOpen: boolean;
+  settings: ReturnType<RegionsStorage['getSettings']>;
+  cachedRegistryEntries: RegistryCacheEntry[];
+  searchTerm: string;
+  sortState: SortState;
+  registryRevision: number;
+  pending: PendingFlags;
+  error: string | null;
+};
+
+type RegionsSettingsAction =
+  | { type: 'open_overlay' }
+  | { type: 'close_overlay' }
+  | { type: 'set_search_term'; searchTerm: string }
+  | { type: 'set_sort_state'; sortState: SortState }
+  | {
+      type: 'settings_loaded';
+      settings: ReturnType<RegionsStorage['getSettings']>;
+    }
+  | {
+      type: 'settings_updated';
+      settings: ReturnType<RegionsStorage['getSettings']>;
+    }
+  | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
+  | { type: 'registry_revision_bumped' }
+  | { type: 'update_settings_started' }
+  | { type: 'update_settings_finished' }
+  | { type: 'refresh_registry_started' }
+  | { type: 'refresh_registry_finished' }
+  | { type: 'clear_missing_started' }
+  | { type: 'clear_missing_finished' }
+  | { type: 'operation_failed'; message: string };
+
+function createInitialSettingsState(
+  storage: RegionsStorage,
+): RegionsSettingsState {
+  return {
+    isOpen: false,
+    settings: storage.getSettings(),
+    cachedRegistryEntries: [],
+    searchTerm: '',
+    sortState: {
+      ...DEFAULT_SORT_STATE,
+      sortDirection: SortDirection.Asc,
+    },
+    registryRevision: 0,
+    pending: {
+      updating: false,
+      refreshingRegistry: false,
+      clearingMissing: false,
+    },
+    error: null,
+  };
+}
+
+function regionsSettingsReducer(
+  state: RegionsSettingsState,
+  action: RegionsSettingsAction,
+): RegionsSettingsState {
+  switch (action.type) {
+    // UI actions
+    case 'open_overlay':
+      return { ...state, isOpen: true };
+    case 'close_overlay':
+      return { ...state, isOpen: false };
+    case 'set_search_term':
+      return { ...state, searchTerm: action.searchTerm };
+    case 'set_sort_state':
+      return { ...state, sortState: action.sortState };
+
+    // Store/registry sync actions
+    case 'settings_loaded':
+    case 'settings_updated':
+      return { ...state, settings: action.settings };
+    case 'registry_entries_loaded':
+      return { ...state, cachedRegistryEntries: action.entries };
+    case 'registry_revision_bumped':
+      return { ...state, registryRevision: state.registryRevision + 1 };
+
+    // Async lifecycle actions
+    case 'update_settings_started':
+      return {
+        ...state,
+        pending: { ...state.pending, updating: true },
+        error: null,
+      };
+    case 'update_settings_finished':
+      return {
+        ...state,
+        pending: { ...state.pending, updating: false },
+      };
+    case 'refresh_registry_started':
+      return {
+        ...state,
+        pending: { ...state.pending, refreshingRegistry: true },
+        error: null,
+      };
+    case 'refresh_registry_finished':
+      return {
+        ...state,
+        pending: { ...state.pending, refreshingRegistry: false },
+      };
+    case 'clear_missing_started':
+      return {
+        ...state,
+        pending: { ...state.pending, clearingMissing: true },
+        error: null,
+      };
+    case 'clear_missing_finished':
+      return {
+        ...state,
+        pending: { ...state.pending, clearingMissing: false },
+      };
+    case 'operation_failed':
+      return { ...state, error: action.message };
+    default:
+      return state;
+  }
+}
+
 export function RegionsSettingsPanel({
   api,
   storage,
@@ -37,6 +170,7 @@ export function RegionsSettingsPanel({
 }: SettingsMenuComponentParams): () => React.ReactNode {
   const h = api.utils.React.createElement as typeof createElement;
   const useStateHook = api.utils.React.useState as typeof useState;
+  const useReducerHook = api.utils.React.useReducer as typeof useReducer;
   const useEffectHook = api.utils.React.useEffect as typeof useEffect;
   const Fragment = api.utils.React.Fragment;
   const Input = api.utils.components
@@ -47,24 +181,18 @@ export function RegionsSettingsPanel({
     .Label as React.ComponentType<LabelProperties>;
 
   return function RegionsSettingsMenuComponent() {
-    const [isOpen, setIsOpen] = useStateHook<boolean>(false);
-    const [settings, setSettings] = useStateHook(() => storage.getSettings());
-    const [isUpdating, setIsUpdating] = useStateHook(false);
-    const [isRefreshingRegistry, setIsRefreshingRegistry] = useStateHook(false);
-    const [isClearingMissing, setIsClearingMissing] = useStateHook(false);
-    const [, setRegistryRevision] = useStateHook(0);
-    const [cachedRegistryEntries, setCachedRegistryEntries] = useStateHook<
-      RegistryCacheEntry[]
-    >([]);
-    const [searchTerm, setSearchTerm] = useStateHook('');
-    const [sortState, setSortState] = useStateHook<SortState>(() => ({
-      ...DEFAULT_SORT_STATE,
-      sortDirection: SortDirection.Asc,
-    }));
+    const [state, dispatch] = useReducerHook(
+      regionsSettingsReducer,
+      storage,
+      createInitialSettingsState,
+    );
 
     const reloadCachedRegistry = () => {
       return storage.loadStoredRegistry().then((storedRegistry) => {
-        setCachedRegistryEntries(storedRegistry?.entries ?? []);
+        dispatch({
+          type: 'registry_entries_loaded',
+          entries: storedRegistry?.entries ?? [],
+        });
       });
     };
 
@@ -72,16 +200,16 @@ export function RegionsSettingsPanel({
       let mounted = true;
       void storage.initialize().then((loaded) => {
         if (mounted) {
-          setSettings(loaded);
+          dispatch({ type: 'settings_loaded', settings: loaded });
         }
       });
       void reloadCachedRegistry();
 
       const unsubscribe = storage.listen((nextSettings) => {
-        setSettings(nextSettings);
+        dispatch({ type: 'settings_updated', settings: nextSettings });
       });
       const unsubscribeRegistry = datasetRegistry.listen(() => {
-        setRegistryRevision((current) => current + 1);
+        dispatch({ type: 'registry_revision_bumped' });
       });
 
       return () => {
@@ -96,27 +224,34 @@ export function RegionsSettingsPanel({
     );
     const datasetRows = buildSettingsDatasetRows(
       datasetRegistry.datasets,
-      cachedRegistryEntries,
+      state.cachedRegistryEntries,
       knownCityCodes,
     );
 
-    const filteredRows = filterSettingsRows(datasetRows, searchTerm);
-    const sortedRows = sortSettingsRows(filteredRows, sortState);
+    const filteredRows = filterSettingsRows(datasetRows, state.searchTerm);
+    const sortedRows = sortSettingsRows(filteredRows, state.sortState);
 
     const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
-      setIsUpdating(true);
+      dispatch({ type: 'update_settings_started' });
       void storage
         .updateSettings(patch)
         .then((nextSettings) => {
-          setSettings(nextSettings);
+          dispatch({ type: 'settings_updated', settings: nextSettings });
+        })
+        .catch((error) => {
+          dispatch({
+            type: 'operation_failed',
+            message: '[Regions] Failed to update settings.',
+          });
+          console.error('[Regions] Failed to update settings', error);
         })
         .finally(() => {
-          setIsUpdating(false);
+          dispatch({ type: 'update_settings_finished' });
         });
     };
 
     const refreshRegistry = () => {
-      setIsRefreshingRegistry(true);
+      dispatch({ type: 'refresh_registry_started' });
       void datasetRegistry
         .build(() => {
           console.warn('[Regions] Failed to load dataset index from server');
@@ -131,6 +266,11 @@ export function RegionsSettingsPanel({
           return reloadCachedRegistry();
         })
         .catch((error) => {
+          dispatch({
+            type: 'operation_failed',
+            message:
+              '[Regions] Failed to refresh registry. Check logs for details.',
+          });
           console.error('[Regions] Failed to refresh registry', error);
           api.ui.showNotification(
             '[Regions] Failed to refresh registry. Check logs for details.',
@@ -138,12 +278,12 @@ export function RegionsSettingsPanel({
           );
         })
         .finally(() => {
-          setIsRefreshingRegistry(false);
+          dispatch({ type: 'refresh_registry_finished' });
         });
     };
 
     const clearMissingEntries = () => {
-      setIsClearingMissing(true);
+      dispatch({ type: 'clear_missing_started' });
       void storage
         .loadStoredRegistry()
         .then((storedRegistry) => {
@@ -183,6 +323,11 @@ export function RegionsSettingsPanel({
           return reloadCachedRegistry();
         })
         .catch((error) => {
+          dispatch({
+            type: 'operation_failed',
+            message:
+              '[Regions] Failed to clear missing registry entries. Check logs for details.',
+          });
           console.error(
             '[Regions] Failed to clear missing registry entries',
             error,
@@ -193,37 +338,37 @@ export function RegionsSettingsPanel({
           );
         })
         .finally(() => {
-          setIsClearingMissing(false);
+          dispatch({ type: 'clear_missing_finished' });
         });
     };
 
     return h(Fragment, null, [
-      renderSettingsEntry(h, () => setIsOpen(true)),
-      isOpen
+      renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
+      state.isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-            settings,
-            isUpdating,
-            searchTerm,
-            sortState,
+            settings: state.settings,
+            isUpdating: state.pending.updating,
+            searchTerm: state.searchTerm,
+            sortState: state.sortState,
             rows: sortedRows,
-            onClose: () => setIsOpen(false),
-            onSearchTermChange: setSearchTerm,
+            onClose: () => dispatch({ type: 'close_overlay' }),
+            onSearchTermChange: (searchTerm: string) =>
+              dispatch({ type: 'set_search_term', searchTerm }),
             onSortChange: (columnIndex: number) => {
-              setSortState((current) =>
-                getNextSortState<SettingsDatasetRow>(
-                  current,
-                  columnIndex,
-                  resolveRegistrySortConfig,
-                ),
+              const nextSortState = getNextSortState<SettingsDatasetRow>(
+                state.sortState,
+                columnIndex,
+                resolveRegistrySortConfig,
               );
+              dispatch({ type: 'set_sort_state', sortState: nextSortState });
             },
             onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
               updateSettings({ showUnpopulatedRegions: nextValue });
             },
             onRefreshRegistry: refreshRegistry,
-            isRefreshingRegistry,
+            isRefreshingRegistry: state.pending.refreshingRegistry,
             onClearMissing: clearMissingEntries,
-            isClearingMissing,
+            isClearingMissing: state.pending.clearingMissing,
           })
         : null,
     ]);
@@ -248,9 +393,7 @@ function buildSettingsDatasetRows(
   datasets.forEach((dataset) => {
     const datasetKey = `${dataset.cityCode}::${dataset.id}`;
     const matchingCachedEntries = cacheByDatasetKey.get(datasetKey) ?? [];
-    const inferredOrigin: 'served' | 'static' | 'dynamic' = isServedDataset(
-      dataset,
-    )
+    const inferredOrigin: DatasetOrigin = isServedDataset(dataset)
       ? 'served'
       : dataset.source.type === 'user'
         ? 'dynamic'

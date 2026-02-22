@@ -17,6 +17,7 @@ import {
   tryLocalDatasetPaths,
 } from '../storage/helpers';
 import type { RegionsStorage } from '../storage/RegionsStorage';
+import type { DatasetOrigin } from '../types';
 import { STATIC_TEMPLATES } from './static';
 
 export class RegionDatasetRegistry {
@@ -76,6 +77,7 @@ export class RegionDatasetRegistry {
     const loadResults = await Promise.all(
       datasets.map((dataset) => dataset.load()),
     );
+    // If any dataset failed to load, inform user with a warning but still continue with any remaining datasets
     const unresolvedDatasets = datasets.filter(
       (_, index) => !loadResults[index],
     );
@@ -95,10 +97,10 @@ export class RegionDatasetRegistry {
     cityCode: string,
     entry: DatasetMetadata,
     dataPath: string,
-    options?: {
+    options: {
       skipValidation?: boolean;
-      sourceType?: 'static' | 'user';
-      writable?: boolean;
+      sourceType: DatasetOrigin;
+      writable: boolean;
     },
   ): void {
     if (!options?.skipValidation) {
@@ -106,9 +108,9 @@ export class RegionDatasetRegistry {
     }
     this.registerDataset(
       new RegionDataset(entry, cityCode, {
-        type: options?.sourceType ?? 'static',
+        type: options.sourceType,
         dataPath,
-        writable: options?.writable ?? false,
+        writable: options.writable,
       }),
     );
   }
@@ -116,7 +118,7 @@ export class RegionDatasetRegistry {
   private registerLocalEntries(entries: RegistryCacheEntry[]): number {
     let registered = 0;
 
-    const registerbyOrigin = (origin: 'static' | 'dynamic') => {
+    const registerbyOrigin = (origin: DatasetOrigin) => {
       entries
         .filter((entry) => entry.origin === origin && entry.isPresent)
         .forEach((entry) => {
@@ -126,8 +128,8 @@ export class RegionDatasetRegistry {
             entry.dataPath,
             {
               skipValidation: true,
-              sourceType: entry.origin === 'dynamic' ? 'user' : 'static',
-              writable: entry.origin === 'dynamic',
+              sourceType: entry.origin,
+              writable: entry.origin === 'user',
             },
           );
           registered += 1;
@@ -150,6 +152,10 @@ export class RegionDatasetRegistry {
           cityCode,
           record,
           `${this.serveUrl}/${cityCode}/${record.datasetId}.geojson`,
+          {
+            sourceType: 'static',
+            writable: false,
+          },
         );
         registeredDatasets += 1;
       }

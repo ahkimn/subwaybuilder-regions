@@ -2,7 +2,8 @@ import type React from 'react';
 import type { createElement, useState } from 'react';
 
 import type { RegionsSettings } from '../../../core/storage/types';
-import { formatFixedNumber } from '../../../core/utils';
+import type { DatasetOrigin } from '../../../core/types';
+import { formatNumberOrDefault } from '../../../core/utils';
 import type {
   ReactDataTableRow,
   TableCellPaddingClassName,
@@ -41,7 +42,7 @@ export type SettingsDatasetRow = {
   cityCode: string;
   datasetId: string;
   displayName: string;
-  origin: 'served' | 'static' | 'dynamic';
+  origin: DatasetOrigin;
   fileSizeMB: number | null;
   issue: SettingsDatasetIssue;
 };
@@ -521,7 +522,7 @@ function formatFileSizeLabel(sizeMB: number | null): string {
   if (sizeMB === null || !Number.isFinite(sizeMB) || sizeMB <= 0) {
     return FILESIZE_NOT_AVAILABLE_LABEL;
   }
-  return `${formatFixedNumber(sizeMB, 2)} MB`;
+  return `${formatNumberOrDefault(sizeMB, 2)} MB`;
 }
 
 function renderDatasetStatusCell(

@@ -5,6 +5,7 @@ export function isObjectRecord(
 ): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
+
 export function formatFixedNumber(
   n: number,
   decimals: number = 0,

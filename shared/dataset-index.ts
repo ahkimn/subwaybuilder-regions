@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { DatasetOrigin } from '../src/core/types';
+
 export type DatasetMetadata = {
   datasetId: string;
   displayName: string;
@@ -10,8 +12,10 @@ export type DatasetMetadata = {
 };
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
-
-export type RegistryOrigin = 'static' | 'dynamic';
+export type RegistryOrigin = Extract<
+  DatasetOrigin,
+  'static' | 'dynamic' | 'user'
+>;
 
 export type RegistryCacheEntry = DatasetMetadata & {
   cityCode: string;
@@ -32,7 +36,7 @@ export const StaticRegistryCacheEntrySchema = z.object({
   size: z.number(),
   dataPath: z.string(),
   isPresent: z.boolean(),
-  origin: z.enum(['static', 'dynamic']),
+  origin: z.enum(['static', 'dynamic', 'user']),
   fileSizeMB: z.number().nullable(),
   compressed: z.boolean(),
 });
