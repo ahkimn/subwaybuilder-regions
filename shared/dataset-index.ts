@@ -11,7 +11,7 @@ export type DatasetMetadata = {
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
 
-export type StaticRegistryCacheEntry = DatasetMetadata & {
+export type RegistryCacheEntry = DatasetMetadata & {
   cityCode: string;
   dataPath: string;
   isPresent: boolean;
@@ -31,7 +31,7 @@ export const StaticRegistryCacheEntrySchema = z.object({
 
 export type RegionsRegistryCache = {
   updatedAt: number;
-  entries: StaticRegistryCacheEntry[];
+  entries: RegistryCacheEntry[];
 };
 
 type RegionTypeKey = string;

@@ -1,7 +1,7 @@
 import type {
   DatasetIndex,
   DatasetMetadata,
-  StaticRegistryCacheEntry,
+  RegistryCacheEntry,
 } from '@shared/dataset-index';
 
 import type { ModdingAPI } from '../../types/modding-api-v1';
@@ -64,18 +64,18 @@ export class RegionDatasetRegistry {
   }
 
   // -- Setup -- //
-  private assertDatasetIndexEntry(
+  private validateIndexEntry(
     cityCode: string,
     entry: DatasetMetadata,
   ): void {
     if (
-      !entry ||
-      typeof entry.datasetId !== 'string' ||
-      typeof entry.displayName !== 'string' ||
-      typeof entry.unitSingular !== 'string' ||
-      typeof entry.unitPlural !== 'string' ||
-      typeof entry.source !== 'string' ||
-      typeof entry.size !== 'number'
+      !entry.datasetId ||
+      !entry.displayName ||
+      !entry.unitSingular ||
+      !entry.unitPlural ||
+      !entry.source ||
+      !Number.isInteger(entry.size) ||
+      entry.size <= 0
     ) {
       throw new Error(
         `[Regions] Invalid dataset index entry for city ${cityCode}: ${JSON.stringify(entry)}`,
@@ -90,7 +90,7 @@ export class RegionDatasetRegistry {
     options?: { skipValidation?: boolean },
   ): void {
     if (!options?.skipValidation) {
-      this.assertDatasetIndexEntry(cityCode, entry);
+      this.validateIndexEntry(cityCode, entry);
     }
     this.registerDataset(
       new RegionDataset(entry, cityCode, {
@@ -159,49 +159,50 @@ export class RegionDatasetRegistry {
   async buildStatic(): Promise<void> {
     this.clear();
 
-    const cachedRegistry = await this.storage.loadStoredRegistry();
-    if (cachedRegistry && cachedRegistry.entries.length > 0) {
-      const cachedPresentEntries = cachedRegistry.entries.filter(
+    // First check if local storage has a cached registry and if so attempt to register the data present
+    const storedRegistry = await this.storage.loadStoredRegistry();
+    if (storedRegistry && storedRegistry.entries.length > 0) {
+      const presentEntries = storedRegistry.entries.filter(
         (entry) => entry.isPresent,
       );
-      for (const entry of cachedPresentEntries) {
+      for (const entry of presentEntries) {
         this.registerStaticDataset(
           entry.cityCode,
-          this.buildDatasetEntryFromCachedEntry(entry),
+          this.buildDatasetEntryFromStorage(entry),
           entry.dataPath,
           { skipValidation: true },
         );
       }
-      if (cachedPresentEntries.length > 0) {
+      if (presentEntries.length > 0) {
         return;
       }
     }
 
-    const discoveredEntries = await this.discoverStaticLocalDatasets();
+    console.log(
+      '[Regions] No valid cached registry found, attempting to locate local datasets from static mapping...',
+    );
+    const localEntries = await this.locateStaticLocalDatasets();
     await this.storage.saveRegistry({
       updatedAt: Date.now(),
-      entries: discoveredEntries,
+      entries: localEntries,
     });
-
-    const discoveredPresentEntries = discoveredEntries.filter(
-      (entry) => entry.isPresent,
-    );
-    for (const entry of discoveredPresentEntries) {
+    const presentEntries = localEntries.filter((entry) => entry.isPresent);
+    for (const entry of presentEntries) {
       this.registerStaticDataset(
         entry.cityCode,
-        this.buildDatasetEntryFromCachedEntry(entry),
+        this.buildDatasetEntryFromStorage(entry),
         entry.dataPath,
         { skipValidation: true },
       );
     }
 
-    if (discoveredPresentEntries.length === 0) {
+    if (presentEntries.length === 0) {
       throw new Error('[Regions] No local datasets found in static mapping');
     }
   }
 
   async refreshStaticRegistryCache(): Promise<number> {
-    const discoveredEntries = await this.discoverStaticLocalDatasets();
+    const discoveredEntries = await this.locateStaticLocalDatasets();
     await this.storage.saveRegistry({
       updatedAt: Date.now(),
       entries: discoveredEntries,
@@ -209,18 +210,13 @@ export class RegionDatasetRegistry {
     return discoveredEntries.filter((entry) => entry.isPresent).length;
   }
 
-  private async discoverStaticLocalDatasets(): Promise<
-    StaticRegistryCacheEntry[]
-  > {
+  private async locateStaticLocalDatasets(): Promise<RegistryCacheEntry[]> {
     const localModsDataRoot = await this.storage.resolveLocalModsDataRoot();
-    const discoveredEntries: StaticRegistryCacheEntry[] = [];
+    const discoveredEntries: RegistryCacheEntry[] = [];
 
     const currentCities = this.api.utils.getCities();
 
     for (const city of currentCities) {
-      console.log(
-        `[Regions] Discovering local datasets for city ${city.code} (${city.name})...`,
-      );
       const datasetTemplates = city.country
         ? (STATIC_TEMPLATES.get(city.country) ?? [])
         : [];
@@ -230,7 +226,6 @@ export class RegionDatasetRegistry {
           city.code,
           template.datasetId,
         );
-
         const isPresent = await localFileExists(dataPath);
         discoveredEntries.push({
           cityCode: city.code,
@@ -245,12 +240,11 @@ export class RegionDatasetRegistry {
         });
       }
     }
-
     return discoveredEntries;
   }
 
-  private buildDatasetEntryFromCachedEntry(
-    entry: StaticRegistryCacheEntry,
+  private buildDatasetEntryFromStorage(
+    entry: RegistryCacheEntry,
   ): DatasetMetadata {
     return {
       datasetId: entry.datasetId,
