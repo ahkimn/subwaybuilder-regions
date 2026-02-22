@@ -118,11 +118,13 @@ export class RegionsUIManager {
       onRegionDoubleClick: (selection: RegionSelection) =>
         this.onOverviewSelect(selection, false, true),
     });
-    this.settingsPanelRenderer.initialize();
-    this.syncResolvedTheme();
     this.infoPanelRenderer.initialize();
-    this.ensureLayerPanelObserver();
+
+    this.settingsPanelRenderer.initialize();
     this.settingsPanelRenderer.tryUpdatePanel();
+
+    this.syncResolvedTheme();
+    this.ensureLayerPanelObserver();
   }
 
   attachMapLayers(mapLayers: RegionsMapLayers): void {
@@ -138,8 +140,8 @@ export class RegionsUIManager {
     );
     this.mapLayers.setSettings(this.state.settings);
     this.mapLayers.setLightMode(this.state.style.lightMode);
+
     this.tryInjectLayerPanel(true);
-    this.settingsPanelRenderer.tryUpdatePanel();
   }
 
   // --- Observers Management --- //
@@ -219,7 +221,6 @@ export class RegionsUIManager {
     if (!this.layerPanelRoot || !this.state.cityCode || !this.mapLayers) {
       return;
     }
-    const mapLayers = this.mapLayers;
     if (!document.contains(this.layerPanelRoot)) {
       this.layerPanelRoot = null;
       return;
@@ -241,10 +242,10 @@ export class RegionsUIManager {
       this.state.cityCode,
     );
     cityDatasets.forEach((ds) => {
-      mapLayers.ensureDatasetLayers(ds);
+      this.mapLayers!.ensureDatasetLayers(ds);
     });
     const toggleOptions = cityDatasets.map((ds) =>
-      mapLayers.getDatasetToggleOptions(ds),
+      this.mapLayers!.getDatasetToggleOptions(ds),
     );
 
     // Map layers reset on theme change. For now we can use this as our "hook" to propagate theme updates to the rest of the game's UI
