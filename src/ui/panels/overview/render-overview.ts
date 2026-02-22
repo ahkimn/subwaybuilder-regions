@@ -20,6 +20,7 @@ import type {
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
+import { ReactSearchInput } from '../../elements/SearchInput';
 import type { InputFieldProperties, SortConfig } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
@@ -199,13 +200,12 @@ function renderOverviewSearchField(
   searchTerm: string,
   onSearchTermChange: (value: string) => void,
 ): React.ReactNode {
-  return h(Input, {
+  return h(ReactSearchInput, {
+    h,
+    Input,
     value: searchTerm,
     placeholder: 'Search by name...',
-    onChange: (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      onSearchTermChange(target.value);
-    },
+    onValueChange: onSearchTermChange,
   });
 }
 
