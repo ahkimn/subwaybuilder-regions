@@ -46,9 +46,7 @@ export function RegionsSettingsPanel({
 
   return function RegionsSettingsMenuComponent() {
     const [isOpen, setIsOpen] = useStateHook<boolean>(false);
-    const [settings, setSettings] = useStateHook(() =>
-      storage.getSettings(),
-    );
+    const [settings, setSettings] = useStateHook(() => storage.getSettings());
     const [isUpdating, setIsUpdating] = useStateHook(false);
     const [isRefreshingRegistry, setIsRefreshingRegistry] = useStateHook(false);
     const [searchTerm, setSearchTerm] = useStateHook('');
@@ -129,28 +127,28 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => setIsOpen(true)),
       isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-          settings,
-          isUpdating,
-          searchTerm,
-          sortState,
-          rows: sortedRows,
-          onClose: () => setIsOpen(false),
-          onSearchTermChange: setSearchTerm,
-          onSortChange: (columnIndex: number) => {
-            setSortState((current) =>
-              getNextSortState<SettingsDatasetRow>(
-                current,
-                columnIndex,
-                resolveRegistrySortConfig,
-              ),
-            );
-          },
-          onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-            updateSettings({ showUnpopulatedRegions: nextValue });
-          },
-          onRefreshRegistry: refreshRegistry,
-          isRefreshingRegistry,
-        })
+            settings,
+            isUpdating,
+            searchTerm,
+            sortState,
+            rows: sortedRows,
+            onClose: () => setIsOpen(false),
+            onSearchTermChange: setSearchTerm,
+            onSortChange: (columnIndex: number) => {
+              setSortState((current) =>
+                getNextSortState<SettingsDatasetRow>(
+                  current,
+                  columnIndex,
+                  resolveRegistrySortConfig,
+                ),
+              );
+            },
+            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+              updateSettings({ showUnpopulatedRegions: nextValue });
+            },
+            onRefreshRegistry: refreshRegistry,
+            isRefreshingRegistry,
+          })
         : null,
     ]);
   };

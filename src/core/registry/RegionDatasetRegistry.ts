@@ -212,8 +212,7 @@ export class RegionDatasetRegistry {
   private async discoverStaticLocalDatasets(): Promise<
     StaticRegistryCacheEntry[]
   > {
-    const localModsDataRoot =
-      await this.storage.resolveLocalModsDataRoot();
+    const localModsDataRoot = await this.storage.resolveLocalModsDataRoot();
     const discoveredEntries: StaticRegistryCacheEntry[] = [];
 
     const currentCities = this.api.utils.getCities();
