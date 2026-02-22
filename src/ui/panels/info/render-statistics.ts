@@ -9,7 +9,7 @@ import type { RegionGameData } from '../../../core/types';
 import { formatNumberOrDefault } from '../../../core/utils';
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
-import { buildReactViewHeader } from '../shared/view-header';
+import { ViewHeader } from '../../elements/ViewHeader';
 
 export function renderStatisticsView(
   h: typeof createElement,
@@ -41,7 +41,7 @@ export function renderStatisticsView(
   return h(
     'div',
     { className: 'flex flex-col gap-2' },
-    buildReactViewHeader(h, gameData.displayName),
+    ViewHeader(h, gameData.displayName),
     ReactDetailRow(
       h,
       'Type',

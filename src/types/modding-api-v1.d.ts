@@ -761,6 +761,9 @@ export interface ElectronAPI {
   removeLicenseKey(): Promise<void>;
   getVersion(): Promise<string>;
   getIsBeta(): Promise<boolean>;
+  getModsFolder?: () => Promise<string>;
+  getStorageItem?: (key: string) => Promise<unknown>;
+  setStorageItem?: (key: string, value: unknown) => Promise<void>;
 }
 
 export interface ElectronAPIExtended {
@@ -1072,6 +1075,7 @@ export interface ModdingAPI {
 
   // Utilities
   utils: {
+    getCityCode(): string;
     getCities(): City[];
     getConstants(): GameConstants;
     getMap(): MapLibreMap | null;

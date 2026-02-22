@@ -53,13 +53,14 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     return container;
   }
 
-  private renderReactInfoPanel(forceRefresh: boolean): void {
+  private renderInfoPanel(forceRefresh: boolean): void {
     const container = this.ensureContainer();
     if (!container) return;
 
+    // There is currently no explicit API for adding a panel to the top-left container in SubwayBuilder; therefore, we inject a separate mod-owned React root
     if (!this.reactRoot) {
       this.reactRoot = createRoot(container, {
-        // Avoid collision with game .
+        // Avoid collision with game virtual React DOM root
         identifierPrefix: `${REGIONS_INFO_ROOT_PREFIX}-`,
       });
     }
@@ -115,14 +116,15 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
       return;
     }
     if (this.isVisible()) {
-      this.renderReactInfoPanel(false);
+      this.renderInfoPanel(false);
     }
   }
 
+  // Invoked when the user selects a region on the map or via the Overview panel
   showFeatureData(): void {
     if (!this.initialized) {
       this.initialize();
     }
-    this.renderReactInfoPanel(true);
+    this.renderInfoPanel(true);
   }
 }

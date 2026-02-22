@@ -7,14 +7,14 @@ import {
 } from '../../../core/utils';
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
+import { Placeholder } from '../../elements/Placeholder';
 import {
   COMPACT_SELECT_ROW_STYLE,
   ReactSelectRow,
   type SelectButtonConfig,
 } from '../../elements/SelectRow';
+import { ViewHeader } from '../../elements/ViewHeader';
 import { resolveCommuterBreakdownData } from '../shared/commuter-data';
-import { renderInfoPlaceholder } from '../shared/info-placeholder';
-import { buildReactViewHeader } from '../shared/view-header';
 import { renderCommutersSankey } from './render-commuters-sankey';
 import { renderCommutersTable } from './render-commuters-table';
 import {
@@ -55,7 +55,7 @@ export function renderCommutersView(
       content = renderCommutersSankey(h, gameData, viewState, breakdownData);
       break;
     case CommuterDisplayMode.BarChart:
-      content = renderInfoPlaceholder(h, 'Bar Chart view coming soon');
+      content = Placeholder(h, 'Bar Chart view coming soon');
       break;
     default:
       content = renderCommutersTable(
@@ -108,7 +108,7 @@ function buildCommutersHeader(
       }),
   });
 
-  return buildReactViewHeader(h, gameData.displayName, undefined, [
+  return ViewHeader(h, gameData.displayName, undefined, [
     ReactSelectRow(
       h,
       directionConfigs,

@@ -15,7 +15,8 @@ import {
   getBreakdownSortOrder,
   resolveBreakdownSourceLabel,
 } from '../shared/commuter-data';
-import type { SortConfig, SortState } from '../types';
+import type { SortConfig } from '../types';
+import { SortState } from '../types';
 import { NumberDisplay, SortDirection } from '../types';
 import {
   CommuterDimension,
@@ -317,13 +318,7 @@ function buildTableHeader(
   function changeSort(columnIndex: number) {
     const nextSortState: SortState =
       currentSortState.sortIndex === columnIndex
-        ? {
-            ...currentSortState,
-            sortDirection:
-              currentSortState.sortDirection === SortDirection.Asc
-                ? SortDirection.Desc
-                : SortDirection.Asc,
-          }
+        ? SortState.reverseDirection(currentSortState)
         : {
             ...currentSortState,
             previousSortIndex: currentSortState.sortIndex,

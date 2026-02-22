@@ -16,7 +16,7 @@ export const DEFAULT_VIEW_HEADER_OPTIONS: ViewHeaderOptions = {
   rowClassName: 'flex justify-between items-center text-sm font-medium h-8',
 };
 
-export function buildReactViewHeader(
+export function ViewHeader(
   h: typeof createElement,
   displayName: string,
   displayOptions: ViewHeaderOptions = DEFAULT_VIEW_HEADER_OPTIONS,

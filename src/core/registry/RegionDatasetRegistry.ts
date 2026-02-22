@@ -1,27 +1,28 @@
-import type { DatasetIndex, DatasetIndexEntry } from '@shared/dataset-index';
+import type {
+  DatasetIndex,
+  DatasetMetadata,
+  RegistryCacheEntry,
+} from '@shared/dataset-index';
 
+import type { ModdingAPI } from '../../types/modding-api-v1';
 import { RegionDataset } from '../datasets/RegionDataset';
 import {
   RegistryMissingDatasetError,
   RegistryMissingIndexError,
 } from '../errors';
-import {
-  buildLocalDatasetUrl,
-  getFeatureCount,
-  resolveLocalModsDataRoot,
-  STATIC_BASE_GAME_CITY_CODES,
-  STATIC_BASE_GAME_DATASET_TEMPLATES,
-  type StaticDatasetTemplate,
-} from './static';
+import { buildLocalDatasetUrl, localFileExists } from '../storage/helpers';
+import type { RegionsStorage } from '../storage/RegionsStorage';
+import { STATIC_TEMPLATES } from './static';
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
-  private indexFile: string;
-  private serveUrl: string;
 
-  constructor(indexFile: string, serveUrl: string) {
-    this.indexFile = indexFile;
-    this.serveUrl = serveUrl;
+  constructor(
+    private api: ModdingAPI,
+    private indexFile: string,
+    private serveUrl: string,
+    private readonly storage: RegionsStorage,
+  ) {
     this.datasets = new Map<string, RegionDataset>();
   }
 
@@ -63,18 +64,18 @@ export class RegionDatasetRegistry {
   }
 
   // -- Setup -- //
-  private assertDatasetIndexEntry(
+  private validateIndexEntry(
     cityCode: string,
-    entry: DatasetIndexEntry,
+    entry: DatasetMetadata,
   ): void {
     if (
-      !entry ||
-      typeof entry.datasetId !== 'string' ||
-      typeof entry.displayName !== 'string' ||
-      typeof entry.unitSingular !== 'string' ||
-      typeof entry.unitPlural !== 'string' ||
-      typeof entry.source !== 'string' ||
-      typeof entry.size !== 'number'
+      !entry.datasetId ||
+      !entry.displayName ||
+      !entry.unitSingular ||
+      !entry.unitPlural ||
+      !entry.source ||
+      !Number.isInteger(entry.size) ||
+      entry.size <= 0
     ) {
       throw new Error(
         `[Regions] Invalid dataset index entry for city ${cityCode}: ${JSON.stringify(entry)}`,
@@ -84,10 +85,13 @@ export class RegionDatasetRegistry {
 
   private registerStaticDataset(
     cityCode: string,
-    entry: DatasetIndexEntry,
+    entry: DatasetMetadata,
     dataPath: string,
+    options?: { skipValidation?: boolean },
   ): void {
-    this.assertDatasetIndexEntry(cityCode, entry);
+    if (!options?.skipValidation) {
+      this.validateIndexEntry(cityCode, entry);
+    }
     this.registerDataset(
       new RegionDataset(entry, cityCode, {
         type: 'static',
@@ -154,53 +158,101 @@ export class RegionDatasetRegistry {
   // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
   async buildStatic(): Promise<void> {
     this.clear();
-    const registered = await this.buildFromStaticLocalFiles();
-    if (registered === 0) {
+
+    // First check if local storage has a cached registry and if so attempt to register the data present
+    const storedRegistry = await this.storage.loadStoredRegistry();
+    if (storedRegistry && storedRegistry.entries.length > 0) {
+      const presentEntries = storedRegistry.entries.filter(
+        (entry) => entry.isPresent,
+      );
+      for (const entry of presentEntries) {
+        this.registerStaticDataset(
+          entry.cityCode,
+          this.buildDatasetEntryFromStorage(entry),
+          entry.dataPath,
+          { skipValidation: true },
+        );
+      }
+      if (presentEntries.length > 0) {
+        return;
+      }
+    }
+
+    console.log(
+      '[Regions] No valid cached registry found, attempting to locate local datasets from static mapping...',
+    );
+    const localEntries = await this.locateStaticLocalDatasets();
+    await this.storage.saveRegistry({
+      updatedAt: Date.now(),
+      entries: localEntries,
+    });
+    const presentEntries = localEntries.filter((entry) => entry.isPresent);
+    for (const entry of presentEntries) {
+      this.registerStaticDataset(
+        entry.cityCode,
+        this.buildDatasetEntryFromStorage(entry),
+        entry.dataPath,
+        { skipValidation: true },
+      );
+    }
+
+    if (presentEntries.length === 0) {
       throw new Error('[Regions] No local datasets found in static mapping');
     }
   }
 
-  private async buildFromStaticLocalFiles(): Promise<number> {
-    const localModsDataRoot = await resolveLocalModsDataRoot();
-    let registeredDatasets = 0;
+  async refreshStaticRegistryCache(): Promise<number> {
+    const discoveredEntries = await this.locateStaticLocalDatasets();
+    await this.storage.saveRegistry({
+      updatedAt: Date.now(),
+      entries: discoveredEntries,
+    });
+    return discoveredEntries.filter((entry) => entry.isPresent).length;
+  }
 
-    for (const cityCode of STATIC_BASE_GAME_CITY_CODES) {
-      const datasetTemplates = STATIC_BASE_GAME_DATASET_TEMPLATES[cityCode];
+  private async locateStaticLocalDatasets(): Promise<RegistryCacheEntry[]> {
+    const localModsDataRoot = await this.storage.resolveLocalModsDataRoot();
+    const discoveredEntries: RegistryCacheEntry[] = [];
+
+    const currentCities = this.api.utils.getCities();
+
+    for (const city of currentCities) {
+      const datasetTemplates = city.country
+        ? (STATIC_TEMPLATES.get(city.country) ?? [])
+        : [];
       for (const template of datasetTemplates) {
         const dataPath = buildLocalDatasetUrl(
           localModsDataRoot,
-          cityCode,
+          city.code,
           template.datasetId,
         );
-
-        const size = await getFeatureCount(dataPath);
-        if (size === null) {
-          continue;
-        }
-
-        this.registerStaticDataset(
-          cityCode,
-          this.buildDatasetEntryFromTemplate(template, size),
+        const isPresent = await localFileExists(dataPath);
+        discoveredEntries.push({
+          cityCode: city.code,
+          datasetId: template.datasetId,
+          displayName: template.displayName,
+          unitSingular: template.unitSingular,
+          unitPlural: template.unitPlural,
+          source: template.source,
+          size: 0,
           dataPath,
-        );
-        registeredDatasets += 1;
+          isPresent,
+        });
       }
     }
-
-    return registeredDatasets;
+    return discoveredEntries;
   }
 
-  private buildDatasetEntryFromTemplate(
-    template: StaticDatasetTemplate,
-    size: number,
-  ): DatasetIndexEntry {
+  private buildDatasetEntryFromStorage(
+    entry: RegistryCacheEntry,
+  ): DatasetMetadata {
     return {
-      datasetId: template.datasetId,
-      displayName: template.displayName,
-      unitSingular: template.unitSingular,
-      unitPlural: template.unitPlural,
-      source: template.source,
-      size,
+      datasetId: entry.datasetId,
+      displayName: entry.displayName,
+      unitSingular: entry.unitSingular,
+      unitPlural: entry.unitPlural,
+      source: entry.source,
+      size: entry.size,
     };
   }
 }

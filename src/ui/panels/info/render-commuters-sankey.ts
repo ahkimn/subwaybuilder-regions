@@ -18,6 +18,7 @@ import {
   formatNumberOrDefault,
   formatPercentOrDefault,
 } from '../../../core/utils';
+import { Placeholder } from '../../elements/Placeholder';
 import {
   BLACK,
   type ChartDisplayColor,
@@ -32,7 +33,6 @@ import {
   resolveSourceUnitName,
   resolveValueUnitLabel,
 } from '../shared/commuter-data';
-import { renderInfoPlaceholder } from '../shared/info-placeholder';
 import type { CommuterBreakdownData, CommutersViewState } from './types';
 import { CommuterDimension, CommuterDirection } from './types';
 
@@ -195,7 +195,7 @@ export function renderCommutersSankey(
   );
 
   if (sankeyData === null || sankeyData.links.length === 0) {
-    return renderInfoPlaceholder(h, SANKEY_EMPTY_MESSAGE);
+    return Placeholder(h, SANKEY_EMPTY_MESSAGE);
   }
 
   const terminalNodeCount = sankeyData.nodes.filter(

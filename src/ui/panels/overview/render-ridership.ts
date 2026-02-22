@@ -1,10 +1,10 @@
 import type React from 'react';
 import type { createElement } from 'react';
 
-import { renderInfoPlaceholder } from '../shared/info-placeholder';
+import { Placeholder } from '../../elements/Placeholder';
 
 export function renderRidershipTabContent(
   h: typeof createElement,
 ): React.ReactNode {
-  return renderInfoPlaceholder(h, 'Ridership analysis is under construction.');
+  return Placeholder(h, 'Ridership analysis is under construction.');
 }

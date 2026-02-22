@@ -1,4 +1,6 @@
-export type DatasetIndexEntry = {
+import { z } from 'zod';
+
+export type DatasetMetadata = {
   datasetId: string;
   displayName: string;
   unitSingular: string;
@@ -7,4 +9,40 @@ export type DatasetIndexEntry = {
   size: number;
 };
 
-export type DatasetIndex = Record<string, DatasetIndexEntry[]>;
+export type DatasetIndex = Record<string, DatasetMetadata[]>;
+
+export type RegistryCacheEntry = DatasetMetadata & {
+  cityCode: string;
+  dataPath: string;
+  isPresent: boolean;
+};
+
+export const StaticRegistryCacheEntrySchema = z.object({
+  cityCode: z.string(),
+  datasetId: z.string(),
+  displayName: z.string(),
+  unitSingular: z.string(),
+  unitPlural: z.string(),
+  source: z.string(),
+  size: z.number(),
+  dataPath: z.string(),
+  isPresent: z.boolean(),
+});
+
+export type RegionsRegistryCache = {
+  updatedAt: number;
+  entries: RegistryCacheEntry[];
+};
+
+type RegionTypeKey = string;
+
+export type RegionsMetadata = {
+  updatedAt: number; // Timestamp of last update, in milliseconds since epoch
+  cityCode: string; // City code this dataset is associated with
+  datasetMetadata: Record<RegionTypeKey, DatasetIndex>; // Metadata for all available region datasets for this city, keyed by region type
+  [k: string]: unknown; // Allow for additional fields in the future
+};
+
+export type FeatureCollectionWithMetadata = GeoJSON.FeatureCollection & {
+  metadata?: RegionsMetadata;
+};

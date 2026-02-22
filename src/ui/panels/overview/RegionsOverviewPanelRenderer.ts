@@ -18,6 +18,7 @@ export type RegionsOverviewPanelEvents = {
 export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   private readonly host: ReactToolbarPanelHost;
   private initialized = false;
+  // Store state snapshot for the OverviewPanel to retain state even if the panel is closed by the user
   private panelStateSnapshot: RegionsOverviewPanelState | null = null;
   private activeCityCode: string | null = null;
 
@@ -30,7 +31,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
   ) {
     this.host = new ReactToolbarPanelHost(api, {
       id: REGIONS_OVERVIEW_PANEL_ID,
-      icon: 'Table2',
+      icon: 'MapPinned',
       title: REGIONS_OVERVIEW_PANEL_TITLE,
       width: 720,
     });

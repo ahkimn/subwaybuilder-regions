@@ -51,6 +51,11 @@ export const REGIONS_OVERVIEW_PANEL_TITLE = 'Regions Overview';
 export const REGIONS_OVERVIEW_PANEL_MOD_ID = 'regions-overview-panel';
 export const REGIONS_OVERVIEW_PANEL_CONTENT_ID =
   'regions-overview-panel-content';
+
+export const REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID =
+  'regions-settings-main-menu-component';
+export const REGIONS_SETTINGS_STORAGE_KEY = 'regions.settings.v1';
+export const REGIONS_REGISTRY_STORAGE_KEY = 'regions.registry.v1';
 export const OVERVIEW_REGION_FOCUS_TARGET_COVERAGE = 0.5; // Target map coverage for overview row focus action (roughly half of viewport width/height)
 export const OVERVIEW_REGION_FOCUS_MIN_PADDING_PX = 48; // Minimum fitBounds padding on each side for overview row focus
 export const OVERVIEW_REGION_FOCUS_MAX_PADDING_PX = 280; // Maximum fitBounds padding on each side for overview row focus
@@ -65,9 +70,6 @@ export const INFO_PANEL_MIN_WIDTH = 80;
 export const INFO_PANEL_MIN_VERTICAL_OFFSET = 100; // Minimum vertical offset from bottom of viewport to avoid rendering over the bottom bar
 
 // TODO: (Feature) add as config option
-export const SHOW_UNPOPULATED_REGIONS = false; // Whether to show regions with no demand data by default in the overview panel and layer.
-export const ENFORCE_ONE_DATASET_VISIBLE = true; // Whether to enforce that only one dataset's map layers can be visible at a time, or allow multiple datasets' layers to be toggled on simultaneously
-
 export const SANKEY_FLOW_DISPLAY_COUNT = 10; // Number of flows to display in sankey diagrams by default, excluding "Other" and "Unassigned" aggregate categories
 export const SANKEY_LABEL_FLOW_SYNC = true; // Whether the labels of entries within a Sankey diagram should always be rendered on the right side of nodes, or if they should be conditionally rendered on the left side depending on the direction of flow
 export const DISTANCE_BUCKET_COUNT = 10; // Number of buckets to divide commute distances into display for in chart elements. Anything above the max distance (defined as bucket size * bucket count) will be grouped into an "xkm+" category

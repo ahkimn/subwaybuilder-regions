@@ -1,10 +1,7 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
-import {
-  LOADING_VALUE_DISPLAY,
-  SHOW_UNPOPULATED_REGIONS,
-} from '../../../core/constants';
+import { LOADING_VALUE_DISPLAY } from '../../../core/constants';
 import {
   ModeShare,
   type RegionGameData,
@@ -23,7 +20,8 @@ import type {
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
-import type { SortConfig, SortState } from '../types';
+import type { InputFieldProperties, SortConfig } from '../types';
+import type { SortState } from '../types';
 import { SortDirection } from '../types';
 import type { RegionsOverviewRow } from './types';
 
@@ -52,14 +50,7 @@ const OVERVIEW_CELL_PADDING_CLASS_NAMES: TableCellPaddingClassName = {
   center: 'px-1.5',
 };
 
-export type InputFieldProperties = {
-  value?: string;
-  placeholder?: string;
-  onChange?: (e: Event) => void;
-  className?: string;
-};
-
-type OverviewSortMetrics = {
+export type OverviewSortMetrics = {
   displayName: string;
   featureId: string;
   realPopulation: number;
@@ -146,29 +137,6 @@ const SORT_CONFIGS: ReadonlyArray<SortConfig<OverviewSortMetrics>> = [
   },
 ];
 
-export function getNextOverviewSortState(
-  current: SortState,
-  columnIndex: number,
-): SortState {
-  if (current.sortIndex === columnIndex) {
-    return {
-      ...current,
-      sortDirection:
-        current.sortDirection === SortDirection.Asc
-          ? SortDirection.Desc
-          : SortDirection.Asc,
-    };
-  }
-
-  const nextSortDescriptor = resolveSortDescriptor(columnIndex);
-  return {
-    previousSortIndex: current.sortIndex,
-    previousSortDirection: current.sortDirection,
-    sortIndex: columnIndex,
-    sortDirection: nextSortDescriptor.defaultDirection,
-  };
-}
-
 export function renderOverviewTabContent(
   h: typeof createElement,
   useStateHook: typeof useState,
@@ -182,10 +150,15 @@ export function renderOverviewTabContent(
   onSortChange: (columnIndex: number) => void,
   onSelectRow: (selection: RegionSelection, toggleIfSame: boolean) => void,
   onDoubleClickRow: (selection: RegionSelection) => void,
+  showUnpopulatedRegions: boolean,
 ): React.ReactNode {
   const rows = sortRows(
     filterRows(
-      buildRows(datasetGameData, selectedDatasetIdentifier),
+      buildRows(
+        datasetGameData,
+        selectedDatasetIdentifier,
+        showUnpopulatedRegions,
+      ),
       searchTerm,
     ),
     sortState,
@@ -411,8 +384,9 @@ function renderOverviewTable(
 function buildRows(
   datasetGameData: Map<string | number, RegionGameData>,
   selectedDatasetIdentifier: string,
+  showUnpopulatedRegions: boolean,
 ): RegionsOverviewRow[] {
-  const rowsData = SHOW_UNPOPULATED_REGIONS
+  const rowsData = showUnpopulatedRegions
     ? Array.from(datasetGameData.values())
     : Array.from(datasetGameData.values()).filter((gameData) =>
         RegionGameDataUtils.isPopulated(gameData),
@@ -456,10 +430,10 @@ function sortRows(
     sortIndex: number,
     direction: SortDirection,
   ): number => {
-    const descriptor = resolveSortDescriptor(sortIndex);
+    const cfg = resolveSortConfig(sortIndex);
     const aMetrics = metricsByRow.get(a)!;
     const bMetrics = metricsByRow.get(b)!;
-    const comparatorResult = descriptor.compare(aMetrics, bMetrics);
+    const comparatorResult = cfg.compare(aMetrics, bMetrics);
     return direction === SortDirection.Asc
       ? comparatorResult
       : -comparatorResult;
@@ -492,13 +466,10 @@ function sortRows(
   });
 }
 
-function resolveSortDescriptor(
+export function resolveSortConfig(
   sortIndex: number,
 ): SortConfig<OverviewSortMetrics> {
-  return (
-    SORT_CONFIGS.find((descriptor) => descriptor.index === sortIndex) ??
-    SORT_CONFIGS[0]
-  );
+  return SORT_CONFIGS.find((cfg) => cfg.index === sortIndex) ?? SORT_CONFIGS[0];
 }
 
 function buildOverviewSortMetrics(

@@ -2,6 +2,9 @@ import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/constants';
 
 import { REGIONS_DESELECT_KEY } from '../core/constants';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
+import { DEFAULT_REGIONS_SETTINGS } from '../core/storage/defaults';
+import { RegionsStorage } from '../core/storage/RegionsStorage';
+import type { RegionsSettings } from '../core/storage/types';
 import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
 
@@ -11,19 +14,23 @@ const INDEX_FILE = `${DATA_INDEX_FILE}`;
 const api = window.SubwayBuilderAPI;
 
 export class RegionsMod {
-  private registry: RegionDatasetRegistry;
+  private registry!: RegionDatasetRegistry;
+  private readonly storage: RegionsStorage;
   private currentCityCode: string | null = null;
 
   private mapLayers: RegionsMapLayers | null = null;
 
   private uiManager: RegionsUIManager | null = null;
+  private settings: RegionsSettings = { ...DEFAULT_REGIONS_SETTINGS };
 
   // TODO (Bug 2): These are guards against unexpected states; however, full hot-reload support will require more robust handling of these edge cases.
-  private cityLoadToken = 0;
-  private mapInitialized = false;
+  private cityLoadToken: number;
+  private newCityLoadToken: number;
 
   constructor() {
-    this.registry = new RegionDatasetRegistry(INDEX_FILE, SERVE_URL);
+    this.storage = new RegionsStorage();
+    this.cityLoadToken = 0;
+    this.newCityLoadToken = 0;
   }
 
   // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
@@ -58,6 +65,36 @@ export class RegionsMod {
       return;
     }
 
+    this.settings = await this.storage.initialize();
+    this.storage.listen((nextSettings) => {
+      this.applySettings(nextSettings);
+    });
+    this.registry = new RegionDatasetRegistry(
+      api,
+      INDEX_FILE,
+      SERVE_URL,
+      this.storage,
+    );
+
+    this.uiManager = new RegionsUIManager(
+      api,
+      this.registry,
+      this.storage,
+      this.settings,
+    );
+
+    this.uiManager.initialize();
+
+    // Global key listener for deselection -- band-aid solution until we are able to make more targeted keybinds that do not clash with in-game
+    window.addEventListener('keydown', (event) => {
+      if (event.key !== REGIONS_DESELECT_KEY) return;
+      this.uiManager?.handleDeselect();
+    });
+
+    api.hooks.onCityLoad(this.onCityLoad.bind(this));
+    api.hooks.onMapReady(this.onMapReady.bind(this));
+    api.hooks.onGameEnd(this.onGameEnd.bind(this));
+
     try {
       await this.buildRegistryWithFallback();
     } catch (registryBuildError) {
@@ -68,8 +105,7 @@ export class RegionsMod {
       throw registryBuildError;
     }
 
-    api.hooks.onCityLoad(this.onCityLoad.bind(this));
-    api.hooks.onMapReady(this.onMapReady.bind(this));
+    // TODO: Handle hot reload by forcing life cycle via fallback city code retrieval (gated on mod initialization)
 
     console.log('[Regions] Mod Initialized');
   }
@@ -82,45 +118,50 @@ export class RegionsMod {
       return;
     }
 
-    if (!this.mapInitialized) {
-      this.mapInitialized = true;
+    if (!this.mapLayers) {
       this.mapLayers = new RegionsMapLayers(resolvedMap);
-      this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
-
-      console.log('[Regions] Map Layers and UI Manager initialized');
-
-      this.uiManager.initialize();
-
-      window.addEventListener('keydown', (event) => {
-        if (event.key !== REGIONS_DESELECT_KEY) return;
-        this.uiManager?.handleDeselect();
-      });
-
-      if (this.currentCityCode) {
-        this.activateCity(this.currentCityCode);
-      }
-      return;
-    } else if (!this.mapLayers || !this.uiManager) {
-      console.error(
-        '[Regions] Rebuilding map and UI managers after unexpected missing state',
+      console.log('[Regions] Map Layers initialized');
+    } else {
+      this.mapLayers.setMap(resolvedMap);
+      console.warn(
+        '[Regions] onMapReady called with a new map instance; rebound map references',
       );
-      this.mapLayers = new RegionsMapLayers(resolvedMap);
-      this.uiManager = new RegionsUIManager(api, this.mapLayers, this.registry);
-      this.uiManager.initialize();
+    }
 
-      if (this.currentCityCode) {
-        this.activateCity(this.currentCityCode);
-      }
+    this.mapLayers.setSettings(this.settings);
+
+    if (!this.uiManager) {
+      console.error('[Regions] UI Manager is missing during map attach');
       return;
     }
 
-    // City transitions can provide a new map instance in onMapReady.
-    // Rebind existing map-layer manager without creating new manager instances.
-    this.mapLayers.setMap(resolvedMap);
-    console.warn(
-      '[Regions] onMapReady called with a new map instance; rebound map references',
-    );
+    this.uiManager.attachMapLayers(this.mapLayers);
+
+    console.log('load tokens: ', this.cityLoadToken, this.newCityLoadToken);
+
+    if (this.currentCityCode) {
+      this.activateCity(this.currentCityCode);
+      // On reload of an existing save, a new cityLoad hook may not trigger; however, we can recover the city code from a separate API call
+    } else if (
+      this.cityLoadToken !== this.newCityLoadToken &&
+      this.tryGetCityCode()
+    ) {
+      this.onCityLoad(this.currentCityCode!);
+    }
   };
+
+  private tryGetCityCode(): boolean {
+    const cityCodeFromAPI = api.utils.getCityCode();
+    console.warn(
+      '[Regions] Map ready invoked without city code; resolved city code from API: ',
+      cityCodeFromAPI ?? 'N/A',
+    );
+    if (cityCodeFromAPI) {
+      this.currentCityCode = cityCodeFromAPI;
+      return true;
+    }
+    return false;
+  }
 
   private onCityLoad = async (cityCode: string) => {
     // TODO (Issue 2): Add mechanism to determine BoundaryBox from SubwayBuilderAPI for dynamic generation of datasets
@@ -151,10 +192,9 @@ export class RegionsMod {
 
   // Activate city datasets in map layers and UI. Should only be called once per city
   private activateCity(cityCode: string) {
-    if (!this.mapLayers || !this.uiManager) {
-      // Unexpected state. Both should be initialized in onMapReady before this is called.
+    if (!this.uiManager) {
       console.error(
-        '[Regions] Cannot activate city: Map layers or UI manager not initialized',
+        '[Regions] Cannot activate city: UI manager not initialized',
       );
       return;
     }
@@ -173,15 +213,35 @@ export class RegionsMod {
 
     datasets.forEach((dataset) => dataset.updateWithDemandData(demandData));
 
-    this.uiManager!.onCityChange(cityCode);
-    this.mapLayers!.observeMapLayersForDatasets(datasets);
+    this.uiManager.onCityChange(cityCode);
+    this.mapLayers?.observeMapLayersForDatasets(datasets);
   }
 
-  private deactivateCity() {
-    const cityDatasets = this.registry.getCityDatasets(this.currentCityCode!);
-    for (const dataset of cityDatasets) {
-      dataset.clearData();
+  private onGameEnd(_result: unknown) {
+    console.log(
+      '[Regions] Handling game end, clearing city data and resetting state',
+    );
+    this.newCityLoadToken = this.cityLoadToken;
+
+    if (this.currentCityCode) {
+      this.clearCityData(this.currentCityCode);
+      this.currentCityCode = null;
     }
+
+    this.mapLayers?.reset();
+    this.mapLayers = null;
+    this.uiManager?.onGameEnd();
+  }
+
+  // This should rarely if ever be called (only in cases where a user is able to switch cities without ending a game)
+  private deactivateCity() {
+    console.warn(
+      `[Regions] Deactivating current city data for: ${this.currentCityCode}`,
+    );
+    if (!this.currentCityCode) {
+      return;
+    }
+    this.clearCityData(this.currentCityCode);
 
     this.mapLayers?.reset();
     this.uiManager?.reset();
@@ -190,6 +250,22 @@ export class RegionsMod {
       `[Regions] Deactivated previous city data for: ${this.currentCityCode}`,
     );
     this.currentCityCode = null;
+  }
+
+  private clearCityData(cityCode: string): void {
+    const cityDatasets = this.registry.getCityDatasets(cityCode);
+    for (const dataset of cityDatasets) {
+      dataset.clearData();
+    }
+  }
+
+  private applySettings(settings: RegionsSettings): void {
+    this.settings = { ...settings };
+    this.uiManager?.applySettings(this.settings);
+  }
+
+  printSettings() {
+    console.log('[Regions] Current settings', this.settings);
   }
 
   // --- Debugging Helpers --- //
@@ -239,6 +315,7 @@ const mod = new RegionsMod();
 (window as any).SubwayBuilderRegions = {
   debug: {
     printRegistry: () => mod.printRegistry(),
+    printSettings: () => mod.printSettings(),
     getCurrentCityCode: () => mod.getCurrentCityCode(),
     getActiveSelection: () => mod.getActiveSelection(),
     tearDownUIManager: () => mod.tearDownUIManager(),
