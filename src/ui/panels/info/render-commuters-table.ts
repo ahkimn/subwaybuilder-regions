@@ -10,6 +10,7 @@ import {
 import type { ReactDataTableRow, TableOptions } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
 import { ReactExtendButton } from '../../elements/ExtendButton';
+import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header';
 import { ReactInlineToggle } from '../../elements/InlineToggle';
 import {
   getBreakdownSortOrder,
@@ -362,25 +363,14 @@ function buildTableHeader(
     transitHeadLabel,
     drivingHeadLabel,
     walkingHeadLabel,
-  ];
-  const sortHandlers = headerLabels.map((_, index) => () => changeSort(index));
+  ] as const;
 
-  const titleRow: ReactDataTableRow = {
-    rowValues: headerLabels,
-    options: {
-      header: true,
-      onClick: sortHandlers,
-      align: ['left', 'right', 'right', 'right', 'right'],
-      sortState: {
-        index: currentSortState.sortIndex,
-        directionLabel:
-          currentSortState.sortDirection === SortDirection.Asc
-            ? ' \u25B2'
-            : ' \u25BC',
-        sortSelectedClass: 'text-foreground',
-      },
-    },
-  };
+  const titleRow = buildSortableHeaderRow({
+    headerLabels,
+    sortState: currentSortState,
+    onSortChange: changeSort,
+    align: ['left', 'right', 'right', 'right', 'right'],
+  });
 
   const commuterDisplayControl = h(
     'div',
