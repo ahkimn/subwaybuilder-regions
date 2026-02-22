@@ -374,13 +374,7 @@ function buildRegistryTableRows(
   sortState: SortState,
   onSortChange: (columnIndex: number) => void,
 ): ReactDataTableRow[] {
-  const tableAlign: TableAlign[] = [
-    'left',
-    'left',
-    'left',
-    'right',
-    'left',
-  ];
+  const tableAlign: TableAlign[] = ['left', 'left', 'left', 'right', 'left'];
 
   const tableRows: ReactDataTableRow[] = [
     buildSortableHeaderRow({

@@ -1,9 +1,6 @@
 import type { TableAlign } from '../../panels/types';
 import { SortDirection, type SortState } from '../../panels/types';
-import type {
-  ReactDataTableRow,
-  ReactDataTableValue,
-} from '../DataTable';
+import type { ReactDataTableRow, ReactDataTableValue } from '../DataTable';
 
 type HeaderClassOverrides = {
   borderClassName?: string;
@@ -19,13 +16,8 @@ export function buildSortableHeaderRow(params: {
   align: readonly TableAlign[];
   classOverrides?: HeaderClassOverrides;
 }): ReactDataTableRow {
-  const {
-    headerLabels,
-    sortState,
-    onSortChange,
-    align,
-    classOverrides,
-  } = params;
+  const { headerLabels, sortState, onSortChange, align, classOverrides } =
+    params;
 
   return {
     rowValues: [...headerLabels],
@@ -39,10 +31,9 @@ export function buildSortableHeaderRow(params: {
       sortState: {
         index: sortState.sortIndex,
         directionLabel:
-          sortState.sortDirection === SortDirection.Asc
-            ? ' \u25B2'
-            : ' \u25BC',
-        sortSelectedClass: classOverrides?.sortSelectedClass ?? 'text-foreground',
+          sortState.sortDirection === SortDirection.Asc ? ' \u25B2' : ' \u25BC',
+        sortSelectedClass:
+          classOverrides?.sortSelectedClass ?? 'text-foreground',
       },
     },
   };

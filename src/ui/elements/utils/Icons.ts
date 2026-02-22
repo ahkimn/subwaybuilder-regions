@@ -3,13 +3,13 @@ import type { createElement, ReactNode } from 'react';
 type SVGNode =
   | { tag: 'path'; d: string; strokeWidth?: string; strokeLinecap?: string }
   | {
-    tag: 'rect';
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rx?: number;
-  }
+      tag: 'rect';
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rx?: number;
+    }
   | { tag: 'circle'; cx: number; cy: number; r: number };
 
 export interface IconDefinition {
@@ -206,7 +206,7 @@ export const TriangleWarning: IconDefinition = {
     { tag: 'path', d: 'M12 9v4' },
     { tag: 'path', d: 'M12 17h.01' },
   ],
-}
+};
 
 export const OctagonX: IconDefinition = {
   nodes: [
@@ -217,4 +217,4 @@ export const OctagonX: IconDefinition = {
     { tag: 'path', d: 'm9 9 6 6' },
     { tag: 'path', d: 'm15 9-6 6' },
   ],
-}
+};

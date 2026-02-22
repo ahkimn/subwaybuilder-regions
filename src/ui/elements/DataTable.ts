@@ -36,9 +36,7 @@ export type ReactDataTableRow = {
 };
 
 export type TableDensity = 'compact' | 'standard' | 'relaxed';
-export type TableCellPaddingClassName = Partial<
-  Record<TableAlign, string>
->;
+export type TableCellPaddingClassName = Partial<Record<TableAlign, string>>;
 
 // Mapping of CSS classes for several default table "denssity" options
 const TABLE_DENSITY_SETTINGS: Record<TableDensity, string> = {
@@ -151,13 +149,13 @@ function buildReactCell(
     : undefined;
   const onMouseLeave = hasRowHoverClass
     ? (event: { relatedTarget: EventTarget | null }) => {
-      if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
-        return;
+        if (isEventMovingWithinReactRow(event.relatedTarget, rowIndex)) {
+          return;
+        }
+        setHoveredRowIndex((current) =>
+          current === rowIndex ? null : current,
+        );
       }
-      setHoveredRowIndex((current) =>
-        current === rowIndex ? null : current,
-      );
-    }
     : undefined;
 
   if (cellValue instanceof HTMLElement) {

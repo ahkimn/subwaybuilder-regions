@@ -64,10 +64,7 @@ export class RegionDatasetRegistry {
   }
 
   // -- Setup -- //
-  private validateIndexEntry(
-    cityCode: string,
-    entry: DatasetMetadata,
-  ): void {
+  private validateIndexEntry(cityCode: string, entry: DatasetMetadata): void {
     if (
       !entry.datasetId ||
       !entry.displayName ||

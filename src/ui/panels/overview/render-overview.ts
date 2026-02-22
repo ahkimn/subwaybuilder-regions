@@ -284,9 +284,9 @@ function renderOverviewTable(
         : null;
       const totalModeShare = commuterSummary
         ? ModeShare.add(
-          commuterSummary.residentModeShare,
-          commuterSummary.workerModeShare,
-        )
+            commuterSummary.residentModeShare,
+            commuterSummary.workerModeShare,
+          )
         : null;
       const rowOptions: DataRowOptions = {
         onClick: Array.from(
@@ -314,18 +314,18 @@ function renderOverviewTable(
           formatNumberOrDefault(workers),
           totalModeShare
             ? formatPercentOrDefault(
-              ModeShare.share(totalModeShare, 'transit') * 100,
-            )
+                ModeShare.share(totalModeShare, 'transit') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
             ? formatPercentOrDefault(
-              ModeShare.share(totalModeShare, 'driving') * 100,
-            )
+                ModeShare.share(totalModeShare, 'driving') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           totalModeShare
             ? formatPercentOrDefault(
-              ModeShare.share(totalModeShare, 'walking') * 100,
-            )
+                ModeShare.share(totalModeShare, 'walking') * 100,
+              )
             : LOADING_VALUE_DISPLAY,
           infraData
             ? formatNumberOrDefault(infraData.stations.size)
@@ -377,8 +377,8 @@ function buildRows(
   const rowsData = showUnpopulatedRegions
     ? Array.from(datasetGameData.values())
     : Array.from(datasetGameData.values()).filter((gameData) =>
-      RegionGameDataUtils.isPopulated(gameData),
-    );
+        RegionGameDataUtils.isPopulated(gameData),
+      );
 
   return rowsData.map((gameData) => {
     return {
@@ -469,15 +469,15 @@ function buildOverviewSortMetrics(
       const workers = row.gameData.demandData?.workers ?? 0;
       const combinedModeShare = ModeShare.add(
         row.gameData.commuterSummary?.residentModeShare ??
-        ModeShare.createEmpty(),
+          ModeShare.createEmpty(),
         row.gameData.commuterSummary?.workerModeShare ??
-        ModeShare.createEmpty(),
+          ModeShare.createEmpty(),
       );
       const trackLengthTotal = row.gameData.infraData
         ? Array.from(row.gameData.infraData.trackLengths.values()).reduce(
-          (sum, length) => sum + length,
-          0,
-        )
+            (sum, length) => sum + length,
+            0,
+          )
         : 0;
 
       const metrics: OverviewSortMetrics = {
