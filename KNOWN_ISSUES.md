@@ -21,7 +21,7 @@ Bugs that break core mod functionality and lead to unexpected mod state / crashe
    - ~~The toggle state shown in the `Map Layers` panel is not synced to this reset~~
    - When the game force-drops layers/sources during these resets, the console can log errors (e.g. removing a source while a layer still references it). These do not appear to crash the mod but indicate unstable layer teardown.
    - ~~Workaround: Reset the toggle to the empty state, then toggle again to reattach the map layer~~
-2. _Hot-reload inconsistencies_ (`🟢 Resolved in 03.0`)
+2. _Hot-reload inconsistencies_ (`🟢 Resolved in 0.3.0`)
    - ~~`onCityLoad()` and `onMapReady()` are not always re-triggered on hot-reload~~
    - ~~As a result, the mod can be placed into an inconsistent state~~
    - ~~**Workaround**: fully reload a city to reset the mod state~~
