@@ -2,32 +2,35 @@ import type React from 'react';
 import { type createElement, type useEffect, type useState } from 'react';
 
 import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
-import type { RegionsSettingsStore } from '../../../core/settings/RegionsSettingsStore';
+import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import { getNextSortState } from '../shared/helpers';
 import type { SortState } from '../types';
 import {
-  DEFAULT_SETTINGS_SORT_STATE,
-  filterSettingsRows,
+  DEFAULT_SORT_STATE,
   type InputFieldProperties,
   type LabelProperties,
+  SortDirection,
+  type SwitchProperties,
+} from '../types';
+import {
+  filterSettingsRows,
   renderSettingsEntry,
   renderSettingsOverlay,
   resolveRegistrySortConfig,
   type SettingsDatasetRow,
   sortSettingsRows,
-  type SwitchProperties,
 } from './render';
 
 type SettingsMenuComponentParams = {
   api: ModdingAPI;
-  settingsStore: RegionsSettingsStore;
+  storage: RegionsStorage;
   datasetRegistry: RegionDatasetRegistry;
 };
 
 export function RegionsSettingsPanel({
   api,
-  settingsStore,
+  storage,
   datasetRegistry,
 }: SettingsMenuComponentParams): () => React.ReactNode {
   const h = api.utils.React.createElement as typeof createElement;
@@ -43,23 +46,26 @@ export function RegionsSettingsPanel({
 
   return function RegionsSettingsMenuComponent() {
     const [isOpen, setIsOpen] = useStateHook<boolean>(false);
-    const [settings, setSettings] = useStateHook(() => settingsStore.get());
+    const [settings, setSettings] = useStateHook(() =>
+      storage.getSettings(),
+    );
     const [isUpdating, setIsUpdating] = useStateHook(false);
     const [isRefreshingRegistry, setIsRefreshingRegistry] = useStateHook(false);
     const [searchTerm, setSearchTerm] = useStateHook('');
     const [sortState, setSortState] = useStateHook<SortState>(() => ({
-      ...DEFAULT_SETTINGS_SORT_STATE,
+      ...DEFAULT_SORT_STATE,
+      sortDirection: SortDirection.Asc,
     }));
 
     useEffectHook(() => {
       let mounted = true;
-      void settingsStore.initialize().then((loaded) => {
+      void storage.initialize().then((loaded) => {
         if (mounted) {
           setSettings(loaded);
         }
       });
 
-      const unsubscribe = settingsStore.listen((nextSettings) => {
+      const unsubscribe = storage.listen((nextSettings) => {
         setSettings(nextSettings);
       });
 
@@ -84,7 +90,7 @@ export function RegionsSettingsPanel({
 
     const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
       setIsUpdating(true);
-      void settingsStore
+      void storage
         .updateSettings(patch)
         .then((nextSettings) => {
           setSettings(nextSettings);
@@ -123,28 +129,28 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => setIsOpen(true)),
       isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-            settings,
-            isUpdating,
-            searchTerm,
-            sortState,
-            rows: sortedRows,
-            onClose: () => setIsOpen(false),
-            onSearchTermChange: setSearchTerm,
-            onSortChange: (columnIndex: number) => {
-              setSortState((current) =>
-                getNextSortState<SettingsDatasetRow>(
-                  current,
-                  columnIndex,
-                  resolveRegistrySortConfig,
-                ),
-              );
-            },
-            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-              updateSettings({ showUnpopulatedRegions: nextValue });
-            },
-            onRefreshRegistry: refreshRegistry,
-            isRefreshingRegistry,
-          })
+          settings,
+          isUpdating,
+          searchTerm,
+          sortState,
+          rows: sortedRows,
+          onClose: () => setIsOpen(false),
+          onSearchTermChange: setSearchTerm,
+          onSortChange: (columnIndex: number) => {
+            setSortState((current) =>
+              getNextSortState<SettingsDatasetRow>(
+                current,
+                columnIndex,
+                resolveRegistrySortConfig,
+              ),
+            );
+          },
+          onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+            updateSettings({ showUnpopulatedRegions: nextValue });
+          },
+          onRefreshRegistry: refreshRegistry,
+          isRefreshingRegistry,
+        })
         : null,
     ]);
   };

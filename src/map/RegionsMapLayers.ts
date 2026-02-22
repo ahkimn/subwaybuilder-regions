@@ -11,11 +11,11 @@ import {
   buildBBoxFitState as fitBBox,
   normalizeBBox,
 } from '../core/geometry/helpers';
-import { DEFAULT_REGIONS_SETTINGS } from '../core/settings/defaults';
+import { DEFAULT_REGIONS_SETTINGS } from '../core/storage/defaults';
 import {
   RegionsSettings,
   type RegionsSettings as RegionsSettingsValue,
-} from '../core/settings/types';
+} from '../core/storage/types';
 import { RegionSelection } from '../core/types';
 import type { MapDisplayColor } from '../ui/types/DisplayColor';
 import { PRIMARY_FILL_COLORS } from '../ui/types/DisplayColor';

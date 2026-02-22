@@ -1,3 +1,12 @@
+export async function localFileExists(dataPath: string): Promise<boolean> {
+  try {
+    const response = await fetch(dataPath);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export function buildLocalDatasetUrl(
   localModsDataRoot: string,
   cityCode: string,
@@ -7,8 +16,8 @@ export function buildLocalDatasetUrl(
     `file:///${localModsDataRoot}/${cityCode}/${datasetId}.geojson`,
   );
 }
-
 // Helper function to read a local GeoJSON file and return its feature count whilst also validating the GeoJSON format
+
 export async function getFeatureCountForLocalDataset(
   dataPath: string,
 ): Promise<number | null> {

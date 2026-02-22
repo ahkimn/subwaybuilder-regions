@@ -10,8 +10,8 @@ import {
   RegistryMissingDatasetError,
   RegistryMissingIndexError,
 } from '../errors';
-import type { RegionsSettingsStore } from '../settings/RegionsSettingsStore';
-import { buildLocalDatasetUrl } from './fetch-local';
+import { buildLocalDatasetUrl, localFileExists } from '../storage/helpers';
+import type { RegionsStorage } from '../storage/RegionsStorage';
 import { STATIC_TEMPLATES } from './static';
 
 export class RegionDatasetRegistry {
@@ -21,7 +21,7 @@ export class RegionDatasetRegistry {
     private api: ModdingAPI,
     private indexFile: string,
     private serveUrl: string,
-    private readonly settingsStore: RegionsSettingsStore,
+    private readonly storage: RegionsStorage,
   ) {
     this.datasets = new Map<string, RegionDataset>();
   }
@@ -159,7 +159,7 @@ export class RegionDatasetRegistry {
   async buildStatic(): Promise<void> {
     this.clear();
 
-    const cachedRegistry = await this.settingsStore.loadRegistryCache();
+    const cachedRegistry = await this.storage.loadStoredRegistry();
     if (cachedRegistry && cachedRegistry.entries.length > 0) {
       const cachedPresentEntries = cachedRegistry.entries.filter(
         (entry) => entry.isPresent,
@@ -178,7 +178,7 @@ export class RegionDatasetRegistry {
     }
 
     const discoveredEntries = await this.discoverStaticLocalDatasets();
-    await this.settingsStore.saveRegistryCache({
+    await this.storage.saveRegistry({
       updatedAt: Date.now(),
       entries: discoveredEntries,
     });
@@ -202,7 +202,7 @@ export class RegionDatasetRegistry {
 
   async refreshStaticRegistryCache(): Promise<number> {
     const discoveredEntries = await this.discoverStaticLocalDatasets();
-    await this.settingsStore.saveRegistryCache({
+    await this.storage.saveRegistry({
       updatedAt: Date.now(),
       entries: discoveredEntries,
     });
@@ -213,7 +213,7 @@ export class RegionDatasetRegistry {
     StaticRegistryCacheEntry[]
   > {
     const localModsDataRoot =
-      await this.settingsStore.resolveLocalModsDataRoot();
+      await this.storage.resolveLocalModsDataRoot();
     const discoveredEntries: StaticRegistryCacheEntry[] = [];
 
     const currentCities = this.api.utils.getCities();
@@ -232,7 +232,7 @@ export class RegionDatasetRegistry {
           template.datasetId,
         );
 
-        const isPresent = await this.settingsStore.localFileExists(dataPath);
+        const isPresent = await localFileExists(dataPath);
         discoveredEntries.push({
           cityCode: city.code,
           datasetId: template.datasetId,

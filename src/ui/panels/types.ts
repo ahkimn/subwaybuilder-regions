@@ -1,3 +1,5 @@
+import type React from 'react';
+
 export const NumberDisplay = {
   Absolute: 'Absolute',
   Percentage: 'Percentage',
@@ -57,4 +59,25 @@ export const DEFAULT_SORT_STATE: SortState = {
   sortDirection: SortDirection.Desc,
   previousSortIndex: 1,
   previousSortDirection: SortDirection.Desc,
+};
+
+export type InputFieldProperties = {
+  value?: string;
+  placeholder?: string;
+  onChange?: (e: Event) => void;
+  className?: string;
+};
+
+export type SwitchProperties = {
+  checked?: boolean;
+  disabled?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  onChange?: (e: Event) => void;
+  id?: string;
+};
+
+export type LabelProperties = {
+  htmlFor?: string;
+  className?: string;
+  children?: React.ReactNode;
 };

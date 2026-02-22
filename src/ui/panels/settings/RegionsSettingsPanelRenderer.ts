@@ -1,6 +1,6 @@
 import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID as REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID } from '../../../core/constants';
 import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
-import type { RegionsSettingsStore } from '../../../core/settings/RegionsSettingsStore';
+import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import type { RegionsPanelRenderer } from '../types';
 import { RegionsSettingsPanel } from './RegionsSettingsPanel';
@@ -10,9 +10,9 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
 
   constructor(
     private readonly api: ModdingAPI,
-    private readonly settingsStore: RegionsSettingsStore,
+    private readonly storage: RegionsStorage,
     private readonly datasetRegistry: RegionDatasetRegistry,
-  ) {}
+  ) { }
 
   initialize(): void {
     if (this.initialized) {
@@ -65,7 +65,7 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
       id: REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID,
       component: RegionsSettingsPanel({
         api: this.api,
-        settingsStore: this.settingsStore,
+        storage: this.storage,
         datasetRegistry: this.datasetRegistry,
       }),
     });

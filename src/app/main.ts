@@ -2,9 +2,9 @@ import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@shared/constants';
 
 import { REGIONS_DESELECT_KEY } from '../core/constants';
 import { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
-import { DEFAULT_REGIONS_SETTINGS } from '../core/settings/defaults';
-import { RegionsSettingsStore } from '../core/settings/RegionsSettingsStore';
-import type { RegionsSettings } from '../core/settings/types';
+import { DEFAULT_REGIONS_SETTINGS } from '../core/storage/defaults';
+import { RegionsStorage } from '../core/storage/RegionsStorage';
+import type { RegionsSettings } from '../core/storage/types';
 import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
 
@@ -15,7 +15,7 @@ const api = window.SubwayBuilderAPI;
 
 export class RegionsMod {
   private registry!: RegionDatasetRegistry;
-  private readonly settingsStore: RegionsSettingsStore;
+  private readonly storage: RegionsStorage;
   private currentCityCode: string | null = null;
 
   private mapLayers: RegionsMapLayers | null = null;
@@ -28,7 +28,7 @@ export class RegionsMod {
   private newCityLoadToken: number;
 
   constructor() {
-    this.settingsStore = new RegionsSettingsStore();
+    this.storage = new RegionsStorage();
     this.cityLoadToken = 0;
     this.newCityLoadToken = 0;
   }
@@ -65,21 +65,21 @@ export class RegionsMod {
       return;
     }
 
-    this.settings = await this.settingsStore.initialize();
-    this.settingsStore.listen((nextSettings) => {
+    this.settings = await this.storage.initialize();
+    this.storage.listen((nextSettings) => {
       this.applySettings(nextSettings);
     });
     this.registry = new RegionDatasetRegistry(
       api,
       INDEX_FILE,
       SERVE_URL,
-      this.settingsStore,
+      this.storage,
     );
 
     this.uiManager = new RegionsUIManager(
       api,
       this.registry,
-      this.settingsStore,
+      this.storage,
       this.settings,
     );
 

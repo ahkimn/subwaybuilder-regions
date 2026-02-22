@@ -1,5 +1,5 @@
 import {
-  type RegionsRegistryCache,
+  type RegionsRegistryCache as RegistryCache,
   StaticRegistryCacheEntrySchema,
 } from '@shared/dataset-index';
 import { z } from 'zod';
@@ -26,13 +26,15 @@ type ElectronApi = Pick<
 type SettingsListener = (settings: RegionsSettingsValue) => void;
 
 // Class to manage user settings for the Regions mod. Persists settings using the Electron API if available
-export class RegionsSettingsStore {
+export class RegionsStorage {
   private settings: RegionsSettingsValue = clone(DEFAULT_REGIONS_SETTINGS);
   private initialized = false;
   private readonly listeners = new Set<SettingsListener>();
-  private readonly warnedMissingMethods = new Set<string>();
+  // Store missing Electron API methods to avoid spamming the console with repeated warnings about the same method being unavailable
+  private readonly missingMethods = new Set<string>();
 
   constructor(
+    // TODO (Feature): Migrate all of these reads from the Electron API to the official game API / mod-specific storage when it is available
     private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
     private readonly electronApi:
       | Partial<ElectronApi>
@@ -41,15 +43,15 @@ export class RegionsSettingsStore {
 
   async initialize(): Promise<RegionsSettingsValue> {
     if (this.initialized) {
-      return this.get();
+      return this.getSettings();
     }
 
     this.initialized = true;
     await this.hydrateSettings();
-    return this.get();
+    return this.getSettings();
   }
 
-  get(): RegionsSettingsValue {
+  getSettings(): RegionsSettingsValue {
     return clone(this.settings);
   }
 
@@ -60,44 +62,43 @@ export class RegionsSettingsStore {
     };
   }
 
+  // Helper function to update mod-level settings, including storage persistence
   async updateSettings(
-    patch: Partial<RegionsSettingsValue>,
+    update: Partial<RegionsSettingsValue>,
   ): Promise<RegionsSettingsValue> {
     const nextSettings: RegionsSettingsValue = {
       ...this.settings,
-      ...patch,
+      ...update,
     };
 
     if (RegionsSettings.equals(this.settings, nextSettings)) {
-      return this.get();
+      return this.getSettings();
     }
 
     this.settings = nextSettings;
     await this.persistToStorage();
     this.emit();
-    return this.get();
+    return this.getSettings();
   }
 
-  async loadRegistryCache(): Promise<RegionsRegistryCache | null> {
-    const storedValue = await this.readStorageItem(
-      REGIONS_REGISTRY_STORAGE_KEY,
-    );
-    if (storedValue == null) {
+  async loadStoredRegistry(): Promise<RegistryCache | null> {
+    const stored = await this.readStorageItem(REGIONS_REGISTRY_STORAGE_KEY);
+    if (stored == null) {
       return null;
     }
 
-    const cache = resolveStoredRegistryCachePayload(storedValue);
+    const cache = resolvedStoredRegistry(stored);
     if (!cache) {
       console.error(
         `[Regions] Invalid stored registry cache payload at key ${REGIONS_REGISTRY_STORAGE_KEY}; ignoring cache.`,
-        storedValue,
+        stored,
       );
       return null;
     }
     return cache;
   }
 
-  async saveRegistryCache(cache: RegionsRegistryCache): Promise<void> {
+  async saveRegistry(cache: RegistryCache): Promise<void> {
     await this.writeStorageItem(REGIONS_REGISTRY_STORAGE_KEY, cache);
   }
 
@@ -112,15 +113,6 @@ export class RegionsSettingsStore {
     );
     // TODO: Let the user configure this path in case they wish to save the mod in a different folder (currently this is a brittle contract)
     return `${modsDir}/regions/data`;
-  }
-
-  async localFileExists(dataPath: string): Promise<boolean> {
-    try {
-      const response = await fetch(dataPath);
-      return response.ok;
-    } catch {
-      return false;
-    }
   }
 
   private async hydrateSettings(): Promise<void> {
@@ -178,17 +170,17 @@ export class RegionsSettingsStore {
   }
 
   private emit(): void {
-    const snapshot = this.get();
+    const snapshot = this.getSettings();
     this.listeners.forEach((listener) => {
       listener(snapshot);
     });
   }
 
   private warnMissingElectronAPI(apiMethod: string): void {
-    if (this.warnedMissingMethods.has(apiMethod)) {
+    if (this.missingMethods.has(apiMethod)) {
       return;
     }
-    this.warnedMissingMethods.add(apiMethod);
+    this.missingMethods.add(apiMethod);
     console.warn(`[Regions] electron.${apiMethod} is unavailable`);
   }
 }
@@ -213,9 +205,7 @@ function resolveStoredSettingsPayload(
   return resolveStoredSettings(resolveStoragePayload(storedValue));
 }
 
-function resolveStoredRegistryCachePayload(
-  storedValue: unknown,
-): RegionsRegistryCache | null {
+function resolvedStoredRegistry(storedValue: unknown): RegistryCache | null {
   const payload = resolveStoragePayload(storedValue);
   const cacheEnvelope = z
     .object({
@@ -246,6 +236,7 @@ function resolveStoredRegistryCachePayload(
 }
 
 function resolveStoragePayload(storedValue: unknown): unknown {
+  // Storage format from Electron generally appears to be { success: boolean, data: value }
   if (isObjectRecord(storedValue) && 'data' in storedValue) {
     return storedValue.data;
   }

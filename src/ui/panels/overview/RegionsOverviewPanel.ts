@@ -11,14 +11,11 @@ import {
 import type { ModdingAPI } from '../../../types/modding-api-v1';
 import { ViewHeader } from '../../elements/ViewHeader';
 import { getNextSortState } from '../shared/helpers';
-import type { SortState } from '../types';
+import type { InputFieldProperties, SortState } from '../types';
 import { DEFAULT_SORT_STATE } from '../types';
 import { renderLayerSelectorRow, renderOverviewTabs } from './render';
 import { renderHistoricalTabContent } from './render-historical';
-import type {
-  InputFieldProperties,
-  OverviewSortMetrics,
-} from './render-overview';
+import type { OverviewSortMetrics } from './render-overview';
 import { renderOverviewTabContent, resolveSortConfig } from './render-overview';
 import { renderRidershipTabContent } from './render-ridership';
 import type { RegionsOverviewPanelState, RegionsOverviewTab } from './types';

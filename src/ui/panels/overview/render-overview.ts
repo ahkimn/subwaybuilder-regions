@@ -20,7 +20,7 @@ import type {
   TableOptions,
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
-import type { SortConfig } from '../types';
+import type { InputFieldProperties, SortConfig } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
 import type { RegionsOverviewRow } from './types';
@@ -48,13 +48,6 @@ const OVERVIEW_CELL_PADDING_CLASS_NAMES: TableCellPaddingClassName = {
   left: 'pl-2 pr-1',
   right: 'pl-1 pr-2',
   center: 'px-1.5',
-};
-
-export type InputFieldProperties = {
-  value?: string;
-  placeholder?: string;
-  onChange?: (e: Event) => void;
-  className?: string;
 };
 
 export type OverviewSortMetrics = {

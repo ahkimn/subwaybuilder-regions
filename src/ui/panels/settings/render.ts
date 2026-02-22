@@ -1,7 +1,7 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
-import type { RegionsSettings } from '../../../core/settings/types';
+import type { RegionsSettings } from '../../../core/storage/types';
 import { formatNumberOrDefault } from '../../../core/utils';
 import type {
   ReactDataTableRow,
@@ -13,30 +13,14 @@ import { ReactButton } from '../../elements/ReactButton';
 import { ReactSearchInput } from '../../elements/SearchInput';
 import { ReactSectionCard } from '../../elements/SectionCard';
 import { Arrow, MapPinnedIcon, RefreshIcon } from '../../elements/utils/Icons';
-import type { SortConfig } from '../types';
+import type {
+  InputFieldProperties,
+  LabelProperties,
+  SortConfig,
+  SwitchProperties,
+} from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
-
-export type InputFieldProperties = {
-  value?: string;
-  placeholder?: string;
-  onChange?: (e: Event) => void;
-  className?: string;
-};
-
-export type SwitchProperties = {
-  checked?: boolean;
-  disabled?: boolean;
-  onCheckedChange?: (checked: boolean) => void;
-  onChange?: (e: Event) => void;
-  id?: string;
-};
-
-export type LabelProperties = {
-  htmlFor?: string;
-  className?: string;
-  children?: React.ReactNode;
-};
 
 export type SettingsDatasetRow = {
   cityCode: string;
@@ -106,13 +90,6 @@ const REGISTRY_TABLE_OPTIONS: TableOptions = {
     stickyClassName: 'bg-background/95 backdrop-blur-sm',
     stickyBorderClassName: 'border-border/40',
   },
-};
-
-export const DEFAULT_SETTINGS_SORT_STATE: SortState = {
-  sortIndex: 0,
-  sortDirection: SortDirection.Asc,
-  previousSortIndex: 1,
-  previousSortDirection: SortDirection.Asc,
 };
 
 export function filterSettingsRows(

@@ -1,8 +1,8 @@
 // --- Statistics Types --- //
 
 import type { LightMode } from '../map/styles';
-import { DEFAULT_REGIONS_SETTINGS } from './settings/defaults';
-import type { RegionsSettings } from './settings/types';
+import { DEFAULT_REGIONS_SETTINGS } from './storage/defaults';
+import type { RegionsSettings } from './storage/types';
 
 export const MODE_ORDER: (keyof ModeShare)[] = [
   'transit',
