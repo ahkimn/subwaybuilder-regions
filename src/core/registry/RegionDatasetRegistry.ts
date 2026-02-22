@@ -10,12 +10,17 @@ import {
   RegistryMissingDatasetError,
   RegistryMissingIndexError,
 } from '../errors';
-import { buildLocalDatasetUrl, localFileExists } from '../storage/helpers';
+import {
+  buildLocalDatasetCandidatePaths,
+  probeDatasetPath,
+  probeLocalDatasetCandidates,
+} from '../storage/helpers';
 import type { RegionsStorage } from '../storage/RegionsStorage';
 import { STATIC_TEMPLATES } from './static';
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
+  private readonly listeners = new Set<() => void>();
 
   constructor(
     private api: ModdingAPI,
@@ -29,6 +34,14 @@ export class RegionDatasetRegistry {
   // -- Dataset Setters -- //
   registerDataset(dataset: RegionDataset): void {
     this.datasets.set(RegionDataset.getIdentifier(dataset), dataset);
+    this.emit();
+  }
+
+  listen(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   // -- Dataset Getters -- //
@@ -80,20 +93,24 @@ export class RegionDatasetRegistry {
     }
   }
 
-  private registerStaticDataset(
+  private registerDatasetFromMetadata(
     cityCode: string,
     entry: DatasetMetadata,
     dataPath: string,
-    options?: { skipValidation?: boolean },
+    options?: {
+      skipValidation?: boolean;
+      sourceType?: 'static' | 'user';
+      writable?: boolean;
+    },
   ): void {
     if (!options?.skipValidation) {
       this.validateIndexEntry(cityCode, entry);
     }
     this.registerDataset(
       new RegionDataset(entry, cityCode, {
-        type: 'static',
+        type: options?.sourceType ?? 'static',
         dataPath,
-        writable: false,
+        writable: options?.writable ?? false,
       }),
     );
   }
@@ -102,7 +119,7 @@ export class RegionDatasetRegistry {
     let registeredDatasets = 0;
     for (const [cityCode, datasets] of Object.entries(index)) {
       for (const record of datasets) {
-        this.registerStaticDataset(
+        this.registerDatasetFromMetadata(
           cityCode,
           record,
           `${this.serveUrl}/${cityCode}/${record.datasetId}.geojson`,
@@ -113,31 +130,59 @@ export class RegionDatasetRegistry {
     return registeredDatasets;
   }
 
-  async build(onFetchError: () => void) {
+  async build(onFetchError: () => void): Promise<{
+    servedCount: number;
+    localCount: number;
+  }> {
     this.clear();
 
-    // Expected format of data_index.json is { [cityCode: string]: DatasetIndexEntry[] }.
-    let index: DatasetIndex;
-    try {
-      const indexResponse = await fetch(`${this.serveUrl}/${this.indexFile}`);
-      if (!indexResponse.ok) {
-        throw new RegistryMissingIndexError(this.indexFile, this.serveUrl);
-      }
+    const localEntries = await this.resolveAndPersistLocalRegistryEntries();
+    const localCount = this.registerLocalEntries(localEntries);
 
-      index = (await indexResponse.json()) as DatasetIndex;
-    } catch {
-      onFetchError();
-      throw new RegistryMissingIndexError(this.indexFile, this.serveUrl);
+    let servedCount = 0;
+    const servedIndex = await this.fetchServedIndex(onFetchError);
+    if (servedIndex) {
+      // Served datasets take precedence over local static/dynamic datasets on cityCode/datasetId collisions.
+      servedCount = this.buildFromIndex(servedIndex);
     }
 
-    const registered = this.buildFromIndex(index);
-    if (registered === 0) {
-      throw new Error('[Regions] Empty dataset index');
+    if (this.datasets.size === 0) {
+      throw new Error(
+        '[Regions] No datasets available from server or local cache',
+      );
     }
+
+    return { servedCount, localCount };
+  }
+
+  async buildFromCache(onFetchError: () => void): Promise<{
+    servedCount: number;
+    localCount: number;
+  }> {
+    this.clear();
+
+    const cachedLocalEntries = await this.loadCachedLocalRegistryEntries();
+    const localCount = this.registerLocalEntries(cachedLocalEntries);
+
+    let servedCount = 0;
+    const servedIndex = await this.fetchServedIndex(onFetchError);
+    if (servedIndex) {
+      // Served datasets take precedence over local static/dynamic datasets on cityCode/datasetId collisions.
+      servedCount = this.buildFromIndex(servedIndex);
+    }
+
+    if (this.datasets.size === 0) {
+      throw new Error(
+        '[Regions] No datasets available from server index or cached local registry',
+      );
+    }
+
+    return { servedCount, localCount };
   }
 
   clear(): void {
     this.datasets.clear();
+    this.emit();
   }
 
   // -- Debugging -- //
@@ -156,50 +201,17 @@ export class RegionDatasetRegistry {
   async buildStatic(): Promise<void> {
     this.clear();
 
-    // First check if local storage has a cached registry and if so attempt to register the data present
-    const storedRegistry = await this.storage.loadStoredRegistry();
-    if (storedRegistry && storedRegistry.entries.length > 0) {
-      const presentEntries = storedRegistry.entries.filter(
-        (entry) => entry.isPresent,
+    const localEntries = await this.resolveAndPersistLocalRegistryEntries();
+    const localCount = this.registerLocalEntries(localEntries);
+    if (localCount === 0) {
+      throw new Error(
+        '[Regions] No local datasets found in static mapping or dynamic cache',
       );
-      for (const entry of presentEntries) {
-        this.registerStaticDataset(
-          entry.cityCode,
-          this.buildDatasetEntryFromStorage(entry),
-          entry.dataPath,
-          { skipValidation: true },
-        );
-      }
-      if (presentEntries.length > 0) {
-        return;
-      }
-    }
-
-    console.log(
-      '[Regions] No valid cached registry found, attempting to locate local datasets from static mapping...',
-    );
-    const localEntries = await this.locateStaticLocalDatasets();
-    await this.storage.saveRegistry({
-      updatedAt: Date.now(),
-      entries: localEntries,
-    });
-    const presentEntries = localEntries.filter((entry) => entry.isPresent);
-    for (const entry of presentEntries) {
-      this.registerStaticDataset(
-        entry.cityCode,
-        this.buildDatasetEntryFromStorage(entry),
-        entry.dataPath,
-        { skipValidation: true },
-      );
-    }
-
-    if (presentEntries.length === 0) {
-      throw new Error('[Regions] No local datasets found in static mapping');
     }
   }
 
   async refreshStaticRegistryCache(): Promise<number> {
-    const discoveredEntries = await this.locateStaticLocalDatasets();
+    const discoveredEntries = await this.resolveLocalRegistryEntries();
     await this.storage.saveRegistry({
       updatedAt: Date.now(),
       entries: discoveredEntries,
@@ -218,12 +230,15 @@ export class RegionDatasetRegistry {
         ? (STATIC_TEMPLATES.get(city.country) ?? [])
         : [];
       for (const template of datasetTemplates) {
-        const dataPath = buildLocalDatasetUrl(
+        const candidatePaths = buildLocalDatasetCandidatePaths(
           localModsDataRoot,
           city.code,
           template.datasetId,
         );
-        const isPresent = await localFileExists(dataPath);
+        const probeResult = await probeLocalDatasetCandidates(candidatePaths);
+        if (!probeResult.isPresent) {
+          continue;
+        }
         discoveredEntries.push({
           cityCode: city.code,
           datasetId: template.datasetId,
@@ -232,12 +247,138 @@ export class RegionDatasetRegistry {
           unitPlural: template.unitPlural,
           source: template.source,
           size: 0,
-          dataPath,
-          isPresent,
+          dataPath: probeResult.dataPath,
+          isPresent: probeResult.isPresent,
+          origin: 'static',
+          fileSizeMB: probeResult.fileSizeMB,
+          compressed: probeResult.compressed,
         });
       }
     }
     return discoveredEntries;
+  }
+
+  private async fetchServedIndex(
+    onFetchError: () => void,
+  ): Promise<DatasetIndex | null> {
+    try {
+      const indexResponse = await fetch(`${this.serveUrl}/${this.indexFile}`);
+      if (!indexResponse.ok) {
+        throw new RegistryMissingIndexError(this.indexFile, this.serveUrl);
+      }
+
+      return (await indexResponse.json()) as DatasetIndex;
+    } catch {
+      onFetchError();
+      return null;
+    }
+  }
+
+  private async resolveAndPersistLocalRegistryEntries(): Promise<
+    RegistryCacheEntry[]
+  > {
+    const entries = await this.resolveLocalRegistryEntries();
+    await this.storage.saveRegistry({
+      updatedAt: Date.now(),
+      entries,
+    });
+    return entries;
+  }
+
+  private async loadCachedLocalRegistryEntries(): Promise<
+    RegistryCacheEntry[]
+  > {
+    const storedRegistry = await this.storage.loadStoredRegistry();
+    return dedupeRegistryEntries(storedRegistry?.entries ?? []);
+  }
+
+  private async resolveLocalRegistryEntries(): Promise<RegistryCacheEntry[]> {
+    const storedRegistry = await this.storage.loadStoredRegistry();
+    const storedEntries = storedRegistry?.entries ?? [];
+
+    const discoveredStaticEntries = await this.locateStaticLocalDatasets();
+    const discoveredStaticKeySet = new Set(
+      discoveredStaticEntries.map((entry) =>
+        this.getDatasetKey(entry.cityCode, entry.datasetId),
+      ),
+    );
+
+    const supplementalStoredStatic = await Promise.all(
+      storedEntries
+        .filter((entry) => entry.origin === 'static')
+        .filter(
+          (entry) =>
+            !discoveredStaticKeySet.has(
+              this.getDatasetKey(entry.cityCode, entry.datasetId),
+            ),
+        )
+        .map((entry) => this.revalidateStoredEntry(entry)),
+    );
+    const retainedStoredStatic = supplementalStoredStatic.filter(
+      (entry) => entry.isPresent || entry.fileSizeMB !== null,
+    );
+
+    const revalidatedDynamicEntries = await Promise.all(
+      storedEntries
+        .filter((entry) => entry.origin === 'dynamic')
+        .map((entry) => this.revalidateStoredEntry(entry)),
+    );
+    const retainedDynamicEntries = revalidatedDynamicEntries.filter(
+      (entry) => entry.isPresent || entry.fileSizeMB !== null,
+    );
+
+    return dedupeRegistryEntries([
+      ...discoveredStaticEntries,
+      ...retainedStoredStatic,
+      ...retainedDynamicEntries,
+    ]);
+  }
+
+  private async revalidateStoredEntry(
+    entry: RegistryCacheEntry,
+  ): Promise<RegistryCacheEntry> {
+    const probeResult = await probeDatasetPath(entry.dataPath);
+    return {
+      ...entry,
+      dataPath: probeResult.dataPath,
+      isPresent: probeResult.isPresent,
+      fileSizeMB: probeResult.fileSizeMB ?? entry.fileSizeMB,
+      compressed: probeResult.isPresent
+        ? probeResult.compressed
+        : entry.compressed,
+    };
+  }
+
+  private registerLocalEntries(entries: RegistryCacheEntry[]): number {
+    let registered = 0;
+
+    const registerOrigin = (origin: 'static' | 'dynamic') => {
+      entries
+        .filter((entry) => entry.origin === origin && entry.isPresent)
+        .forEach((entry) => {
+          this.registerDatasetFromMetadata(
+            entry.cityCode,
+            this.buildDatasetEntryFromStorage(entry),
+            entry.dataPath,
+            {
+              skipValidation: true,
+              sourceType: entry.origin === 'dynamic' ? 'user' : 'static',
+              writable: entry.origin === 'dynamic',
+            },
+          );
+          registered += 1;
+        });
+    };
+
+    // Local dynamic entries should override local static entries.
+    registerOrigin('static');
+    registerOrigin('dynamic');
+
+    return registered;
+  }
+
+  private getDatasetKey(cityCode: string, datasetId: string): string {
+    return `${cityCode}::${datasetId}`;
   }
 
   private buildDatasetEntryFromStorage(
@@ -252,4 +393,21 @@ export class RegionDatasetRegistry {
       size: entry.size,
     };
   }
+
+  private emit(): void {
+    this.listeners.forEach((listener) => listener());
+  }
+}
+
+function dedupeRegistryEntries(
+  entries: RegistryCacheEntry[],
+): RegistryCacheEntry[] {
+  const deduped = new Map<string, RegistryCacheEntry>();
+  entries.forEach((entry) => {
+    deduped.set(
+      `${entry.cityCode}::${entry.datasetId}::${entry.origin}`,
+      entry,
+    );
+  });
+  return Array.from(deduped.values());
 }

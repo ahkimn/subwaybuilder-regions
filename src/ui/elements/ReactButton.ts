@@ -7,6 +7,7 @@ export type ReactButtonOptions = {
   label: string;
   onClick: () => void;
   ariaLabel?: string;
+  tooltipText?: string;
   icon?: IconDefinition;
   iconPlacement?: 'start' | 'end';
   iconOptions?: IconRenderOptions;
@@ -29,6 +30,7 @@ export function ReactButton(
     label,
     onClick,
     ariaLabel,
+    tooltipText,
     icon,
     iconPlacement = 'start',
     iconOptions,
@@ -64,6 +66,7 @@ export function ReactButton(
         type: 'button',
         className: buttonClassName,
         'aria-label': ariaLabel ?? label,
+        title: tooltipText,
         onClick,
       },
       children,

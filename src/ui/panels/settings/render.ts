@@ -2,7 +2,7 @@ import type React from 'react';
 import type { createElement, useState } from 'react';
 
 import type { RegionsSettings } from '../../../core/storage/types';
-import { formatNumberOrDefault } from '../../../core/utils';
+import { formatFixedNumber } from '../../../core/utils';
 import type {
   ReactDataTableRow,
   TableCellPaddingClassName,
@@ -13,7 +13,17 @@ import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header
 import { ReactButton } from '../../elements/ReactButton';
 import { ReactSearchInput } from '../../elements/SearchInput';
 import { ReactSectionCard } from '../../elements/SectionCard';
-import { Arrow, MapPinnedIcon, RefreshIcon } from '../../elements/utils/Icons';
+import {
+  Arrow,
+  CircleCheck,
+  createReactIconElement,
+  MapPinnedIcon,
+  OctagonX,
+  RefreshIcon,
+  Trash2,
+  TriangleWarning,
+} from '../../elements/utils/Icons';
+import { getPrimaryChartColorByName } from '../../types/DisplayColor';
 import type {
   InputFieldProperties,
   LabelProperties,
@@ -24,23 +34,33 @@ import type {
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
 
+export type SettingsDatasetIssue = 'missing_file' | 'missing_city' | null;
+
 export type SettingsDatasetRow = {
+  rowKey: string;
   cityCode: string;
   datasetId: string;
   displayName: string;
-  expectedSize: number | null;
-  status: string;
+  origin: 'served' | 'static' | 'dynamic';
+  fileSizeMB: number | null;
+  issue: SettingsDatasetIssue;
 };
 
 const REGISTRY_TABLE_COLUMN_LABELS = [
   'City',
   'Dataset',
   'Display Name',
-  'Size',
+  'Origin',
+  'Filesize',
   'Status',
 ] as const;
 
 const REGISTRY_COLUMN_COUNT = REGISTRY_TABLE_COLUMN_LABELS.length;
+const FILESIZE_NOT_AVAILABLE_LABEL = 'N/A';
+
+const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
+const CRITICAL_HEX = getPrimaryChartColorByName('Red').hex;
+const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
 
 const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
   {
@@ -63,24 +83,30 @@ const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
   },
   {
     index: 3,
+    defaultDirection: SortDirection.Asc,
+    compare: (aMetrics, bMetrics) =>
+      aMetrics.origin.localeCompare(bMetrics.origin),
+  },
+  {
+    index: 4,
     defaultDirection: SortDirection.Desc,
     compare: (aMetrics, bMetrics) => {
-      const aSize = aMetrics.expectedSize ?? -1;
-      const bSize = bMetrics.expectedSize ?? -1;
+      const aSize = aMetrics.fileSizeMB ?? -1;
+      const bSize = bMetrics.fileSizeMB ?? -1;
       return aSize - bSize;
     },
   },
   {
-    index: 4,
+    index: 5,
     defaultDirection: SortDirection.Asc,
     compare: (aMetrics, bMetrics) =>
-      aMetrics.status.localeCompare(bMetrics.status),
+      resolveStatusRank(aMetrics.issue) - resolveStatusRank(bMetrics.issue),
   },
 ];
 
 const REGISTRY_TABLE_OPTIONS: TableOptions = {
   columnTemplate:
-    'minmax(8ch,max-content) minmax(10ch,max-content) minmax(14ch,1fr) minmax(8ch,max-content) minmax(8ch,max-content)',
+    'minmax(8ch,max-content) minmax(10ch,max-content) minmax(14ch,1fr) minmax(8ch,max-content) minmax(8ch,max-content) minmax(12ch,max-content)',
   density: 'compact',
   tableCellOptions: {
     cellPaddingClassName: {
@@ -152,6 +178,9 @@ export function sortSettingsRows(
       if (result === 0) {
         result = a.displayName.localeCompare(b.displayName);
       }
+      if (result === 0) {
+        result = a.origin.localeCompare(b.origin);
+      }
     }
 
     return result;
@@ -206,6 +235,8 @@ export function renderSettingsOverlay(
     onToggleShowUnpopulatedRegions: (nextValue: boolean) => void;
     onRefreshRegistry: () => void;
     isRefreshingRegistry: boolean;
+    onClearMissing: () => void;
+    isClearingMissing: boolean;
   },
 ): React.ReactNode {
   const {
@@ -220,6 +251,8 @@ export function renderSettingsOverlay(
     onToggleShowUnpopulatedRegions,
     onRefreshRegistry,
     isRefreshingRegistry,
+    onClearMissing,
+    isClearingMissing,
   } = params;
 
   return h(
@@ -272,6 +305,8 @@ export function renderSettingsOverlay(
           onSortChange,
           onRefreshRegistry,
           isRefreshingRegistry,
+          onClearMissing,
+          isClearingMissing,
         ),
         renderFetchDatasetsSection(h),
       ]),
@@ -330,6 +365,8 @@ function renderDatasetRegistrySection(
   onSortChange: (columnIndex: number) => void,
   onRefreshRegistry: () => void,
   isRefreshingRegistry: boolean,
+  onClearMissing: () => void,
+  isClearingMissing: boolean,
 ): React.ReactNode {
   return ReactSectionCard(h, `Dataset Registry (${rows.length})`, [
     h('div', { className: 'flex items-center justify-between gap-2' }, [
@@ -342,17 +379,35 @@ function renderDatasetRegistrySection(
           onValueChange: onSearchTermChange,
         }),
       ]),
-      ReactButton(h, {
-        label: isRefreshingRegistry ? 'Refreshing' : 'Refresh',
-        ariaLabel: 'Refresh local registry cache',
-        onClick: onRefreshRegistry,
-        icon: RefreshIcon,
-        iconPlacement: 'start',
-        wrapperClassName: 'w-fit',
-        buttonClassName:
-          'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm border border-border bg-background hover:bg-accent transition-colors',
-        iconOptions: { size: 20, className: 'h-3.5 w-3.5 shrink-0' },
-      }),
+      h('div', { className: 'flex items-center gap-2' }, [
+        ReactButton(h, {
+          label: isRefreshingRegistry ? 'Refreshing' : 'Refresh',
+          ariaLabel: 'Refresh local registry cache',
+          onClick: onRefreshRegistry,
+          icon: RefreshIcon,
+          iconPlacement: 'start',
+          wrapperClassName: 'w-fit',
+          buttonClassName:
+            'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm border border-border bg-background hover:bg-accent transition-colors',
+          iconOptions: { size: 20, className: 'h-3.5 w-3.5 shrink-0' },
+        }),
+        ReactButton(h, {
+          label: isClearingMissing ? 'Clearing' : 'Clear Missing',
+          ariaLabel: 'Remove missing datasets from local registry cache',
+          tooltipText:
+            'Removes missing cached local entries only. Served entries are not stored in cache and cannot be cleared here.',
+          onClick: onClearMissing,
+          icon: Trash2,
+          iconPlacement: 'start',
+          wrapperClassName: 'w-fit',
+          buttonClassName:
+            'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm bg-red-600 text-white hover:bg-red-700 transition-colors',
+          iconOptions: {
+            size: 20,
+            className: 'h-3.5 w-3.5 shrink-0 text-white',
+          },
+        }),
+      ]),
     ]),
     h(
       'div',
@@ -363,32 +418,53 @@ function renderDatasetRegistrySection(
         h,
         useStateHook,
         tableOptions: REGISTRY_TABLE_OPTIONS,
-        tableValues: buildRegistryTableRows(rows, sortState, onSortChange),
+        tableValues: buildRegistryTableRows(h, rows, sortState, onSortChange),
       }),
     ),
+    h('p', { className: 'text-[11px] text-muted-foreground' }, [
+      'Missing entries represent datasets that were previously detected locally. ',
+      'Served datasets can still show city-unavailable warnings, but ',
+      h('span', { className: 'font-medium' }, 'Clear Missing'),
+      ' only removes cached local entries.',
+    ]),
   ]);
 }
 
 function buildRegistryTableRows(
+  h: typeof createElement,
   rows: SettingsDatasetRow[],
   sortState: SortState,
   onSortChange: (columnIndex: number) => void,
 ): ReactDataTableRow[] {
-  const tableAlign: TableAlign[] = ['left', 'left', 'left', 'right', 'left'];
+  const headerAlign: TableAlign[] = [
+    'left',
+    'left',
+    'left',
+    'left',
+    'right',
+    'left',
+  ];
+  const bodyAlign: TableAlign[] = [
+    'left',
+    'left',
+    'left',
+    'left',
+    'right',
+    'left',
+  ];
 
   const tableRows: ReactDataTableRow[] = [
     buildSortableHeaderRow({
       headerLabels: REGISTRY_TABLE_COLUMN_LABELS,
       sortState,
       onSortChange,
-      align: tableAlign,
+      align: headerAlign,
       classOverrides: {
         borderClassName: '',
       },
     }),
   ];
 
-  // Empty search state handling
   if (rows.length === 0) {
     tableRows.push({
       rowValues: ['No datasets match the current filters.'],
@@ -407,11 +483,12 @@ function buildRegistryTableRows(
         row.cityCode,
         row.datasetId,
         row.displayName,
-        formatNumberOrDefault(row.expectedSize),
-        formatStatusLabel(row.status),
+        row.origin,
+        formatFileSizeLabel(row.fileSizeMB),
+        renderDatasetStatusCell(h, row.issue),
       ],
       options: {
-        align: tableAlign,
+        align: bodyAlign,
         rowClassName: 'transition-colors',
         rowHoverClassName: 'bg-muted/30',
       },
@@ -440,9 +517,59 @@ export function resolveRegistrySortConfig(
   );
 }
 
-function formatStatusLabel(status: string): string {
-  if (!status) {
-    return '';
+function formatFileSizeLabel(sizeMB: number | null): string {
+  if (sizeMB === null || !Number.isFinite(sizeMB) || sizeMB <= 0) {
+    return FILESIZE_NOT_AVAILABLE_LABEL;
   }
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return `${formatFixedNumber(sizeMB, 2)} MB`;
+}
+
+function renderDatasetStatusCell(
+  h: typeof createElement,
+  issue: SettingsDatasetIssue,
+): React.ReactNode {
+  if (!issue) {
+    return h(
+      'span',
+      {
+        className: 'inline-flex items-center gap-1.5',
+        style: { color: SUCCESS_HEX },
+      },
+      [
+        createReactIconElement(h, CircleCheck, {
+          size: 14,
+          className: 'h-3.5 w-3.5 shrink-0',
+        }),
+        h('span', { className: 'truncate' }, 'Available'),
+      ],
+    );
+  }
+
+  const issueIcon =
+    issue === 'missing_city'
+      ? createReactIconElement(h, OctagonX, {
+          size: 14,
+          className: 'h-3.5 w-3.5 shrink-0',
+        })
+      : createReactIconElement(h, TriangleWarning, {
+          size: 14,
+          className: 'h-3.5 w-3.5 shrink-0',
+        });
+  const issueColor = issue === 'missing_city' ? CRITICAL_HEX : WARNING_HEX;
+  const issueLabel = issue === 'missing_city' ? 'City Missing' : 'File Missing';
+
+  return h(
+    'span',
+    {
+      className: 'inline-flex items-center gap-1.5',
+      style: { color: issueColor },
+    },
+    [issueIcon, h('span', { className: 'truncate' }, issueLabel)],
+  );
+}
+
+function resolveStatusRank(issue: SettingsDatasetIssue): number {
+  if (issue === 'missing_city') return 0;
+  if (issue === 'missing_file') return 1;
+  return 2;
 }

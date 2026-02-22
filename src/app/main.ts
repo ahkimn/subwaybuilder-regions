@@ -35,22 +35,28 @@ export class RegionsMod {
 
   // TODO: (Feature) Add support for dynamic registry updates and remove hard-coded static index
   private async buildRegistryWithFallback(): Promise<void> {
-    try {
-      await this.registry.build(() => {
+    const { servedCount, localCount } = await this.registry.buildFromCache(
+      () => {
         console.warn('[Regions] Failed to load dataset index from server');
-      });
+      },
+    );
+
+    if (servedCount > 0 && localCount > 0) {
+      api.ui.showNotification(
+        `[Regions] Loaded ${servedCount} served and ${localCount} local datasets.`,
+        'success',
+      );
+      return;
+    }
+
+    if (servedCount > 0) {
       api.ui.showNotification(
         '[Regions] Loaded region datasets from local server.',
         'success',
       );
       return;
-    } catch (indexBuildError) {
-      console.warn(
-        '[Regions] Failed to build dataset registry from server, attempting to build from local files',
-        indexBuildError,
-      );
     }
-    await this.registry.buildStatic();
+
     api.ui.showNotification(
       '[Regions] Loaded region datasets from local mod data files.',
       'success',

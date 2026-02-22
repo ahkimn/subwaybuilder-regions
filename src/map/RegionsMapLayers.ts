@@ -39,6 +39,7 @@ type MapLayerState = {
   boundaryLineLayerId: string;
   labelLayerId: string;
   visible: boolean;
+  demandFilterMode?: DemandFilterMode;
   handlers?: LayerHandlers;
 };
 
@@ -66,6 +67,7 @@ type RegionFocusOptions = {
   durationMs: number;
   minBBoxSpanDegrees: number;
 };
+type DemandFilterMode = 'all' | 'exists_demand';
 
 export type RegionsMapLayersEvents = {
   onRegionSelect?: (payload: RegionSelectPayload) => void;
@@ -332,7 +334,11 @@ export class RegionsMapLayers {
       layerState.labelLayerId &&
       this.tryGetLayer(layerState.labelLayerId)
     ) {
-      mapRef.moveLayer(layerState.labelLayerId);
+      this.tryMoveLayer(
+        mapRef,
+        layerState.labelLayerId,
+        new Set(['road-labels', 'demand-points']),
+      );
     }
   }
 
@@ -343,13 +349,16 @@ export class RegionsMapLayers {
       return;
     }
 
-    // DEBUG Warning for now
-    console.warn(
-      '[Regions] Applying demand exists filter to layer state',
-      layerState,
+    const demandFilterMode = this.resolveDemandFilterMode();
+    if (layerState.demandFilterMode === demandFilterMode) {
+      return;
+    }
+
+    console.log(
+      `Applying demand filter mode: ${demandFilterMode} to dataset ${layerState.datasetIdentifier}`,
     );
 
-    const demandFilter = this.buildDemandExistsFilter();
+    const demandFilter = this.buildDemandExistsFilter(demandFilterMode);
     [
       layerState.boundaryLayerId,
       layerState.boundaryLineLayerId,
@@ -359,6 +368,7 @@ export class RegionsMapLayers {
         mapRef.setFilter(layerId, demandFilter);
       }
     });
+    layerState.demandFilterMode = demandFilterMode;
   }
 
   removeDatasetMapLayers(identifier: string) {
@@ -540,8 +550,14 @@ export class RegionsMapLayers {
     this.applyLightModeToLayerState(layerState);
   }
 
-  private buildDemandExistsFilter(): maplibregl.FilterSpecification {
-    if (this.settings.showUnpopulatedRegions) {
+  private resolveDemandFilterMode(): DemandFilterMode {
+    return this.settings.showUnpopulatedRegions ? 'all' : 'exists_demand';
+  }
+
+  private buildDemandExistsFilter(
+    mode: DemandFilterMode = this.resolveDemandFilterMode(),
+  ): maplibregl.FilterSpecification {
+    if (mode === 'all') {
       return ['all'];
     }
 
@@ -818,7 +834,28 @@ export class RegionsMapLayers {
         continue;
       }
       if (this.tryGetLayer(layerState.labelLayerId)) {
-        mapRef.moveLayer(layerState.labelLayerId);
+        this.tryMoveLayer(
+          mapRef,
+          layerState.labelLayerId,
+          new Set(['road-labels', 'demand-points']),
+        );
+      }
+    }
+  }
+
+  private tryMoveLayer(
+    mapRef: maplibregl.Map,
+    layerId: string,
+    beforeLayerIds: Set<string>,
+  ): void {
+    if (!this.tryGetLayer(layerId)) {
+      console.warn(`[Regions] Cannot move layer ${layerId}: layer not found`);
+      return;
+    }
+    for (const beforeLayerId of beforeLayerIds) {
+      if (this.tryGetLayer(beforeLayerId)) {
+        mapRef.moveLayer(layerId, beforeLayerId);
+        break;
       }
     }
   }
