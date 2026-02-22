@@ -16,13 +16,6 @@ export function buildLocalDatasetPath(
   );
 }
 
-export function buildLocalCityPath(
-  localModsDataRoot: string,
-  cityCode: string,
-): string {
-  return encodeURI(`file:///${localModsDataRoot}/${cityCode}/`);
-}
-
 export function buildLocalDatasetCandidatePaths(
   localModsDataRoot: string,
   cityCode: string,

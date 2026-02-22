@@ -166,9 +166,9 @@ export class RegionsMod {
 
   private tryGetCityCode(): boolean {
     const cityCodeFromAPI = api.utils.getCityCode();
-    console.warn(
+    console.info(
       '[Regions] Resolved city code from API: ',
-      cityCodeFromAPI ?? 'N/A',
+      cityCodeFromAPI ? cityCodeFromAPI : 'N/A',
     );
     if (cityCodeFromAPI) {
       this.currentCityCode = cityCodeFromAPI;

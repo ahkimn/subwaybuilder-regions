@@ -11,7 +11,6 @@ import {
   RegistryMissingIndexError,
 } from '../errors';
 import {
-  buildLocalCityPath,
   buildLocalDatasetCandidatePaths,
   tryDatasetPath,
   tryLocalDatasetPaths,
@@ -303,9 +302,6 @@ export class RegionDatasetRegistry {
     const currentCities = this.api.utils.getCities();
 
     for (const city of currentCities) {
-      const cityDataPath = buildLocalCityPath(localModsDataRoot, city.code);
-      // First check to see if the city's directory exists before attempting to locate individual dataset paths
-      if (!(await tryDatasetPath(cityDataPath)).isPresent) continue;
       const datasetTemplates = city.country
         ? // Custom cities do not have a country property so these will be skipped by the discovery process
           (STATIC_TEMPLATES.get(city.country) ?? [])
