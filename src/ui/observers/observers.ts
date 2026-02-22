@@ -2,16 +2,10 @@ import { LAYERS_PANEL_MOD_ID, modIdSelector } from '../../core/constants';
 
 export function observeInfoPanelsRoot(
   root: HTMLElement,
-  onNodeAdded: (node: HTMLElement) => void,
+  onMutations: (mutations: MutationRecord[]) => void,
 ): MutationObserver {
   const observer = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      for (const node of Array.from(m.addedNodes)) {
-        if (node instanceof HTMLElement) {
-          onNodeAdded(node);
-        }
-      }
-    }
+    onMutations(mutations);
   });
 
   observer.observe(root, { childList: true });

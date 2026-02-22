@@ -4,11 +4,11 @@
     "availableBoundaryTypes": [
       {
         "adminLevels": [6],
-        "datasetId": "provinces",
+        "datasetId": "counties",
         "suffixesToTrim": [],
         "prefixesToTrim": [],
-        "unitSingular": "Province",
-        "unitPlural": "Provinces"
+        "unitSingular": "County",
+        "unitPlural": "Counties"
       },
       {
         "adminLevels": [8],

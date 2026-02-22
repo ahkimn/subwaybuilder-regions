@@ -65,6 +65,9 @@ export class ReactToolbarPanelHost {
     this.hasContent = false;
     // Force render to clear existing content in currently registered panel.
     this.requestRender();
+  }
+
+  markDetached(): void {
     this.initialized = false;
   }
 
