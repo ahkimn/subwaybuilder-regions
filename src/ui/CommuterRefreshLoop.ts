@@ -5,7 +5,7 @@ import {
 } from '../core/constants';
 import type { RegionDataManager } from '../core/datasets/RegionDataManager';
 import { RegionDataType, type UIState } from '../core/types';
-import type { ModdingAPI } from '../types/modding-api-v1';
+import type { ModdingAPI } from '../types/api';
 import type { RegionsPanelRenderer } from './panels/types';
 
 /*

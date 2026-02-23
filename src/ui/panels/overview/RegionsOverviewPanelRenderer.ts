@@ -4,7 +4,7 @@ import {
 } from '../../../core/constants';
 import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
 import type { RegionSelection, UIState } from '../../../core/types';
-import type { ModdingAPI } from '../../../types/modding-api-v1';
+import type { ModdingAPI } from '../../../types/api';
 import { ReactToolbarPanelHost } from '../shared/ReactToolbarPanelHost';
 import type { RegionsPanelRenderer } from '../types';
 import { renderRegionsOverviewPanel } from './RegionsOverviewPanel';
@@ -33,7 +33,7 @@ export class RegionsOverviewPanelRenderer implements RegionsPanelRenderer {
       id: REGIONS_OVERVIEW_PANEL_ID,
       icon: 'MapPinned',
       title: REGIONS_OVERVIEW_PANEL_TITLE,
-      width: 720,
+      defaultWidth: 720,
     });
   }
 

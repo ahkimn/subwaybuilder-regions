@@ -1,11 +1,7 @@
 import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 
-import type {
-  ModdingAPI,
-  Route,
-  Station,
-  Track,
-} from '../../types/modding-api-v1';
+import type { ModdingAPI } from '../../types/api';
+import type { Route, Station, Track } from '../../types/game-state';
 import { DEFAULT_CHUNK_SIZE } from '../constants';
 import {
   DatasetInvalidFeatureTypeError,

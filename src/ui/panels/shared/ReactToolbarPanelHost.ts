@@ -4,21 +4,12 @@ import {
   FLOATING_PANEL_OFFSET_X,
   FLOATING_PANEL_OFFSET_Y,
 } from '../../../core/constants';
-import type {
-  ModdingAPI,
-  UIFloatingPanelOptions,
-} from '../../../types/modding-api-v1';
+import type { ModdingAPI } from '../../../types/api';
+import type { UIFloatingPanelOptions } from '../../../types/ui';
 
 type ToolbarPanelHostOptions = Pick<
   UIFloatingPanelOptions,
-  | 'id'
-  | 'icon'
-  | 'title'
-  | 'width'
-  | 'height'
-  | 'defaultWidth'
-  | 'defaultHeight'
-  | 'defaultPosition'
+  'id' | 'icon' | 'title' | 'defaultWidth' | 'defaultHeight' | 'defaultPosition'
 >;
 
 export class ReactToolbarPanelHost {
@@ -38,7 +29,7 @@ export class ReactToolbarPanelHost {
       return;
     }
 
-    const panelWidth = this.options.width ?? 720;
+    const panelWidth = this.options.defaultWidth ?? 720;
     const defaultPosition = this.options.defaultPosition ?? {
       x: Math.max(16, window.innerWidth - panelWidth - FLOATING_PANEL_OFFSET_X),
       y: FLOATING_PANEL_OFFSET_Y,

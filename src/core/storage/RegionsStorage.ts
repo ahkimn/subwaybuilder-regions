@@ -4,7 +4,7 @@ import {
 } from '@shared/dataset-index';
 import { z } from 'zod';
 
-import type { ElectronAPI } from '../../types/modding-api-v1';
+import type { ElectronAPI } from '../../types/electron';
 import {
   REGIONS_REGISTRY_STORAGE_KEY,
   REGIONS_SETTINGS_STORAGE_KEY,

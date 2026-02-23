@@ -17,7 +17,7 @@ import {
 } from '../core/storage/types';
 import { RegionSelection, UIState, type UIStyle } from '../core/types';
 import type { RegionsMapLayers } from '../map/RegionsMapLayers';
-import type { ModdingAPI } from '../types/modding-api-v1';
+import type { ModdingAPI } from '../types/api';
 import { CommuterRefreshLoop } from './CommuterRefreshLoop';
 import { injectRegionToggles } from './map-layers/toggles';
 import {
@@ -391,6 +391,7 @@ export class RegionsUIManager {
 
   onGameEnd(): void {
     this.reset();
+    // We want to enable the overivew panel to be re-rendered on the next city load,
     this.overviewPanelRenderer.markHostDetached();
     this.mapLayers = null;
     this.layerPanelRoot = null;

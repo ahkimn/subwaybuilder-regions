@@ -1,0 +1,41 @@
+/** Subway Builder Modding API v1.0.0 */
+
+// =============================================================================
+// ELECTRON IPC TYPES
+// =============================================================================
+
+export interface ElectronAPI {
+  invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+  quit(): void;
+  reloadWindow(): void;
+  setCurrentRoute(route: string): void;
+  updateDiscordActivity(activity: unknown): void;
+  saveGameToFile(data: unknown): Promise<boolean>;
+  saveGameAuto(data: unknown): Promise<boolean>;
+  loadGameFromFile(): Promise<unknown>;
+  loadGameFromPath(path: string): Promise<unknown>;
+  getSaveFilesFromDirectory(): Promise<unknown[]>;
+  deleteSaveFile(filename: string): Promise<boolean>;
+  importMetroFile(): Promise<unknown>;
+  setLicenseKey(key: string): Promise<void>;
+
+  getModsFolder?: () => Promise<string>;
+  scanMods: () => Promise<{ success: boolean; mods: Mod[] }>;
+
+  /** Gets a value from the game's settings file metro-maker4/settings.json. */
+  getStorageItem: (key: string) => Promise<{ success: boolean; data: unknown }>;
+  getSetting: (key: string) => Promise<{ success: boolean; value: unknown }>;
+
+  /** Sets a value in the game's settings file metro-maker4/settings.json. */
+  setStorageItem: (
+    key: string,
+    value: unknown,
+  ) => Promise<{ success: boolean }>;
+}
+
+export interface ElectronAPIExtended {
+  loadDataFile(path: string): Promise<unknown>;
+  getDataServerPort(): Promise<number>;
+  buildBlueprints(): Promise<void>;
+  findRoutePathOrder(routeId: string): Promise<unknown>;
+}

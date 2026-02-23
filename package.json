@@ -44,6 +44,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "link": "tsx scripts/link.ts",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\" --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",
     "serve": "tsx scripts/serve-data.ts",

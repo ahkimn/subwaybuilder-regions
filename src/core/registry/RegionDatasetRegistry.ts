@@ -4,7 +4,7 @@ import type {
   RegistryCacheEntry,
 } from '@shared/dataset-index';
 
-import type { ModdingAPI } from '../../types/modding-api-v1';
+import type { ModdingAPI } from '../../types/api';
 import { RegionDataset } from '../datasets/RegionDataset';
 import {
   RegistryMissingDatasetError,

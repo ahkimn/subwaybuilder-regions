@@ -8,7 +8,7 @@ import {
   type RegionSelection,
   type UIState,
 } from '../../../core/types';
-import type { ModdingAPI } from '../../../types/modding-api-v1';
+import type { ModdingAPI } from '../../../types/api';
 import { ViewHeader } from '../../elements/ViewHeader';
 import { getNextSortState } from '../shared/helpers';
 import type { InputFieldProperties, SortState } from '../types';

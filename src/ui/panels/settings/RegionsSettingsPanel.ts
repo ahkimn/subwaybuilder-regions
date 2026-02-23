@@ -11,7 +11,7 @@ import type { RegionDataset } from '../../../core/datasets/RegionDataset';
 import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { DatasetOrigin } from '../../../core/types';
-import type { ModdingAPI } from '../../../types/modding-api-v1';
+import type { ModdingAPI } from '../../../types/api';
 import { getNextSortState } from '../shared/helpers';
 import {
   DEFAULT_SORT_STATE,
