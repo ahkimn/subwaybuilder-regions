@@ -63,10 +63,11 @@ export function saveBoundaries(
   filteredRegions: GeoJSON.Feature[],
   dataConfig: DataConfig,
 ) {
+  const shouldCompress = args.compress ?? true;
   const outputFilePath = path.resolve(
     'data',
     args.cityCode,
-    `${args.dataType}.geojson`,
+    `${args.dataType}.geojson${shouldCompress ? '.gz' : ''}`,
   );
 
   const outputFeatureCollection: GeoJSON.FeatureCollection = {
@@ -74,7 +75,9 @@ export function saveBoundaries(
     features: filteredRegions,
   };
 
-  saveGeoJSON(outputFilePath, outputFeatureCollection);
+  saveGeoJSON(outputFilePath, outputFeatureCollection, {
+    compress: shouldCompress,
+  });
 
   const indexEntry: DatasetMetadata = {
     datasetId: dataConfig.datasetId,

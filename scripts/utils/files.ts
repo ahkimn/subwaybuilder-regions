@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
+import { gzipSync } from 'zlib';
 
 import { DATA_INDEX_FILE } from '../../shared/constants';
 import type { DatasetIndex, DatasetMetadata } from '../../shared/dataset-index';
@@ -17,12 +18,21 @@ const US_DATASET_ORDER = [
   'zctas',
   'neighborhoods',
 ] as const;
+const CA_DATASET_ORDER = ['feds', 'csds', 'fsas'] as const;
 const GB_DATASET_ORDER = ['districts', 'bua', 'wards'] as const;
-const KNOWN_DATASET_ORDERS = [US_DATASET_ORDER, GB_DATASET_ORDER] as const;
+const KNOWN_DATASET_ORDERS = [
+  US_DATASET_ORDER,
+  CA_DATASET_ORDER,
+  GB_DATASET_ORDER,
+] as const;
 
 function resolveDatasetOrder(country: string): readonly string[] {
   if (country === 'US') {
     return US_DATASET_ORDER;
+  }
+
+  if (country === 'CA') {
+    return CA_DATASET_ORDER;
   }
 
   if (country === 'GB') {
@@ -171,17 +181,28 @@ async function loadFeatureFromNDJSON(
 export function saveGeoJSON(
   filePath: string,
   featureCollection: GeoJSON.FeatureCollection,
+  options?: { compress?: boolean },
 ): void {
   try {
-    console.info(`Saving GeoJSON to: ${filePath}`);
+    const compressOutput = options?.compress ?? false;
+    const resolvedFilePath =
+      compressOutput && !filePath.endsWith('.gz') ? `${filePath}.gz` : filePath;
+
+    console.info(`Saving GeoJSON to: ${resolvedFilePath}`);
     const saveDirectory = path.dirname(filePath);
+    const temporaryFilePath = `${resolvedFilePath}.tmp`;
 
     // Ensure directory exists
     fs.ensureDirSync(saveDirectory);
-    fs.writeJsonSync(`${filePath}.tmp`, featureCollection, { spaces: 2 });
-    fs.moveSync(`${filePath}.tmp`, filePath, { overwrite: true });
+    if (compressOutput) {
+      const serializedGeoJSON = JSON.stringify(featureCollection, null, 2);
+      fs.writeFileSync(temporaryFilePath, gzipSync(serializedGeoJSON));
+    } else {
+      fs.writeJsonSync(temporaryFilePath, featureCollection, { spaces: 2 });
+    }
+    fs.moveSync(temporaryFilePath, resolvedFilePath, { overwrite: true });
 
-    console.info(`Saved GeoJSON to: ${filePath}`);
+    console.info(`Saved GeoJSON to: ${resolvedFilePath}`);
   } catch (err) {
     console.error(`Failed to save GeoJSON to: ${filePath} with error: ${err}`);
     process.exit(1);

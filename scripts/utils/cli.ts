@@ -5,7 +5,7 @@ import minimist from 'minimist';
 import type { BoundaryBox } from './geometry';
 import { getSupportedCountryCodes } from './osm-country-config';
 
-const BUILT_IN_COUNTRY_CODES = ['GB', 'US'];
+const BUILT_IN_COUNTRY_CODES = ['CA', 'GB', 'US'];
 
 function getAvailableCountryCodes(): Set<string> {
   return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);
@@ -20,6 +20,7 @@ export type ExtractMapFeaturesArgs = {
   north?: number;
   east?: number;
   useLocalData?: boolean;
+  compress?: boolean;
   preview?: boolean;
   previewCount?: number;
 };
@@ -62,11 +63,15 @@ export function parseNumber(value: string): number | undefined {
 export function parseArgs(): ExtractMapFeaturesArgs {
   let argv = minimist(process.argv.slice(2), {
     string: ['data-type', 'city-code', 'country-code'],
-    boolean: ['use-local-data', 'preview'],
+    boolean: ['compress', 'use-local-data', 'preview'],
+    default: {
+      compress: true,
+    },
     alias: {
       'data-type': 'dataType',
       'city-code': 'cityCode',
       'country-code': 'countryCode',
+      compress: 'compress',
       'use-local-data': 'useLocalData',
     },
   });
@@ -104,6 +109,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     | undefined;
 
   const preview = (argv.preview ?? argv['preview']) as boolean | undefined;
+  const compress = (argv.compress ?? argv['compress']) as boolean | undefined;
 
   console.log('Parsed arguments:', {
     dataType: dataType,
@@ -114,6 +120,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     north: north,
     east: east,
     useLocalData: useLocalData,
+    compress: compress,
     preview: preview,
   });
 
@@ -126,6 +133,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     north: north,
     east: east,
     useLocalData: useLocalData,
+    compress: compress,
     preview: preview,
     previewCount: DEFAULT_PREVIEW_COUNT,
   };
