@@ -36,7 +36,7 @@ export class RegionsStorage {
     // TODO (Feature): Migrate all of these reads from the Electron API to the official game API / mod-specific storage when it is available
     private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
     private readonly electronApi: ElectronApi = resolveElectronApi(),
-  ) { }
+  ) {}
 
   async initialize(): Promise<RegionsSettingsValue> {
     if (this.initialized) {
@@ -142,9 +142,7 @@ export class RegionsStorage {
     try {
       const result = await this.electronApi.scanMods();
       if (!result?.success || !Array.isArray(result.mods)) {
-        console.warn(
-          '[Regions] scanMods returned an unsuccessful payload.',
-        );
+        console.warn('[Regions] scanMods returned an unsuccessful payload.');
         return;
       }
 
@@ -160,7 +158,10 @@ export class RegionsStorage {
       this.resolvedModVersion =
         typeof regionsMod.version === 'string' ? regionsMod.version : null;
     } catch (error) {
-      console.error('[Regions] Failed to resolve mod data root via scanMods.', error);
+      console.error(
+        '[Regions] Failed to resolve mod data root via scanMods.',
+        error,
+      );
     }
   }
 
