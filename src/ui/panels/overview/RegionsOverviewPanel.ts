@@ -6,7 +6,7 @@ import {
   RegionDataType,
   type RegionSelection,
   type UIState,
-} from '@/core/types';
+} from '@/core/domain';
 import type { ModdingAPI } from '@/types/api';
 import { getGameReact } from '@/ui/react/get-game-react';
 

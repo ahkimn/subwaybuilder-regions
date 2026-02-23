@@ -6,7 +6,6 @@ import {
   UNASSIGNED_REGION_ID,
 } from '../constants';
 import type { RegionDataset } from '../datasets/RegionDataset';
-import type { RegionDatasetRegistry } from '../registry/RegionDatasetRegistry';
 import type {
   RegionCommuterDetailsData,
   RegionCommuterSummaryData,
@@ -15,8 +14,9 @@ import type {
   RegionGameMetadata,
   RegionInfraData,
   UIState,
-} from '../types';
-import { RegionDataType } from '../types';
+} from '../domain';
+import { RegionDataType } from '../domain';
+import type { RegionDatasetRegistry } from '../registry/RegionDatasetRegistry';
 import { yieldToEventLoop } from '../utils';
 import type { RegionDataBuilder } from './RegionDataBuilder';
 

@@ -7,6 +7,7 @@ import {
   OVERVIEW_REGION_FOCUS_TARGET_COVERAGE,
 } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
+import { RegionSelection } from '../core/domain';
 import {
   buildBBoxFitState as fitBBox,
   normalizeBBox,
@@ -16,7 +17,6 @@ import {
   RegionsSettings,
   type RegionsSettings as RegionsSettingsValue,
 } from '../core/storage/types';
-import { RegionSelection } from '../core/types';
 import type { MapDisplayColor } from '../ui/types/DisplayColor';
 import { PRIMARY_FILL_COLORS } from '../ui/types/DisplayColor';
 import type { LayerToggleOptions } from '../ui/types/LayerToggleOptions';

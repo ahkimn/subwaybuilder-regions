@@ -1,4 +1,4 @@
-import type { RegionGameData, RegionSelection } from '@/core/types';
+import type { RegionGameData, RegionSelection } from '@/core/domain';
 
 import type { SortState } from '../types';
 

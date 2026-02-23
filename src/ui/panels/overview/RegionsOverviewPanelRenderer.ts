@@ -3,7 +3,7 @@ import {
   REGIONS_OVERVIEW_PANEL_TITLE,
 } from '@/core/constants';
 import type { RegionDataManager } from '@/core/datasets/RegionDataManager';
-import type { RegionSelection, UIState } from '@/core/types';
+import type { RegionSelection, UIState } from '@/core/domain';
 import type { ModdingAPI } from '@/types/api';
 
 import { ReactToolbarPanelHost } from '../shared/ReactToolbarPanelHost';

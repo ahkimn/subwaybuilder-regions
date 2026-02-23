@@ -5,7 +5,7 @@ import {
   LOADING_VALUE_DISPLAY,
   UNKNOWN_VALUE_DISPLAY,
 } from '@/core/constants';
-import type { RegionGameData } from '@/core/types';
+import type { RegionGameData } from '@/core/domain';
 import { formatNumberOrDefault } from '@/core/utils';
 
 import { ReactDetailRow } from '../../elements/DetailRow';

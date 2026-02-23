@@ -3,6 +3,14 @@ import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 import type { ModdingAPI } from '../../types/api';
 import type { Route, Station, Track } from '../../types/game-state';
 import { DEFAULT_CHUNK_SIZE } from '../constants';
+import type {
+  RegionCommuterDetailsData,
+  RegionCommuterSummaryData,
+  RegionInfraData,
+  RouteBulletType,
+  RouteDisplayParams,
+} from '../domain';
+import { CommuteType, ModeShare } from '../domain';
 import {
   DatasetInvalidFeatureTypeError,
   DatasetMissingFeatureError,
@@ -18,14 +26,6 @@ import {
   isCoordinateWithinFeature,
   isPolygonFeature,
 } from '../geometry/helpers';
-import type {
-  RegionCommuterDetailsData,
-  RegionCommuterSummaryData,
-  RegionInfraData,
-  RouteBulletType,
-  RouteDisplayParams,
-} from '../types';
-import { CommuteType, ModeShare } from '../types';
 import { processInChunks } from '../utils';
 import type { RegionDataset } from './RegionDataset';
 

@@ -20,7 +20,7 @@ import {
   type RegionGameData,
   RegionSelection,
   type UIState,
-} from '@/core/types';
+} from '@/core/domain';
 
 import { ReactPanelHeader } from '../../elements/PanelHeader';
 import { Placeholder } from '../../elements/Placeholder';

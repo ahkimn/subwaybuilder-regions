@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { DatasetOrigin } from '../src/core/types';
+import type { DatasetOrigin } from '../src/core/domain';
 
 export type DatasetMetadata = {
   datasetId: string;

@@ -1,4 +1,4 @@
-import type { ModeShare } from '@/core/types';
+import type { ModeShare } from '@/core/domain';
 
 import type { NumberDisplay, SortState } from '../types';
 

@@ -12,6 +12,15 @@ import {
   UNASSIGNED_REGION_ID,
   UNKNOWN_VALUE_DISPLAY,
 } from '../constants';
+import type {
+  DatasetSource,
+  RegionCommuterDetailsData,
+  RegionCommuterSummaryData,
+  RegionDemandData,
+  RegionGameData,
+  RegionInfraData,
+} from '../domain';
+import { DatasetStatus, RegionGameData as RegionGameDataUtils } from '../domain';
 import {
   DatasetEmptyError,
   DatasetInvalidFeatureTypeError,
@@ -26,15 +35,6 @@ import {
   isCoordinateWithinFeature,
   isPolygonFeature,
 } from '../geometry/helpers';
-import type {
-  DatasetSource,
-  RegionCommuterDetailsData,
-  RegionCommuterSummaryData,
-  RegionDemandData,
-  RegionGameData,
-  RegionInfraData,
-} from '../types';
-import { DatasetStatus, RegionGameData as RegionGameDataUtils } from '../types';
 import { fetchGeoJSON } from '../utils';
 import { RegionBoundaryGridIndex } from './RegionBoundaryGridIndex';
 

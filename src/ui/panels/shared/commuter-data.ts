@@ -7,7 +7,7 @@ import {
   CommuteType,
   ModeShare,
   type RegionCommuterDetailsData,
-} from '@/core/types';
+} from '@/core/domain';
 
 import {
   type CommuterBreakdownData,

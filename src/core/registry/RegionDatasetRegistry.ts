@@ -6,6 +6,7 @@ import type {
 
 import type { ModdingAPI } from '../../types/api';
 import { RegionDataset } from '../datasets/RegionDataset';
+import type { DatasetOrigin } from '../domain';
 import {
   RegistryMissingDatasetError,
   RegistryMissingIndexError,
@@ -16,7 +17,6 @@ import {
   tryLocalDatasetPaths,
 } from '../storage/helpers';
 import type { RegionsStorage } from '../storage/RegionsStorage';
-import type { DatasetOrigin } from '../types';
 import { resolveStaticTemplateCountry, STATIC_TEMPLATES } from './static';
 
 export class RegionDatasetRegistry {
