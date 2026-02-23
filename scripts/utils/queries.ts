@@ -9,9 +9,8 @@ const TIGERWEB_API_BASE_URL =
 const ACS_API_URL = 'https://api.census.gov/data/2022/acs/acs5';
 const ONS_API_BASE_URL =
   'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services';
-// TODO: investigate this for Canadian sources
-export const CA_URL =
-  'https://geo.statcan.gc.ca/geo_wa/rest/services/2021/Cartographic_boundary_files/MapServer';
+const CA_STATCAN_BASE_URL =
+  'https://geo.statcan.gc.ca/geo_wa/rest/services/2021/Cartographic_boundary_files/MapServer/';
 
 // List of states (by FIPS code) where cities or towns are used as county subdivisions in Census data, rather than minor civil divisions.
 export const STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS = new Set([
@@ -472,6 +471,27 @@ export function buildONSArcGISQuery(
       inSR: '4326',
       outSR: '4326',
       outFields: '*',
+      returnGeometry: 'true',
+      f: 'geojson',
+    }),
+  };
+}
+
+export function buildCAStatCanArcGISQuery(
+  queryBBox: BoundaryBox,
+  layerId: number,
+  outFields: string = '*',
+): ArcGISQueryRequest {
+  return {
+    url: `${CA_STATCAN_BASE_URL}${layerId}/query`,
+    params: new URLSearchParams({
+      where: '1=1',
+      geometry: bboxToGeometryString(queryBBox),
+      geometryType: 'esriGeometryEnvelope',
+      spatialRel: 'esriSpatialRelIntersects',
+      inSR: '4326',
+      outSR: '4326',
+      outFields: outFields,
       returnGeometry: 'true',
       f: 'geojson',
     }),
