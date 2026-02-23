@@ -17,10 +17,10 @@ import type {
   CareerRegions,
   MissionConfig,
 } from './career';
-import type { City, CityConfig, CityDataFiles,CityTab } from './cities';
+import type { City, CityConfig, CityDataFiles, CityTab } from './cities';
 import type { NewspaperTemplate, TweetTemplate } from './content-templates';
 import type { Coordinate, GameSpeed } from './core';
-import type { Bond, BondResult,BondType } from './game-actions';
+import type { Bond, BondResult, BondType } from './game-actions';
 import type { GameConstants } from './game-constants';
 import type {
   CompletedCommute,
@@ -137,13 +137,24 @@ export interface ModdingAPI {
     /** Override the driving-route service for a city. */
     setRoutingServiceOverride(config: RoutingServiceOverride): void;
     /** Get the routing service override for a city. */
-    getRoutingServiceOverride(cityCode: string): RoutingServiceOverride | undefined;
+    getRoutingServiceOverride(
+      cityCode: string,
+    ): RoutingServiceOverride | undefined;
     /** Query a driving route between two points. */
-    queryRoute(cityCode: string, origin: Coordinate, destination: Coordinate): Promise<RouteResult>;
+    queryRoute(
+      cityCode: string,
+      origin: Coordinate,
+      destination: Coordinate,
+    ): Promise<RouteResult>;
     /** Set default visibility for built-in map layers in a city. */
-    setDefaultLayerVisibility(cityCode: string, visibility: DefaultLayerVisibility): void;
+    setDefaultLayerVisibility(
+      cityCode: string,
+      visibility: DefaultLayerVisibility,
+    ): void;
     /** Get default visibility settings for a city. */
-    getDefaultLayerVisibility(cityCode: string): DefaultLayerVisibility | undefined;
+    getDefaultLayerVisibility(
+      cityCode: string,
+    ): DefaultLayerVisibility | undefined;
   };
 
   // ---------------------------------------------------------------------------
@@ -267,11 +278,20 @@ export interface ModdingAPI {
     // -- Styled variants --
 
     /** Add a styled button (with variant support) to a UI placement. */
-    addStyledButton(placement: UIPlacement, config: UIStyledButtonOptions): void;
+    addStyledButton(
+      placement: UIPlacement,
+      config: UIStyledButtonOptions,
+    ): void;
     /** Add a styled toggle to a UI placement. */
-    addStyledToggle(placement: UIPlacement, config: UIStyledToggleOptions): void;
+    addStyledToggle(
+      placement: UIPlacement,
+      config: UIStyledToggleOptions,
+    ): void;
     /** Add a styled slider (with optional value display) to a UI placement. */
-    addStyledSlider(placement: UIPlacement, config: UIStyledSliderOptions): void;
+    addStyledSlider(
+      placement: UIPlacement,
+      config: UIStyledSliderOptions,
+    ): void;
     /** Add a button to the main menu. */
     addMainMenuButton(config: UIMainMenuButtonOptions): void;
 
@@ -309,7 +329,9 @@ export interface ModdingAPI {
     /** Called when a new route is created. */
     onRouteCreated(callback: (route: Route) => void): void;
     /** Called when a route is deleted. */
-    onRouteDeleted(callback: (routeId: string, routeBullet: string) => void): void;
+    onRouteDeleted(
+      callback: (routeId: string, routeBullet: string) => void,
+    ): void;
     /** Called when tracks are built (constructed from blueprints). */
     onTrackBuilt(callback: (tracks: Track[]) => void): void;
     /** Called when blueprint tracks are placed on the map. */
@@ -317,7 +339,9 @@ export interface ModdingAPI {
     /** Called when population/demand data changes. */
     onDemandChange(callback: (popCount: number) => void): void;
     /** Called when tracks are added or deleted. */
-    onTrackChange(callback: (changeType: 'add' | 'delete', count: number) => void): void;
+    onTrackChange(
+      callback: (changeType: 'add' | 'delete', count: number) => void,
+    ): void;
     /** Called when a new train is spawned on a route. */
     onTrainSpawned(callback: (train: Train) => void): void;
     /** Called when a train is removed. */
@@ -327,7 +351,14 @@ export interface ModdingAPI {
     /** Called when game speed changes. */
     onSpeedChanged(callback: (newSpeed: GameSpeed) => void): void;
     /** Called when the player's money changes. */
-    onMoneyChanged(callback: (newBalance: number, change: number, type: 'revenue' | 'expense', category?: string) => void): void;
+    onMoneyChanged(
+      callback: (
+        newBalance: number,
+        change: number,
+        type: 'revenue' | 'expense',
+        category?: string,
+      ) => void,
+    ): void;
     /** Called after the game is saved. */
     onGameSaved(callback: (saveName: string) => void): void;
     /** Called after a save is loaded. */
@@ -424,7 +455,10 @@ export interface ModdingAPI {
 
   build: {
     /** Place blueprint tracks on the map. */
-    placeBlueprintTracks(tracks: BlueprintTrackInput[], groups?: TrackGroupInput[]): PlaceBlueprintResult;
+    placeBlueprintTracks(
+      tracks: BlueprintTrackInput[],
+      groups?: TrackGroupInput[],
+    ): PlaceBlueprintResult;
     /** Construct all placed blueprints. */
     buildBlueprints(): Promise<BuildBlueprintsResult>;
     /** Erase all placed blueprints. */

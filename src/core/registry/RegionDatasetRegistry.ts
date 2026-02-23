@@ -304,7 +304,7 @@ export class RegionDatasetRegistry {
     for (const city of currentCities) {
       const datasetTemplates = city.country
         ? // Custom cities do not have a country property so these will be skipped by the discovery process
-        (STATIC_TEMPLATES.get(city.country) ?? [])
+          (STATIC_TEMPLATES.get(city.country) ?? [])
         : [];
       for (const template of datasetTemplates) {
         const candidatePaths = buildLocalDatasetCandidatePaths(

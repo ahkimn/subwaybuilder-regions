@@ -1,6 +1,6 @@
 /** Subway Builder Modding API v1.0.0 */
 
-import type { BoundingBox,Coordinate } from './core';
+import type { BoundingBox, Coordinate } from './core';
 
 // =============================================================================
 // BUILDING DATA TYPES

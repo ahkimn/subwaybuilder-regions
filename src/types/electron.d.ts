@@ -27,7 +27,10 @@ export interface ElectronAPI {
   getSetting: (key: string) => Promise<{ success: boolean; value: unknown }>;
 
   /** Sets a value in the game's settings file metro-maker4/settings.json. */
-  setStorageItem: (key: string, value: unknown) => Promise<{ success: boolean }>;
+  setStorageItem: (
+    key: string,
+    value: unknown,
+  ) => Promise<{ success: boolean }>;
 }
 
 export interface ElectronAPIExtended {

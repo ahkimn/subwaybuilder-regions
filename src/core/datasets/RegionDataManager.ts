@@ -25,7 +25,7 @@ export class RegionDataManager {
     private builder: RegionDataBuilder,
     private registry: RegionDatasetRegistry,
     private api: ModdingAPI,
-  ) { }
+  ) {}
 
   async ensureExistsDataForSelection(
     uiState: Readonly<UIState>,

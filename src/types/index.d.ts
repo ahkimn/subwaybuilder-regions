@@ -31,7 +31,12 @@ export * from './utils';
 /** Chance.js random generator instance. */
 export interface ChanceInstance {
   bool(opts?: { likelihood: number }): boolean;
-  character(opts?: { pool?: string; alpha?: boolean; numeric?: boolean; symbols?: boolean }): string;
+  character(opts?: {
+    pool?: string;
+    alpha?: boolean;
+    numeric?: boolean;
+    symbols?: boolean;
+  }): string;
   floating(opts?: { min?: number; max?: number; fixed?: number }): number;
   integer(opts?: { min?: number; max?: number }): number;
   natural(opts?: { min?: number; max?: number }): number;
@@ -42,7 +47,12 @@ export interface ChanceInstance {
   sentence(opts?: { words?: number }): string;
   word(opts?: { length?: number; syllables?: number }): string;
   paragraph(opts?: { sentences?: number }): string;
-  name(opts?: { middle?: boolean; middle_initial?: boolean; prefix?: boolean; suffix?: boolean }): string;
+  name(opts?: {
+    middle?: boolean;
+    middle_initial?: boolean;
+    prefix?: boolean;
+    suffix?: boolean;
+  }): string;
   first(opts?: { gender?: string; nationality?: string }): string;
   last(opts?: { nationality?: string }): string;
   color(opts?: { format?: string; grayscale?: boolean }): string;

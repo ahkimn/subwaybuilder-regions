@@ -9,12 +9,7 @@ import type { UIFloatingPanelOptions } from '../../../types/ui';
 
 type ToolbarPanelHostOptions = Pick<
   UIFloatingPanelOptions,
-  | 'id'
-  | 'icon'
-  | 'title'
-  | 'defaultWidth'
-  | 'defaultHeight'
-  | 'defaultPosition'
+  'id' | 'icon' | 'title' | 'defaultWidth' | 'defaultHeight' | 'defaultPosition'
 >;
 
 export class ReactToolbarPanelHost {
@@ -27,7 +22,7 @@ export class ReactToolbarPanelHost {
   constructor(
     private readonly api: ModdingAPI,
     private readonly options: ToolbarPanelHostOptions,
-  ) { }
+  ) {}
 
   initialize(): void {
     if (this.initialized) {

@@ -4,7 +4,16 @@
 // SUPPORTED LANGUAGES
 // =============================================================================
 
-export type SupportedLanguage = 'en' | 'es' | 'fr' | 'de' | 'pt' | 'it' | 'ja' | 'ko' | 'zh';
+export type SupportedLanguage =
+  | 'en'
+  | 'es'
+  | 'fr'
+  | 'de'
+  | 'pt'
+  | 'it'
+  | 'ja'
+  | 'ko'
+  | 'zh';
 
 // =============================================================================
 // I18N TYPES

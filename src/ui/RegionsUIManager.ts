@@ -391,7 +391,7 @@ export class RegionsUIManager {
 
   onGameEnd(): void {
     this.reset();
-    // We want to enable the overivew panel to be re-rendered on the next city load, 
+    // We want to enable the overivew panel to be re-rendered on the next city load,
     this.overviewPanelRenderer.markHostDetached();
     this.mapLayers = null;
     this.layerPanelRoot = null;

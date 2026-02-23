@@ -1,6 +1,12 @@
 /** Subway Builder Modding API v1.0.0 - Game State Types */
 
-import type { BuildType, Coordinate, DisplayType, RouteShape, TrackType } from './core';
+import type {
+  BuildType,
+  Coordinate,
+  DisplayType,
+  RouteShape,
+  TrackType,
+} from './core';
 
 // =============================================================================
 // STATION DATA STRUCTURES

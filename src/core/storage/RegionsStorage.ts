@@ -39,7 +39,7 @@ export class RegionsStorage {
     private readonly electronApi:
       | Partial<ElectronApi>
       | undefined = resolveElectronApi(),
-  ) { }
+  ) {}
 
   async initialize(): Promise<RegionsSettingsValue> {
     if (this.initialized) {

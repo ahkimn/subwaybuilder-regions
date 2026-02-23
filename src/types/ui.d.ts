@@ -24,7 +24,13 @@ export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 export type Theme = 'light' | 'dark' | 'system';
 
 /** Button style variants for styled buttons */
-export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+export type ButtonVariant =
+  | 'default'
+  | 'destructive'
+  | 'outline'
+  | 'secondary'
+  | 'ghost'
+  | 'link';
 
 // =============================================================================
 // UI PRIMITIVE OPTIONS
