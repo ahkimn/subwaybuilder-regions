@@ -54,17 +54,24 @@ const GB_DATASET_TEMPLATES: readonly StaticDatasetTemplate[] = [
 
 const CA_DATASET_TEMPLATES: readonly StaticDatasetTemplate[] = [
   {
-    datasetId: 'csds',
-    displayName: 'Census Subdivisions',
-    unitSingular: 'Census Subdivision',
-    unitPlural: 'Census Subdivisions',
-    source: 'CA Statistics Canada',
-  },
-  {
     datasetId: 'feds',
     displayName: 'Federal Electoral Districts',
     unitSingular: 'Federal Electoral District',
     unitPlural: 'Federal Electoral Districts',
+    source: 'CA Statistics Canada',
+  },
+  {
+    datasetId: 'peds',
+    displayName: 'Provincial Electoral Districts',
+    unitSingular: 'Provincial Electoral District',
+    unitPlural: 'Provincial Electoral Districts',
+    source: 'CA Provincial Electoral Districts',
+  },
+  {
+    datasetId: 'csds',
+    displayName: 'Census Subdivisions',
+    unitSingular: 'Census Subdivision',
+    unitPlural: 'Census Subdivisions',
     source: 'CA Statistics Canada',
   },
   {

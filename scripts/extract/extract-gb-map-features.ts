@@ -25,7 +25,7 @@ import { processAndSaveBoundaries } from './process';
   Source: https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-may-2025-boundaries-uk-bfc-v2/about
   Resolution: Full resolution (clipped to coastline)
 */
-const GB_DISTRICT_BOUNDARIES = 'gb_district_boundaries.geojson';
+const GB_DISTRICT_BOUNDARIES = 'gb_district_boundaries.geojson.gz';
 const GB_DISTRICT_POPULATIONS = 'gb_district_populations.csv';
 
 const DISTRICT_CODE_PROPERTY = 'LAD25CD';
@@ -37,7 +37,7 @@ const DISTRICT_WELSH_NAME_PROPERTY = 'LAD25NMW';
    Note: Missing Northern Ireland BUAs
    Resolution: 25m grid squares
 */
-const GB_BUA_BOUNDARIES = 'gb_bua_boundaries.geojson';
+const GB_BUA_BOUNDARIES = 'gb_bua_boundaries.geojson.gz';
 const GB_BUA_POPULATIONS = 'gb_bua_populations.csv';
 
 const BUA_CODE_PROPERTY = 'BUA22CD';
@@ -49,7 +49,7 @@ const BUA_GAELIC_NAME_PROPERTY = 'BUA22NMG';
   Source: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2025-boundaries-uk-bfc-v2-1/about
   Resolution: Full resolution (clipped to coastline)
 */
-const GB_WARD_BOUNDARIES = 'gb_ward_boundaries.ndjson';
+const GB_WARD_BOUNDARIES = 'gb_ward_boundaries.ndjson.gz';
 const GB_WARD_POPULATIONS = 'gb_ward_populations.csv'; // Out of date; should be updated
 
 const WARD_CODE_PROPERTY = 'WD25CD';

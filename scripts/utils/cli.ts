@@ -25,7 +25,16 @@ export type ExtractMapFeaturesArgs = {
   previewCount?: number;
 };
 
+export type ExportArchivesArgs = {
+  all: boolean;
+  cityCodes: string[];
+  includeOSMData: boolean;
+  outputDir: string;
+};
+
 const DEFAULT_PREVIEW_COUNT = 5;
+
+// --- Required Argument Helpers --- //
 
 export function requireString(value: any, name: string): string {
   if (typeof value !== 'string' || value.length === 0) {
@@ -59,6 +68,25 @@ export function parseNumber(value: string): number | undefined {
 
   return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
 }
+
+export function hasExplicitBBox(
+  args: ExtractMapFeaturesArgs,
+): args is ExtractMapFeaturesArgs & BoundaryBox {
+  return [args.south, args.west, args.north, args.east].every(
+    (v) => typeof v === 'number',
+  );
+}
+
+export function getBBoxFromArgs(args: ExtractMapFeaturesArgs): BoundaryBox {
+  return {
+    south: args.south!,
+    west: args.west!,
+    north: args.north!,
+    east: args.east!,
+  };
+}
+
+// --- Argument Parsing for Boundary Extraction --- //
 
 export function parseArgs(): ExtractMapFeaturesArgs {
   let argv = minimist(process.argv.slice(2), {
@@ -139,20 +167,52 @@ export function parseArgs(): ExtractMapFeaturesArgs {
   };
 }
 
-// --- Argument Helpers --- //
-export function hasExplicitBBox(
-  args: ExtractMapFeaturesArgs,
-): args is ExtractMapFeaturesArgs & BoundaryBox {
-  return [args.south, args.west, args.north, args.east].every(
-    (v) => typeof v === 'number',
-  );
-}
+// --- Argument Parsing for Exporting Archives --- //
 
-export function getBBoxFromArgs(args: ExtractMapFeaturesArgs): BoundaryBox {
+export function parseExportArgs(): ExportArchivesArgs {
+  const argv = minimist(process.argv.slice(2), {
+    string: ['city-code', 'cityCode', 'output-dir', 'outputDir'],
+    boolean: ['all', 'include-osm-data', 'includeOSMData'],
+    default: {
+      all: false,
+      'include-osm-data': false,
+      'output-dir': 'export',
+    },
+    alias: {
+      'city-code': 'cityCode',
+      'output-dir': 'outputDir',
+      'include-osm-data': 'includeOSMData',
+    },
+  });
+
+  console.log('Raw export arguments:', argv);
+
+  const all = Boolean(argv.all);
+  const includeOSMData = Boolean(
+    argv.includeOSMData ?? argv['include-osm-data'],
+  );
+  const outputDir = requireString(
+    argv.outputDir ?? argv['output-dir'],
+    'output-dir',
+  );
+
+  const cityCodeArg = argv.cityCode ?? argv['city-code'];
+  const cityCodeList = String(cityCodeArg ?? '')
+    .split(',')
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => value.length > 0);
+
+  if (!all && cityCodeList.length === 0) {
+    console.error(
+      'Missing or invalid argument: --city-code (or pass --all to export all cities in boundaries.csv)',
+    );
+    process.exit(1);
+  }
+
   return {
-    south: args.south!,
-    west: args.west!,
-    north: args.north!,
-    east: args.east!,
+    all,
+    cityCodes: cityCodeList,
+    includeOSMData,
+    outputDir,
   };
 }
