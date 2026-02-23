@@ -2,7 +2,17 @@
 
 [Back to README](README.md)
 
-## v0.3.2 - 2026-02-22
+## v0.3.3 - 2026-02-23
+
+_Game version_ v1.1.0
+
+### Other Updates
+
+- Update visual styling of boundary layers to be more consistent between dark/light modes and to be generally more subtle
+- Mod folder resolution made more robust by making use of the available `scanMods()` api.
+  - Regions mod folder no longer needs to be in `metro-maker4/mods/regions` for static dataset discovery to happen
+
+## v0.3.2 - 2026-02-23
 
 _Game version_ v1.1.0
 

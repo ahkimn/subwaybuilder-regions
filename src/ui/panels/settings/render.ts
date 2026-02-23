@@ -41,6 +41,7 @@ export type SettingsDatasetIssue = 'missing_file' | 'missing_city' | null;
 export type SettingsDatasetRow = {
   rowKey: string;
   cityCode: string;
+  cityName: string | null;
   datasetId: string;
   displayName: string;
   origin: DatasetOrigin;
@@ -49,7 +50,8 @@ export type SettingsDatasetRow = {
 };
 
 const REGISTRY_TABLE_COLUMN_LABELS = [
-  'City',
+  'City Code',
+  'City Name',
   'Dataset',
   'Display Name',
   'Origin',
@@ -75,22 +77,28 @@ const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
     index: 1,
     defaultDirection: SortDirection.Asc,
     compare: (aMetrics, bMetrics) =>
-      aMetrics.datasetId.localeCompare(bMetrics.datasetId),
+      (aMetrics.cityName ?? '').localeCompare(bMetrics.cityName ?? ''),
   },
   {
     index: 2,
     defaultDirection: SortDirection.Asc,
     compare: (aMetrics, bMetrics) =>
-      aMetrics.displayName.localeCompare(bMetrics.displayName),
+      aMetrics.datasetId.localeCompare(bMetrics.datasetId),
   },
   {
     index: 3,
     defaultDirection: SortDirection.Asc,
     compare: (aMetrics, bMetrics) =>
-      aMetrics.origin.localeCompare(bMetrics.origin),
+      aMetrics.displayName.localeCompare(bMetrics.displayName),
   },
   {
     index: 4,
+    defaultDirection: SortDirection.Asc,
+    compare: (aMetrics, bMetrics) =>
+      aMetrics.origin.localeCompare(bMetrics.origin),
+  },
+  {
+    index: 5,
     defaultDirection: SortDirection.Desc,
     compare: (aMetrics, bMetrics) => {
       const aSize = aMetrics.fileSizeMB ?? -1;
@@ -99,7 +107,7 @@ const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
     },
   },
   {
-    index: 5,
+    index: 6,
     defaultDirection: SortDirection.Asc,
     compare: (aMetrics, bMetrics) =>
       resolveStatusRank(aMetrics.issue) - resolveStatusRank(bMetrics.issue),
@@ -108,7 +116,7 @@ const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
 
 const REGISTRY_TABLE_OPTIONS: TableOptions = {
   columnTemplate:
-    'minmax(8ch,max-content) minmax(10ch,max-content) minmax(14ch,1fr) minmax(8ch,max-content) minmax(8ch,max-content) minmax(12ch,max-content)',
+    'minmax(8ch,max-content) minmax(14ch,max-content) minmax(10ch,max-content) minmax(14ch,1fr) minmax(8ch,max-content) minmax(8ch,max-content) minmax(12ch,max-content)',
   density: 'compact',
   tableCellOptions: {
     cellPaddingClassName: {
@@ -134,6 +142,7 @@ export function filterSettingsRows(
   return rows.filter((row) => {
     return (
       row.cityCode.toLowerCase().includes(trimmed) ||
+      (row.cityName?.toLowerCase().includes(trimmed) ?? false) ||
       row.datasetId.toLowerCase().includes(trimmed) ||
       row.displayName.toLowerCase().includes(trimmed)
     );
@@ -174,6 +183,9 @@ export function sortSettingsRows(
 
     if (result === 0) {
       result = a.cityCode.localeCompare(b.cityCode);
+      if (result === 0) {
+        result = (a.cityName ?? '').localeCompare(b.cityName ?? '');
+      }
       if (result === 0) {
         result = a.datasetId.localeCompare(b.datasetId);
       }
@@ -443,10 +455,12 @@ function buildRegistryTableRows(
     'left',
     'left',
     'left',
+    'left',
     'right',
     'left',
   ];
   const bodyAlign: TableAlign[] = [
+    'left',
     'left',
     'left',
     'left',
@@ -483,6 +497,7 @@ function buildRegistryTableRows(
     tableRows.push({
       rowValues: [
         row.cityCode,
+        row.cityName ?? '—',
         row.datasetId,
         row.displayName,
         row.origin,

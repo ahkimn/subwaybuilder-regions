@@ -99,8 +99,6 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 
 1.  Under the game's mod folder, create a new `regions/` directory if one does not already exist.
 
-    :warning: Please match the folder name exactly; otherwise the mod may not function properly
-
 2.  Navigate to this repository's **Releases** [section](https://github.com/ahkimn/subwaybuilder-regions/releases) and download the latest release
 
     Un-zip the file and copy the `index.js` and `manifest.json` directly into the `mods/regions/` directory
