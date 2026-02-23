@@ -11,7 +11,7 @@ import type { ModdingAPI } from '@/types/api';
 import { getGameReact } from '@/ui/react/get-game-react';
 
 import { ViewHeader } from '../../elements/ViewHeader';
-import { getNextSortState } from '../shared/helpers';
+import { getNextSortState } from '../shared/sort';
 import type { InputFieldProperties, SortState } from '../types';
 import { DEFAULT_SORT_STATE } from '../types';
 import { renderLayerSelectorRow, renderOverviewTabs } from './render';

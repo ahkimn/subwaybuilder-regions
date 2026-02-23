@@ -14,7 +14,7 @@ import {
   getBreakdownSortOrder,
   resolveBreakdownSourceLabel,
 } from '../shared/commuter-data';
-import { getNextSortState } from '../shared/helpers';
+import { getNextSortState } from '../shared/sort';
 import { sortWithFallback } from '../shared/sort';
 import type { SortConfig } from '../types';
 import { NumberDisplay, SortDirection } from '../types';

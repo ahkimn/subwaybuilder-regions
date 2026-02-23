@@ -84,12 +84,13 @@ export const DATASET_METADATA_CATALOG: Readonly<
   },
 });
 
-export const COUNTRY_DATASET_ORDER: Readonly<Record<string, readonly string[]>> =
-  Object.freeze({
-    US: ['counties', 'county-subdivisions', 'zctas', 'neighborhoods'],
-    CA: ['feds', 'peds', 'csds', 'fsas'],
-    GB: ['districts', 'bua', 'wards'],
-  });
+export const COUNTRY_DATASET_ORDER: Readonly<
+  Record<string, readonly string[]>
+> = Object.freeze({
+  US: ['counties', 'county-subdivisions', 'zctas', 'neighborhoods'],
+  CA: ['feds', 'peds', 'csds', 'fsas'],
+  GB: ['districts', 'bua', 'wards'],
+});
 
 export const CATALOG_STATIC_COUNTRIES = Object.freeze(['US', 'CA', 'GB']);
 
@@ -97,7 +98,9 @@ export function normalizeDatasetCountryCode(countryCode: string): string {
   return countryCode.toUpperCase() === 'UK' ? 'GB' : countryCode.toUpperCase();
 }
 
-export function resolveCountryDatasetOrder(countryCode: string): readonly string[] {
+export function resolveCountryDatasetOrder(
+  countryCode: string,
+): readonly string[] {
   const normalizedCountryCode = normalizeDatasetCountryCode(countryCode);
   return COUNTRY_DATASET_ORDER[normalizedCountryCode] ?? [];
 }

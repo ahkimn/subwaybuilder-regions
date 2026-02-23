@@ -1,5 +1,5 @@
-import type { SortConfig, SortState } from '../types';
-import { SortDirection } from '../types';
+import type { SortConfig } from '../types';
+import { SortDirection, SortState } from '../types';
 
 export function sortWithFallback<Row, Metrics>(
   rows: Row[],
@@ -50,4 +50,21 @@ export function sortWithFallback<Row, Metrics>(
 
     return result;
   });
+}
+
+export function getNextSortState<T>(
+  current: SortState,
+  columnIndex: number,
+  resolveSortConfig: (columnIndex: number) => SortConfig<T>,
+): SortState {
+  if (current.sortIndex === columnIndex)
+    return SortState.reverseDirection(current);
+
+  const nextSortDescriptor = resolveSortConfig(columnIndex);
+  return {
+    previousSortIndex: current.sortIndex,
+    previousSortDirection: current.sortDirection,
+    sortIndex: columnIndex,
+    sortDirection: nextSortDescriptor.defaultDirection,
+  };
 }

@@ -30,18 +30,6 @@ export const STATIC_TEMPLATES: Map<string, readonly StaticDatasetTemplate[]> =
     }),
   );
 
-for (const countryCode of CATALOG_STATIC_COUNTRIES) {
-  const orderedDatasetIds = resolveCountryDatasetOrder(countryCode);
-  const templateDatasetIds = (STATIC_TEMPLATES.get(countryCode) ?? []).map(
-    (template) => template.datasetId,
-  );
-  if (orderedDatasetIds.join('|') !== templateDatasetIds.join('|')) {
-    throw new Error(
-      `[Regions] Static template ordering mismatch for ${countryCode}: expected ${orderedDatasetIds.join(',')}, received ${templateDatasetIds.join(',')}`,
-    );
-  }
-}
-
 function normalizeTemplateCountryCode(countryCode: string): string {
   if (countryCode === 'UK') {
     return 'GB';

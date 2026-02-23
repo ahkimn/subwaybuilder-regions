@@ -20,7 +20,10 @@ import type {
   RegionGameData,
   RegionInfraData,
 } from '../domain';
-import { DatasetStatus, RegionGameData as RegionGameDataUtils } from '../domain';
+import {
+  DatasetStatus,
+  RegionGameData as RegionGameDataUtils,
+} from '../domain';
 import {
   DatasetEmptyError,
   DatasetInvalidFeatureTypeError,

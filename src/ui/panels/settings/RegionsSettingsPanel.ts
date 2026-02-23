@@ -9,7 +9,7 @@ import type { ModdingAPI } from '@/types/api';
 import type { City } from '@/types/cities';
 import { getGameReact } from '@/ui/react/get-game-react';
 
-import { getNextSortState } from '../shared/helpers';
+import { getNextSortState } from '../shared/sort';
 import {
   DEFAULT_SORT_STATE,
   type InputFieldProperties,
