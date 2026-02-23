@@ -6,6 +6,7 @@ import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistr
 import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { DatasetOrigin } from '@/core/types';
 import type { ModdingAPI } from '@/types/api';
+import type { City } from '@/types/cities';
 import { getGameReact } from '@/ui/react/get-game-react';
 
 import { getNextSortState } from '../shared/helpers';
@@ -212,13 +213,14 @@ export function RegionsSettingsPanel({
       };
     }, []);
 
-    const knownCityCodes = new Set(
-      api.utils.getCities().map((city) => city.code),
+    const knownCitiesByCode = new Map<string, City>(
+      api.utils.getCities().map((city) => [city.code, city]),
     );
+    const knownCityCodes = new Set(knownCitiesByCode.keys());
     const datasetRows = buildSettingsDatasetRows(
       datasetRegistry.datasets,
       state.cachedRegistryEntries,
-      knownCityCodes,
+      knownCitiesByCode,
     );
 
     const filteredRows = filterSettingsRows(datasetRows, state.searchTerm);
@@ -371,10 +373,11 @@ export function RegionsSettingsPanel({
 function buildSettingsDatasetRows(
   datasets: Map<string, RegionDataset>,
   cachedEntries: RegistryCacheEntry[],
-  knownCityCodes: Set<string>,
+  knownCitiesByCode: Map<string, City>,
 ): SettingsDatasetRow[] {
   const rows = new Map<string, SettingsDatasetRow>();
   const cacheByDatasetKey = new Map<string, RegistryCacheEntry[]>();
+  const knownCityCodes = new Set(knownCitiesByCode.keys());
 
   cachedEntries.forEach((entry) => {
     const datasetKey = `${entry.cityCode}::${entry.datasetId}`;
@@ -398,6 +401,7 @@ function buildSettingsDatasetRows(
     rows.set(`${dataset.cityCode}:${dataset.id}:${inferredOrigin}`, {
       rowKey: `${dataset.cityCode}:${dataset.id}:${inferredOrigin}`,
       cityCode: dataset.cityCode,
+      cityName: knownCitiesByCode.get(dataset.cityCode)?.name ?? null,
       datasetId: dataset.id,
       displayName: dataset.displayName,
       origin: inferredOrigin,
@@ -423,6 +427,7 @@ function buildSettingsDatasetRows(
     rows.set(rowKey, {
       rowKey,
       cityCode: entry.cityCode,
+      cityName: knownCitiesByCode.get(entry.cityCode)?.name ?? null,
       datasetId: entry.datasetId,
       displayName: entry.displayName,
       origin: entry.origin,

@@ -1,5 +1,7 @@
 /** Subway Builder Modding API v1.0.0 */
 
+import { ModManifest } from './manifest';
+
 // =============================================================================
 // ELECTRON IPC TYPES
 // =============================================================================
@@ -20,7 +22,7 @@ export interface ElectronAPI {
   setLicenseKey(key: string): Promise<void>;
 
   getModsFolder?: () => Promise<string>;
-  scanMods: () => Promise<{ success: boolean; mods: Mod[] }>;
+  scanMods: () => Promise<{ success: boolean; mods: ModStatus[] }>;
 
   /** Gets a value from the game's settings file metro-maker4/settings.json. */
   getStorageItem: (key: string) => Promise<{ success: boolean; data: unknown }>;
@@ -31,6 +33,7 @@ export interface ElectronAPI {
     key: string,
     value: unknown,
   ) => Promise<{ success: boolean }>;
+  setSetting: (key: string, value: unknown) => Promise<{ success: boolean }>;
 }
 
 export interface ElectronAPIExtended {
@@ -39,3 +42,9 @@ export interface ElectronAPIExtended {
   buildBlueprints(): Promise<void>;
   findRoutePathOrder(routeId: string): Promise<unknown>;
 }
+
+export type ModStatus = ModManifest & {
+  /** Absolute path to the mod's main JavaScript file. */
+  path: string;
+  enabled: boolean;
+};

@@ -9,7 +9,6 @@ import {
   REGIONS_REGISTRY_STORAGE_KEY,
   REGIONS_SETTINGS_STORAGE_KEY,
 } from '../constants';
-import { isObjectRecord } from '../utils';
 import { DEFAULT_REGIONS_SETTINGS } from './defaults';
 import {
   clone,
@@ -18,10 +17,9 @@ import {
   resolveSettings as resolveStoredSettings,
 } from './types';
 
-type ElectronApi = Pick<
-  ElectronAPI,
-  'getModsFolder' | 'getStorageItem' | 'setStorageItem'
->;
+type ElectronApi = ElectronAPI;
+
+export const MOD_ID = 'com.ahkimn.regions';
 
 type SettingsListener = (settings: RegionsSettingsValue) => void;
 
@@ -29,16 +27,15 @@ type SettingsListener = (settings: RegionsSettingsValue) => void;
 export class RegionsStorage {
   private settings: RegionsSettingsValue = clone(DEFAULT_REGIONS_SETTINGS);
   private initialized = false;
+  private modScanAttempted = false;
+  private resolvedModPath: string | null = null;
+  private resolvedModVersion: string | null = null;
   private readonly listeners = new Set<SettingsListener>();
-  // Store missing Electron API methods to avoid spamming the console with repeated warnings about the same method being unavailable
-  private readonly missingMethods = new Set<string>();
 
   constructor(
     // TODO (Feature): Migrate all of these reads from the Electron API to the official game API / mod-specific storage when it is available
     private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
-    private readonly electronApi:
-      | Partial<ElectronApi>
-      | undefined = resolveElectronApi(),
+    private readonly electronApi: ElectronApi = resolveElectronApi(),
   ) {}
 
   async initialize(): Promise<RegionsSettingsValue> {
@@ -48,11 +45,16 @@ export class RegionsStorage {
 
     this.initialized = true;
     await this.hydrateSettings();
+    await this.tryResolveModFromScan();
     return this.getSettings();
   }
 
   getSettings(): RegionsSettingsValue {
     return clone(this.settings);
+  }
+
+  getResolvedModVersion(): string | null {
+    return this.resolvedModVersion;
   }
 
   listen(listener: SettingsListener): () => void {
@@ -103,16 +105,64 @@ export class RegionsStorage {
   }
 
   async resolveLocalModsDataRoot(): Promise<string> {
+    await this.tryResolveModFromScan();
+    if (this.resolvedModPath) {
+      const modRoot = this.resolvedModPath.replace(/\/+$/, '');
+      console.info(
+        `[Regions] Resolved local Regions mod data root from scanMods: ${modRoot}/data`,
+      );
+      return `${modRoot}/data`;
+    }
+
     if (!this.electronApi?.getModsFolder) {
-      throw new Error('[Regions] Missing electron.getModsFolder API');
+      throw new Error(
+        '[Regions] Missing both electron.scanMods and electron.getModsFolder APIs',
+      );
     }
 
     const modsDir = (await this.electronApi.getModsFolder()).replace(
       /\\/g,
       '/',
     );
+    console.warn(
+      '[Regions] Falling back to mods folder path for Regions data root (scanMods unresolved).',
+    );
     // TODO: Let the user configure this path in case they wish to save the mod in a different folder (currently this is a brittle contract)
     return `${modsDir}/regions/data`;
+  }
+
+  private async tryResolveModFromScan(): Promise<void> {
+    if (this.modScanAttempted || this.resolvedModPath) {
+      return;
+    }
+
+    this.modScanAttempted = true;
+
+    // Attempt to more robustly ascertain the mod's local path and version via the scanMods API (rather than assuming a strict relative path from the game's mod directory)
+    try {
+      const result = await this.electronApi.scanMods();
+      if (!result?.success || !Array.isArray(result.mods)) {
+        console.warn('[Regions] scanMods returned an unsuccessful payload.');
+        return;
+      }
+
+      const regionsMod = result.mods.find((mod) => mod.id === MOD_ID);
+      if (!regionsMod?.path) {
+        console.error(
+          `[Regions] scanMods did not return an entry for mod id ${MOD_ID}.`,
+        );
+        return;
+      }
+
+      this.resolvedModPath = regionsMod.path.replace(/\\/g, '/');
+      this.resolvedModVersion =
+        typeof regionsMod.version === 'string' ? regionsMod.version : null;
+    } catch (error) {
+      console.error(
+        '[Regions] Failed to resolve mod data root via scanMods.',
+        error,
+      );
+    }
   }
 
   private async hydrateSettings(): Promise<void> {
@@ -143,13 +193,13 @@ export class RegionsStorage {
   }
 
   private async readStorageItem(key: string): Promise<unknown | null> {
-    if (!this.electronApi?.getStorageItem) {
-      this.warnMissingElectronAPI('getStorageItem');
-      return null;
-    }
-
     try {
-      return await this.electronApi.getStorageItem(key);
+      const result = await this.electronApi.getStorageItem(key);
+      if (!result.success) {
+        console.error(`[Regions] Failed to load storage key ${key}.`);
+        return null;
+      }
+      return result.data;
     } catch (error) {
       console.error(`[Regions] Failed to load storage key ${key}.`, error);
       return null;
@@ -157,13 +207,11 @@ export class RegionsStorage {
   }
 
   private async writeStorageItem(key: string, value: unknown): Promise<void> {
-    if (!this.electronApi?.setStorageItem) {
-      this.warnMissingElectronAPI('setStorageItem');
-      return;
-    }
-
     try {
-      await this.electronApi.setStorageItem(key, value);
+      const result = await this.electronApi.setStorageItem(key, value);
+      if (!result.success) {
+        console.error(`[Regions] Failed to persist storage key ${key}.`);
+      }
     } catch (error) {
       console.error(`[Regions] Failed to persist storage key ${key}.`, error);
     }
@@ -175,70 +223,46 @@ export class RegionsStorage {
       listener(snapshot);
     });
   }
-
-  private warnMissingElectronAPI(apiMethod: string): void {
-    if (this.missingMethods.has(apiMethod)) {
-      return;
-    }
-    this.missingMethods.add(apiMethod);
-    console.warn(`[Regions] electron.${apiMethod} is unavailable`);
-  }
 }
 
-function resolveElectronApi(): Partial<ElectronApi> | undefined {
-  const electron = window.electron as Partial<ElectronAPI> | undefined;
-
-  if (!electron) {
-    return undefined;
+function resolveElectronApi(): ElectronApi {
+  if (!window.electron) {
+    throw new Error('[Regions] ElectronAPI is unavailable');
   }
-
-  return {
-    getModsFolder: electron?.getModsFolder,
-    getStorageItem: electron?.getStorageItem,
-    setStorageItem: electron?.setStorageItem,
-  };
+  return window.electron as ElectronApi;
 }
 
 function resolveStoredSettingsPayload(
   storedValue: unknown,
 ): Partial<RegionsSettingsValue> | null {
-  return resolveStoredSettings(resolveStoragePayload(storedValue));
+  return resolveStoredSettings(storedValue);
 }
 
 function resolvedStoredRegistry(storedValue: unknown): RegistryCache | null {
-  const payload = resolveStoragePayload(storedValue);
-  const cacheEnvelope = z
+  const parsedCache = z
     .object({
       updatedAt: z.number(),
       entries: z.array(z.unknown()),
     })
-    .safeParse(payload);
+    .safeParse(storedValue);
 
-  if (!cacheEnvelope.success) {
+  if (!parsedCache.success) {
     return null;
   }
 
-  const validEntries = cacheEnvelope.data.entries.flatMap((entry) => {
+  const validEntries = parsedCache.data.entries.flatMap((entry) => {
     const parsedEntry = StaticRegistryCacheEntrySchema.safeParse(entry);
     return parsedEntry.success ? [parsedEntry.data] : [];
   });
 
-  if (validEntries.length !== cacheEnvelope.data.entries.length) {
+  if (validEntries.length !== parsedCache.data.entries.length) {
     console.warn(
       `[Regions] Ignoring malformed entries in ${REGIONS_REGISTRY_STORAGE_KEY}`,
     );
   }
 
   return {
-    updatedAt: cacheEnvelope.data.updatedAt,
+    updatedAt: parsedCache.data.updatedAt,
     entries: validEntries,
   };
-}
-
-function resolveStoragePayload(storedValue: unknown): unknown {
-  // Storage format from Electron generally appears to be { success: boolean, data: value }
-  if (isObjectRecord(storedValue) && 'data' in storedValue) {
-    return storedValue.data;
-  }
-  return storedValue;
 }
