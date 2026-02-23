@@ -13,6 +13,11 @@ _Game version_ v1.1.0
   - csds (Census Subdivisions)
   - fsas (Forward Sortation Areas)
 - Dev scripts now compress GeoJSONs by default (compatible with 0.3.0 changes)
+- Added a new dev script to allow easy export of entire city data (all boundary files) to a single compressed archive
+
+### New Issues
+
+- Default search input appears to lock after overview panel host/settings button unmount.
 
 ## v0.3.1 - 2026-02-22
 

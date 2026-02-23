@@ -34,7 +34,7 @@
     "zod": "^4.3.6"
   },
   "name": "subwaybuilder-regions",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Mod to show/store regions within the game and analyze region-level data.",
   "main": "index.js",
   "scripts": {
@@ -49,6 +49,7 @@
     "lint:fix": "npm run lint -- --fix",
     "serve": "tsx scripts/serve-data.ts",
     "extract:map-features": "tsx scripts/extract-map-features.ts",
+    "export": "tsx scripts/export-data-archives.ts",
     "release:version": "tsx scripts/resolve-release-version.ts",
     "release:package": "npm run build && tsx scripts/package-release.ts"
   },

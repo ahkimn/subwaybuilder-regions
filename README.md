@@ -31,15 +31,25 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 ## Features
 
 - **Interactive Map Layers**: Displays region-based data as interactive layers on the in-game map.
-  - Multi different region layers can be loaded per city
+  - Multiple region layers can be loaded per city
   - Each region layer is exposed in the game's `Map Layers` toggle screen
 - **Region-Level Information**: Information for the following is exposed to the user when a region is selected:
   - Region Characteristics (total population / area / etc.)
   - Commuter Data (origin / destination by region / etc.)
   - Infrastructure Data (station count / track length / routes / etc.)
+- **Settings Menu (Main Menu)**:
+  - `Regions` entry button in the main menu for global settings and dataset registry visibility
+  - Dataset registry refresh and cleanup controls for local cache maintenance
 - **Dynamic Data State**: Region-based data is dynamically updated based on the game state
   - :information_source: Currently, this is limited to just the commuter data
+- **Compressed Data Support**:
+  - Runtime and scripts support both `.geojson` and `.geojson.gz` datasets
 - **Preset Regions**: Scripts to obtain region boundaries for the following real-world geographical divisions are provided:
+  - **CA** (Canada)
+    - Federal Electoral Districts
+    - Provincial Electoral Districts
+    - Census Subdivisions
+    - Forward Sortation Areas
   - **GB** (United Kingdom)
     - Local Authority Districts
     - Built-up Areas
@@ -171,14 +181,18 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 
    The following are the current valid combinations of `country-code` and `data-type` for preset data
 
-   | `country-code` | `data-type `        | description                             | source                |
-   | -------------- | ------------------- | --------------------------------------- | --------------------- |
-   | **GB**         | districts           | Local Authority Districts (LADs)        | ONS (online)          |
-   | **GB**         | bua                 | Built Up Areas                          | ONS (online)          |
-   | **GB**         | wards               | Electoral Wards                         | ONS (online)          |
-   | **US**         | counties            | Counties                                | TIGERweb API (online) |
-   | **US**         | county-subdivisions | County Subdivisions (Towns/Cities/CDPs) | TIGERweb API (online) |
-   | **US**         | zctas               | ZIP Code Tabulation Areas               | TIGERweb API (online) |
+   | `country-code` | `data-type `        | description                             | source                       |
+   | -------------- | ------------------- | --------------------------------------- | ---------------------------- |
+   | **CA**         | feds                | Federal Electoral Districts             | Statistics Canada API        |
+   | **CA**         | peds                | Provincial Electoral Districts          | Provincial Elections GeoJSON |
+   | **CA**         | csds                | Census Subdivisions                     | Statistics Canada API        |
+   | **CA**         | fsas                | Forward Sortation Areas                 | Statistics Canada API        |
+   | **GB**         | districts           | Local Authority Districts (LADs)        | ONS (online)                 |
+   | **GB**         | bua                 | Built Up Areas                          | ONS (online)                 |
+   | **GB**         | wards               | Electoral Wards                         | ONS (online)                 |
+   | **US**         | counties            | Counties                                | TIGERweb API (online)        |
+   | **US**         | county-subdivisions | County Subdivisions (Towns/Cities/CDPs) | TIGERweb API (online)        |
+   | **US**         | zctas               | ZIP Code Tabulation Areas               | TIGERweb API (online)        |
 
    :warning: If adding boundaries for a custom city, `city-code` must be in `boundaries.csv`
 
@@ -230,7 +244,23 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
      --city-code=PAR
    ```
 
-4. Serve Local Data
+4. Export City Archives (Optional)
+
+   To package all datasets for a city into `export/{CITY_CODE}.gz` archives:
+
+   ```
+   npx tsx scripts/export-data-archives.ts --city-code=TOR
+   ```
+
+   Due to varying data quality, boundary data from OSM is excluded by default. To include OSM-sourced datasets in the archive, run:
+
+   ```
+   npx tsx scripts/export-data-archives.ts --city-code=TOR --include-osm-data
+   ```
+
+   :information_source: By default (`--include-osm-data=false`), OSM datasets are excluded based on each dataset's `source` in `data/data_index.json` (not by filename conventions).
+
+5. Serve Local Data
    From the repository root, run:
 
    ```
@@ -239,7 +269,7 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 
    By default this serves: http://127.0.0.1:8088.
 
-5. Build
+6. Build
    From the repository root, run:
 
    ```
@@ -248,7 +278,7 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 
    This will build the `index.js` in `dist/`
 
-6. Install
+7. Install
 
    Move the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
@@ -260,7 +290,7 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 
    :information_source: The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
 
-7. Validate Behavior
+8. Validate Behavior
 
    Use the following command to run the game from terminal with the Console enabled (requires `config.yaml`).
 
@@ -269,7 +299,7 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 
    ```
 
-8. Contribute
+9. Contribute
 
    Once new behavior is verified, run code quality checks before opening a PR:
 
@@ -291,6 +321,15 @@ _Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
 ## Usage
 
 This section covers the core mod functionalities and their usage.
+
+### Settings Menu
+
+From the game's main menu, open the `Regions` button to manage global mod settings and inspect dataset registry entries.
+
+- `Refresh` rebuilds the local dataset snapshot cache and persists the result to game-level local storage.
+- `Clear Missing` removes stale cache entries that no longer resolve to usable local files/cities.
+
+![Settings Menu](img/settings-menu.png)
 
 ### Toggling Map Layers
 
@@ -384,6 +423,8 @@ The list of regions can be filtered by using the search bar to filter by region 
 
 Clicking on a region within the `Overview` tab works similarly to region selection on the map itself. On click, the selected region (and its corresponding map layer) will be displayed on the map and the region's `Info Panel` will be displayed on the top right.
 
+Double-clicking a row will pan the map camera to the selected region.
+
 :warning: Both commuter and infrastructure data are calculated asynchronously and may take some time to populate (especially on large maps). Commuter data gernally loads almost instantaneously while infrastructure data may take several seconds
 
 #### Commuter Flows Tab
@@ -437,6 +478,7 @@ The following are developer commands available within the repository, grouped by
 #### Data Extraction / Serving
 
 - `npm run extract:map-features`: Extracts boundary GeoJSONs for a city for use by the mod.
+- `npm run export`: Packages `data/{CITY}` into `export/{CITY}.gz` (supports `--city-code`, `--all`, `--include-osm-data`, `--output-dir`).
 - `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
   Details
 
