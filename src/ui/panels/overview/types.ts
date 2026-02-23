@@ -1,4 +1,5 @@
-import type { RegionGameData, RegionSelection } from '../../../core/types';
+import type { RegionGameData, RegionSelection } from '@/core/types';
+
 import type { SortState } from '../types';
 
 export const RegionsOverviewTab = {

@@ -20,6 +20,7 @@ export * from './map';
 export * from './pop-timing';
 export * from './schemas';
 export * from './stations';
+export * from './storage';
 export * from './trains';
 export * from './ui';
 export * from './utils';

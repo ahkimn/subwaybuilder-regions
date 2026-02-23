@@ -4,9 +4,10 @@ import {
   DEFAULT_UNIT_LABELS,
   LOADING_VALUE_DISPLAY,
   UNKNOWN_VALUE_DISPLAY,
-} from '../../../core/constants';
-import type { RegionGameData } from '../../../core/types';
-import { formatNumberOrDefault } from '../../../core/utils';
+} from '@/core/constants';
+import type { RegionGameData } from '@/core/types';
+import { formatNumberOrDefault } from '@/core/utils';
+
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
 import { ViewHeader } from '../../elements/ViewHeader';

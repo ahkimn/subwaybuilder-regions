@@ -5,9 +5,10 @@ import {
   REGIONS_INFO_CONTAINER_ID,
   REGIONS_INFO_PANEL_MOD_ID,
   REGIONS_INFO_ROOT_PREFIX,
-} from '../../../core/constants';
-import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
-import type { UIState } from '../../../core/types';
+} from '@/core/constants';
+import type { RegionDataManager } from '@/core/datasets/RegionDataManager';
+import type { UIState } from '@/core/types';
+
 import type { RegionsPanelRenderer } from '../types';
 import { RegionsInfoPanel } from './RegionsInfoPanel';
 

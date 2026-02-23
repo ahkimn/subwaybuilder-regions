@@ -5,19 +5,17 @@ import {
   DISTANCE_BUCKET_COUNT,
   SANKEY_FLOW_DISPLAY_COUNT,
   UNASSIGNED_REGION_ID,
-} from '../../../core/constants';
-import type { ModeKey } from '../../../core/types';
+} from '@/core/constants';
+import type { ModeKey } from '@/core/types';
 import {
   CommuteType,
   MODE_LABEL,
   MODE_ORDER,
   ModeShare,
   type RegionGameData,
-} from '../../../core/types';
-import {
-  formatNumberOrDefault,
-  formatPercentOrDefault,
-} from '../../../core/utils';
+} from '@/core/types';
+import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
+
 import { Placeholder } from '../../elements/Placeholder';
 import {
   BLACK,

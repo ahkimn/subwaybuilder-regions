@@ -1,7 +1,8 @@
-import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID as REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID } from '../../../core/constants';
-import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
-import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
-import type { ModdingAPI } from '../../../types/api';
+import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID as REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID } from '@/core/constants';
+import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistry';
+import type { RegionsStorage } from '@/core/storage/RegionsStorage';
+import type { ModdingAPI } from '@/types/api';
+
 import type { RegionsPanelRenderer } from '../types';
 import { RegionsSettingsPanel } from './RegionsSettingsPanel';
 

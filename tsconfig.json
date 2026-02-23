@@ -8,7 +8,10 @@
     "resolveJsonModule": true,
 
     "baseUrl": ".",
-    "paths": { "@shared/*": ["shared/*"] },
+    "paths": {
+      "@/*": ["src/*"],
+      "@shared/*": ["shared/*"]
+    },
 
     // JSX Support
     "jsx": "react",

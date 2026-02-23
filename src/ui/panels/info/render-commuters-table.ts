@@ -1,12 +1,10 @@
 import type { createElement, Dispatch, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-import { DEFAULT_TABLE_ROWS } from '../../../core/constants';
-import { ModeShare } from '../../../core/types';
-import {
-  formatNumberOrDefault,
-  formatPercentOrDefault,
-} from '../../../core/utils';
+import { DEFAULT_TABLE_ROWS } from '@/core/constants';
+import { ModeShare } from '@/core/types';
+import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
+
 import type { ReactDataTableRow, TableOptions } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
 import { ReactExtendButton } from '../../elements/ExtendButton';
