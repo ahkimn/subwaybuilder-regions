@@ -3,6 +3,7 @@ import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 
 import {
   DISTANCE_BUCKET_COUNT,
+  HOURLY_SANKEY_FLOW_DISPLAY_COUNT,
   SANKEY_FLOW_DISPLAY_COUNT,
   UNASSIGNED_REGION_ID,
 } from '@/core/constants';
@@ -26,7 +27,6 @@ import {
   SANKEY_TERMINAL_NODE_COLOR,
 } from '../../types/DisplayColor';
 import {
-  HOURLY_SANKEY_FLOW_DISPLAY_COUNT,
   resolveOrderedUnitIds,
   resolveSourceUnitName,
   resolveValueUnitLabel,
