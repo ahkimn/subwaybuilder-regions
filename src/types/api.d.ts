@@ -48,6 +48,7 @@ import type {
 import type { CommuteTimeRange } from './pop-timing';
 import type { GameSchemas } from './schemas';
 import type { StationTypeConfig } from './stations';
+import type { ModStorageAPI } from './storage';
 import type { TrainTypeConfig } from './trains';
 import type {
   NotificationType,
@@ -500,21 +501,8 @@ export interface ModdingAPI {
   // STORAGE NAMESPACE
   // ---------------------------------------------------------------------------
 
-  /**
-   * Persistent key-value storage for mod data.
-   * @remarks Electron only. In browser, storage operations are no-ops
-   * (set does nothing, get returns defaultValue, keys returns []).
-   */
-  storage: {
-    /** Store a JSON-serializable value. */
-    set(key: string, value: unknown): Promise<void>;
-    /** Retrieve a stored value, or the default if not found. */
-    get<T = unknown>(key: string, defaultValue?: T): Promise<T>;
-    /** Delete a stored value. */
-    delete(key: string): Promise<void>;
-    /** Get all stored keys. */
-    keys(): Promise<string[]>;
-  };
+  /** Persistent key-value storage for mod data. */
+  storage: ModStorageAPI;
 
   // ---------------------------------------------------------------------------
   // UTILS NAMESPACE

@@ -1,17 +1,13 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
 import type React from 'react';
-import {
-  type createElement,
-  type useEffect,
-  type useReducer,
-  type useState,
-} from 'react';
 
-import type { RegionDataset } from '../../../core/datasets/RegionDataset';
-import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
-import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
-import type { DatasetOrigin } from '../../../core/types';
-import type { ModdingAPI } from '../../../types/api';
+import type { RegionDataset } from '@/core/datasets/RegionDataset';
+import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistry';
+import type { RegionsStorage } from '@/core/storage/RegionsStorage';
+import type { DatasetOrigin } from '@/core/types';
+import type { ModdingAPI } from '@/types/api';
+import { getGameReact } from '@/ui/react/get-game-react';
+
 import { getNextSortState } from '../shared/helpers';
 import {
   DEFAULT_SORT_STATE,
@@ -168,11 +164,8 @@ export function RegionsSettingsPanel({
   storage,
   datasetRegistry,
 }: SettingsMenuComponentParams): () => React.ReactNode {
-  const h = api.utils.React.createElement as typeof createElement;
-  const useStateHook = api.utils.React.useState as typeof useState;
-  const useReducerHook = api.utils.React.useReducer as typeof useReducer;
-  const useEffectHook = api.utils.React.useEffect as typeof useEffect;
-  const Fragment = api.utils.React.Fragment;
+  const { h, Fragment, useEffectHook, useReducerHook, useStateHook } =
+    getGameReact(api);
   const Input = api.utils.components
     .Input as React.ComponentType<InputFieldProperties>;
   const Switch = api.utils.components

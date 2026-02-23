@@ -13,14 +13,15 @@ import {
   REGIONS_INFO_PANEL_ID,
   REGIONS_INFO_PANEL_TITLE,
   SANKEY_LABEL_FLOW_SYNC,
-} from '../../../core/constants';
-import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
+} from '@/core/constants';
+import type { RegionDataManager } from '@/core/datasets/RegionDataManager';
 import {
   RegionDataType,
   type RegionGameData,
   RegionSelection,
   type UIState,
-} from '../../../core/types';
+} from '@/core/types';
+
 import { ReactPanelHeader } from '../../elements/PanelHeader';
 import { Placeholder } from '../../elements/Placeholder';
 import {

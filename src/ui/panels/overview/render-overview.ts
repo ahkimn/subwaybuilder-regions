@@ -1,18 +1,16 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
-import { LOADING_VALUE_DISPLAY } from '../../../core/constants';
+import { LOADING_VALUE_DISPLAY } from '@/core/constants';
 import {
   ModeShare,
   type RegionGameData,
   RegionGameData as RegionGameDataUtils,
   type RegionSelection,
   RegionSelection as RegionSelectionUtils,
-} from '../../../core/types';
-import {
-  formatNumberOrDefault,
-  formatPercentOrDefault,
-} from '../../../core/utils';
+} from '@/core/types';
+import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
+
 import type {
   DataRowOptions,
   ReactDataTableRow,

@@ -1,4 +1,5 @@
-import type { ModeShare } from '../../../core/types';
+import type { ModeShare } from '@/core/types';
+
 import type { NumberDisplay, SortState } from '../types';
 
 export const RegionsInfoPanelView = {

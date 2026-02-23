@@ -1,10 +1,8 @@
 import type { createElement, Dispatch, ReactNode } from 'react';
 
-import { ModeShare, type RegionGameData } from '../../../core/types';
-import {
-  formatNumberOrDefault,
-  formatPercentOrDefault,
-} from '../../../core/utils';
+import { ModeShare, type RegionGameData } from '@/core/types';
+import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
+
 import { ReactDetailRow } from '../../elements/DetailRow';
 import { ReactDivider } from '../../elements/Divider';
 import { Placeholder } from '../../elements/Placeholder';

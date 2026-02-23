@@ -2,12 +2,13 @@ import {
   AVAILABLE_BUCKET_SIZES_KM,
   AVAILABLE_BUCKET_SIZES_MINUTES,
   DISTANCE_BUCKET_COUNT,
-} from '../../../core/constants';
+} from '@/core/constants';
 import {
   CommuteType,
   ModeShare,
   type RegionCommuterDetailsData,
-} from '../../../core/types';
+} from '@/core/types';
+
 import {
   type CommuterBreakdownData,
   CommuterDimension,

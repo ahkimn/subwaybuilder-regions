@@ -1,14 +1,15 @@
 import type React from 'react';
-import { type createElement, type useEffect, type useState } from 'react';
 
-import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from '../../../core/constants';
-import type { RegionDataManager } from '../../../core/datasets/RegionDataManager';
+import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from '@/core/constants';
+import type { RegionDataManager } from '@/core/datasets/RegionDataManager';
 import {
   RegionDataType,
   type RegionSelection,
   type UIState,
-} from '../../../core/types';
-import type { ModdingAPI } from '../../../types/api';
+} from '@/core/types';
+import type { ModdingAPI } from '@/types/api';
+import { getGameReact } from '@/ui/react/get-game-react';
+
 import { ViewHeader } from '../../elements/ViewHeader';
 import { getNextSortState } from '../shared/helpers';
 import type { InputFieldProperties, SortState } from '../types';
@@ -39,9 +40,7 @@ export function renderRegionsOverviewPanel(
     return null;
   }
 
-  const h = props.api.utils.React.createElement as typeof createElement;
-  const useStateHook = props.api.utils.React.useState as typeof useState;
-  const useEffectHook = props.api.utils.React.useEffect as typeof useEffect;
+  const { h, useEffectHook, useStateHook } = getGameReact(props.api);
   const Input = props.api.utils.components
     .Input as React.ComponentType<InputFieldProperties>;
 
