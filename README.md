@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.3.2`  
+_Latest Mod Version:_ `v0.3.3`  
 _Latest Tested Game Version:_ `v1.1.0`
-_Latest Changelog Entry:_ [v0.3.2](CHANGELOG.md#v032---2026-02-22)
+_Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
 
 ## Table of Contents
 
