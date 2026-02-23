@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
-import { gzipSync } from 'zlib';
+import { createGunzip, gunzipSync, gzipSync } from 'zlib';
 
 import { DATA_INDEX_FILE } from '../../shared/constants';
 import type { DatasetIndex, DatasetMetadata } from '../../shared/dataset-index';
@@ -18,7 +18,7 @@ const US_DATASET_ORDER = [
   'zctas',
   'neighborhoods',
 ] as const;
-const CA_DATASET_ORDER = ['feds', 'csds', 'fsas'] as const;
+const CA_DATASET_ORDER = ['feds', 'peds', 'csds', 'fsas'] as const;
 const GB_DATASET_ORDER = ['districts', 'bua', 'wards'] as const;
 const KNOWN_DATASET_ORDERS = [
   US_DATASET_ORDER,
@@ -137,7 +137,9 @@ export function loadGeoJSON(filePath: string): GeoJSON.FeatureCollection {
   validateFilePath(filePath);
   let geoJson: GeoJSON.FeatureCollection;
   try {
-    const loadedJson = fs.readJsonSync(filePath);
+    const loadedJson = filePath.endsWith('.gz')
+      ? JSON.parse(gunzipSync(fs.readFileSync(filePath)).toString('utf8'))
+      : fs.readJsonSync(filePath);
     geoJson = loadedJson as GeoJSON.FeatureCollection;
   } catch (err: any) {
     console.error(
@@ -167,8 +169,12 @@ async function loadFeatureFromNDJSON(
   filePath: string,
   onFeature: (f: GeoJSON.Feature) => void,
 ): Promise<void> {
+  const inputStream = filePath.endsWith('.gz')
+    ? fs.createReadStream(filePath).pipe(createGunzip())
+    : fs.createReadStream(filePath);
+
   const rl = readline.createInterface({
-    input: fs.createReadStream(filePath),
+    input: inputStream,
     crlfDelay: Infinity,
   });
 

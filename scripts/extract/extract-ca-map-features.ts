@@ -1,4 +1,8 @@
+import path from 'path';
+
+import { SOURCE_DATA_DIR } from '../../shared/constants';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
+import { loadGeoJSON } from '../utils/files';
 import type { BoundaryBox } from '../utils/geometry';
 import { expandBBox } from '../utils/geometry';
 import { renderFeaturePreview } from '../utils/preview';
@@ -15,19 +19,14 @@ const CA_LAYER_IDS = {
   fsas: 14,
 } as const;
 
+const CA_PED_BOUNDARIES = path.resolve(
+  SOURCE_DATA_DIR,
+  'ca_ped_boundaries.geojson.gz',
+);
+
 const PREVIEW_OUT_FIELDS = '*';
 
 export const CA_DATA_CONFIGS: Record<string, DataConfig> = {
-  csds: {
-    datasetId: 'csds',
-    displayName: 'Census Subdivisions',
-    unitSingular: 'Census Subdivision',
-    unitPlural: 'Census Subdivisions',
-    source: 'CA Statistics Canada',
-    idProperty: 'CSDUID',
-    nameProperty: 'CSDNAME',
-    applicableNameProperties: ['CSDNAME'],
-  },
   feds: {
     datasetId: 'feds',
     displayName: 'Federal Electoral Districts',
@@ -37,6 +36,26 @@ export const CA_DATA_CONFIGS: Record<string, DataConfig> = {
     idProperty: 'FEDUID',
     nameProperty: 'FEDENAME',
     applicableNameProperties: ['FEDENAME', 'FEDNAME', 'FEDFNAME'],
+  },
+  peds: {
+    datasetId: 'peds',
+    displayName: 'Provincial Electoral Districts',
+    unitSingular: 'Provincial Electoral District',
+    unitPlural: 'Provincial Electoral Districts',
+    source: 'CA Provincial Electoral Districts',
+    idProperty: 'ID',
+    nameProperty: 'DISPLAY_NAME',
+    applicableNameProperties: ['DISPLAY_NAME', 'NAME'],
+  },
+  csds: {
+    datasetId: 'csds',
+    displayName: 'Census Subdivisions',
+    unitSingular: 'Census Subdivision',
+    unitPlural: 'Census Subdivisions',
+    source: 'CA Statistics Canada',
+    idProperty: 'CSDUID',
+    nameProperty: 'CSDNAME',
+    applicableNameProperties: ['CSDNAME'],
   },
   fsas: {
     datasetId: 'fsas',
@@ -52,20 +71,25 @@ export const CA_DATA_CONFIGS: Record<string, DataConfig> = {
 
 type CABoundaryDataHandler = {
   dataConfig: DataConfig;
-  layerId: number;
-  outFields: string;
+  layerId?: number;
+  outFields?: string;
+  localFilePath?: string;
 };
 
 const CA_BOUNDARY_DATA_HANDLERS: Record<string, CABoundaryDataHandler> = {
-  csds: {
-    dataConfig: CA_DATA_CONFIGS['csds'],
-    layerId: CA_LAYER_IDS.csds,
-    outFields: 'CSDUID,CSDNAME,CSDTYPE,PRUID',
-  },
   feds: {
     dataConfig: CA_DATA_CONFIGS['feds'],
     layerId: CA_LAYER_IDS.feds,
     outFields: 'FEDUID,FEDNAME,FEDENAME,FEDFNAME,PRUID',
+  },
+  peds: {
+    dataConfig: CA_DATA_CONFIGS['peds'],
+    localFilePath: CA_PED_BOUNDARIES,
+  },
+  csds: {
+    dataConfig: CA_DATA_CONFIGS['csds'],
+    layerId: CA_LAYER_IDS.csds,
+    outFields: 'CSDUID,CSDNAME,CSDTYPE,PRUID',
   },
   fsas: {
     dataConfig: CA_DATA_CONFIGS['fsas'],
@@ -93,12 +117,16 @@ export async function extractCABoundaries(
     throw new Error(`Unsupported data type for CA: ${args.dataType}`);
   }
 
-  const outFields = args.preview ? PREVIEW_OUT_FIELDS : handler.outFields;
-  const { geoJson } = await extractCABoundariesByLayer(
-    expandBBox(bbox, 0.01),
-    handler.layerId,
-    outFields,
-  );
+  const geoJson = handler.localFilePath
+    ? loadGeoJSON(handler.localFilePath)
+    : (
+        await extractCABoundariesByLayer(
+          expandBBox(bbox, 0.01),
+          handler.layerId!,
+          args.preview ? PREVIEW_OUT_FIELDS : handler.outFields!,
+        )
+      ).geoJson;
+
   if (args.preview) {
     renderFeaturePreview(geoJson.features, args.previewCount!);
     return;
