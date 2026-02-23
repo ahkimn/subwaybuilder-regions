@@ -2,6 +2,18 @@
 
 [Back to README](README.md)
 
+## v0.3.2 - 2026-02-22
+
+_Game version_ v1.1.0
+
+### Other Updates
+
+- Added CA data to list of acceptable static datasets, including data for each of the following boundary type:
+  - feds (Federal Electoral Districts)
+  - csds (Census Subdivisions)
+  - fsas (Forward Sortation Areas)
+- Dev scripts now compress GeoJSONs by default (compatible with 0.3.0 changes)
+
 ## v0.3.1 - 2026-02-22
 
 _Game version_ v1.1.0

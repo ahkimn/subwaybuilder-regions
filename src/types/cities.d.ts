@@ -46,10 +46,10 @@ export interface CityConfig {
 // CITY (returned from getCities)
 // =============================================================================
 
-/** City data as returned by `api.utils.getCities()`. Extends CityConfig with fields that are always present in returned data. */
+/** City data as returned by `api.utils.getCities()`. Extends CityConfig with additional runtime fields. */
 export interface City extends CityConfig {
-  /** Country the city is in (always present in returned data) */
-  country: string;
+  /** Country the city is in, when available. Custom cities may omit this. */
+  country?: string;
   /** Description of the city (always present in returned data) */
   description: string;
 }

@@ -17,7 +17,7 @@ import {
 } from '../storage/helpers';
 import type { RegionsStorage } from '../storage/RegionsStorage';
 import type { DatasetOrigin } from '../types';
-import { STATIC_TEMPLATES } from './static';
+import { resolveStaticTemplateCountry, STATIC_TEMPLATES } from './static';
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
@@ -302,9 +302,9 @@ export class RegionDatasetRegistry {
     const currentCities = this.api.utils.getCities();
 
     for (const city of currentCities) {
-      const datasetTemplates = city.country
-        ? // Custom cities do not have a country property so these will be skipped by the discovery process
-          (STATIC_TEMPLATES.get(city.country) ?? [])
+      const resolvedCountry = resolveStaticTemplateCountry(city);
+      const datasetTemplates = resolvedCountry
+        ? (STATIC_TEMPLATES.get(resolvedCountry) ?? [])
         : [];
       for (const template of datasetTemplates) {
         const candidatePaths = buildLocalDatasetCandidatePaths(
