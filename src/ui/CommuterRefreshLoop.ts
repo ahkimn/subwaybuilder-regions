@@ -4,7 +4,7 @@ import {
   UPDATE_ON_DEMAND_CHANGE,
 } from '../core/constants';
 import type { RegionDataManager } from '../core/datasets/RegionDataManager';
-import { RegionDataType, type UIState } from '../core/types';
+import { RegionDataType, type UIState } from '../core/domain';
 import type { ModdingAPI } from '../types/api';
 import type { RegionsPanelRenderer } from './panels/types';
 

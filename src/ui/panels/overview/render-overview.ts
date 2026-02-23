@@ -8,7 +8,7 @@ import {
   RegionGameData as RegionGameDataUtils,
   type RegionSelection,
   RegionSelection as RegionSelectionUtils,
-} from '@/core/types';
+} from '@/core/domain';
 import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
 
 import type {

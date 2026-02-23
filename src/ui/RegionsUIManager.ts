@@ -9,13 +9,13 @@ import {
 import { RegionDataBuilder } from '../core/datasets/RegionDataBuilder';
 import { RegionDataManager } from '../core/datasets/RegionDataManager';
 import { RegionDataset } from '../core/datasets/RegionDataset';
+import { RegionSelection, UIState, type UIStyle } from '../core/domain';
 import type { RegionDatasetRegistry } from '../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../core/storage/RegionsStorage';
 import {
   RegionsSettings,
   type RegionsSettings as RegionsSettingsValue,
 } from '../core/storage/types';
-import { RegionSelection, UIState, type UIStyle } from '../core/types';
 import type { RegionsMapLayers } from '../map/RegionsMapLayers';
 import type { ModdingAPI } from '../types/api';
 import { CommuterRefreshLoop } from './CommuterRefreshLoop';

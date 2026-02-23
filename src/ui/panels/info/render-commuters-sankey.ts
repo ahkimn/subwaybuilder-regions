@@ -6,14 +6,14 @@ import {
   SANKEY_FLOW_DISPLAY_COUNT,
   UNASSIGNED_REGION_ID,
 } from '@/core/constants';
-import type { ModeKey } from '@/core/types';
+import type { ModeKey } from '@/core/domain';
 import {
   CommuteType,
   MODE_LABEL,
   MODE_ORDER,
   ModeShare,
   type RegionGameData,
-} from '@/core/types';
+} from '@/core/domain';
 import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
 
 import { Placeholder } from '../../elements/Placeholder';

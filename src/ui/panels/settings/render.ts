@@ -1,8 +1,8 @@
 import type React from 'react';
 import type { createElement, useState } from 'react';
 
+import type { DatasetOrigin } from '@/core/domain';
 import type { RegionsSettings } from '@/core/storage/types';
-import type { DatasetOrigin } from '@/core/types';
 import { formatNumberOrDefault } from '@/core/utils';
 
 import type {

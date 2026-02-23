@@ -2,9 +2,9 @@ import type { RegistryCacheEntry } from '@shared/dataset-index';
 import type React from 'react';
 
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
+import type { DatasetOrigin } from '@/core/domain';
 import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '@/core/storage/RegionsStorage';
-import type { DatasetOrigin } from '@/core/types';
 import type { ModdingAPI } from '@/types/api';
 import type { City } from '@/types/cities';
 import { getGameReact } from '@/ui/react/get-game-react';

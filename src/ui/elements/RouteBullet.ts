@@ -1,4 +1,4 @@
-import type { RouteDisplayParams } from '../../core/types';
+import type { RouteDisplayParams } from '../../core/domain';
 
 // Unused for now
 export function RouteBullet(display: RouteDisplayParams) {

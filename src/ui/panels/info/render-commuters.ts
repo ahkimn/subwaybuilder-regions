@@ -1,6 +1,6 @@
 import type { createElement, Dispatch, ReactNode } from 'react';
 
-import { ModeShare, type RegionGameData } from '@/core/types';
+import { ModeShare, type RegionGameData } from '@/core/domain';
 import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
 
 import { ReactDetailRow } from '../../elements/DetailRow';

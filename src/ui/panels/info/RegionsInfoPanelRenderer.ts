@@ -7,7 +7,7 @@ import {
   REGIONS_INFO_ROOT_PREFIX,
 } from '@/core/constants';
 import type { RegionDataManager } from '@/core/datasets/RegionDataManager';
-import type { UIState } from '@/core/types';
+import type { UIState } from '@/core/domain';
 
 import type { RegionsPanelRenderer } from '../types';
 import { RegionsInfoPanel } from './RegionsInfoPanel';
