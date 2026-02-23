@@ -7,36 +7,21 @@ import { createGunzip, gunzipSync, gzipSync } from 'zlib';
 
 import { DATA_INDEX_FILE } from '../../shared/constants';
 import type { DatasetIndex, DatasetMetadata } from '../../shared/dataset-index';
+import {
+  COUNTRY_DATASET_ORDER,
+  resolveCountryDatasetOrder,
+} from '../../shared/datasets/catalog';
 import type { BoundaryBox } from './geometry';
 import { findOsmCountryConfig } from './osm-country-config';
 
 export type Row = Record<string, string>;
 
-const US_DATASET_ORDER = [
-  'counties',
-  'county-subdivisions',
-  'zctas',
-  'neighborhoods',
-] as const;
-const CA_DATASET_ORDER = ['feds', 'peds', 'csds', 'fsas'] as const;
-const GB_DATASET_ORDER = ['districts', 'bua', 'wards'] as const;
-const KNOWN_DATASET_ORDERS = [
-  US_DATASET_ORDER,
-  CA_DATASET_ORDER,
-  GB_DATASET_ORDER,
-] as const;
+const KNOWN_DATASET_ORDERS = Object.values(COUNTRY_DATASET_ORDER);
 
 function resolveDatasetOrder(country: string): readonly string[] {
-  if (country === 'US') {
-    return US_DATASET_ORDER;
-  }
-
-  if (country === 'CA') {
-    return CA_DATASET_ORDER;
-  }
-
-  if (country === 'GB') {
-    return GB_DATASET_ORDER;
+  const orderedCatalogDatasets = resolveCountryDatasetOrder(country);
+  if (orderedCatalogDatasets.length > 0) {
+    return orderedCatalogDatasets;
   }
 
   const osmCountryConfig = findOsmCountryConfig(country);
