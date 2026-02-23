@@ -11,44 +11,23 @@ import {
 } from '@/core/domain';
 import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
 
-import type {
-  DataRowOptions,
-  ReactDataTableRow,
-  TableCellPaddingClassName,
-  TableOptions,
-} from '../../elements/DataTable';
+import type { DataRowOptions, ReactDataTableRow, TableOptions } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
 import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header';
 import { ReactSearchInput } from '../../elements/SearchInput';
 import type { InputFieldProperties, SortConfig, TableAlign } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
+import {
+  MIN_ROWS_FOR_FULL_HEIGHT,
+  OVERVIEW_CELL_PADDING_CLASS_NAMES,
+  OVERVIEW_COLUMN_COUNT,
+  OVERVIEW_HEADER_LABELS,
+  OVERVIEW_MIN_COLUMN_PADDING_CH,
+  OVERVIEW_MIN_NON_NAME_COLUMN_CH,
+  OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH,
+} from './constants';
 import type { RegionsOverviewRow } from './types';
-
-const MIN_ROWS_FOR_FULL_HEIGHT = 10;
-const OVERVIEW_HEADER_LABELS = [
-  'Region Name',
-  'Real Pop',
-  'Area (km\u00B2)',
-  'Total Commuters',
-  'Residents',
-  'Workers',
-  'Transit (%)',
-  'Driving (%)',
-  'Walking (%)',
-  'Stations',
-  'Tracks (km)',
-  'Routes',
-] as const;
-const OVERVIEW_COLUMN_COUNT = OVERVIEW_HEADER_LABELS.length;
-const OVERVIEW_MIN_COLUMN_PADDING_CH = 2;
-const OVERVIEW_MIN_NON_NAME_COLUMN_CH = 7;
-const OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH = '0.75rem';
-const OVERVIEW_CELL_PADDING_CLASS_NAMES: TableCellPaddingClassName = {
-  left: 'pl-2 pr-1',
-  right: 'pl-1 pr-2',
-  center: 'px-1.5',
-};
 
 export type OverviewSortMetrics = {
   displayName: string;
