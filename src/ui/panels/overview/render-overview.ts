@@ -11,10 +11,15 @@ import {
 } from '@/core/domain';
 import { formatNumberOrDefault, formatPercentOrDefault } from '@/core/utils';
 
-import type { DataRowOptions, ReactDataTableRow, TableOptions } from '../../elements/DataTable';
+import type {
+  DataRowOptions,
+  ReactDataTableRow,
+  TableOptions,
+} from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
 import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header';
 import { ReactSearchInput } from '../../elements/SearchInput';
+import { sortWithFallback } from '../shared/sort';
 import type { InputFieldProperties, SortConfig, TableAlign } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
@@ -389,46 +394,22 @@ function sortRows(
   sortState: SortState,
 ): RegionsOverviewRow[] {
   const metricsByRow = buildOverviewSortMetrics(rows);
-  const applySortByDescriptor = (
-    a: RegionsOverviewRow,
-    b: RegionsOverviewRow,
-    sortIndex: number,
-    direction: SortDirection,
-  ): number => {
-    const cfg = resolveSortConfig(sortIndex);
-    const aMetrics = metricsByRow.get(a)!;
-    const bMetrics = metricsByRow.get(b)!;
-    const comparatorResult = cfg.compare(aMetrics, bMetrics);
-    return direction === SortDirection.Asc
-      ? comparatorResult
-      : -comparatorResult;
-  };
+  const resolveMetrics = (row: RegionsOverviewRow): OverviewSortMetrics =>
+    metricsByRow.get(row)!;
 
-  return [...rows].sort((a, b) => {
-    let result = applySortByDescriptor(
-      a,
-      b,
-      sortState.sortIndex,
-      sortState.sortDirection,
-    );
-    if (result === 0) {
-      result = applySortByDescriptor(
-        a,
-        b,
-        sortState.previousSortIndex,
-        sortState.previousSortDirection,
-      );
-    }
-    if (result === 0) {
-      const aMetrics = metricsByRow.get(a)!;
-      const bMetrics = metricsByRow.get(b)!;
-      result = aMetrics.displayName.localeCompare(bMetrics.displayName);
+  return sortWithFallback(
+    rows,
+    sortState,
+    resolveSortConfig,
+    resolveMetrics,
+    (aMetrics, bMetrics) => {
+      let result = aMetrics.displayName.localeCompare(bMetrics.displayName);
       if (result === 0) {
         result = aMetrics.featureId.localeCompare(bMetrics.featureId);
       }
-    }
-    return result;
-  });
+      return result;
+    },
+  );
 }
 
 export function resolveSortConfig(

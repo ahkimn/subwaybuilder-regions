@@ -15,6 +15,7 @@ import {
   resolveBreakdownSourceLabel,
 } from '../shared/commuter-data';
 import { getNextSortState } from '../shared/helpers';
+import { sortWithFallback } from '../shared/sort';
 import type { SortConfig } from '../types';
 import { NumberDisplay, SortDirection } from '../types';
 import {
@@ -191,43 +192,23 @@ function sortCommuterRows(
   viewState: CommutersViewState,
 ): CommuterRowData[] {
   const currentSortState = viewState.sortStates.get(viewState.dimension)!;
-  const applySortByConfig = (
-    a: CommuterRowData,
-    b: CommuterRowData,
-    index: number,
-    direction: SortDirection,
-  ): number => {
-    const sortConfig = resolveSortConfig(index);
-    const compareResult = sortConfig.compare(a, b);
-    return direction === SortDirection.Asc ? compareResult : -compareResult;
-  };
 
-  return [...rows].sort((a, b) => {
-    let result = applySortByConfig(
-      a,
-      b,
-      currentSortState.sortIndex,
-      currentSortState.sortDirection,
-    );
-    if (result === 0) {
-      result = applySortByConfig(
-        a,
-        b,
-        currentSortState.previousSortIndex,
-        currentSortState.previousSortDirection,
-      );
-    }
-    if (result === 0) {
+  return sortWithFallback(
+    rows,
+    currentSortState,
+    resolveSortConfig,
+    (row) => row,
+    (aMetrics, bMetrics) => {
       // Apply stable tie-breakers so equal metric rows always render in deterministic order.
-      result = a.regionName.localeCompare(b.regionName);
+      let result = aMetrics.regionName.localeCompare(bMetrics.regionName);
       if (result === 0) {
-        result = String(a.breakdownUnitId).localeCompare(
-          String(b.breakdownUnitId),
+        result = String(aMetrics.breakdownUnitId).localeCompare(
+          String(bMetrics.breakdownUnitId),
         );
       }
-    }
-    return result;
-  });
+      return result;
+    },
+  );
 }
 
 function resolveSortConfig(index: number): SortConfig<CommuterRowData> {
