@@ -11,7 +11,7 @@ import type { RegionDataset } from '../../../core/datasets/RegionDataset';
 import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { DatasetOrigin } from '../../../core/types';
-import type { ModdingAPI } from '../../../types/modding-api-v1';
+import type { ModdingAPI } from '../../../types/api';
 import { getNextSortState } from '../shared/helpers';
 import {
   DEFAULT_SORT_STATE,
@@ -59,13 +59,13 @@ type RegionsSettingsAction =
   | { type: 'set_search_term'; searchTerm: string }
   | { type: 'set_sort_state'; sortState: SortState }
   | {
-      type: 'settings_loaded';
-      settings: ReturnType<RegionsStorage['getSettings']>;
-    }
+    type: 'settings_loaded';
+    settings: ReturnType<RegionsStorage['getSettings']>;
+  }
   | {
-      type: 'settings_updated';
-      settings: ReturnType<RegionsStorage['getSettings']>;
-    }
+    type: 'settings_updated';
+    settings: ReturnType<RegionsStorage['getSettings']>;
+  }
   | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
   | { type: 'registry_revision_bumped' }
   | { type: 'update_settings_started' }
@@ -346,30 +346,30 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-            settings: state.settings,
-            isUpdating: state.pending.updating,
-            searchTerm: state.searchTerm,
-            sortState: state.sortState,
-            rows: sortedRows,
-            onClose: () => dispatch({ type: 'close_overlay' }),
-            onSearchTermChange: (searchTerm: string) =>
-              dispatch({ type: 'set_search_term', searchTerm }),
-            onSortChange: (columnIndex: number) => {
-              const nextSortState = getNextSortState<SettingsDatasetRow>(
-                state.sortState,
-                columnIndex,
-                resolveRegistrySortConfig,
-              );
-              dispatch({ type: 'set_sort_state', sortState: nextSortState });
-            },
-            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-              updateSettings({ showUnpopulatedRegions: nextValue });
-            },
-            onRefreshRegistry: refreshRegistry,
-            isRefreshingRegistry: state.pending.refreshingRegistry,
-            onClearMissing: clearMissingEntries,
-            isClearingMissing: state.pending.clearingMissing,
-          })
+          settings: state.settings,
+          isUpdating: state.pending.updating,
+          searchTerm: state.searchTerm,
+          sortState: state.sortState,
+          rows: sortedRows,
+          onClose: () => dispatch({ type: 'close_overlay' }),
+          onSearchTermChange: (searchTerm: string) =>
+            dispatch({ type: 'set_search_term', searchTerm }),
+          onSortChange: (columnIndex: number) => {
+            const nextSortState = getNextSortState<SettingsDatasetRow>(
+              state.sortState,
+              columnIndex,
+              resolveRegistrySortConfig,
+            );
+            dispatch({ type: 'set_sort_state', sortState: nextSortState });
+          },
+          onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+            updateSettings({ showUnpopulatedRegions: nextValue });
+          },
+          onRefreshRegistry: refreshRegistry,
+          isRefreshingRegistry: state.pending.refreshingRegistry,
+          onClearMissing: clearMissingEntries,
+          isClearingMissing: state.pending.clearingMissing,
+        })
         : null,
     ]);
   };

@@ -2,7 +2,7 @@ import type { DatasetMetadata } from '@shared/dataset-index';
 import * as turf from '@turf/turf';
 import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 
-import type { DemandData } from '../../types/modding-api-v1';
+import type { DemandData } from '../../types/game-state';
 import {
   DEFAULT_UNIT_LABELS,
   LAYER_PREFIX,

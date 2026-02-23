@@ -4,7 +4,7 @@ import type {
   RegistryCacheEntry,
 } from '@shared/dataset-index';
 
-import type { ModdingAPI } from '../../types/modding-api-v1';
+import type { ModdingAPI } from '../../types/api';
 import { RegionDataset } from '../datasets/RegionDataset';
 import {
   RegistryMissingDatasetError,
@@ -304,7 +304,7 @@ export class RegionDatasetRegistry {
     for (const city of currentCities) {
       const datasetTemplates = city.country
         ? // Custom cities do not have a country property so these will be skipped by the discovery process
-          (STATIC_TEMPLATES.get(city.country) ?? [])
+        (STATIC_TEMPLATES.get(city.country) ?? [])
         : [];
       for (const template of datasetTemplates) {
         const candidatePaths = buildLocalDatasetCandidatePaths(

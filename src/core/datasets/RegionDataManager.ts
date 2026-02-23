@@ -1,4 +1,4 @@
-import type { ModdingAPI } from '../../types/modding-api-v1';
+import type { ModdingAPI } from '../../types/api';
 import {
   DEFAULT_CHUNK_SIZE,
   STALE_COMMUTER_DATA_THRESHOLD_SECONDS,
@@ -25,7 +25,7 @@ export class RegionDataManager {
     private builder: RegionDataBuilder,
     private registry: RegionDatasetRegistry,
     private api: ModdingAPI,
-  ) {}
+  ) { }
 
   async ensureExistsDataForSelection(
     uiState: Readonly<UIState>,

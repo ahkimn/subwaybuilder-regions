@@ -1,7 +1,7 @@
 import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID as REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID } from '../../../core/constants';
 import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
-import type { ModdingAPI } from '../../../types/modding-api-v1';
+import type { ModdingAPI } from '../../../types/api';
 import type { RegionsPanelRenderer } from '../types';
 import { RegionsSettingsPanel } from './RegionsSettingsPanel';
 
@@ -12,7 +12,7 @@ export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {
     private readonly api: ModdingAPI,
     private readonly storage: RegionsStorage,
     private readonly datasetRegistry: RegionDatasetRegistry,
-  ) {}
+  ) { }
 
   initialize(): void {
     if (this.initialized) {
