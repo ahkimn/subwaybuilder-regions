@@ -21,6 +21,7 @@ export type ExtractMapFeaturesArgs = {
   east?: number;
   useLocalData?: boolean;
   compress?: boolean;
+  outputRoot?: string;
   preview?: boolean;
   previewCount?: number;
 };
@@ -67,6 +68,48 @@ export function parseNumber(value: string): number | undefined {
   const parsedNumber = Number(normalizedValue);
 
   return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
+}
+
+export function parseValidBBox(value: string): BoundaryBox {
+  const splitInput = value.split(',').map((part) => part.trim());
+  if (splitInput.length !== 4) {
+    throw new Error(
+      `Invalid bbox format: expected 4 comma-separated values (west,south,east,north), got ${splitInput.length}`,
+    );
+  }
+
+  const [westStr, southStr, eastStr, northStr] = splitInput;
+  const west = parseNumber(westStr);
+  const south = parseNumber(southStr);
+  const east = parseNumber(eastStr);
+  const north = parseNumber(northStr);
+
+  if ([west, south, east, north].some((coord) => coord === undefined)) {
+    throw new Error(
+      `Invalid bbox format: all values must be valid numbers. Received: west=${westStr}, south=${southStr}, east=${eastStr}, north=${northStr}`,
+    );
+  }
+
+  if (west! >= east! || west! <= -180 || east! > 180) {
+    {
+      throw new Error(
+        `Invalid bbox format: west coordinate must be less than east coordinate and within [-180, 180]. Received: west=${west}, east=${east}`,
+      );
+    }
+  }
+
+  if (south! >= north! || south! <= -90 || north! > 90) {
+    throw new Error(
+      `Invalid bbox format: south coordinate must be less than north coordinate and within [-90, 90]. Received: south=${south}, north=${north}`,
+    );
+  }
+
+  return {
+    west: west!,
+    south: south!,
+    east: east!,
+    north: north!,
+  };
 }
 
 export function hasExplicitBBox(

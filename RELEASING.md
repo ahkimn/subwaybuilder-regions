@@ -14,6 +14,9 @@ The zip contains only:
 
 - `manifest.json`
 - `index.js` (built from `dist/index.js`)
+- `fetch.ps1`
+- `fetch.sh`
+- `dist-tools/fetch-cli.cjs`
 
 ## Per-Release Steps
 
@@ -26,6 +29,7 @@ The zip contains only:
 4. Run local checks:
    - `npm run lint`
    - `npm run build`
+   - `npm run build:fetch-cli`
    - `npm run release:package`
 5. Create and push release tag:
    - `git tag vX.Y.Z`

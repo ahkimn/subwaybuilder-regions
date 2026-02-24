@@ -17,7 +17,9 @@ export function attachRegionsDebug(context: RegionsDebugContext): void {
     paddingKm: number = 10,
   ): Promise<BBox | null> => {
     const resolvedCityCode =
-      cityCode ?? context.getCurrentCityCode() ?? context.api.utils.getCityCode();
+      cityCode ??
+      context.getCurrentCityCode() ??
+      context.api.utils.getCityCode();
 
     if (!resolvedCityCode) {
       console.warn('[Regions] Unable to resolve city code for demand bbox');
