@@ -2,13 +2,17 @@ import {
   type RegionsRegistryCache as RegistryCache,
   StaticRegistryCacheEntrySchema,
 } from '@shared/dataset-index';
+import type { BBox } from 'geojson';
 import { z } from 'zod';
 
+import type { ModdingAPI } from '../../types';
 import type { ElectronAPI } from '../../types/electron';
+import type { DemandDataFile } from '../../types/schemas';
 import {
   REGIONS_REGISTRY_STORAGE_KEY,
   REGIONS_SETTINGS_STORAGE_KEY,
 } from '../constants';
+import { buildPaddedBBoxForDemandData } from '../geometry/helpers';
 import { DEFAULT_REGIONS_SETTINGS } from './defaults';
 import {
   clone,
@@ -17,13 +21,11 @@ import {
   resolveSettings as resolveStoredSettings,
 } from './types';
 
-type ElectronApi = ElectronAPI;
-
 export const MOD_ID = 'com.ahkimn.regions';
 
 type SettingsListener = (settings: RegionsSettingsValue) => void;
 
-// Class to manage user settings for the Regions mod. Persists settings using the Electron API if available
+// Class to manage i/o on local files for the Regions mod. Persists settings using the Electron API if available and fetches data from the local filesystem.
 export class RegionsStorage {
   private settings: RegionsSettingsValue = clone(DEFAULT_REGIONS_SETTINGS);
   private initialized = false;
@@ -33,9 +35,10 @@ export class RegionsStorage {
   private readonly listeners = new Set<SettingsListener>();
 
   constructor(
+    private api: ModdingAPI,
     // TODO (Feature): Migrate all of these reads from the Electron API to the official game API / mod-specific storage when it is available
     private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
-    private readonly electronApi: ElectronApi = resolveElectronApi(),
+    private readonly electronApi: ElectronAPI = resolveElectronApi(),
   ) {}
 
   async initialize(): Promise<RegionsSettingsValue> {
@@ -64,7 +67,7 @@ export class RegionsStorage {
     };
   }
 
-  // Helper function to update mod-level settings, including storage persistence
+  // --- Mod Settings Management --- //
   async updateSettings(
     update: Partial<RegionsSettingsValue>,
   ): Promise<RegionsSettingsValue> {
@@ -83,6 +86,29 @@ export class RegionsStorage {
     return this.getSettings();
   }
 
+  private async hydrateSettings(): Promise<void> {
+    const storedValue = await this.readStorageItem(this.storageKey);
+    if (storedValue == null) {
+      return;
+    }
+
+    try {
+      const stored = resolveStoredSettingsPayload(storedValue);
+      if (stored === null) {
+        console.error(
+          `[Regions] Invalid stored settings payload at key ${this.storageKey}; falling back to defaults.`,
+          storedValue,
+        );
+        return;
+      }
+
+      this.settings = { ...this.settings, ...stored };
+    } catch (error) {
+      console.error('[Regions] Failed to load settings from storage.', error);
+    }
+  }
+
+  // --- Registry Cache Management --- //
   async loadStoredRegistry(): Promise<RegistryCache | null> {
     const stored = await this.readStorageItem(REGIONS_REGISTRY_STORAGE_KEY);
     if (stored == null) {
@@ -104,6 +130,45 @@ export class RegionsStorage {
     await this.writeStorageItem(REGIONS_REGISTRY_STORAGE_KEY, cache);
   }
 
+  // --- Electon Storage API --- //
+  // TODO (Game Bug) replace with API storage if possible, as the base Electron storage is game-level and saves to a shared settings.json used by the game
+  private async persistToStorage(): Promise<void> {
+    await this.writeStorageItem(this.storageKey, this.settings);
+  }
+
+  private async readStorageItem(key: string): Promise<unknown | null> {
+    try {
+      const result = await this.electronApi.getStorageItem(key);
+      if (!result.success) {
+        console.error(`[Regions] Failed to load storage key ${key}.`);
+        return null;
+      }
+      return result.data;
+    } catch (error) {
+      console.error(`[Regions] Failed to load storage key ${key}.`, error);
+      return null;
+    }
+  }
+
+  private async writeStorageItem(key: string, value: unknown): Promise<void> {
+    try {
+      const result = await this.electronApi.setStorageItem(key, value);
+      if (!result.success) {
+        console.error(`[Regions] Failed to persist storage key ${key}.`);
+      }
+    } catch (error) {
+      console.error(`[Regions] Failed to persist storage key ${key}.`, error);
+    }
+  }
+
+  private emit(): void {
+    const snapshot = this.getSettings();
+    this.listeners.forEach((listener) => {
+      listener(snapshot);
+    });
+  }
+
+  // --- Local Datapath Resolution --- //
   async resolveLocalModsDataRoot(): Promise<string> {
     await this.tryResolveModFromScan();
     if (this.resolvedModPath) {
@@ -165,71 +230,46 @@ export class RegionsStorage {
     }
   }
 
-  private async hydrateSettings(): Promise<void> {
-    const storedValue = await this.readStorageItem(this.storageKey);
-    if (storedValue == null) {
-      return;
-    }
-
-    try {
-      const stored = resolveStoredSettingsPayload(storedValue);
-      if (stored === null) {
-        console.error(
-          `[Regions] Invalid stored settings payload at key ${this.storageKey}; falling back to defaults.`,
-          storedValue,
+  async fetchLocalDemandData(cityCode: string): Promise<DemandDataFile | null> {
+    const candidatePaths = [
+      `/data/${cityCode}/demand_data.json.gz`,
+      `/data/${cityCode}/demand_data.json`,
+    ];
+    for (const candidatePath of candidatePaths) {
+      try {
+        const payload = await this.api.utils.loadCityData(candidatePath);
+        if (isDemandDataFile(payload)) {
+          return payload;
+        }
+      } catch (error) {
+        // Continue trying candidate paths and return null only if all candidates fail.
+        console.warn(
+          `[Regions] Failed to load demand data from path ${candidatePath}:`,
+          error,
         );
-        return;
       }
-
-      this.settings = { ...this.settings, ...stored };
-    } catch (error) {
-      console.error('[Regions] Failed to load settings from storage.', error);
     }
+    return null;
   }
 
-  // TODO (Game Bug) replace with API storage if possible, as the base Electron storage is game-level and saves to a shared settings.json used by the game
-  private async persistToStorage(): Promise<void> {
-    await this.writeStorageItem(this.storageKey, this.settings);
-  }
-
-  private async readStorageItem(key: string): Promise<unknown | null> {
-    try {
-      const result = await this.electronApi.getStorageItem(key);
-      if (!result.success) {
-        console.error(`[Regions] Failed to load storage key ${key}.`);
-        return null;
-      }
-      return result.data;
-    } catch (error) {
-      console.error(`[Regions] Failed to load storage key ${key}.`, error);
+  async buildPaddedDemandBBox(
+    cityCode: string,
+    paddingKm: number,
+  ): Promise<BBox | null> {
+    const demandData = await this.fetchLocalDemandData(cityCode);
+    if (!demandData) {
       return null;
     }
-  }
 
-  private async writeStorageItem(key: string, value: unknown): Promise<void> {
-    try {
-      const result = await this.electronApi.setStorageItem(key, value);
-      if (!result.success) {
-        console.error(`[Regions] Failed to persist storage key ${key}.`);
-      }
-    } catch (error) {
-      console.error(`[Regions] Failed to persist storage key ${key}.`, error);
-    }
-  }
-
-  private emit(): void {
-    const snapshot = this.getSettings();
-    this.listeners.forEach((listener) => {
-      listener(snapshot);
-    });
+    return buildPaddedBBoxForDemandData(demandData, paddingKm);
   }
 }
 
-function resolveElectronApi(): ElectronApi {
+function resolveElectronApi(): ElectronAPI {
   if (!window.electron) {
     throw new Error('[Regions] ElectronAPI is unavailable');
   }
-  return window.electron as ElectronApi;
+  return window.electron as ElectronAPI;
 }
 
 function resolveStoredSettingsPayload(
@@ -265,4 +305,14 @@ function resolvedStoredRegistry(storedValue: unknown): RegistryCache | null {
     updatedAt: parsedCache.data.updatedAt,
     entries: validEntries,
   };
+}
+
+function isDemandDataFile(payload: unknown): payload is DemandDataFile {
+  const parsed = z
+    .object({
+      points: z.array(z.unknown()),
+      pops: z.array(z.unknown()),
+    })
+    .safeParse(payload);
+  return parsed.success;
 }

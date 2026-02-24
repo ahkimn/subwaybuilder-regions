@@ -8,6 +8,7 @@ import { RegionsStorage } from '../core/storage/RegionsStorage';
 import type { RegionsSettings } from '../core/storage/types';
 import { RegionsMapLayers } from '../map/RegionsMapLayers';
 import { RegionsUIManager } from '../ui/RegionsUIManager';
+import { attachRegionsDebug } from './debug';
 
 const SERVE_URL = `http://${DEFAULT_URL}:${DEFAULT_PORT}/`;
 const INDEX_FILE = `${DATA_INDEX_FILE}`;
@@ -28,7 +29,7 @@ export class RegionsMod {
   private mapReadyToken: number = 0;
 
   constructor() {
-    this.storage = new RegionsStorage();
+    this.storage = new RegionsStorage(api);
     this.cityLoadToken = 0;
   }
 
@@ -303,64 +304,40 @@ export class RegionsMod {
     this.uiManager?.applySettings(this.settings);
   }
 
-  printSettings() {
-    console.log('[Regions] Current settings', this.settings);
-  }
-
-  // --- Debugging Helpers --- //
-  printRegistry() {
-    this.registry.printIndex();
-  }
-
   getCurrentCityCode() {
     return this.currentCityCode;
   }
 
-  getActiveSelection() {
-    return this.uiManager?.activeSelection;
+  getSettingsSnapshot(): RegionsSettings {
+    return { ...this.settings };
   }
 
-  tearDownUIManager() {
-    this.uiManager?.tearDown();
+  getRegistry(): RegionDatasetRegistry {
+    return this.registry;
   }
 
-  logMapStyle() {
-    console.log(
-      this.mapLayers
-        ? this.mapLayers.getMapStyle()
-        : 'Map layers not initialized',
-    );
+  getStorage(): RegionsStorage {
+    return this.storage;
   }
 
-  logLayerOrder() {
-    console.log(
-      this.mapLayers
-        ? this.mapLayers.getMapLayerOrder()
-        : 'Map layers not initialized',
-    );
+  getUIManager(): RegionsUIManager | null {
+    return this.uiManager;
   }
 
-  logVisibleLayers() {
-    console.log(
-      this.mapLayers
-        ? this.mapLayers.getVisibleLayers()
-        : 'Map layers not initialized',
-    );
+  getMapLayers(): RegionsMapLayers | null {
+    return this.mapLayers;
   }
 }
 
 // Initialize mod
 const mod = new RegionsMod();
-(window as any).SubwayBuilderRegions = {
-  debug: {
-    printRegistry: () => mod.printRegistry(),
-    printSettings: () => mod.printSettings(),
-    getCurrentCityCode: () => mod.getCurrentCityCode(),
-    getActiveSelection: () => mod.getActiveSelection(),
-    tearDownUIManager: () => mod.tearDownUIManager(),
-    logMapStyle: () => mod.logMapStyle(),
-    logLayerOrder: () => mod.logLayerOrder(),
-    logVisibleLayers: () => mod.logVisibleLayers(),
-  },
-};
+attachRegionsDebug({
+  api,
+  getCurrentCityCode: () => mod.getCurrentCityCode(),
+  getSettingsSnapshot: () => mod.getSettingsSnapshot(),
+  getRegistry: () => mod.getRegistry(),
+  getStorage: () => mod.getStorage(),
+  getUIManager: () => mod.getUIManager(),
+  getMapLayers: () => mod.getMapLayers(),
+});
 mod.initialize();
