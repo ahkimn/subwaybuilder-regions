@@ -2,14 +2,14 @@ import { extractCABoundaries } from '../extract/extract-ca-map-features';
 import { extractGBBoundaries } from '../extract/extract-gb-map-features';
 import { extractUSBoundaries } from '../extract/extract-us-map-features';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
-import type { FetchCityDatasetsArgs } from './parse-fetch-args';
+import type { FetchDatasetArgs } from './parse-fetch-args';
 
 export type FetchFailure = {
   datasetId: string;
   error: unknown;
 };
 
-export type FetchRunResult = {
+export type FetchResult = {
   successes: string[];
   failures: FetchFailure[];
 };
@@ -40,7 +40,7 @@ async function runCountryExtractor(
 }
 
 function buildExtractorArgs(
-  request: FetchCityDatasetsArgs,
+  request: FetchDatasetArgs,
   datasetId: string,
 ): ExtractMapFeaturesArgs {
   return {
@@ -57,8 +57,8 @@ function buildExtractorArgs(
 }
 
 export async function runFetch(
-  request: FetchCityDatasetsArgs,
-): Promise<FetchRunResult> {
+  request: FetchDatasetArgs,
+): Promise<FetchResult> {
   const successes: string[] = [];
   const failures: FetchFailure[] = [];
 

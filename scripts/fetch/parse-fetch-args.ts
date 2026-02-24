@@ -3,11 +3,11 @@ import minimist from 'minimist';
 import { parseValidBBox, requireString } from '../utils/cli';
 import type { BoundaryBox } from '../utils/geometry';
 
-export type FetchCountryCode = 'US' | 'GB' | 'CA';
+export type CountryCode = 'US' | 'GB' | 'CA';
 
-export type FetchCityDatasetsArgs = {
+export type FetchDatasetArgs = {
   cityCode: string;
-  countryCode: FetchCountryCode;
+  countryCode: CountryCode;
   datasets: string[];
   bbox: BoundaryBox;
   compress: boolean;
@@ -23,7 +23,7 @@ function parseDatasets(value: string): string[] {
 
 export function parseFetchArgs(
   argvInput = process.argv.slice(2),
-): FetchCityDatasetsArgs {
+): FetchDatasetArgs {
   const argv = minimist(argvInput, {
     string: ['cityCode', 'countryCode', 'datasets', 'bbox', 'out'],
     boolean: ['compress'],
@@ -44,7 +44,7 @@ export function parseFetchArgs(
   const countryCode = requireString(
     argv.countryCode ?? argv['country-code'],
     'countryCode',
-  ).toUpperCase() as FetchCountryCode;
+  ).toUpperCase() as CountryCode;
   const datasets = parseDatasets(requireString(argv.datasets, 'datasets'));
   const bbox = parseValidBBox(requireString(argv.bbox, 'bbox'));
   const out = requireString(argv.out, 'out');

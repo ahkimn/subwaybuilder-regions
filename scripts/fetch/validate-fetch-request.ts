@@ -1,15 +1,12 @@
-import type {
-  FetchCityDatasetsArgs,
-  FetchCountryCode,
-} from './parse-fetch-args';
+import type { CountryCode, FetchDatasetArgs } from './parse-fetch-args';
 
-const FETCH_ELIGIBLE_DATASETS: Record<FetchCountryCode, readonly string[]> = {
+const FETCH_ELIGIBLE_DATASETS: Record<CountryCode, readonly string[]> = {
   US: ['counties', 'county-subdivisions', 'zctas', 'neighborhoods'],
   GB: ['districts', 'bua', 'wards'],
   CA: ['feds', 'csds', 'fsas'],
 };
 
-export function validateFetchRequest(args: FetchCityDatasetsArgs): void {
+export function validateFetchRequest(args: FetchDatasetArgs): void {
   const isAvailableCountry = FETCH_ELIGIBLE_DATASETS[args.countryCode];
   if (!isAvailableCountry) {
     throw new Error(`Unsupported countryCode: ${args.countryCode}`);
