@@ -1,6 +1,8 @@
 import * as turf from '@turf/turf';
 import type { BBox, Feature, MultiPolygon, Polygon, Position } from 'geojson';
 
+import type { DemandDataFile } from '../../types/schemas';
+
 export type Coordinate = [number, number]; // [lng, lat]
 export type RingCoordinate = Coordinate[]; // Closed loop of coordinates
 export type PolygonCoordinates = RingCoordinate[]; // First ring is outer boundary, subsequent rings are holes
@@ -174,20 +176,57 @@ export function getArcBBox(coords: Coordinate[]): BBox {
   return [minLng, minLat, maxLng, maxLat];
 }
 
-export function polygonBBox(polygon: PolygonCoordinates): BBox {
-  let minLng = Infinity,
-    minLat = Infinity,
-    maxLng = -Infinity,
-    maxLat = -Infinity;
-  for (const ring of polygon) {
-    for (const [lng, lat] of ring) {
-      minLng = Math.min(minLng, lng);
-      minLat = Math.min(minLat, lat);
-      maxLng = Math.max(maxLng, lng);
-      maxLat = Math.max(maxLat, lat);
-    }
+export function isValidCoordinate(lng: number, lat: number): boolean {
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+    return false;
   }
+  return lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90;
+}
+
+function updateBBoxFromCoordinates(
+  coordinates: Iterable<Coordinate>,
+  includeInvalidCoordinates = true,
+): BBox | null {
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+
+  for (const [lng, lat] of coordinates) {
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+      continue;
+    }
+    if (!includeInvalidCoordinates && !isValidCoordinate(lng, lat)) {
+      continue;
+    }
+
+    minLng = Math.min(minLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLng = Math.max(maxLng, lng);
+    maxLat = Math.max(maxLat, lat);
+  }
+
+  if (!Number.isFinite(minLng)) {
+    return null;
+  }
+
   return [minLng, minLat, maxLng, maxLat];
+}
+
+export function polygonBBox(polygon: PolygonCoordinates): BBox {
+  // Avoid using .flat() to reduce allocation overhead while remaining compatible with shared bbox calculation logic
+  const coordinates = (function* (): Iterable<Coordinate> {
+    for (const ring of polygon) {
+      for (const coordinate of ring) {
+        yield coordinate;
+      }
+    }
+  })();
+  const bbox = updateBBoxFromCoordinates(coordinates, true);
+  if (!bbox) {
+    return [Infinity, Infinity, -Infinity, -Infinity];
+  }
+  return bbox;
 }
 
 export function multiPolyBBox(bboxes: BBox[]): BBox {
@@ -202,6 +241,45 @@ export function multiPolyBBox(bboxes: BBox[]): BBox {
     maxLat = Math.max(maxLat, bbox[3]);
   }
   return [minLng, minLat, maxLng, maxLat];
+}
+
+export function computeDemandDataBBox(demandData: DemandDataFile): BBox | null {
+  const coordinates: Coordinate[] = demandData.points
+    .map((point) => [point.location[0], point.location[1]] as Coordinate)
+    .filter(([lng, lat]) => isValidCoordinate(lng, lat));
+  const bbox = polygonBBox([coordinates]);
+  if (!Number.isFinite(bbox[0])) {
+    return null;
+  }
+  return bbox;
+}
+
+export function padBBoxKm(bbox: BBox, paddingKm: number): BBox {
+  const paddingMeters = Math.max(0, paddingKm) * 1000;
+  const [west, south, east, north] = bbox;
+  const midLat = (south + north) * 0.5;
+  const cosMidLat = Math.max(Math.abs(Math.cos(midLat * DEG)), 0.01);
+
+  const latOffsetDegrees = paddingMeters / R_E / DEG;
+  const lngOffsetDegrees = paddingMeters / (R_E * cosMidLat) / DEG;
+
+  return [
+    clamp(west - lngOffsetDegrees, -180, 180),
+    clamp(south - latOffsetDegrees, -89.999, 89.999),
+    clamp(east + lngOffsetDegrees, -180, 180),
+    clamp(north + latOffsetDegrees, -89.999, 89.999),
+  ];
+}
+
+export function buildPaddedBBoxForDemandData(
+  demandData: DemandDataFile,
+  paddingKm: number,
+): BBox | null {
+  const bbox = computeDemandDataBBox(demandData);
+  if (!bbox) {
+    return null;
+  }
+  return padBBoxKm(bbox, paddingKm);
 }
 
 // Project geographic coordinate to meter-based coordinate using a base latitude for scaling (equirectangular approximation)
