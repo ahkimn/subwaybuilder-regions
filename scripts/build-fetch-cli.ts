@@ -6,7 +6,7 @@ import { build } from 'vite';
 
 const ROOT_DIR = process.cwd();
 const ENTRY_FILE = path.resolve(ROOT_DIR, 'scripts', 'fetch-city-datasets.ts');
-const OUTPUT_DIR = path.resolve(ROOT_DIR, 'dist-tools');
+const OUTPUT_DIR = path.resolve(ROOT_DIR, 'dist', 'tools');
 const OUTPUT_FILE = path.resolve(OUTPUT_DIR, 'fetch-cli.cjs');
 const SHEBANG = '#!/usr/bin/env node\n';
 

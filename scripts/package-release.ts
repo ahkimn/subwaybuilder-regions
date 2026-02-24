@@ -23,7 +23,7 @@ type ManifestJson = {
 const rootDir = process.cwd();
 const manifestPath = path.join(rootDir, 'manifest.json');
 const bundlePath = path.join(rootDir, 'dist', 'index.js');
-const fetchCliPath = path.join(rootDir, 'dist-tools', 'fetch-cli.cjs');
+const fetchCliPath = path.join(rootDir, 'dist', 'tools', 'fetch-cli.cjs');
 const fetchPowershellWrapperPath = path.join(rootDir, 'fetch.ps1');
 const fetchShellWrapperPath = path.join(rootDir, 'fetch.sh');
 const changelogPath = path.join(rootDir, 'CHANGELOG.md');
@@ -95,11 +95,8 @@ function main(): void {
   copyFileSync(bundlePath, path.join(stagingDir, 'index.js'));
   copyFileSync(fetchPowershellWrapperPath, path.join(stagingDir, 'fetch.ps1'));
   copyFileSync(fetchShellWrapperPath, path.join(stagingDir, 'fetch.sh'));
-  mkdirSync(path.join(stagingDir, 'dist-tools'), { recursive: true });
-  copyFileSync(
-    fetchCliPath,
-    path.join(stagingDir, 'dist-tools', 'fetch-cli.cjs'),
-  );
+  mkdirSync(path.join(stagingDir, 'tools'), { recursive: true });
+  copyFileSync(fetchCliPath, path.join(stagingDir, 'tools', 'fetch-cli.cjs'));
 
   rmSync(zipPath, { force: true });
   createZipFromStaging(stagingDir, zipPath);

@@ -1,15 +1,20 @@
 $ErrorActionPreference = 'Stop'
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$cliPath = Join-Path $scriptDir 'dist-tools\fetch-cli.cjs'
+$releaseCliPath = Join-Path $scriptDir 'tools\fetch-cli.cjs'
+$devCliPath = Join-Path $scriptDir 'dist\tools\fetch-cli.cjs'
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   Write-Error '[Fetch] Node.js is required but was not found in PATH.'
   exit 1
 }
 
-if (-not (Test-Path $cliPath)) {
-  Write-Error "[Fetch] Missing runtime CLI at $cliPath. Build it with: npm run build:fetch-cli"
+if (Test-Path $releaseCliPath) {
+  $cliPath = $releaseCliPath
+} elseif (Test-Path $devCliPath) {
+  $cliPath = $devCliPath
+} else {
+  Write-Error "[Fetch] Missing runtime CLI at $releaseCliPath (release) and $devCliPath (dev). Build it with: npm run build:fetch-cli"
   exit 1
 }
 

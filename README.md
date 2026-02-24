@@ -500,7 +500,7 @@ The following are developer commands available within the repository, grouped by
 - `npm run fetch:city`: Runs single-city explicit-bbox fetch generation (`--cityCode`, `--countryCode`, `--datasets`, `--bbox`).
 - `npm run export`: Packages `data/{CITY}` into `export/{CITY}.gz` (supports `--city-code`, `--all`, `--include-osm-data`, `--output-dir`).
 - `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
-- `npm run build:fetch-cli`: Bundles runtime fetch CLI for release (`dist-tools/fetch-cli.cjs`).
+- `npm run build:fetch-cli`: Bundles runtime fetch CLI for release (`dist/tools/fetch-cli.cjs`).
   Details
 
 ### Release Process

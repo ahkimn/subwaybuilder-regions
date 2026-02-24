@@ -16,7 +16,7 @@ The zip contains only:
 - `index.js` (built from `dist/index.js`)
 - `fetch.ps1`
 - `fetch.sh`
-- `dist-tools/fetch-cli.cjs`
+- `tools/fetch-cli.cjs`
 
 ## Per-Release Steps
 
