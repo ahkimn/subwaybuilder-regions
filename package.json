@@ -50,10 +50,10 @@
     "serve": "tsx scripts/serve-data.ts",
     "extract:map-features": "tsx scripts/extract-map-features.ts",
     "fetch:city": "tsx scripts/fetch-city-datasets.ts",
-    "build:fetch-cli": "tsx scripts/build-fetch-cli.ts",
+    "build:fetch-cli": "tsx scripts/build/build-fetch-cli.ts",
     "export": "tsx scripts/export-data-archives.ts",
-    "release:version": "tsx scripts/resolve-release-version.ts",
-    "release:package": "npm run build && npm run build:fetch-cli && tsx scripts/package-release.ts"
+    "release:version": "tsx scripts/build/resolve-release-version.ts",
+    "release:package": "npm run build && npm run build:fetch-cli && tsx scripts/build/package-release.ts"
   },
   "repository": {
     "type": "git",

@@ -196,7 +196,7 @@ _Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
 
    **Runtime Fetch CLI (single city, explicit bbox)**
 
-   For release/runtime-compatible generation (Phase 1), use the dedicated fetch CLI with explicit bbox and dataset list:
+   To replicate release/runtime-compatible generation, use the dedicated fetch CLI with explicit bbox and dataset list:
 
    ```
    npx tsx scripts/fetch-city-datasets.ts \
@@ -213,7 +213,7 @@ _Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
    Supported datasets for this runtime CLI:
    - `US`: `counties`, `county-subdivisions`, `zctas`, `neighborhoods`
    - `GB`: `districts`, `bua`, `wards`
-   - `CA`: `feds`, `csds`, `fsas` (`peds` intentionally deferred)
+   - `CA`: `feds`, `csds`, `fsas` (`peds` requires a local dataset)
 
    **Rest of the World**
 
@@ -500,8 +500,12 @@ The following are developer commands available within the repository, grouped by
 - `npm run fetch:city`: Runs single-city explicit-bbox fetch generation (`--cityCode`, `--countryCode`, `--datasets`, `--bbox`).
 - `npm run export`: Packages `data/{CITY}` into `export/{CITY}.gz` (supports `--city-code`, `--all`, `--include-osm-data`, `--output-dir`).
 - `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
+
+#### Release
+
 - `npm run build:fetch-cli`: Bundles runtime fetch CLI for release (`dist/tools/fetch-cli.cjs`).
-  Details
+- `npm run release:version`: Resolves the latest release version from the top `CHANGELOG.md` entry.
+- `npm run release:package`: Builds the mod + fetch CLI and creates the release zip in `release/`.
 
 ### Release Process
 

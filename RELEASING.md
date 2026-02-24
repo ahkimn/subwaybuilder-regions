@@ -41,7 +41,7 @@ On push of `v*` tag, the release workflow:
 
 1. Resolves release version from latest `CHANGELOG.md` entry.
 2. Verifies pushed tag matches that version.
-3. Builds project and runs `npm run package-release`.
+3. Builds project and runs `npm run release:package`.
 4. Extracts release notes from matching `CHANGELOG.md` section.
 5. Publishes GitHub Release with:
    - tag/name `vX.Y.Z`

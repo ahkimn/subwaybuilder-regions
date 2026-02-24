@@ -9,7 +9,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
-import { getLatestReleaseVersionFromChangelog } from './utils/release-version';
+import { getLatestReleaseVersionFromChangelog } from '../utils/release-version';
 
 type PackageJson = {
   name: string;
