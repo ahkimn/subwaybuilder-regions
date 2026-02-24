@@ -493,14 +493,15 @@ The following are developer commands available within the repository, grouped by
 - `npm run build`: Builds and packages `src/` into `dist/index.js`.
 - `npm run build:dev`: Builds `dist/index.js` then launches the game.
 - `npm run dev`: Launches SubwayBuilder with debug mode enabled.
-- `npm run link`: Creates a symlink for `dist/index.js` in the game's mod directory.
+- `npm run link`: Creates/updates symlinks in the configured mod directory for `index.js`, `manifest.json`, `fetch.ps1`, `fetch.sh`, and `tools/fetch-cli.cjs` (requires `config.yaml` with `baseModsDir` and `modDirName`).
+  - This operation may require administratior permissions.
 
 #### Data Extraction / Serving
 
-- `npm run extract:map-features`: Extracts boundary GeoJSONs for a city for use by the mod.
-- `npm run fetch:city`: Runs single-city explicit-bbox fetch generation (`--cityCode`, `--countryCode`, `--datasets`, `--west`, `--south`, `--east`, `--north`).
-- `npm run export`: Packages `data/{CITY}` into `export/{CITY}.gz` (supports `--city-code`, `--all`, `--include-osm-data`, `--output-dir`).
-- `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
+- `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview]`: Extracts boundary GeoJSONs for a single city/dataset.
+- `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
+- `npm run export -- --city-code=<CITY[,CITY...]>|--all [--include-osm-data] [--output-dir=<DIR>]`: Packages `data/{CITY}` into `export/{CITY}.gz`.
+- `npm run serve -- [--port=<PORT>] [--dir=<RELATIVE_DATA_DIR>]`: Launches a local HTTP server for data files (defaults to project `data/`).
 
 #### Release
 
