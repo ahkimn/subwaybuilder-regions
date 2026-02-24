@@ -1,7 +1,7 @@
 import type { CountryCode, FetchDatasetArgs } from './parse-fetch-args';
 
 const FETCH_ELIGIBLE_DATASETS: Record<CountryCode, readonly string[]> = {
-  US: ['counties', 'county-subdivisions', 'zctas', 'neighborhoods'],
+  US: ['counties', 'county-subdivisions', 'zctas'],
   GB: ['districts', 'bua', 'wards'],
   CA: ['feds', 'csds', 'fsas'],
 };

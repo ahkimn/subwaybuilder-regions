@@ -212,7 +212,7 @@ _Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
    ```
 
    Supported datasets for this runtime CLI:
-   - `US`: `counties`, `county-subdivisions`, `zctas`, `neighborhoods`
+   - `US`: `counties`, `county-subdivisions`, `zctas`
    - `GB`: `districts`, `bua`, `wards`
    - `CA`: `feds`, `csds`, `fsas` (`peds` requires a local dataset)
 
