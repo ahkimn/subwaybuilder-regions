@@ -21,6 +21,7 @@ export type ExtractMapFeaturesArgs = {
   east?: number;
   useLocalData?: boolean;
   compress?: boolean;
+  outputRoot?: string;
   preview?: boolean;
   previewCount?: number;
 };
@@ -33,6 +34,13 @@ export type ExportArchivesArgs = {
 };
 
 const DEFAULT_PREVIEW_COUNT = 5;
+
+type CoordinateBoxArgs = {
+  south?: number;
+  west?: number;
+  north?: number;
+  east?: number;
+};
 
 // --- Required Argument Helpers --- //
 
@@ -62,22 +70,30 @@ export function requireNumber(
   process.exit(1);
 }
 
-export function parseNumber(value: string): number | undefined {
+export function parseNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return undefined;
+  }
   const normalizedValue = value.replace(/,/g, '').trim();
   const parsedNumber = Number(normalizedValue);
 
   return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
 }
 
-export function hasExplicitBBox(
-  args: ExtractMapFeaturesArgs,
-): args is ExtractMapFeaturesArgs & BoundaryBox {
+export function hasExplicitBBox<T extends CoordinateBoxArgs>(
+  args: T,
+): args is T & BoundaryBox {
   return [args.south, args.west, args.north, args.east].every(
     (v) => typeof v === 'number',
   );
 }
 
-export function getBBoxFromArgs(args: ExtractMapFeaturesArgs): BoundaryBox {
+export function getBBoxFromArgs<T extends CoordinateBoxArgs>(
+  args: T,
+): BoundaryBox {
   return {
     south: args.south!,
     west: args.west!,
@@ -127,10 +143,10 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     process.exit(1);
   }
 
-  const south = argv.south != null ? Number(argv.south) : undefined;
-  const west = argv.west != null ? Number(argv.west) : undefined;
-  const north = argv.north != null ? Number(argv.north) : undefined;
-  const east = argv.east != null ? Number(argv.east) : undefined;
+  const south = parseNumber(argv.south);
+  const west = parseNumber(argv.west);
+  const north = parseNumber(argv.north);
+  const east = parseNumber(argv.east);
 
   const useLocalData = (argv.useLocalData ?? argv['use-local-data']) as
     | boolean

@@ -14,6 +14,9 @@ The zip contains only:
 
 - `manifest.json`
 - `index.js` (built from `dist/index.js`)
+- `fetch.ps1`
+- `fetch.sh`
+- `tools/fetch-cli.cjs`
 
 ## Per-Release Steps
 
@@ -26,6 +29,7 @@ The zip contains only:
 4. Run local checks:
    - `npm run lint`
    - `npm run build`
+   - `npm run build:fetch-cli`
    - `npm run release:package`
 5. Create and push release tag:
    - `git tag vX.Y.Z`
@@ -37,7 +41,7 @@ On push of `v*` tag, the release workflow:
 
 1. Resolves release version from latest `CHANGELOG.md` entry.
 2. Verifies pushed tag matches that version.
-3. Builds project and runs `npm run package-release`.
+3. Builds project and runs `npm run release:package`.
 4. Extracts release notes from matching `CHANGELOG.md` section.
 5. Publishes GitHub Release with:
    - tag/name `vX.Y.Z`

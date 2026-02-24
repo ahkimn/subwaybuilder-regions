@@ -23,6 +23,11 @@ const BOUNDARIES_INDEX_FILE = path.resolve(
   CITY_BOUNDARIES_FILE,
 );
 
+/**
+ * Dev-time script to extract a single dataset for a city, based on either:
+  - Default boundaries defined in the boundaries.csv for known city codes
+  - Custom boundaries provided via fully specified bbox arguments (west, south, east, north)
+ */
 async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
   // Default map boundaries for all cities, loaded from CSV
   const cityMapBoundaries = loadBoundariesFromCSV(BOUNDARIES_INDEX_FILE);

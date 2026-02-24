@@ -194,6 +194,28 @@ _Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
 
    :warning: If adding boundaries for a custom city, `city-code` must be in `boundaries.csv`
 
+   **Runtime Fetch CLI (single city, explicit bbox)**
+
+   To replicate release/runtime-compatible generation, use the dedicated fetch CLI with explicit bbox and dataset list:
+
+   ```
+   npx tsx scripts/fetch-city-datasets.ts \
+     --cityCode=NYC \
+     --countryCode=US \
+     --datasets=counties,county-subdivisions,zctas \
+     --west=-74.601721 \
+     --south=40.233767 \
+     --east=-73.405397 \
+     --north=41.195732 \
+     --out=./data \
+     --compress=true
+   ```
+
+   Supported datasets for this runtime CLI:
+   - `US`: `counties`, `county-subdivisions`, `zctas`, `neighborhoods`
+   - `GB`: `districts`, `bua`, `wards`
+   - `CA`: `feds`, `csds`, `fsas` (`peds` requires a local dataset)
+
    **Rest of the World**
 
    For the rest of the world, the mod supports boundary fetching via OSM by admin level. Valid combinations are set in `source_data/osm-country-admin-levels.json`
@@ -471,14 +493,21 @@ The following are developer commands available within the repository, grouped by
 - `npm run build`: Builds and packages `src/` into `dist/index.js`.
 - `npm run build:dev`: Builds `dist/index.js` then launches the game.
 - `npm run dev`: Launches SubwayBuilder with debug mode enabled.
-- `npm run link`: Creates a symlink for `dist/index.js` in the game's mod directory.
+- `npm run link`: Creates/updates symlinks in the configured mod directory for `index.js`, `manifest.json`, `fetch.ps1`, `fetch.sh`, and `tools/fetch-cli.cjs` (requires `config.yaml` with `baseModsDir` and `modDirName`).
+  - This operation may require administratior permissions.
 
 #### Data Extraction / Serving
 
-- `npm run extract:map-features`: Extracts boundary GeoJSONs for a city for use by the mod.
-- `npm run export`: Packages `data/{CITY}` into `export/{CITY}.gz` (supports `--city-code`, `--all`, `--include-osm-data`, `--output-dir`).
-- `npm run serve`: Launches a local HTTP server to serve GeoJSON files from `data/`.
-  Details
+- `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview]`: Extracts boundary GeoJSONs for a single city/dataset.
+- `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
+- `npm run export -- --city-code=<CITY[,CITY...]>|--all [--include-osm-data] [--output-dir=<DIR>]`: Packages `data/{CITY}` into `export/{CITY}.gz`.
+- `npm run serve -- [--port=<PORT>] [--dir=<RELATIVE_DATA_DIR>]`: Launches a local HTTP server for data files (defaults to project `data/`).
+
+#### Release
+
+- `npm run build:fetch-cli`: Bundles runtime fetch CLI for release (`dist/tools/fetch-cli.cjs`).
+- `npm run release:version`: Resolves the latest release version from the top `CHANGELOG.md` entry.
+- `npm run release:package`: Builds the mod + fetch CLI and creates the release zip in `release/`.
 
 ### Release Process
 

@@ -10,8 +10,6 @@ import type { BoundaryBox } from '../utils/geometry';
 import { filterAndClipRegionsToBoundary } from '../utils/geometry';
 import type { DataConfig } from './handler-types';
 
-const OUTPUT_INDEX_FILE = path.resolve('data', DATA_INDEX_FILE);
-
 export function processAndSaveBoundaries(
   geoJson: GeoJSON.FeatureCollection,
   populationMap: Map<string, string> | undefined,
@@ -64,8 +62,9 @@ export function saveBoundaries(
   dataConfig: DataConfig,
 ) {
   const shouldCompress = args.compress ?? true;
+  const outputRoot = path.resolve(args.outputRoot ?? 'data');
   const outputFilePath = path.resolve(
-    'data',
+    outputRoot,
     args.cityCode,
     `${args.dataType}.geojson${shouldCompress ? '.gz' : ''}`,
   );
@@ -89,7 +88,7 @@ export function saveBoundaries(
   };
 
   updateIndexJson(
-    OUTPUT_INDEX_FILE,
+    path.resolve(outputRoot, DATA_INDEX_FILE),
     args.cityCode!,
     indexEntry,
     args.countryCode!,
