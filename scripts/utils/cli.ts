@@ -35,6 +35,13 @@ export type ExportArchivesArgs = {
 
 const DEFAULT_PREVIEW_COUNT = 5;
 
+type CoordinateBoxArgs = {
+  south?: number;
+  west?: number;
+  north?: number;
+  east?: number;
+};
+
 // --- Required Argument Helpers --- //
 
 export function requireString(value: any, name: string): string {
@@ -63,64 +70,30 @@ export function requireNumber(
   process.exit(1);
 }
 
-export function parseNumber(value: string): number | undefined {
+export function parseNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return undefined;
+  }
   const normalizedValue = value.replace(/,/g, '').trim();
   const parsedNumber = Number(normalizedValue);
 
   return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
 }
 
-export function parseValidBBox(value: string): BoundaryBox {
-  const splitInput = value.split(',').map((part) => part.trim());
-  if (splitInput.length !== 4) {
-    throw new Error(
-      `Invalid bbox format: expected 4 comma-separated values (west,south,east,north), got ${splitInput.length}`,
-    );
-  }
-
-  const [westStr, southStr, eastStr, northStr] = splitInput;
-  const west = parseNumber(westStr);
-  const south = parseNumber(southStr);
-  const east = parseNumber(eastStr);
-  const north = parseNumber(northStr);
-
-  if ([west, south, east, north].some((coord) => coord === undefined)) {
-    throw new Error(
-      `Invalid bbox format: all values must be valid numbers. Received: west=${westStr}, south=${southStr}, east=${eastStr}, north=${northStr}`,
-    );
-  }
-
-  if (west! >= east! || west! <= -180 || east! > 180) {
-    {
-      throw new Error(
-        `Invalid bbox format: west coordinate must be less than east coordinate and within [-180, 180]. Received: west=${west}, east=${east}`,
-      );
-    }
-  }
-
-  if (south! >= north! || south! <= -90 || north! > 90) {
-    throw new Error(
-      `Invalid bbox format: south coordinate must be less than north coordinate and within [-90, 90]. Received: south=${south}, north=${north}`,
-    );
-  }
-
-  return {
-    west: west!,
-    south: south!,
-    east: east!,
-    north: north!,
-  };
-}
-
-export function hasExplicitBBox(
-  args: ExtractMapFeaturesArgs,
-): args is ExtractMapFeaturesArgs & BoundaryBox {
+export function hasExplicitBBox<T extends CoordinateBoxArgs>(
+  args: T,
+): args is T & BoundaryBox {
   return [args.south, args.west, args.north, args.east].every(
     (v) => typeof v === 'number',
   );
 }
 
-export function getBBoxFromArgs(args: ExtractMapFeaturesArgs): BoundaryBox {
+export function getBBoxFromArgs<T extends CoordinateBoxArgs>(
+  args: T,
+): BoundaryBox {
   return {
     south: args.south!,
     west: args.west!,
@@ -170,10 +143,10 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     process.exit(1);
   }
 
-  const south = argv.south != null ? Number(argv.south) : undefined;
-  const west = argv.west != null ? Number(argv.west) : undefined;
-  const north = argv.north != null ? Number(argv.north) : undefined;
-  const east = argv.east != null ? Number(argv.east) : undefined;
+  const south = parseNumber(argv.south);
+  const west = parseNumber(argv.west);
+  const north = parseNumber(argv.north);
+  const east = parseNumber(argv.east);
 
   const useLocalData = (argv.useLocalData ?? argv['use-local-data']) as
     | boolean
