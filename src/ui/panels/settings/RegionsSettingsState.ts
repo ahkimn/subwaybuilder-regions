@@ -1,6 +1,6 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
-import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
-import type { SystemPerformanceInfo } from '../../../types';
+import type { RegionsStorage } from '@/core/storage/RegionsStorage';
+import type { SystemPerformanceInfo } from '@/types';
 import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '../types';
 import type {
   FetchCountryCode,

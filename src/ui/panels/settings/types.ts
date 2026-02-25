@@ -1,11 +1,11 @@
 import type { DatasetTemplateMetadata } from '@shared/datasets/catalog';
 
 import type { DatasetOrigin } from '@/core/domain';
+import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistry';
+import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { RegionsSettings } from '@/core/storage/types';
 import type { ModdingAPI, SystemPerformanceInfo } from '@/types';
 
-import type { RegionDatasetRegistry } from '../../../core/registry/RegionDatasetRegistry';
-import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type {
   InputFieldProperties,
   LabelProperties,
