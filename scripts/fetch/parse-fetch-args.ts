@@ -26,6 +26,7 @@ function parseDatasets(value: string): string[] {
     .filter((entry) => entry.length > 0);
 }
 
+// Workaround for broken minimist parsing of --option=value when the value starts with a dash (e.g. negative numbers for bbox)
 function readOptionValue(
   argvInput: string[],
   optionName: string,
