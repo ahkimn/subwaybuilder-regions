@@ -1,5 +1,5 @@
 export * from './commuters';
-export * from './dataset-source';
+export * from './datasets';
 export * from './region-data';
 export * from './route-display';
 export * from './selection';

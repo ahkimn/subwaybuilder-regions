@@ -21,6 +21,7 @@ export function renderGlobalSettingsSection(
     [
       h('div', { className: 'flex items-start justify-between gap-3 text-sm' }, [
         // TODO: Let's make the Label + description + switch into a reusable component since we'll introduce additional toggles in the near future
+        // Toggle for showing unpopulated regions
         h('div', { className: 'flex flex-col gap-0.5' }, [
           h(
             Label,

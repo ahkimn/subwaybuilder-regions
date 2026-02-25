@@ -5,8 +5,10 @@ import { Button } from '../../elements/Button';
 import { PanelSection } from '../../elements/PanelSection';
 import { SelectMenu } from '../../elements/SelectMenu';
 import {
+  CircleCheck,
   Copy,
   createReactIconElement,
+  type IconDefinition,
   MapPinnedIcon,
   OctagonX,
   TriangleWarning,
@@ -18,6 +20,10 @@ import type { SettingsFetchSectionParams } from './types';
 
 const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
 const CRITICAL_HEX = getPrimaryChartColorByName('Red').hex;
+const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
+const INLINE_STATUS_TEXT_CLASS =
+  'ml-2 inline-flex items-center gap-1 text-xs font-normal leading-none align-middle';
+const INLINE_STATUS_ICON_CLASS = 'h-3.5 w-3.5 shrink-0';
 
 export function renderFetchDatasetsSection(
   h: typeof createElement,
@@ -166,15 +172,18 @@ export function renderFetchDatasetsSection(
           [
             'Generated Command',
             isCommandInvalid
-              ? h(
-                'span',
-                { style: { color: CRITICAL_HEX } },
-                createReactIconElement(h, OctagonX, {
-                  size: 14,
-                  className: 'h-3.5 w-3.5 shrink-0',
-                }),
+              ? renderInlineStatusLabel(
+                h,
+                'Required',
+                CRITICAL_HEX,
+                OctagonX,
               )
-              : null,
+              : renderInlineStatusLabel(
+                h,
+                'Ready',
+                SUCCESS_HEX,
+                CircleCheck,
+              ),
           ],
         ),
         isCommandInvalid
@@ -270,17 +279,25 @@ function renderInlineWarningLabel(
   label: string,
   colorHex: string,
 ): React.ReactNode {
+  return renderInlineStatusLabel(h, label, colorHex, TriangleWarning);
+}
+
+function renderInlineStatusLabel(
+  h: typeof createElement,
+  label: string,
+  colorHex: string,
+  icon: IconDefinition,
+): React.ReactNode {
   return h(
     'span',
     {
-      className:
-        'ml-2 inline-flex items-center gap-1 text-[11px] font-normal leading-none align-middle',
+      className: INLINE_STATUS_TEXT_CLASS,
       style: { color: colorHex },
     },
     [
-      createReactIconElement(h, TriangleWarning, {
+      createReactIconElement(h, icon, {
         size: 14,
-        className: 'h-3.5 w-3.5 shrink-0',
+        className: INLINE_STATUS_ICON_CLASS,
       }),
       h('span', null, label),
     ],

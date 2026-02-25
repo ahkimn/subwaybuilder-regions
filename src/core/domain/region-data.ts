@@ -93,9 +93,3 @@ export type RegionDemandData = {
 
   metadata?: RegionGameMetadata; // metadata
 };
-export enum DatasetStatus {
-  Unloaded = 'unloaded',
-  Loading = 'loading',
-  Loaded = 'loaded',
-  Error = 'error'
-}

@@ -2,7 +2,6 @@ import type { RegistryCacheEntry } from '@shared/dataset-index';
 import type React from 'react';
 
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
-import type { DatasetOrigin } from '@/core/domain';
 import type { City } from '@/types/cities';
 import { getGameReact } from '@/ui/react/get-game-react';
 
@@ -130,6 +129,9 @@ export function RegionsSettingsPanel({
         });
     };
 
+    /**
+     * Initiate registry refresh 
+     */
     const refreshRegistry = () => {
       dispatch({ type: 'refresh_registry_started' });
       void datasetRegistry
@@ -162,6 +164,9 @@ export function RegionsSettingsPanel({
         });
     };
 
+    /**
+     * Clear non-served registry entries that are unusable by the user (due to either being missing on the local file system or being tied to a no longer existing city)
+     */
     const clearMissingEntries = () => {
       dispatch({ type: 'clear_missing_started' });
       void storage
@@ -256,10 +261,10 @@ export function RegionsSettingsPanel({
 
           dispatch({
             type: 'set_fetch_bbox_fields',
-            west: bbox[0].toFixed(6),
-            south: bbox[1].toFixed(6),
-            east: bbox[2].toFixed(6),
-            north: bbox[3].toFixed(6),
+            west: bbox[0].toFixed(4),
+            south: bbox[1].toFixed(4),
+            east: bbox[2].toFixed(4),
+            north: bbox[3].toFixed(4),
           });
         })
         .catch((error) => {
@@ -349,14 +354,15 @@ export function RegionsSettingsPanel({
         return;
       }
       dispatch({ type: 'copy_fetch_command_started' });
-      void copyTextToClipboard(state.fetch.command)
+      // Copy to clipboard
+      void window.navigator.clipboard.writeText(state.fetch.command)
         .then(() => {
           api.ui.showNotification('[Regions] Script command copied!', 'success');
         })
         .catch((error) => {
           console.error('[Regions] Failed to copy fetch command.', error);
           api.ui.showNotification(
-            '[Regions] Failed to copy fetch command. Copy manually from the command field.',
+            '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
             'error',
           );
         })
@@ -371,8 +377,9 @@ export function RegionsSettingsPanel({
         .openModsFolder()
         .catch((error) => {
           console.error('[Regions] Failed to open mods folder.', error);
+          // There's not really a good fallback for an exception here, but at least we can notify the user that it didn't work through a UI toast
           api.ui.showNotification(
-            '[Regions] Failed to open mods folder. Ensure electron.openModsFolder is available.',
+            '[Regions] Failed to open mods folder.',
             'error',
           );
         })
@@ -452,27 +459,24 @@ function buildSettingsDatasetRows(
     cacheByDatasetKey.set(datasetKey, existing);
   });
 
+  // First iterate through built registry datasets to show that all currently registered datasets are represented in the table
   datasets.forEach((dataset) => {
     const datasetKey = `${dataset.cityCode}::${dataset.id}`;
     const matchingCachedEntries = cacheByDatasetKey.get(datasetKey) ?? [];
-    const inferredOrigin: DatasetOrigin = isServedDataset(dataset)
-      ? 'served'
-      : dataset.source.type === 'user'
-        ? 'dynamic'
-        : 'static';
+    const origin = dataset.source.type;
     const matchingOriginEntry = matchingCachedEntries.find(
-      (entry) => entry.origin === inferredOrigin,
+      (entry) => entry.origin === origin,
     );
 
-    rows.set(`${dataset.cityCode}:${dataset.id}:${inferredOrigin}`, {
-      rowKey: `${dataset.cityCode}:${dataset.id}:${inferredOrigin}`,
+    rows.set(`${dataset.cityCode}:${dataset.id}:${origin}`, {
+      rowKey: `${dataset.cityCode}:${dataset.id}:${origin}`,
       cityCode: dataset.cityCode,
       cityName: knownCitiesByCode.get(dataset.cityCode)?.name ?? null,
       datasetId: dataset.id,
       displayName: dataset.displayName,
-      origin: inferredOrigin,
+      origin: origin,
       fileSizeMB:
-        inferredOrigin === 'served'
+        origin === 'served'
           ? null
           : (matchingOriginEntry?.fileSizeMB ?? null),
       issue: !knownCityCodes.has(dataset.cityCode)
@@ -483,12 +487,22 @@ function buildSettingsDatasetRows(
     });
   });
 
+  // Then iterate through cached entries to find any datasets that are currently missing from the registry (usually due to their being removed from local file system since they were cached)
   cachedEntries.forEach((entry) => {
     const rowKey = `${entry.cityCode}:${entry.datasetId}:${entry.origin}`;
     if (rows.has(rowKey)) {
       return;
     }
     const issue = resolveCachedEntryIssue(entry, knownCityCodes);
+
+    if (!issue) {
+      // If this triggers, there a few potential causes, each of which is worthy of investigation
+      // 1) The activte registry failed to load a valid datset that was present in the cached registry
+      // 2) The cached registry has been corrupted in some way (e.g. manual edit, or a failed write that resulted in a partial entry being saved)
+      console.warn(
+        `[Regions] Found cached registry entry with no identifiable issue that missing from the active registry. Entry details: ${JSON.stringify(entry)}`,
+      );
+    }
 
     rows.set(rowKey, {
       rowKey,
@@ -516,30 +530,4 @@ function resolveCachedEntryIssue(
     return 'missing_file';
   }
   return null;
-}
-
-function isServedDataset(dataset: RegionDataset): boolean {
-  return !dataset.dataPath.startsWith('file:///');
-}
-
-async function copyTextToClipboard(text: string): Promise<void> {
-  if (window.navigator.clipboard?.writeText) {
-    await window.navigator.clipboard.writeText(text);
-    return;
-  }
-
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.style.position = 'fixed';
-  textarea.style.left = '-9999px';
-  document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
-
-  const succeeded = document.execCommand('copy');
-  document.body.removeChild(textarea);
-
-  if (!succeeded) {
-    throw new Error('Clipboard write command failed.');
-  }
 }

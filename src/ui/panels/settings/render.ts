@@ -84,7 +84,7 @@ export function renderSettingsOverlay(
     {
       key: 'settings-overlay',
       className:
-        'absolute inset-0 w-full h-full overflow-auto bg-background/95 backdrop-blur-sm p-4 z-50',
+        'absolute inset-0 w-full h-full overflow-auto bg-background p-4 z-50',
     },
     [
       h('div', { className: 'max-w-5xl mx-auto flex flex-col gap-4' }, [

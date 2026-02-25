@@ -164,20 +164,9 @@ export function sortSettingsRows(
       );
     }
 
+    // Tie-breaker on localized city codes (these should be unique)
     if (result === 0) {
       result = a.cityCode.localeCompare(b.cityCode);
-      if (result === 0) {
-        result = (a.cityName ?? '').localeCompare(b.cityName ?? '');
-      }
-      if (result === 0) {
-        result = a.datasetId.localeCompare(b.datasetId);
-      }
-      if (result === 0) {
-        result = a.displayName.localeCompare(b.displayName);
-      }
-      if (result === 0) {
-        result = a.origin.localeCompare(b.origin);
-      }
     }
 
     return result;
@@ -212,7 +201,7 @@ export function renderDatasetRegistrySection(
             h,
             Input,
             value: searchTerm,
-            placeholder: 'Search city, dataset, display name...',
+            placeholder: 'Search by city, dataset ID/name...',
             onValueChange: onSearchTermChange,
           }),
         ]),
