@@ -12,7 +12,6 @@ import {
   LOADING_VALUE_DISPLAY,
   REGIONS_INFO_PANEL_ID,
   REGIONS_INFO_PANEL_TITLE,
-  SANKEY_LABEL_FLOW_SYNC,
 } from '@/core/constants';
 import type { RegionDataManager } from '@/core/datasets/RegionDataManager';
 import {
@@ -34,19 +33,12 @@ import {
   TramFrontIcon,
 } from '../../elements/utils/Icons';
 import {
-  DEFAULT_SORT_STATE,
-  NumberDisplay,
-  SortDirection,
-  SortState,
-} from '../types';
+  commutersViewReducer,
+  createDefaultCommutersViewState,
+} from './commuters-state';
 import { renderCommutersView } from './render-commuters';
 import { renderStatisticsView } from './render-statistics';
 import {
-  CommuterDimension,
-  CommuterDirection,
-  CommuterDisplayMode,
-  type CommutersViewAction,
-  type CommutersViewState,
   RegionsInfoPanelView,
 } from './types';
 
@@ -252,113 +244,6 @@ export function RegionsInfoPanel({
       ),
     ),
   );
-}
-
-function createDefaultCommuterSortStates(): Map<CommuterDimension, SortState> {
-  return new Map([
-    // By default sort regions by name ascending (alphabetical order); other dimensions should be based on natural number order (descending)
-    [
-      CommuterDimension.Region,
-      { ...DEFAULT_SORT_STATE, sortDirection: SortDirection.Asc },
-    ],
-    [CommuterDimension.CommuteHour, { ...DEFAULT_SORT_STATE }],
-    [CommuterDimension.CommuteLength, { ...DEFAULT_SORT_STATE }],
-  ]);
-}
-
-function createDefaultCommutersViewState(): CommutersViewState {
-  return {
-    dimension: CommuterDimension.Region,
-    direction: CommuterDirection.Outbound,
-    displayMode: CommuterDisplayMode.Table,
-    sortStates: createDefaultCommuterSortStates(),
-    tableOptions: {
-      commuterCountDisplay: NumberDisplay.Absolute,
-      modeShareDisplay: NumberDisplay.Absolute,
-      expanded: false,
-    },
-    sankeyOptions: {
-      labelsFollowFlowDirection: SANKEY_LABEL_FLOW_SYNC,
-    },
-  };
-}
-
-function commutersViewReducer(
-  current: CommutersViewState,
-  action: CommutersViewAction,
-): CommutersViewState {
-  switch (action.type) {
-    case 'set_dimension':
-      if (current.dimension === action.dimension) return current;
-      return { ...current, dimension: action.dimension };
-    case 'set_direction':
-      if (current.direction === action.direction) return current;
-      return { ...current, direction: action.direction };
-    case 'set_display_mode':
-      if (current.displayMode === action.displayMode) return current;
-      return { ...current, displayMode: action.displayMode };
-    case 'set_table_commuter_count_display':
-      if (
-        current.tableOptions.commuterCountDisplay ===
-        action.commuterCountDisplay
-      ) {
-        return current;
-      }
-      return {
-        ...current,
-        tableOptions: {
-          ...current.tableOptions,
-          commuterCountDisplay: action.commuterCountDisplay,
-        },
-      };
-    case 'set_table_mode_share_display':
-      if (current.tableOptions.modeShareDisplay === action.modeShareDisplay) {
-        return current;
-      }
-      return {
-        ...current,
-        tableOptions: {
-          ...current.tableOptions,
-          modeShareDisplay: action.modeShareDisplay,
-        },
-      };
-    case 'toggle_table_expanded':
-      return {
-        ...current,
-        tableOptions: {
-          ...current.tableOptions,
-          expanded: !current.tableOptions.expanded,
-        },
-      };
-    case 'set_sankey_labels_follow_flow_direction':
-      if (
-        current.sankeyOptions.labelsFollowFlowDirection ===
-        action.labelsFollowFlowDirection
-      ) {
-        return current;
-      }
-      return {
-        ...current,
-        sankeyOptions: {
-          ...current.sankeyOptions,
-          labelsFollowFlowDirection: action.labelsFollowFlowDirection,
-        },
-      };
-    case 'set_sort_for_dimension': {
-      const existingSort = current.sortStates.get(action.dimension);
-      if (existingSort && SortState.equals(existingSort, action.sortState)) {
-        return current;
-      }
-      const nextSortStates = new Map(current.sortStates);
-      nextSortStates.set(action.dimension, action.sortState);
-      return {
-        ...current,
-        sortStates: nextSortStates,
-      };
-    }
-    default:
-      return current;
-  }
 }
 
 function getCurrentGameData(
