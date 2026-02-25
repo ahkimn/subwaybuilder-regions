@@ -1,6 +1,6 @@
 import type { createElement, ReactNode } from 'react';
 
-import { ReactButton } from './ReactButton';
+import { Button } from './Button';
 import { ChevronDownIcon, ChevronUpIcon } from './utils/Icons';
 
 export function ReactExtendButton(
@@ -10,7 +10,7 @@ export function ReactExtendButton(
   onClick: () => void,
 ): ReactNode {
   const text = `${direction === 'Expand' ? 'Show' : 'Hide'} (${nRows} Row${nRows > 1 ? 's' : ''})`;
-  return ReactButton(h, {
+  return Button(h, {
     label: text,
     onClick,
     icon: direction === 'Expand' ? ChevronDownIcon : ChevronUpIcon,

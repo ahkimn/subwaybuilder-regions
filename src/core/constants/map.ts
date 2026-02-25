@@ -1,7 +1,7 @@
 export const SOURCE_PREFIX = 'regions-src';
 export const LAYER_PREFIX = 'regions-layer';
 /*
-For certain region layers (e.x. neighborhoods), not all demand points will be assigned to a region.
+For certain region layers, not all demand points will be assigned to a region.
 
 This constant can be used as a key in the demand data maps to track the demand from these unassigned points.
 */

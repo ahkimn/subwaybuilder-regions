@@ -1,23 +1,32 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
+import {
+  CATALOG_STATIC_COUNTRIES,
+  resolveCountryDatasets,
+} from '@shared/datasets/catalog';
 import type React from 'react';
 
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
-import type { DatasetOrigin } from '@/core/domain';
-import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistry';
-import type { RegionsStorage } from '@/core/storage/RegionsStorage';
-import type { ModdingAPI } from '@/types/api';
 import type { City } from '@/types/cities';
 import { getGameReact } from '@/ui/react/get-game-react';
 
+import { resolveRuntimePlatform } from '../../../core/storage/helpers';
 import { getNextSortState } from '../shared/sort';
 import {
-  DEFAULT_SORT_STATE,
   type InputFieldProperties,
   type LabelProperties,
-  SortDirection,
-  type SortState,
   type SwitchProperties,
 } from '../types';
+import {
+  buildDefaultFetchOutPath,
+  buildFetchErrors,
+  type FetchCountryCode,
+  formatFetchCommand,
+  resolveCityCountryCode,
+} from './fetch-helpers';
+import {
+  createInitialSettingsState,
+  regionsSettingsReducer,
+} from './RegionsSettingsState';
 import {
   filterSettingsRows,
   renderSettingsEntry,
@@ -26,139 +35,9 @@ import {
   type SettingsDatasetRow,
   sortSettingsRows,
 } from './render';
+import { type SettingsMenuComponentParams } from './types';
 
-type SettingsMenuComponentParams = {
-  api: ModdingAPI;
-  storage: RegionsStorage;
-  datasetRegistry: RegionDatasetRegistry;
-};
-
-type PendingFlags = {
-  updating: boolean;
-  refreshingRegistry: boolean;
-  clearingMissing: boolean;
-};
-
-type RegionsSettingsState = {
-  isOpen: boolean;
-  settings: ReturnType<RegionsStorage['getSettings']>;
-  cachedRegistryEntries: RegistryCacheEntry[];
-  searchTerm: string;
-  sortState: SortState;
-  registryRevision: number;
-  pending: PendingFlags;
-  error: string | null;
-};
-
-type RegionsSettingsAction =
-  | { type: 'open_overlay' }
-  | { type: 'close_overlay' }
-  | { type: 'set_search_term'; searchTerm: string }
-  | { type: 'set_sort_state'; sortState: SortState }
-  | {
-      type: 'settings_loaded';
-      settings: ReturnType<RegionsStorage['getSettings']>;
-    }
-  | {
-      type: 'settings_updated';
-      settings: ReturnType<RegionsStorage['getSettings']>;
-    }
-  | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
-  | { type: 'registry_revision_bumped' }
-  | { type: 'update_settings_started' }
-  | { type: 'update_settings_finished' }
-  | { type: 'refresh_registry_started' }
-  | { type: 'refresh_registry_finished' }
-  | { type: 'clear_missing_started' }
-  | { type: 'clear_missing_finished' }
-  | { type: 'operation_failed'; message: string };
-
-function createInitialSettingsState(
-  storage: RegionsStorage,
-): RegionsSettingsState {
-  return {
-    isOpen: false,
-    settings: storage.getSettings(),
-    cachedRegistryEntries: [],
-    searchTerm: '',
-    sortState: {
-      ...DEFAULT_SORT_STATE,
-      sortDirection: SortDirection.Asc,
-    },
-    registryRevision: 0,
-    pending: {
-      updating: false,
-      refreshingRegistry: false,
-      clearingMissing: false,
-    },
-    error: null,
-  };
-}
-
-function regionsSettingsReducer(
-  state: RegionsSettingsState,
-  action: RegionsSettingsAction,
-): RegionsSettingsState {
-  switch (action.type) {
-    // UI actions
-    case 'open_overlay':
-      return { ...state, isOpen: true };
-    case 'close_overlay':
-      return { ...state, isOpen: false };
-    case 'set_search_term':
-      return { ...state, searchTerm: action.searchTerm };
-    case 'set_sort_state':
-      return { ...state, sortState: action.sortState };
-
-    // Store/registry sync actions
-    case 'settings_loaded':
-    case 'settings_updated':
-      return { ...state, settings: action.settings };
-    case 'registry_entries_loaded':
-      return { ...state, cachedRegistryEntries: action.entries };
-    case 'registry_revision_bumped':
-      return { ...state, registryRevision: state.registryRevision + 1 };
-
-    // Async lifecycle actions
-    case 'update_settings_started':
-      return {
-        ...state,
-        pending: { ...state.pending, updating: true },
-        error: null,
-      };
-    case 'update_settings_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, updating: false },
-      };
-    case 'refresh_registry_started':
-      return {
-        ...state,
-        pending: { ...state.pending, refreshingRegistry: true },
-        error: null,
-      };
-    case 'refresh_registry_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, refreshingRegistry: false },
-      };
-    case 'clear_missing_started':
-      return {
-        ...state,
-        pending: { ...state.pending, clearingMissing: true },
-        error: null,
-      };
-    case 'clear_missing_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, clearingMissing: false },
-      };
-    case 'operation_failed':
-      return { ...state, error: action.message };
-    default:
-      return state;
-  }
-}
+const DEFAULT_FETCH_PADDING_KM = 10;
 
 export function RegionsSettingsPanel({
   api,
@@ -180,6 +59,8 @@ export function RegionsSettingsPanel({
       storage,
       createInitialSettingsState,
     );
+    const runtimePlatform = resolveRuntimePlatform(state.systemPerformanceInfo);
+    const relativeModPath = storage.getResolvedRelativeModPath();
 
     const reloadCachedRegistry = () => {
       return storage.loadStoredRegistry().then((storedRegistry) => {
@@ -195,6 +76,10 @@ export function RegionsSettingsPanel({
       void storage.initialize().then((loaded) => {
         if (mounted) {
           dispatch({ type: 'settings_loaded', settings: loaded });
+          dispatch({
+            type: 'set_system_performance_info',
+            systemPerformanceInfo: storage.getCachedSystemPerformanceInfo(),
+          });
         }
       });
       void reloadCachedRegistry();
@@ -225,6 +110,11 @@ export function RegionsSettingsPanel({
 
     const filteredRows = filterSettingsRows(datasetRows, state.searchTerm);
     const sortedRows = sortSettingsRows(filteredRows, state.sortState);
+    const fetchableDatasets = resolveCountryDatasets(
+      state.fetch.params.countryCode,
+      { onlineOnly: true },
+    );
+    const countryOptions = [...CATALOG_STATIC_COUNTRIES];
 
     const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
       dispatch({ type: 'update_settings_started' });
@@ -245,6 +135,9 @@ export function RegionsSettingsPanel({
         });
     };
 
+    /**
+     * Initiate registry refresh
+     */
     const refreshRegistry = () => {
       dispatch({ type: 'refresh_registry_started' });
       void datasetRegistry
@@ -277,6 +170,9 @@ export function RegionsSettingsPanel({
         });
     };
 
+    /**
+     * Clear non-served registry entries that are unusable by the user (due to either being missing on the local file system or being tied to a no longer existing city)
+     */
     const clearMissingEntries = () => {
       dispatch({ type: 'clear_missing_started' });
       void storage
@@ -337,6 +233,166 @@ export function RegionsSettingsPanel({
         });
     };
 
+    useEffectHook(() => {
+      const cityCode = state.fetch.params.cityCode;
+      if (!cityCode) {
+        dispatch({
+          type: 'set_fetch_bbox_fields',
+          bbox: null,
+        });
+        return;
+      }
+
+      let cancelled = false;
+      void storage
+        .buildPaddedDemandBBox(cityCode, DEFAULT_FETCH_PADDING_KM)
+        .then((bbox) => {
+          if (cancelled) {
+            return;
+          }
+
+          if (!bbox) {
+            dispatch({
+              type: 'set_fetch_bbox_fields',
+              bbox: null,
+            });
+            return;
+          }
+
+          dispatch({
+            type: 'set_fetch_bbox_fields',
+            bbox: {
+              west: bbox[0].toFixed(4),
+              south: bbox[1].toFixed(4),
+              east: bbox[2].toFixed(4),
+              north: bbox[3].toFixed(4),
+            },
+          });
+        })
+        .catch((error) => {
+          console.warn(
+            '[Regions] Failed to build demand bbox for fetch.',
+            error,
+          );
+          if (cancelled) {
+            return;
+          }
+          dispatch({
+            type: 'set_fetch_bbox_fields',
+            bbox: null,
+          });
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [state.fetch.params.cityCode]);
+
+    useEffectHook(() => {
+      const params = state.fetch.params;
+      const hasCity = Boolean(params.cityCode);
+      const hasCountry = params.countryCode !== null;
+      const hasDatasets = params.datasetIds.length > 0;
+      const hasBBox = params.bbox !== null;
+
+      const errors = buildFetchErrors({
+        hasCity,
+        hasCountry,
+        hasDatasets,
+        hasBBox,
+      });
+      dispatch({ type: 'set_fetch_errors', errors });
+
+      if (errors.length > 0) {
+        dispatch({ type: 'set_fetch_command', command: '' });
+        return;
+      }
+
+      dispatch({
+        type: 'set_fetch_command',
+        command: formatFetchCommand({
+          platform: runtimePlatform,
+          params,
+          relativeModPath,
+          outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
+        }),
+      });
+    }, [state.fetch.params, runtimePlatform, relativeModPath]);
+
+    const onFetchCityCodeChange = (cityCode: string) => {
+      const nextCity = knownCitiesByCode.get(cityCode);
+      const countryCode = resolveCityCountryCode(nextCity);
+      const allowedDatasetIds = resolveCountryDatasets(countryCode, {
+        onlineOnly: true,
+      }).map((dataset) => dataset.datasetId);
+
+      dispatch({ type: 'set_fetch_city_code', cityCode });
+      dispatch({
+        type: 'set_fetch_country_code',
+        countryCode,
+        allowedDatasetIds,
+        isAutoResolved: Boolean(countryCode),
+      });
+    };
+
+    const onFetchCountryCodeChange = (countryCode: FetchCountryCode | null) => {
+      if (state.fetch.isCountryAutoResolved) {
+        return;
+      }
+      const allowedDatasetIds = resolveCountryDatasets(countryCode, {
+        onlineOnly: true,
+      }).map((dataset) => dataset.datasetId);
+      dispatch({
+        type: 'set_fetch_country_code',
+        countryCode,
+        allowedDatasetIds,
+        isAutoResolved: false,
+      });
+    };
+
+    const onCopyFetchCommand = () => {
+      if (!state.fetch.command) {
+        return;
+      }
+      dispatch({ type: 'copy_fetch_command_started' });
+      // Copy to clipboard
+      void window.navigator.clipboard
+        .writeText(state.fetch.command)
+        .then(() => {
+          api.ui.showNotification(
+            '[Regions] Script command copied!',
+            'success',
+          );
+        })
+        .catch((error) => {
+          console.error('[Regions] Failed to copy fetch command.', error);
+          api.ui.showNotification(
+            '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
+            'error',
+          );
+        })
+        .finally(() => {
+          dispatch({ type: 'copy_fetch_command_finished' });
+        });
+    };
+
+    const onOpenModsFolder = () => {
+      dispatch({ type: 'open_mods_folder_started' });
+      void storage
+        .openModsFolder()
+        .catch((error) => {
+          console.error('[Regions] Failed to open mods folder.', error);
+          // There's not really a good fallback for an exception here, but at least we can notify the user that it didn't work through a UI toast
+          api.ui.showNotification(
+            '[Regions] Failed to open mods folder.',
+            'error',
+          );
+        })
+        .finally(() => {
+          dispatch({ type: 'open_mods_folder_finished' });
+        });
+    };
+
     return h(Fragment, null, [
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
@@ -364,6 +420,30 @@ export function RegionsSettingsPanel({
             isRefreshingRegistry: state.pending.refreshingRegistry,
             onClearMissing: clearMissingEntries,
             isClearingMissing: state.pending.clearingMissing,
+            fetch: {
+              params: state.fetch.params,
+              errors: state.fetch.errors,
+              command: state.fetch.command,
+              isCopying: state.fetch.isCopying,
+              isOpeningModsFolder: state.fetch.isOpeningModsFolder,
+              isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+              cityOptions: Array.from(knownCitiesByCode.values()).map(
+                (city) => ({
+                  code: city.code,
+                  name: city.name,
+                }),
+              ),
+              countryOptions,
+              datasets: fetchableDatasets,
+              relativeModPath,
+              systemPerformanceInfo: state.systemPerformanceInfo,
+              onCityCodeChange: onFetchCityCodeChange,
+              onCountryCodeChange: onFetchCountryCodeChange,
+              onToggleDataset: (datasetId: string) =>
+                dispatch({ type: 'toggle_fetch_dataset', datasetId }),
+              onCopyCommand: onCopyFetchCommand,
+              onOpenModsFolder,
+            },
           })
         : null,
     ]);
@@ -386,29 +466,24 @@ function buildSettingsDatasetRows(
     cacheByDatasetKey.set(datasetKey, existing);
   });
 
+  // First iterate through built registry datasets to show that all currently registered datasets are represented in the table
   datasets.forEach((dataset) => {
     const datasetKey = `${dataset.cityCode}::${dataset.id}`;
     const matchingCachedEntries = cacheByDatasetKey.get(datasetKey) ?? [];
-    const inferredOrigin: DatasetOrigin = isServedDataset(dataset)
-      ? 'served'
-      : dataset.source.type === 'user'
-        ? 'dynamic'
-        : 'static';
+    const origin = dataset.source.type;
     const matchingOriginEntry = matchingCachedEntries.find(
-      (entry) => entry.origin === inferredOrigin,
+      (entry) => entry.origin === origin,
     );
 
-    rows.set(`${dataset.cityCode}:${dataset.id}:${inferredOrigin}`, {
-      rowKey: `${dataset.cityCode}:${dataset.id}:${inferredOrigin}`,
+    rows.set(`${dataset.cityCode}:${dataset.id}:${origin}`, {
+      rowKey: `${dataset.cityCode}:${dataset.id}:${origin}`,
       cityCode: dataset.cityCode,
       cityName: knownCitiesByCode.get(dataset.cityCode)?.name ?? null,
       datasetId: dataset.id,
       displayName: dataset.displayName,
-      origin: inferredOrigin,
+      origin: origin,
       fileSizeMB:
-        inferredOrigin === 'served'
-          ? null
-          : (matchingOriginEntry?.fileSizeMB ?? null),
+        origin === 'served' ? null : (matchingOriginEntry?.fileSizeMB ?? null),
       issue: !knownCityCodes.has(dataset.cityCode)
         ? 'missing_city'
         : matchingOriginEntry
@@ -417,12 +492,22 @@ function buildSettingsDatasetRows(
     });
   });
 
+  // Then iterate through cached entries to find any datasets that are currently missing from the registry (usually due to their being removed from local file system since they were cached)
   cachedEntries.forEach((entry) => {
     const rowKey = `${entry.cityCode}:${entry.datasetId}:${entry.origin}`;
     if (rows.has(rowKey)) {
       return;
     }
     const issue = resolveCachedEntryIssue(entry, knownCityCodes);
+
+    if (!issue) {
+      // If this triggers, there a few potential causes, each of which is worthy of investigation
+      // 1) The activte registry failed to load a valid datset that was present in the cached registry
+      // 2) The cached registry has been corrupted in some way (e.g. manual edit, or a failed write that resulted in a partial entry being saved)
+      console.warn(
+        `[Regions] Found cached registry entry with no identifiable issue that missing from the active registry. Entry details: ${JSON.stringify(entry)}`,
+      );
+    }
 
     rows.set(rowKey, {
       rowKey,
@@ -450,8 +535,4 @@ function resolveCachedEntryIssue(
     return 'missing_file';
   }
   return null;
-}
-
-function isServedDataset(dataset: RegionDataset): boolean {
-  return !dataset.dataPath.startsWith('file:///');
 }

@@ -3,9 +3,10 @@ import type { createElement, ReactNode } from 'react';
 import type { IconDefinition, IconRenderOptions } from './utils/Icons';
 import { createReactIconElement } from './utils/Icons';
 
-export type ReactButtonOptions = {
+export type ButtonOptions = {
   label: string;
   onClick: () => void;
+  disabled?: boolean;
   ariaLabel?: string;
   tooltipText?: string;
   icon?: IconDefinition;
@@ -22,13 +23,14 @@ const DEFAULT_BUTTON_CLASS_NAME =
   'bg-background px-2 py-1 text-sm font-medium hover:bg-accent transition-colors';
 const DEFAULT_LABEL_CLASS_NAME = 'flex-shrink-0';
 
-export function ReactButton(
+export function Button(
   h: typeof createElement,
-  options: ReactButtonOptions,
+  options: ButtonOptions,
 ): ReactNode {
   const {
     label,
     onClick,
+    disabled = false,
     ariaLabel,
     tooltipText,
     icon,
@@ -64,9 +66,10 @@ export function ReactButton(
       'button',
       {
         type: 'button',
-        className: buttonClassName,
+        className: `${buttonClassName} disabled:opacity-50 disabled:cursor-not-allowed`,
         'aria-label': ariaLabel ?? label,
         title: tooltipText,
+        disabled,
         onClick,
       },
       children,

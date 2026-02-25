@@ -1,13 +1,13 @@
 import type { createElement, ReactNode } from 'react';
 
-import { ReactButton } from './ReactButton';
+import { Button } from './Button';
 import { CloseIcon } from './utils/Icons';
 
 export function ReactCloseButton(
   h: typeof createElement,
   onClick: () => void,
 ): ReactNode {
-  return ReactButton(h, {
+  return Button(h, {
     label: 'Close',
     ariaLabel: 'Close',
     onClick,

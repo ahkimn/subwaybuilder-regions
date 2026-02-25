@@ -12,7 +12,7 @@ import {
   buildBBoxFitState as fitBBox,
   normalizeBBox,
 } from '../core/geometry/helpers';
-import { DEFAULT_REGIONS_SETTINGS } from '../core/storage/defaults';
+import { DEFAULT_REGIONS_SETTINGS } from '../core/storage/settings';
 import {
   RegionsSettings,
   type RegionsSettings as RegionsSettingsValue,

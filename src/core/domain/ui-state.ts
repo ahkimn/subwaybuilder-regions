@@ -1,15 +1,8 @@
-import { DEFAULT_REGIONS_SETTINGS } from '@/core/storage/defaults';
+import { DEFAULT_REGIONS_SETTINGS } from '@/core/storage/settings';
 import type { RegionsSettings } from '@/core/storage/types';
 import type { LightMode } from '@/map/styles';
 
 import type { RegionSelection } from './selection';
-
-export enum DatasetStatus {
-  Unloaded = 'unloaded',
-  Loading = 'loading',
-  Loaded = 'loaded',
-  Error = 'error',
-}
 
 export type UIStyle = {
   lightMode: LightMode;

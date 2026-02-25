@@ -152,7 +152,7 @@ export class RegionDatasetRegistry {
           record,
           `${this.serveUrl}/${cityCode}/${record.datasetId}.geojson`,
           {
-            sourceType: 'static',
+            sourceType: 'served',
             writable: false,
           },
         );

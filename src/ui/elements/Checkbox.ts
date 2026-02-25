@@ -2,6 +2,7 @@ import type { LayerToggleOptions } from '../types/LayerToggleOptions';
 import { Label } from './Label';
 import { CheckboxIcon, createIconElement } from './utils/Icons';
 
+// (non-React) UI component for a checkbox with a label, visually identical to the game's Checkboxes within the MapLayers panel.
 export function Checkbox(
   options: LayerToggleOptions,
   attributeName: string,

@@ -1,3 +1,5 @@
+import fs from 'fs-extra';
+
 import { extractCABoundaries } from '../extract/extract-ca-map-features';
 import { extractGBBoundaries } from '../extract/extract-gb-map-features';
 import { extractUSBoundaries } from '../extract/extract-us-map-features';
@@ -61,6 +63,8 @@ export async function runFetch(
 ): Promise<FetchResult> {
   const successes: string[] = [];
   const failures: FetchFailure[] = [];
+
+  await fs.ensureDir(request.out);
 
   for (const datasetId of request.datasets) {
     try {
