@@ -25,6 +25,8 @@ import {
 } from './fetch-helpers';
 import {
   createInitialSettingsState,
+  type FetchFlagKey,
+  type PendingFlagKey,
   regionsSettingsReducer,
 } from './RegionsSettingsState';
 import {
@@ -116,129 +118,175 @@ export function RegionsSettingsPanel({
     );
     const countryOptions = [...CATALOG_STATIC_COUNTRIES];
 
-    const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
-      dispatch({ type: 'update_settings_started' });
-      void storage
-        .updateSettings(patch)
-        .then((nextSettings) => {
-          dispatch({ type: 'settings_updated', settings: nextSettings });
-        })
-        .catch((error) => {
-          dispatch({
-            type: 'operation_failed',
-            message: '[Regions] Failed to update settings.',
+
+    const fetchErrors = buildFetchErrors({
+      hasCity: Boolean(state.fetch.params.cityCode),
+      hasCountry: state.fetch.params.countryCode !== null,
+      hasDatasets: state.fetch.params.datasetIds.length > 0,
+      hasBBox: state.fetch.params.bbox !== null,
+    });
+    const fetchCommand =
+      fetchErrors.length > 0
+        ? ''
+        : formatFetchCommand({
+            platform: runtimePlatform,
+            params: state.fetch.params,
+            relativeModPath,
+            outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
           });
-          console.error('[Regions] Failed to update settings', error);
+
+    type RunAsyncOperationParams =
+      | {
+          scope: 'pending';
+          key: PendingFlagKey;
+          errorMessage?: string;
+          notifyOnError?: string;
+          task: () => Promise<void>;
+        }
+      | {
+          scope: 'fetch';
+          key: FetchFlagKey;
+          errorMessage?: string;
+          notifyOnError?: string;
+          task: () => Promise<void>;
+        };
+
+    const runAsyncOperation = (params: RunAsyncOperationParams) => {
+      if (params.scope === 'pending') {
+        dispatch({ type: 'set_pending_flag', key: params.key, value: true });
+      } else {
+        dispatch({ type: 'set_fetch_flag', key: params.key, value: true });
+      }
+
+      void params
+        .task()
+        .catch((error) => {
+          if (params.errorMessage) {
+            dispatch({
+              type: 'operation_failed',
+              message: params.errorMessage,
+            });
+            console.error(params.errorMessage, error);
+          }
+          if (params.notifyOnError) {
+            api.ui.showNotification(params.notifyOnError, 'error');
+          }
         })
         .finally(() => {
-          dispatch({ type: 'update_settings_finished' });
+          if (params.scope === 'pending') {
+            dispatch({
+              type: 'set_pending_flag',
+              key: params.key,
+              value: false,
+            });
+          } else {
+            dispatch({
+              type: 'set_fetch_flag',
+              key: params.key,
+              value: false,
+            });
+          }
         });
+    };
+
+    const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
+      runAsyncOperation({
+        scope: 'pending',
+        key: 'updating',
+        errorMessage: '[Regions] Failed to update settings.',
+        task: () =>
+          storage.updateSettings(patch).then((nextSettings) => {
+            dispatch({ type: 'settings_updated', settings: nextSettings });
+          }),
+      });
     };
 
     /**
      * Initiate registry refresh
      */
     const refreshRegistry = () => {
-      dispatch({ type: 'refresh_registry_started' });
-      void datasetRegistry
-        .build(() => {
-          console.warn('[Regions] Failed to load dataset index from server');
-        })
-        .then(({ servedCount, localCount }) => {
-          if (servedCount > 0 || localCount > 0) {
-            api.ui.showNotification(
-              `[Regions] Refreshed registry: ${servedCount} served + ${localCount} local datasets.`,
-              'success',
-            );
-          }
-          return reloadCachedRegistry();
-        })
-        .catch((error) => {
-          dispatch({
-            type: 'operation_failed',
-            message:
-              '[Regions] Failed to refresh registry. Check logs for details.',
-          });
-          console.error('[Regions] Failed to refresh registry', error);
-          api.ui.showNotification(
-            '[Regions] Failed to refresh registry. Check logs for details.',
-            'error',
-          );
-        })
-        .finally(() => {
-          dispatch({ type: 'refresh_registry_finished' });
-        });
+      runAsyncOperation({
+        scope: 'pending',
+        key: 'refreshingRegistry',
+        errorMessage: '[Regions] Failed to refresh registry. Check logs for details.',
+        notifyOnError:
+          '[Regions] Failed to refresh registry. Check logs for details.',
+        task: () =>
+          datasetRegistry
+            .build(() => {
+              console.warn('[Regions] Failed to load dataset index from server');
+            })
+            .then(({ servedCount, localCount }) => {
+              if (servedCount > 0 || localCount > 0) {
+                api.ui.showNotification(
+                  `[Regions] Refreshed registry: ${servedCount} served + ${localCount} local datasets.`,
+                  'success',
+                );
+              }
+              return reloadCachedRegistry();
+            }),
+      });
     };
 
     /**
      * Clear non-served registry entries that are unusable by the user (due to either being missing on the local file system or being tied to a no longer existing city)
      */
     const clearMissingEntries = () => {
-      dispatch({ type: 'clear_missing_started' });
-      void storage
-        .loadStoredRegistry()
-        .then((storedRegistry) => {
-          if (!storedRegistry) {
-            return 0;
-          }
+      runAsyncOperation({
+        scope: 'pending',
+        key: 'clearingMissing',
+        errorMessage:
+          '[Regions] Failed to clear missing registry entries. Check logs for details.',
+        notifyOnError:
+          '[Regions] Failed to clear missing registry entries. Check logs for details.',
+        task: () =>
+          storage
+            .loadStoredRegistry()
+            .then((storedRegistry) => {
+              if (!storedRegistry) {
+                return 0;
+              }
 
-          const beforeCount = storedRegistry.entries.length;
-          const retainedEntries = storedRegistry.entries.filter((entry) => {
-            return resolveCachedEntryIssue(entry, knownCityCodes) === null;
-          });
+              const beforeCount = storedRegistry.entries.length;
+              const retainedEntries = storedRegistry.entries.filter((entry) => {
+                return resolveCachedEntryIssue(entry, knownCityCodes) === null;
+              });
 
-          const removedCount = beforeCount - retainedEntries.length;
-          if (removedCount <= 0) {
-            return 0;
-          }
+              const removedCount = beforeCount - retainedEntries.length;
+              if (removedCount <= 0) {
+                return 0;
+              }
 
-          return storage
-            .saveRegistry({
-              updatedAt: Date.now(),
-              entries: retainedEntries,
+              return storage
+                .saveRegistry({
+                  updatedAt: Date.now(),
+                  entries: retainedEntries,
+                })
+                .then(() => removedCount);
             })
-            .then(() => removedCount);
-        })
-        .then((removedCount) => {
-          if (removedCount > 0) {
-            api.ui.showNotification(
-              `[Regions] Cleared ${removedCount} missing registry entr${removedCount === 1 ? 'y' : 'ies'}.`,
-              'success',
-            );
-          } else {
-            api.ui.showNotification(
-              '[Regions] No missing registry entries found.',
-              'info',
-            );
-          }
-          return reloadCachedRegistry();
-        })
-        .catch((error) => {
-          dispatch({
-            type: 'operation_failed',
-            message:
-              '[Regions] Failed to clear missing registry entries. Check logs for details.',
-          });
-          console.error(
-            '[Regions] Failed to clear missing registry entries',
-            error,
-          );
-          api.ui.showNotification(
-            '[Regions] Failed to clear missing registry entries. Check logs for details.',
-            'error',
-          );
-        })
-        .finally(() => {
-          dispatch({ type: 'clear_missing_finished' });
-        });
+            .then((removedCount) => {
+              if (removedCount > 0) {
+                api.ui.showNotification(
+                  `[Regions] Cleared ${removedCount} missing registry entr${removedCount === 1 ? 'y' : 'ies'}.`,
+                  'success',
+                );
+              } else {
+                api.ui.showNotification(
+                  '[Regions] No missing registry entries found.',
+                  'info',
+                );
+              }
+              return reloadCachedRegistry();
+            }),
+      });
     };
 
     useEffectHook(() => {
       const cityCode = state.fetch.params.cityCode;
       if (!cityCode) {
         dispatch({
-          type: 'set_fetch_bbox_fields',
-          bbox: null,
+          type: 'set_fetch_params',
+          params: { bbox: null },
         });
         return;
       }
@@ -253,19 +301,21 @@ export function RegionsSettingsPanel({
 
           if (!bbox) {
             dispatch({
-              type: 'set_fetch_bbox_fields',
-              bbox: null,
+              type: 'set_fetch_params',
+              params: { bbox: null },
             });
             return;
           }
 
           dispatch({
-            type: 'set_fetch_bbox_fields',
-            bbox: {
-              west: bbox[0].toFixed(4),
-              south: bbox[1].toFixed(4),
-              east: bbox[2].toFixed(4),
-              north: bbox[3].toFixed(4),
+            type: 'set_fetch_params',
+            params: {
+              bbox: {
+                west: bbox[0].toFixed(4),
+                south: bbox[1].toFixed(4),
+                east: bbox[2].toFixed(4),
+                north: bbox[3].toFixed(4),
+              },
             },
           });
         })
@@ -278,8 +328,8 @@ export function RegionsSettingsPanel({
             return;
           }
           dispatch({
-            type: 'set_fetch_bbox_fields',
-            bbox: null,
+            type: 'set_fetch_params',
+            params: { bbox: null },
           });
         });
 
@@ -288,37 +338,6 @@ export function RegionsSettingsPanel({
       };
     }, [state.fetch.params.cityCode]);
 
-    useEffectHook(() => {
-      const params = state.fetch.params;
-      const hasCity = Boolean(params.cityCode);
-      const hasCountry = params.countryCode !== null;
-      const hasDatasets = params.datasetIds.length > 0;
-      const hasBBox = params.bbox !== null;
-
-      const errors = buildFetchErrors({
-        hasCity,
-        hasCountry,
-        hasDatasets,
-        hasBBox,
-      });
-      dispatch({ type: 'set_fetch_errors', errors });
-
-      if (errors.length > 0) {
-        dispatch({ type: 'set_fetch_command', command: '' });
-        return;
-      }
-
-      dispatch({
-        type: 'set_fetch_command',
-        command: formatFetchCommand({
-          platform: runtimePlatform,
-          params,
-          relativeModPath,
-          outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
-        }),
-      });
-    }, [state.fetch.params, runtimePlatform, relativeModPath]);
-
     const onFetchCityCodeChange = (cityCode: string) => {
       const nextCity = knownCitiesByCode.get(cityCode);
       const countryCode = resolveCityCountryCode(nextCity);
@@ -326,7 +345,15 @@ export function RegionsSettingsPanel({
         onlineOnly: true,
       }).map((dataset) => dataset.datasetId);
 
-      dispatch({ type: 'set_fetch_city_code', cityCode });
+      dispatch({
+        type: 'set_fetch_params',
+        params: {
+          cityCode,
+          countryCode: null,
+          datasetIds: [],
+          bbox: null,
+        },
+      });
       dispatch({
         type: 'set_fetch_country_code',
         countryCode,
@@ -351,46 +378,30 @@ export function RegionsSettingsPanel({
     };
 
     const onCopyFetchCommand = () => {
-      if (!state.fetch.command) {
+      if (!fetchCommand) {
         return;
       }
-      dispatch({ type: 'copy_fetch_command_started' });
-      // Copy to clipboard
-      void window.navigator.clipboard
-        .writeText(state.fetch.command)
-        .then(() => {
-          api.ui.showNotification(
-            '[Regions] Script command copied!',
-            'success',
-          );
-        })
-        .catch((error) => {
-          console.error('[Regions] Failed to copy fetch command.', error);
-          api.ui.showNotification(
-            '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
-            'error',
-          );
-        })
-        .finally(() => {
-          dispatch({ type: 'copy_fetch_command_finished' });
-        });
+      runAsyncOperation({
+        scope: 'fetch',
+        key: 'isCopying',
+        errorMessage: '[Regions] Failed to copy fetch command.',
+        notifyOnError:
+          '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
+        task: () =>
+          window.navigator.clipboard.writeText(fetchCommand).then(() => {
+            api.ui.showNotification('[Regions] Script command copied!', 'success');
+          }),
+      });
     };
 
     const onOpenModsFolder = () => {
-      dispatch({ type: 'open_mods_folder_started' });
-      void storage
-        .openModsFolder()
-        .catch((error) => {
-          console.error('[Regions] Failed to open mods folder.', error);
-          // There's not really a good fallback for an exception here, but at least we can notify the user that it didn't work through a UI toast
-          api.ui.showNotification(
-            '[Regions] Failed to open mods folder.',
-            'error',
-          );
-        })
-        .finally(() => {
-          dispatch({ type: 'open_mods_folder_finished' });
-        });
+      runAsyncOperation({
+        scope: 'fetch',
+        key: 'isOpeningModsFolder',
+        errorMessage: '[Regions] Failed to open mods folder.',
+        notifyOnError: '[Regions] Failed to open mods folder.',
+        task: () => storage.openModsFolder(),
+      });
     };
 
     return h(Fragment, null, [
@@ -422,8 +433,8 @@ export function RegionsSettingsPanel({
             isClearingMissing: state.pending.clearingMissing,
             fetch: {
               params: state.fetch.params,
-              errors: state.fetch.errors,
-              command: state.fetch.command,
+              errors: fetchErrors,
+              command: fetchCommand,
               isCopying: state.fetch.isCopying,
               isOpeningModsFolder: state.fetch.isOpeningModsFolder,
               isCountryAutoResolved: state.fetch.isCountryAutoResolved,

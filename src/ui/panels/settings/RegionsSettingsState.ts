@@ -3,21 +3,21 @@ import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { SystemPerformanceInfo } from '../../../types';
 import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '../types';
 import type {
-  FetchBBox,
   FetchCountryCode,
   FetchParameters,
 } from './fetch-helpers';
 
-type PendingFlags = {
+export type PendingFlags = {
   updating: boolean;
   refreshingRegistry: boolean;
   clearingMissing: boolean;
 };
 
+export type FetchFlagKey = 'isCopying' | 'isOpeningModsFolder';
+export type PendingFlagKey = keyof PendingFlags;
+
 export type FetchState = {
   params: FetchParameters;
-  command: string;
-  errors: string[];
   isCopying: boolean;
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
@@ -54,13 +54,8 @@ export type RegionsSettingsAction =
     }
   | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
   | { type: 'registry_revision_bumped' }
-  | { type: 'update_settings_started' }
-  | { type: 'update_settings_finished' }
-  | { type: 'refresh_registry_started' }
-  | { type: 'refresh_registry_finished' }
-  | { type: 'clear_missing_started' }
-  | { type: 'clear_missing_finished' }
-  | { type: 'set_fetch_city_code'; cityCode: string }
+  | { type: 'set_pending_flag'; key: PendingFlagKey; value: boolean }
+  | { type: 'set_fetch_params'; params: Partial<FetchParameters> }
   | {
       type: 'set_fetch_country_code';
       countryCode: FetchCountryCode | null;
@@ -68,16 +63,7 @@ export type RegionsSettingsAction =
       isAutoResolved?: boolean;
     }
   | { type: 'toggle_fetch_dataset'; datasetId: string }
-  | {
-      type: 'set_fetch_bbox_fields';
-      bbox: FetchBBox | null;
-    }
-  | { type: 'set_fetch_command'; command: string }
-  | { type: 'set_fetch_errors'; errors: string[] }
-  | { type: 'copy_fetch_command_started' }
-  | { type: 'copy_fetch_command_finished' }
-  | { type: 'open_mods_folder_started' }
-  | { type: 'open_mods_folder_finished' }
+  | { type: 'set_fetch_flag'; key: FetchFlagKey; value: boolean }
   | {
       type: 'set_system_performance_info';
       systemPerformanceInfo: SystemPerformanceInfo | null;
@@ -109,53 +95,25 @@ export function regionsSettingsReducer(
       return { ...state, registryRevision: state.registryRevision + 1 };
 
     // Async lifecycle actions
-    case 'update_settings_started':
+    case 'set_pending_flag':
       return {
         ...state,
-        pending: { ...state.pending, updating: true },
-        error: null,
-      };
-    case 'update_settings_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, updating: false },
-      };
-    case 'refresh_registry_started':
-      return {
-        ...state,
-        pending: { ...state.pending, refreshingRegistry: true },
-        error: null,
-      };
-    case 'refresh_registry_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, refreshingRegistry: false },
-      };
-    case 'clear_missing_started':
-      return {
-        ...state,
-        pending: { ...state.pending, clearingMissing: true },
-        error: null,
-      };
-    case 'clear_missing_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, clearingMissing: false },
+        pending: {
+          ...state.pending,
+          [action.key]: action.value,
+        },
+        error: action.value ? null : state.error,
       };
     // Fetch-related actions
-    case 'set_fetch_city_code':
+    case 'set_fetch_params':
       return {
         ...state,
         fetch: {
           ...state.fetch,
           params: {
             ...state.fetch.params,
-            cityCode: action.cityCode,
-            countryCode: null,
-            datasetIds: [],
-            bbox: null,
+            ...action.params,
           },
-          isCountryAutoResolved: false,
         },
       };
     case 'set_fetch_country_code':
@@ -193,70 +151,12 @@ export function regionsSettingsReducer(
         },
       };
     }
-    case 'set_fetch_bbox_fields':
+    case 'set_fetch_flag':
       return {
         ...state,
         fetch: {
           ...state.fetch,
-          params: {
-            ...state.fetch.params,
-            bbox: action.bbox,
-          },
-        },
-      };
-    case 'set_fetch_command':
-      if (state.fetch.command === action.command) {
-        return state;
-      }
-      return {
-        ...state,
-        fetch: {
-          ...state.fetch,
-          command: action.command,
-        },
-      };
-    case 'set_fetch_errors':
-      if (isStringArrayEqual(state.fetch.errors, action.errors)) {
-        return state;
-      }
-      return {
-        ...state,
-        fetch: {
-          ...state.fetch,
-          errors: action.errors,
-        },
-      };
-    case 'copy_fetch_command_started':
-      return {
-        ...state,
-        fetch: {
-          ...state.fetch,
-          isCopying: true,
-        },
-      };
-    case 'copy_fetch_command_finished':
-      return {
-        ...state,
-        fetch: {
-          ...state.fetch,
-          isCopying: false,
-        },
-      };
-    // Mods folder exposure
-    case 'open_mods_folder_started':
-      return {
-        ...state,
-        fetch: {
-          ...state.fetch,
-          isOpeningModsFolder: true,
-        },
-      };
-    case 'open_mods_folder_finished':
-      return {
-        ...state,
-        fetch: {
-          ...state.fetch,
-          isOpeningModsFolder: false,
+          [action.key]: action.value,
         },
       };
     case 'set_system_performance_info':
@@ -275,8 +175,6 @@ export const INITIAL_FETCH_STATE: FetchState = {
     datasetIds: [],
     bbox: null,
   },
-  command: '',
-  errors: [],
   isCopying: false,
   isOpeningModsFolder: false,
   isCountryAutoResolved: false,
@@ -306,12 +204,3 @@ export function createInitialSettingsState(
   };
 }
 
-function isStringArrayEqual(a: string[], b: string[]): boolean {
-  if (a === b) {
-    return true;
-  }
-  if (a.length !== b.length) {
-    return false;
-  }
-  return a.every((value, index) => value === b[index]);
-}
