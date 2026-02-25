@@ -1,6 +1,6 @@
 import type { createElement, ReactNode } from 'react';
 
-export function ReactSectionCard(
+export function PanelSection(
   h: typeof createElement,
   title: string,
   children: ReactNode[],

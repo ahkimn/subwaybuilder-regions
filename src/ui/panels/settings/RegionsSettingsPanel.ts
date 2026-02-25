@@ -3,21 +3,26 @@ import type React from 'react';
 
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
 import type { DatasetOrigin } from '@/core/domain';
-import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistry';
-import type { RegionsStorage } from '@/core/storage/RegionsStorage';
-import type { ModdingAPI } from '@/types/api';
 import type { City } from '@/types/cities';
 import { getGameReact } from '@/ui/react/get-game-react';
 
+import { resolveRuntimePlatform } from '../../../core/storage/helpers';
 import { getNextSortState } from '../shared/sort';
 import {
-  DEFAULT_SORT_STATE,
   type InputFieldProperties,
   type LabelProperties,
-  SortDirection,
-  type SortState,
   type SwitchProperties,
 } from '../types';
+import {
+  buildDefaultFetchOutPath,
+  buildFetchErrors,
+  type FetchCountryCode,
+  formatFetchCommand,
+  getFetchableDatasetsForCountry,
+  getFetchCountryOptions,
+  resolveCityCountryCode,
+} from './fetch-helpers';
+import { createInitialSettingsState, regionsSettingsReducer } from './RegionsSettingsState';
 import {
   filterSettingsRows,
   renderSettingsEntry,
@@ -26,139 +31,9 @@ import {
   type SettingsDatasetRow,
   sortSettingsRows,
 } from './render';
+import { type SettingsMenuComponentParams } from './types';
 
-type SettingsMenuComponentParams = {
-  api: ModdingAPI;
-  storage: RegionsStorage;
-  datasetRegistry: RegionDatasetRegistry;
-};
-
-type PendingFlags = {
-  updating: boolean;
-  refreshingRegistry: boolean;
-  clearingMissing: boolean;
-};
-
-type RegionsSettingsState = {
-  isOpen: boolean;
-  settings: ReturnType<RegionsStorage['getSettings']>;
-  cachedRegistryEntries: RegistryCacheEntry[];
-  searchTerm: string;
-  sortState: SortState;
-  registryRevision: number;
-  pending: PendingFlags;
-  error: string | null;
-};
-
-type RegionsSettingsAction =
-  | { type: 'open_overlay' }
-  | { type: 'close_overlay' }
-  | { type: 'set_search_term'; searchTerm: string }
-  | { type: 'set_sort_state'; sortState: SortState }
-  | {
-      type: 'settings_loaded';
-      settings: ReturnType<RegionsStorage['getSettings']>;
-    }
-  | {
-      type: 'settings_updated';
-      settings: ReturnType<RegionsStorage['getSettings']>;
-    }
-  | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
-  | { type: 'registry_revision_bumped' }
-  | { type: 'update_settings_started' }
-  | { type: 'update_settings_finished' }
-  | { type: 'refresh_registry_started' }
-  | { type: 'refresh_registry_finished' }
-  | { type: 'clear_missing_started' }
-  | { type: 'clear_missing_finished' }
-  | { type: 'operation_failed'; message: string };
-
-function createInitialSettingsState(
-  storage: RegionsStorage,
-): RegionsSettingsState {
-  return {
-    isOpen: false,
-    settings: storage.getSettings(),
-    cachedRegistryEntries: [],
-    searchTerm: '',
-    sortState: {
-      ...DEFAULT_SORT_STATE,
-      sortDirection: SortDirection.Asc,
-    },
-    registryRevision: 0,
-    pending: {
-      updating: false,
-      refreshingRegistry: false,
-      clearingMissing: false,
-    },
-    error: null,
-  };
-}
-
-function regionsSettingsReducer(
-  state: RegionsSettingsState,
-  action: RegionsSettingsAction,
-): RegionsSettingsState {
-  switch (action.type) {
-    // UI actions
-    case 'open_overlay':
-      return { ...state, isOpen: true };
-    case 'close_overlay':
-      return { ...state, isOpen: false };
-    case 'set_search_term':
-      return { ...state, searchTerm: action.searchTerm };
-    case 'set_sort_state':
-      return { ...state, sortState: action.sortState };
-
-    // Store/registry sync actions
-    case 'settings_loaded':
-    case 'settings_updated':
-      return { ...state, settings: action.settings };
-    case 'registry_entries_loaded':
-      return { ...state, cachedRegistryEntries: action.entries };
-    case 'registry_revision_bumped':
-      return { ...state, registryRevision: state.registryRevision + 1 };
-
-    // Async lifecycle actions
-    case 'update_settings_started':
-      return {
-        ...state,
-        pending: { ...state.pending, updating: true },
-        error: null,
-      };
-    case 'update_settings_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, updating: false },
-      };
-    case 'refresh_registry_started':
-      return {
-        ...state,
-        pending: { ...state.pending, refreshingRegistry: true },
-        error: null,
-      };
-    case 'refresh_registry_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, refreshingRegistry: false },
-      };
-    case 'clear_missing_started':
-      return {
-        ...state,
-        pending: { ...state.pending, clearingMissing: true },
-        error: null,
-      };
-    case 'clear_missing_finished':
-      return {
-        ...state,
-        pending: { ...state.pending, clearingMissing: false },
-      };
-    case 'operation_failed':
-      return { ...state, error: action.message };
-    default:
-      return state;
-  }
-}
+const DEFAULT_FETCH_PADDING_KM = 10;
 
 export function RegionsSettingsPanel({
   api,
@@ -180,6 +55,8 @@ export function RegionsSettingsPanel({
       storage,
       createInitialSettingsState,
     );
+    const runtimePlatform = resolveRuntimePlatform(state.systemPerformanceInfo);
+    const relativeModPath = storage.getResolvedRelativeModPath();
 
     const reloadCachedRegistry = () => {
       return storage.loadStoredRegistry().then((storedRegistry) => {
@@ -195,6 +72,10 @@ export function RegionsSettingsPanel({
       void storage.initialize().then((loaded) => {
         if (mounted) {
           dispatch({ type: 'settings_loaded', settings: loaded });
+          dispatch({
+            type: 'set_system_performance_info',
+            systemPerformanceInfo: storage.getCachedSystemPerformanceInfo(),
+          });
         }
       });
       void reloadCachedRegistry();
@@ -225,6 +106,10 @@ export function RegionsSettingsPanel({
 
     const filteredRows = filterSettingsRows(datasetRows, state.searchTerm);
     const sortedRows = sortSettingsRows(filteredRows, state.sortState);
+    const fetchableDatasets = getFetchableDatasetsForCountry(
+      state.fetch.params.countryCode,
+    );
+    const countryOptions = getFetchCountryOptions();
 
     const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
       dispatch({ type: 'update_settings_started' });
@@ -337,34 +222,215 @@ export function RegionsSettingsPanel({
         });
     };
 
+    useEffectHook(() => {
+      const cityCode = state.fetch.params.cityCode;
+      if (!cityCode) {
+        dispatch({
+          type: 'set_fetch_bbox_fields',
+          west: '',
+          south: '',
+          east: '',
+          north: '',
+        });
+        return;
+      }
+
+      let cancelled = false;
+      void storage
+        .buildPaddedDemandBBox(cityCode, DEFAULT_FETCH_PADDING_KM)
+        .then((bbox) => {
+          if (cancelled) {
+            return;
+          }
+
+          if (!bbox) {
+            dispatch({
+              type: 'set_fetch_bbox_fields',
+              west: '',
+              south: '',
+              east: '',
+              north: '',
+            });
+            return;
+          }
+
+          dispatch({
+            type: 'set_fetch_bbox_fields',
+            west: bbox[0].toFixed(6),
+            south: bbox[1].toFixed(6),
+            east: bbox[2].toFixed(6),
+            north: bbox[3].toFixed(6),
+          });
+        })
+        .catch((error) => {
+          console.warn('[Regions] Failed to build demand bbox for fetch.', error);
+          if (cancelled) {
+            return;
+          }
+          dispatch({
+            type: 'set_fetch_bbox_fields',
+            west: '',
+            south: '',
+            east: '',
+            north: '',
+          });
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [state.fetch.params.cityCode]);
+
+    useEffectHook(() => {
+      const params = state.fetch.params;
+      const hasBBox =
+        params.west.length > 0 &&
+        params.south.length > 0 &&
+        params.east.length > 0 &&
+        params.north.length > 0;
+
+      const errors = buildFetchErrors({
+        cityCode: params.cityCode,
+        countryCode: params.countryCode,
+        datasetIds: params.datasetIds,
+        bboxAvailable: hasBBox,
+      });
+      dispatch({ type: 'set_fetch_errors', errors });
+
+      if (errors.length > 0) {
+        dispatch({ type: 'set_fetch_command', command: '' });
+        return;
+      }
+
+      dispatch({
+        type: 'set_fetch_command',
+        command: formatFetchCommand({
+          platform: runtimePlatform,
+          params,
+          relativeModPath,
+          outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
+        }),
+      });
+    }, [state.fetch.params, runtimePlatform, relativeModPath]);
+
+    const onFetchCityCodeChange = (cityCode: string) => {
+      const nextCity = knownCitiesByCode.get(cityCode);
+      const countryCode = resolveCityCountryCode(nextCity);
+      const allowedDatasetIds = getFetchableDatasetsForCountry(countryCode).map(
+        (dataset) => dataset.datasetId,
+      );
+
+      dispatch({ type: 'set_fetch_city_code', cityCode });
+      dispatch({
+        type: 'set_fetch_country_code',
+        countryCode,
+        allowedDatasetIds,
+        isAutoResolved: Boolean(countryCode),
+      });
+    };
+
+    const onFetchCountryCodeChange = (countryCode: FetchCountryCode) => {
+      if (state.fetch.isCountryAutoResolved) {
+        return;
+      }
+      const allowedDatasetIds = getFetchableDatasetsForCountry(countryCode).map(
+        (dataset) => dataset.datasetId,
+      );
+      dispatch({
+        type: 'set_fetch_country_code',
+        countryCode,
+        allowedDatasetIds,
+        isAutoResolved: false,
+      });
+    };
+
+    const onCopyFetchCommand = () => {
+      if (!state.fetch.command) {
+        return;
+      }
+      dispatch({ type: 'copy_fetch_command_started' });
+      void copyTextToClipboard(state.fetch.command)
+        .then(() => {
+          api.ui.showNotification('[Regions] Script command copied!', 'success');
+        })
+        .catch((error) => {
+          console.error('[Regions] Failed to copy fetch command.', error);
+          api.ui.showNotification(
+            '[Regions] Failed to copy fetch command. Copy manually from the command field.',
+            'error',
+          );
+        })
+        .finally(() => {
+          dispatch({ type: 'copy_fetch_command_finished' });
+        });
+    };
+
+    const onOpenModsFolder = () => {
+      dispatch({ type: 'open_mods_folder_started' });
+      void storage
+        .openModsFolder()
+        .catch((error) => {
+          console.error('[Regions] Failed to open mods folder.', error);
+          api.ui.showNotification(
+            '[Regions] Failed to open mods folder. Ensure electron.openModsFolder is available.',
+            'error',
+          );
+        })
+        .finally(() => {
+          dispatch({ type: 'open_mods_folder_finished' });
+        });
+    };
+
     return h(Fragment, null, [
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-            settings: state.settings,
-            isUpdating: state.pending.updating,
-            searchTerm: state.searchTerm,
-            sortState: state.sortState,
-            rows: sortedRows,
-            onClose: () => dispatch({ type: 'close_overlay' }),
-            onSearchTermChange: (searchTerm: string) =>
-              dispatch({ type: 'set_search_term', searchTerm }),
-            onSortChange: (columnIndex: number) => {
-              const nextSortState = getNextSortState<SettingsDatasetRow>(
-                state.sortState,
-                columnIndex,
-                resolveRegistrySortConfig,
-              );
-              dispatch({ type: 'set_sort_state', sortState: nextSortState });
-            },
-            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-              updateSettings({ showUnpopulatedRegions: nextValue });
-            },
-            onRefreshRegistry: refreshRegistry,
-            isRefreshingRegistry: state.pending.refreshingRegistry,
-            onClearMissing: clearMissingEntries,
-            isClearingMissing: state.pending.clearingMissing,
-          })
+          settings: state.settings,
+          isUpdating: state.pending.updating,
+          searchTerm: state.searchTerm,
+          sortState: state.sortState,
+          rows: sortedRows,
+          onClose: () => dispatch({ type: 'close_overlay' }),
+          onSearchTermChange: (searchTerm: string) =>
+            dispatch({ type: 'set_search_term', searchTerm }),
+          onSortChange: (columnIndex: number) => {
+            const nextSortState = getNextSortState<SettingsDatasetRow>(
+              state.sortState,
+              columnIndex,
+              resolveRegistrySortConfig,
+            );
+            dispatch({ type: 'set_sort_state', sortState: nextSortState });
+          },
+          onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+            updateSettings({ showUnpopulatedRegions: nextValue });
+          },
+          onRefreshRegistry: refreshRegistry,
+          isRefreshingRegistry: state.pending.refreshingRegistry,
+          onClearMissing: clearMissingEntries,
+          isClearingMissing: state.pending.clearingMissing,
+          fetch: {
+            params: state.fetch.params,
+            errors: state.fetch.errors,
+            command: state.fetch.command,
+            isCopying: state.fetch.isCopying,
+            isOpeningModsFolder: state.fetch.isOpeningModsFolder,
+            isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+            cityOptions: Array.from(knownCitiesByCode.values()).map((city) => ({
+              code: city.code,
+              name: city.name,
+            })),
+            countryOptions,
+            datasets: fetchableDatasets,
+            relativeModPath,
+            systemPerformanceInfo: state.systemPerformanceInfo,
+            onCityCodeChange: onFetchCityCodeChange,
+            onCountryCodeChange: onFetchCountryCodeChange,
+            onToggleDataset: (datasetId: string) =>
+              dispatch({ type: 'toggle_fetch_dataset', datasetId }),
+            onCopyCommand: onCopyFetchCommand,
+            onOpenModsFolder,
+          },
+        })
         : null,
     ]);
   };
@@ -454,4 +520,26 @@ function resolveCachedEntryIssue(
 
 function isServedDataset(dataset: RegionDataset): boolean {
   return !dataset.dataPath.startsWith('file:///');
+}
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (window.navigator.clipboard?.writeText) {
+    await window.navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const succeeded = document.execCommand('copy');
+  document.body.removeChild(textarea);
+
+  if (!succeeded) {
+    throw new Error('Clipboard write command failed.');
+  }
 }

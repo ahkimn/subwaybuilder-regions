@@ -1,3 +1,5 @@
+import type { SystemPerformanceInfo } from "../../types";
+
 export type LocalDatasetProps = {
   dataPath: string;
   isPresent: boolean;
@@ -138,4 +140,20 @@ async function resolveFileSizeMB(response: Response): Promise<number | null> {
 
 function bytesToMB(bytes: number): number {
   return bytes / (1024 * 1024);
+}
+
+export function resolveRuntimePlatform(
+  systemPerformanceInfo: SystemPerformanceInfo | null): string {
+  if (systemPerformanceInfo?.platform) {
+    return systemPerformanceInfo.platform;
+  }
+  // Fallback to user agent parsing if the fetched performance information is unavailable...
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  if (userAgent.includes('windows')) {
+    return 'win32';
+  }
+  if (userAgent.includes('mac')) {
+    return 'darwin';
+  }
+  return 'linux';
 }

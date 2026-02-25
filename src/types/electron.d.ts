@@ -22,6 +22,8 @@ export interface ElectronAPI {
   setLicenseKey(key: string): Promise<void>;
 
   getModsFolder?: () => Promise<string>;
+  openModsFolder?: () => Promise<void>;
+  getSystemPerformanceInfo?: () => Promise<SystemPerformanceInfo>;
   scanMods: () => Promise<{ success: boolean; mods: ModStatus[] }>;
 
   /** Gets a value from the game's settings file metro-maker4/settings.json. */
@@ -35,6 +37,14 @@ export interface ElectronAPI {
   ) => Promise<{ success: boolean }>;
   setSetting: (key: string, value: unknown) => Promise<{ success: boolean }>;
 }
+
+export type SystemPerformanceInfo = {
+  totalRAMGB: number;
+  cpuCores: number;
+  heapSizeMB: number;
+  platform: string;
+  arch: string;
+};
 
 export interface ElectronAPIExtended {
   loadDataFile(path: string): Promise<unknown>;

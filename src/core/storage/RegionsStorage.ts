@@ -6,22 +6,24 @@ import type { BBox } from 'geojson';
 import { z } from 'zod';
 
 import type { ModdingAPI } from '../../types';
-import type { ElectronAPI } from '../../types/electron';
+import type {
+  ElectronAPI,
+  SystemPerformanceInfo,
+} from '../../types/electron';
 import type { DemandDataFile } from '../../types/schemas';
 import {
   REGIONS_REGISTRY_STORAGE_KEY,
   REGIONS_SETTINGS_STORAGE_KEY,
 } from '../constants';
+import { DEFAULT_MOD_FOLDER, MOD_ID } from '../constants/global';
 import { buildPaddedBBoxForDemandData } from '../geometry/helpers';
-import { DEFAULT_REGIONS_SETTINGS } from './defaults';
+import { DEFAULT_REGIONS_SETTINGS } from './settings';
 import {
   clone,
   RegionsSettings,
   type RegionsSettings as RegionsSettingsValue,
   resolveSettings as resolveStoredSettings,
 } from './types';
-
-export const MOD_ID = 'com.ahkimn.regions';
 
 type SettingsListener = (settings: RegionsSettingsValue) => void;
 
@@ -31,7 +33,9 @@ export class RegionsStorage {
   private initialized = false;
   private modScanAttempted = false;
   private resolvedModPath: string | null = null;
+  private resolvedRelativeModPath = DEFAULT_MOD_FOLDER;
   private resolvedModVersion: string | null = null;
+  private systemPerformanceInfo: SystemPerformanceInfo | null = null;
   private readonly listeners = new Set<SettingsListener>();
 
   constructor(
@@ -39,7 +43,7 @@ export class RegionsStorage {
     // TODO (Feature): Migrate all of these reads from the Electron API to the official game API / mod-specific storage when it is available
     private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
     private readonly electronApi: ElectronAPI = resolveElectronApi(),
-  ) {}
+  ) { }
 
   async initialize(): Promise<RegionsSettingsValue> {
     if (this.initialized) {
@@ -49,6 +53,7 @@ export class RegionsStorage {
     this.initialized = true;
     await this.hydrateSettings();
     await this.tryResolveModFromScan();
+    await this.getSystemPerformanceInfo();
     return this.getSettings();
   }
 
@@ -58,6 +63,14 @@ export class RegionsStorage {
 
   getResolvedModVersion(): string | null {
     return this.resolvedModVersion;
+  }
+
+  getResolvedRelativeModPath(): string {
+    return this.resolvedRelativeModPath;
+  }
+
+  getCachedSystemPerformanceInfo(): SystemPerformanceInfo | null {
+    return this.systemPerformanceInfo;
   }
 
   listen(listener: SettingsListener): () => void {
@@ -189,11 +202,11 @@ export class RegionsStorage {
       /\\/g,
       '/',
     );
+    this.resolvedRelativeModPath = DEFAULT_MOD_FOLDER;
     console.warn(
       '[Regions] Falling back to mods folder path for Regions data root (scanMods unresolved).',
     );
-    // TODO: Let the user configure this path in case they wish to save the mod in a different folder (currently this is a brittle contract)
-    return `${modsDir}/regions/data`;
+    return `${modsDir}/${DEFAULT_MOD_FOLDER}/data`;
   }
 
   private async tryResolveModFromScan(): Promise<void> {
@@ -222,12 +235,20 @@ export class RegionsStorage {
       this.resolvedModPath = regionsMod.path.replace(/\\/g, '/');
       this.resolvedModVersion =
         typeof regionsMod.version === 'string' ? regionsMod.version : null;
+      this.resolvedRelativeModPath = this.resolveRelativeModPath(
+        this.resolvedModPath,
+      );
     } catch (error) {
       console.error(
         '[Regions] Failed to resolve mod data root via scanMods.',
         error,
       );
     }
+  }
+
+  private resolveRelativeModPath(modPath: string): string {
+    const pathSegments = modPath.split('/').filter((segment) => segment.length);
+    return pathSegments[pathSegments.length - 1] ?? DEFAULT_MOD_FOLDER;
   }
 
   async fetchLocalDemandData(cityCode: string): Promise<DemandDataFile | null> {
@@ -262,6 +283,48 @@ export class RegionsStorage {
     }
 
     return buildPaddedBBoxForDemandData(demandData, paddingKm);
+  }
+
+  async openModsFolder(): Promise<void> {
+    if (!this.electronApi.openModsFolder) {
+      throw new Error('[Regions] electron.openModsFolder is unavailable');
+    }
+    await this.electronApi.openModsFolder();
+  }
+
+  async getSystemPerformanceInfo(): Promise<SystemPerformanceInfo | null> {
+    if (this.systemPerformanceInfo) {
+      return this.systemPerformanceInfo;
+    }
+
+    // Overall system performance is not mod-critical as we can obtain the user's platform from the user agent as a fallback
+    if (!this.electronApi.getSystemPerformanceInfo) {
+      console.error('[Regions] electron.getSystemPerformanceInfo API is unavailable.');
+      return this.systemPerformanceInfo;
+    }
+
+    try {
+      const payload = await this.electronApi.getSystemPerformanceInfo();
+      const parsed = z
+        .object({
+          totalRAMGB: z.number(),
+          cpuCores: z.number(),
+          heapSizeMB: z.number(),
+          platform: z.string(),
+          arch: z.string(),
+        })
+        .safeParse(payload);
+
+      if (!parsed.success) {
+        return null;
+      }
+
+      this.systemPerformanceInfo = parsed.data;
+      return this.systemPerformanceInfo;
+    } catch (error) {
+      console.warn('[Regions] Failed to get system performance info.', error);
+      return null;
+    }
   }
 }
 
