@@ -24,16 +24,28 @@ const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
 const INLINE_STATUS_TEXT_CLASS =
   'ml-2 inline-flex items-center gap-1 text-xs font-normal leading-none align-middle';
 const INLINE_STATUS_ICON_CLASS = 'h-3.5 w-3.5 shrink-0';
+const COMMAND_BOX_BASE_CLASS =
+  'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2 text-xs font-mono text-foreground';
 
 export function renderFetchDatasetsSection(
   h: typeof createElement,
   params: SettingsFetchSectionParams,
 ): React.ReactNode {
+  const hasCity = Boolean(params.params.cityCode);
+  const hasCountry = params.params.countryCode !== null;
+  const hasDatasets = params.params.datasetIds.length > 0;
+  const hasBBox = params.params.bbox !== null;
   const selectedDatasetIds = new Set(params.params.datasetIds);
-  const canGenerateCommand = params.errors.length === 0 && !!params.command;
-  const isCityInvalid = params.params.cityCode.length === 0;
-  const isCountryInvalid = params.params.countryCode.length === 0;
-  const areDatasetsInvalid = params.params.datasetIds.length === 0;
+  const canGenerateCommand =
+    hasCity &&
+    hasCountry &&
+    hasDatasets &&
+    hasBBox &&
+    params.errors.length === 0 &&
+    !!params.command;
+  const isCityInvalid = !hasCity;
+  const isCountryInvalid = !hasCountry;
+  const areDatasetsInvalid = !hasDatasets;
   const isCommandInvalid = !canGenerateCommand;
   const commandErrorText =
     params.errors[0] ??
@@ -49,6 +61,7 @@ export function renderFetchDatasetsSection(
     value: countryCode,
     label: countryCode,
   }));
+  const countryMenuOptions = [{ value: '', label: 'N/A' }, ...countryOptions];
 
   return PanelSection(
     h,
@@ -85,7 +98,7 @@ export function renderFetchDatasetsSection(
                 'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5',
             },
             [
-              'Resolved Country',
+              'Country Code',
               isCountryInvalid
                 ? renderInlineWarningLabel(h, 'Required', WARNING_HEX)
                 : null,
@@ -93,13 +106,15 @@ export function renderFetchDatasetsSection(
           ),
           SelectMenu({
             h,
-            value: params.params.countryCode,
-            options: countryOptions,
+            value: params.params.countryCode ?? '',
+            options: countryMenuOptions,
             placeholder: 'N/A',
             disabled: params.isCountryAutoResolved,
             onValueChange: (value) => {
               params.onCountryCodeChange(
-                value as FetchParameters['countryCode'],
+                value.length > 0
+                  ? (value as FetchParameters['countryCode'])
+                  : null,
               );
             },
           }),
@@ -141,7 +156,7 @@ export function renderFetchDatasetsSection(
                   {
                     key: dataset.datasetId,
                     className:
-                      'flex items-center gap-2 rounded-sm border border-border/35 p-2 bg-background/60',
+                      'flex items-center gap-2 rounded-sm border border-border/35 p-1.5 bg-background/60',
                   },
                   [
                     h('input', {
@@ -177,10 +192,10 @@ export function renderFetchDatasetsSection(
           'Boundary Box',
         ),
         h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-1.5' }, [
-          renderBBoxValue(h, 'West', params.params.west),
-          renderBBoxValue(h, 'South', params.params.south),
-          renderBBoxValue(h, 'East', params.params.east),
-          renderBBoxValue(h, 'North', params.params.north),
+          renderBBoxValue(h, 'West', params.params.bbox?.west ?? ''),
+          renderBBoxValue(h, 'South', params.params.bbox?.south ?? ''),
+          renderBBoxValue(h, 'East', params.params.bbox?.east ?? ''),
+          renderBBoxValue(h, 'North', params.params.bbox?.north ?? ''),
         ]),
       ]),
       h('div', { className: 'flex flex-col gap-1.5' }, [
@@ -192,17 +207,16 @@ export function renderFetchDatasetsSection(
           },
           [
             'Generated Command',
-            isCommandInvalid
-              ? renderInlineStatusLabel(h, 'Required', CRITICAL_HEX, OctagonX)
-              : renderInlineStatusLabel(h, 'Ready', SUCCESS_HEX, CircleCheck),
+            !isCommandInvalid
+              ? renderInlineStatusLabel(h, 'Ready', SUCCESS_HEX, CircleCheck)
+              : null,
           ],
         ),
         isCommandInvalid
           ? h(
               'div',
               {
-                className:
-                  'min-h-[80px] w-full rounded-sm border border-red-500/40 bg-background/70 px-2 py-1 text-xs font-mono',
+                className: `${COMMAND_BOX_BASE_CLASS} border-red-500/40 flex items-center justify-center text-center`,
               },
               h(
                 'div',
@@ -224,12 +238,17 @@ export function renderFetchDatasetsSection(
                 ],
               ),
             )
-          : h('textarea', {
-              className:
-                'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/70 px-2 py-1 text-xs font-mono text-foreground',
-              readOnly: true,
-              value: params.command,
-            }),
+          : h(
+              'div',
+              { className: COMMAND_BOX_BASE_CLASS },
+              h(
+                'pre',
+                {
+                  className: 'm-0 whitespace-pre-wrap break-all select-text',
+                },
+                params.command,
+              ),
+            ),
       ]),
       h('div', { className: 'flex flex-wrap items-center gap-2' }, [
         Button(h, {

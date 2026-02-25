@@ -97,7 +97,12 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   GB: ['districts', 'bua', 'wards'],
 });
 
-export const CATALOG_STATIC_COUNTRIES = Object.freeze(['US', 'CA', 'GB']);
+export const CATALOG_STATIC_COUNTRIES = ['US', 'CA', 'GB'] as const;
+export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
+
+export function isStaticCountryCode(value: string): value is StaticCountryCode {
+  return CATALOG_STATIC_COUNTRIES.includes(value as StaticCountryCode);
+}
 
 export function normalizeDatasetCountryCode(countryCode: string): string {
   return countryCode.toUpperCase() === 'UK' ? 'GB' : countryCode.toUpperCase();
@@ -108,6 +113,24 @@ export function resolveCountryDatasetOrder(
 ): readonly string[] {
   const normalizedCountryCode = normalizeDatasetCountryCode(countryCode);
   return COUNTRY_DATASET_ORDER[normalizedCountryCode] ?? [];
+}
+
+export function resolveCountryDatasets(
+  countryCode: StaticCountryCode | null,
+  opts?: { onlineOnly?: boolean },
+): DatasetTemplateMetadata[] {
+  if (!countryCode) {
+    return [];
+  }
+
+  return resolveCountryDatasetOrder(countryCode)
+    .map((datasetId) => DATASET_METADATA_CATALOG[datasetId])
+    .filter((metadata): metadata is DatasetTemplateMetadata =>
+      Boolean(metadata),
+    )
+    .filter((metadata) =>
+      opts?.onlineOnly ? metadata.existsOnlineSource : true,
+    );
 }
 
 export function buildDatasetTemplatesFromOrder(

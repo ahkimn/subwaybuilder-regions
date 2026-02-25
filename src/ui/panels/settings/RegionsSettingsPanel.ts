@@ -1,4 +1,8 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
+import {
+  CATALOG_STATIC_COUNTRIES,
+  resolveCountryDatasets,
+} from '@shared/datasets/catalog';
 import type React from 'react';
 
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
@@ -17,8 +21,6 @@ import {
   buildFetchErrors,
   type FetchCountryCode,
   formatFetchCommand,
-  getFetchableDatasetsForCountry,
-  getFetchCountryOptions,
   resolveCityCountryCode,
 } from './fetch-helpers';
 import {
@@ -108,10 +110,11 @@ export function RegionsSettingsPanel({
 
     const filteredRows = filterSettingsRows(datasetRows, state.searchTerm);
     const sortedRows = sortSettingsRows(filteredRows, state.sortState);
-    const fetchableDatasets = getFetchableDatasetsForCountry(
+    const fetchableDatasets = resolveCountryDatasets(
       state.fetch.params.countryCode,
+      { onlineOnly: true },
     );
-    const countryOptions = getFetchCountryOptions();
+    const countryOptions = [...CATALOG_STATIC_COUNTRIES];
 
     const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
       dispatch({ type: 'update_settings_started' });
@@ -235,10 +238,7 @@ export function RegionsSettingsPanel({
       if (!cityCode) {
         dispatch({
           type: 'set_fetch_bbox_fields',
-          west: '',
-          south: '',
-          east: '',
-          north: '',
+          bbox: null,
         });
         return;
       }
@@ -254,20 +254,19 @@ export function RegionsSettingsPanel({
           if (!bbox) {
             dispatch({
               type: 'set_fetch_bbox_fields',
-              west: '',
-              south: '',
-              east: '',
-              north: '',
+              bbox: null,
             });
             return;
           }
 
           dispatch({
             type: 'set_fetch_bbox_fields',
-            west: bbox[0].toFixed(4),
-            south: bbox[1].toFixed(4),
-            east: bbox[2].toFixed(4),
-            north: bbox[3].toFixed(4),
+            bbox: {
+              west: bbox[0].toFixed(4),
+              south: bbox[1].toFixed(4),
+              east: bbox[2].toFixed(4),
+              north: bbox[3].toFixed(4),
+            },
           });
         })
         .catch((error) => {
@@ -280,10 +279,7 @@ export function RegionsSettingsPanel({
           }
           dispatch({
             type: 'set_fetch_bbox_fields',
-            west: '',
-            south: '',
-            east: '',
-            north: '',
+            bbox: null,
           });
         });
 
@@ -294,17 +290,16 @@ export function RegionsSettingsPanel({
 
     useEffectHook(() => {
       const params = state.fetch.params;
-      const hasBBox =
-        params.west.length > 0 &&
-        params.south.length > 0 &&
-        params.east.length > 0 &&
-        params.north.length > 0;
+      const hasCity = Boolean(params.cityCode);
+      const hasCountry = params.countryCode !== null;
+      const hasDatasets = params.datasetIds.length > 0;
+      const hasBBox = params.bbox !== null;
 
       const errors = buildFetchErrors({
-        cityCode: params.cityCode,
-        countryCode: params.countryCode,
-        datasetIds: params.datasetIds,
-        bboxAvailable: hasBBox,
+        hasCity,
+        hasCountry,
+        hasDatasets,
+        hasBBox,
       });
       dispatch({ type: 'set_fetch_errors', errors });
 
@@ -327,9 +322,9 @@ export function RegionsSettingsPanel({
     const onFetchCityCodeChange = (cityCode: string) => {
       const nextCity = knownCitiesByCode.get(cityCode);
       const countryCode = resolveCityCountryCode(nextCity);
-      const allowedDatasetIds = getFetchableDatasetsForCountry(countryCode).map(
-        (dataset) => dataset.datasetId,
-      );
+      const allowedDatasetIds = resolveCountryDatasets(countryCode, {
+        onlineOnly: true,
+      }).map((dataset) => dataset.datasetId);
 
       dispatch({ type: 'set_fetch_city_code', cityCode });
       dispatch({
@@ -340,13 +335,13 @@ export function RegionsSettingsPanel({
       });
     };
 
-    const onFetchCountryCodeChange = (countryCode: FetchCountryCode) => {
+    const onFetchCountryCodeChange = (countryCode: FetchCountryCode | null) => {
       if (state.fetch.isCountryAutoResolved) {
         return;
       }
-      const allowedDatasetIds = getFetchableDatasetsForCountry(countryCode).map(
-        (dataset) => dataset.datasetId,
-      );
+      const allowedDatasetIds = resolveCountryDatasets(countryCode, {
+        onlineOnly: true,
+      }).map((dataset) => dataset.datasetId);
       dispatch({
         type: 'set_fetch_country_code',
         countryCode,

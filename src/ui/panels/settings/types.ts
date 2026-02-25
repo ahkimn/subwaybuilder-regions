@@ -41,7 +41,7 @@ export type SettingsFetchSectionParams = {
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
   cityOptions: Array<{ code: string; name: string }>;
-  countryOptions: Array<Exclude<FetchParameters['countryCode'], ''>>;
+  countryOptions: Array<NonNullable<FetchParameters['countryCode']>>;
   datasets: DatasetTemplateMetadata[];
   relativeModPath: string;
   systemPerformanceInfo: SystemPerformanceInfo | null;

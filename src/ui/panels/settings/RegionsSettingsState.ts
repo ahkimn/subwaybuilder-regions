@@ -2,7 +2,11 @@ import type { RegistryCacheEntry } from '../../../../shared/dataset-index';
 import type { RegionsStorage } from '../../../core/storage/RegionsStorage';
 import type { SystemPerformanceInfo } from '../../../types';
 import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '../types';
-import type { FetchCountryCode, FetchParameters } from './fetch-helpers';
+import type {
+  FetchBBox,
+  FetchCountryCode,
+  FetchParameters,
+} from './fetch-helpers';
 
 type PendingFlags = {
   updating: boolean;
@@ -59,17 +63,14 @@ export type RegionsSettingsAction =
   | { type: 'set_fetch_city_code'; cityCode: string }
   | {
       type: 'set_fetch_country_code';
-      countryCode: FetchCountryCode;
+      countryCode: FetchCountryCode | null;
       allowedDatasetIds: string[];
       isAutoResolved?: boolean;
     }
   | { type: 'toggle_fetch_dataset'; datasetId: string }
   | {
       type: 'set_fetch_bbox_fields';
-      west: string;
-      south: string;
-      east: string;
-      north: string;
+      bbox: FetchBBox | null;
     }
   | { type: 'set_fetch_command'; command: string }
   | { type: 'set_fetch_errors'; errors: string[] }
@@ -150,12 +151,9 @@ export function regionsSettingsReducer(
           params: {
             ...state.fetch.params,
             cityCode: action.cityCode,
-            countryCode: '',
+            countryCode: null,
             datasetIds: [],
-            west: '',
-            south: '',
-            east: '',
-            north: '',
+            bbox: null,
           },
           isCountryAutoResolved: false,
         },
@@ -202,10 +200,7 @@ export function regionsSettingsReducer(
           ...state.fetch,
           params: {
             ...state.fetch.params,
-            west: action.west,
-            south: action.south,
-            east: action.east,
-            north: action.north,
+            bbox: action.bbox,
           },
         },
       };
@@ -276,12 +271,9 @@ export function regionsSettingsReducer(
 export const INITIAL_FETCH_STATE: FetchState = {
   params: {
     cityCode: '',
-    countryCode: '',
+    countryCode: null,
     datasetIds: [],
-    west: '',
-    south: '',
-    east: '',
-    north: '',
+    bbox: null,
   },
   command: '',
   errors: [],
