@@ -212,9 +212,9 @@ export function renderDatasetRegistrySection(
             onClick: onRefreshRegistry,
             icon: RefreshIcon,
             iconPlacement: 'start',
+            role: 'secondary',
+            size: 'xs',
             wrapperClassName: 'w-fit',
-            buttonClassName:
-              'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm border border-border/40 bg-background/70 hover:bg-accent transition-colors',
             iconOptions: { size: 20, className: 'h-3.5 w-3.5 shrink-0' },
           }),
           Button(h, {
@@ -225,9 +225,9 @@ export function renderDatasetRegistrySection(
             onClick: onClearMissing,
             icon: Trash2,
             iconPlacement: 'start',
+            role: 'danger',
+            size: 'xs',
             wrapperClassName: 'w-fit',
-            buttonClassName:
-              'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm bg-red-600 text-white hover:bg-red-700 transition-colors',
             iconOptions: {
               size: 20,
               className: 'h-3.5 w-3.5 shrink-0 text-white',

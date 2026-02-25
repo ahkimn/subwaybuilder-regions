@@ -258,9 +258,9 @@ export function renderFetchDatasetsSection(
           disabled: !canGenerateCommand || params.isCopying,
           icon: Copy,
           iconPlacement: 'start',
+          role: 'secondary',
+          size: 'xs',
           wrapperClassName: 'w-fit',
-          buttonClassName:
-            'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm border border-border/40 bg-background/70 hover:bg-accent transition-colors',
           iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
         }),
         Button(h, {
@@ -270,9 +270,9 @@ export function renderFetchDatasetsSection(
           disabled: params.isOpeningModsFolder,
           icon: MapPinnedIcon,
           iconPlacement: 'start',
+          role: 'secondary',
+          size: 'xs',
           wrapperClassName: 'w-fit',
-          buttonClassName:
-            'inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-sm border border-border/40 bg-background/70 hover:bg-accent transition-colors',
           iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
         }),
       ]),
