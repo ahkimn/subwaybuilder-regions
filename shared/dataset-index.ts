@@ -9,6 +9,7 @@ export type DatasetMetadata = {
   unitPlural: string;
   source: string;
   size: number;
+  fileSizeMB?: number;
 };
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
@@ -23,7 +24,6 @@ export type RegistryCacheEntry = DatasetMetadata & {
   dataPath: string;
   isPresent: boolean;
   origin: RegistryOrigin;
-  fileSizeMB: number | null;
   compressed: boolean;
 };
 
@@ -38,7 +38,7 @@ export const StaticRegistryCacheEntrySchema = z.object({
   dataPath: z.string(),
   isPresent: z.boolean(),
   origin: z.enum(['static', 'dynamic', 'user']),
-  fileSizeMB: z.number().nullable(),
+  fileSizeMB: z.number().optional(),
   compressed: z.boolean(),
 });
 

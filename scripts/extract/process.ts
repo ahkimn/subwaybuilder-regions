@@ -49,10 +49,6 @@ export function processAndSaveBoundaries(
     return;
   }
 
-  console.log(
-    `Filtered to ${filteredRegions.length} features within boundary box.`,
-  );
-
   saveBoundaries(args, filteredRegions, dataConfig);
 }
 
@@ -74,7 +70,7 @@ export function saveBoundaries(
     features: filteredRegions,
   };
 
-  saveGeoJSON(outputFilePath, outputFeatureCollection, {
+  const savedOutput = saveGeoJSON(outputFilePath, outputFeatureCollection, {
     compress: shouldCompress,
   });
 
@@ -85,6 +81,7 @@ export function saveBoundaries(
     unitPlural: dataConfig.unitPlural,
     source: dataConfig.source,
     size: filteredRegions.length,
+    fileSizeMB: savedOutput.fileSizeMB,
   };
 
   updateIndexJson(

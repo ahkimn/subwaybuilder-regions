@@ -1,6 +1,8 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
+
 import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { SystemPerformanceInfo } from '@/types';
+
 import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '../types';
 import type {
   FetchCountryCode,
@@ -13,12 +15,10 @@ export type PendingFlags = {
   clearingMissing: boolean;
 };
 
-export type FetchFlagKey = 'isCopying' | 'isOpeningModsFolder';
 export type PendingFlagKey = keyof PendingFlags;
 
 export type FetchState = {
   params: FetchParameters;
-  isCopying: boolean;
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
 };
@@ -33,7 +33,6 @@ export type RegionsSettingsState = {
   pending: PendingFlags;
   fetch: FetchState;
   systemPerformanceInfo: SystemPerformanceInfo | null;
-  error: string | null;
 };
 
 /**
@@ -63,12 +62,11 @@ export type RegionsSettingsAction =
       isAutoResolved?: boolean;
     }
   | { type: 'toggle_fetch_dataset'; datasetId: string }
-  | { type: 'set_fetch_flag'; key: FetchFlagKey; value: boolean }
+  | { type: 'set_is_opening_mods_folder'; value: boolean }
   | {
       type: 'set_system_performance_info';
       systemPerformanceInfo: SystemPerformanceInfo | null;
-    }
-  | { type: 'operation_failed'; message: string };
+    };
 
 export function regionsSettingsReducer(
   state: RegionsSettingsState,
@@ -102,7 +100,6 @@ export function regionsSettingsReducer(
           ...state.pending,
           [action.key]: action.value,
         },
-        error: action.value ? null : state.error,
       };
     // Fetch-related actions
     case 'set_fetch_params':
@@ -151,18 +148,16 @@ export function regionsSettingsReducer(
         },
       };
     }
-    case 'set_fetch_flag':
+    case 'set_is_opening_mods_folder':
       return {
         ...state,
         fetch: {
           ...state.fetch,
-          [action.key]: action.value,
+          isOpeningModsFolder: action.value,
         },
       };
     case 'set_system_performance_info':
       return { ...state, systemPerformanceInfo: action.systemPerformanceInfo };
-    case 'operation_failed':
-      return { ...state, error: action.message };
     default:
       return state;
   }
@@ -175,7 +170,6 @@ export const INITIAL_FETCH_STATE: FetchState = {
     datasetIds: [],
     bbox: null,
   },
-  isCopying: false,
   isOpeningModsFolder: false,
   isCountryAutoResolved: false,
 };
@@ -200,7 +194,6 @@ export function createInitialSettingsState(
     },
     fetch: INITIAL_FETCH_STATE,
     systemPerformanceInfo: null,
-    error: null,
   };
 }
 

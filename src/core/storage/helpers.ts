@@ -1,10 +1,11 @@
+import { bytesToMB } from '../../../shared/utils/size';
 import type { SystemPerformanceInfo } from '../../types';
 
 export type LocalDatasetProps = {
   dataPath: string;
   isPresent: boolean;
   compressed: boolean;
-  fileSizeMB: number | null;
+  fileSizeMB?: number;
 };
 
 export function buildLocalDatasetPath(
@@ -50,7 +51,6 @@ export async function tryLocalDatasetPaths(
     dataPath: defaultPath,
     isPresent: false,
     compressed: defaultPath.endsWith('.gz'),
-    fileSizeMB: null,
   };
 }
 
@@ -64,7 +64,6 @@ export async function tryDatasetPath(
         dataPath,
         isPresent: false,
         compressed: dataPath.endsWith('.gz'),
-        fileSizeMB: null,
       };
     }
 
@@ -79,7 +78,6 @@ export async function tryDatasetPath(
       dataPath,
       isPresent: false,
       compressed: dataPath.endsWith('.gz'),
-      fileSizeMB: null,
     };
   }
 }
@@ -121,7 +119,7 @@ export async function getFeatureCountForLocalDataset(
 }
 
 // Small helper function to resolve a local file's size in MB for user information and logging purposes.
-async function resolveFileSizeMB(response: Response): Promise<number | null> {
+async function resolveFileSizeMB(response: Response): Promise<number | undefined> {
   const headerValue = response.headers.get('content-length');
   if (headerValue) {
     const parsed = Number.parseInt(headerValue, 10);
@@ -132,14 +130,10 @@ async function resolveFileSizeMB(response: Response): Promise<number | null> {
 
   try {
     const bytes = (await response.clone().arrayBuffer()).byteLength;
-    return bytes > 0 ? bytesToMB(bytes) : null;
+    return bytes > 0 ? bytesToMB(bytes) : undefined;
   } catch {
-    return null;
+    return undefined;
   }
-}
-
-function bytesToMB(bytes: number): number {
-  return bytes / (1024 * 1024);
 }
 
 export function resolveRuntimePlatform(

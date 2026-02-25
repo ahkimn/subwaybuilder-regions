@@ -57,7 +57,7 @@ export function renderSettingsOverlay(
   Input: React.ComponentType<InputFieldProperties>,
   Switch: React.ComponentType<SwitchProperties>,
   Label: React.ComponentType<LabelProperties>,
-  params: Omit<SettingsOverlayParams, 'Input' | 'Switch' | 'Label'>,
+  params: SettingsOverlayParams,
 ): React.ReactNode {
   const {
     settings,

@@ -7,7 +7,7 @@ import {
 
 import type { City } from '../../types/cities';
 
-export type StaticDatasetTemplate = Omit<DatasetMetadata, 'size'>;
+export type StaticDatasetTemplate = Omit<DatasetMetadata, 'size' | 'fileSizeMB'>;
 
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   Record<string, string>

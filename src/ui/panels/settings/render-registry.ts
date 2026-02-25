@@ -328,8 +328,8 @@ function buildRegistryTableRows(
   return tableRows;
 }
 
-function formatFileSizeLabel(sizeMB: number | null): string {
-  if (sizeMB === null || !Number.isFinite(sizeMB) || sizeMB <= 0) {
+function formatFileSizeLabel(sizeMB: number | undefined): string {
+  if (sizeMB === undefined || !Number.isFinite(sizeMB) || sizeMB <= 0) {
     return FILESIZE_NOT_AVAILABLE_LABEL;
   }
   return `${formatNumberOrDefault(sizeMB, 2)} MB`;

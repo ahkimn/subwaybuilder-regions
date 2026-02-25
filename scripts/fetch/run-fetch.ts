@@ -16,6 +16,20 @@ export type FetchResult = {
   failures: FetchFailure[];
 };
 
+function renderProgressBar(completed: number, total: number): string {
+  const width = 24;
+  if (total <= 0) {
+    return `[${'-'.repeat(width)}]`;
+  }
+  const filled = Math.round((completed / total) * width);
+  return `[${'#'.repeat(filled)}${'-'.repeat(width - filled)}]`;
+}
+
+function renderProgressSummary(completed: number, total: number): string {
+  const percent = total <= 0 ? 100 : Math.round((completed / total) * 100);
+  return `${renderProgressBar(completed, total)} ${percent}% (${completed}/${total})`;
+}
+
 async function runCountryExtractor(
   args: ExtractMapFeaturesArgs,
 ): Promise<void> {
@@ -63,21 +77,30 @@ export async function runFetch(
 ): Promise<FetchResult> {
   const successes: string[] = [];
   const failures: FetchFailure[] = [];
+  const totalDatasets = request.datasets.length;
 
   await fs.ensureDir(request.out);
+  console.log(
+    `[Fetch] Progress ${renderProgressSummary(0, totalDatasets)}`,
+  );
 
-  for (const datasetId of request.datasets) {
+  for (let index = 0; index < request.datasets.length; index += 1) {
+    const datasetId = request.datasets[index];
     try {
       console.log(
-        `[Fetch] Generating ${datasetId} for ${request.cityCode} (${request.countryCode})...`,
+        `[Fetch] [${index + 1}/${totalDatasets}] Generating ${datasetId} for ${request.cityCode} (${request.countryCode})...`,
       );
       await runCountryExtractor(buildExtractorArgs(request, datasetId));
       successes.push(datasetId);
-      console.log(`[Fetch] Completed ${datasetId}.`);
+      console.log(`[Fetch] Completed ${datasetId} (ok).`);
     } catch (error) {
       failures.push({ datasetId, error });
-      console.error(`[Fetch] Failed ${datasetId}:`, error);
+      console.error(`[Fetch] Failed ${datasetId} (error):`, error);
     }
+    const completed = successes.length + failures.length;
+    console.log(
+      `[Fetch] Progress ${renderProgressSummary(completed, totalDatasets)}`,
+    );
   }
 
   return { successes, failures };

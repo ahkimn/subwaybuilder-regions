@@ -263,6 +263,9 @@ export class RegionDatasetRegistry {
   }
 
   private validateIndexEntry(cityCode: string, entry: DatasetMetadata): void {
+    const hasValidFileSize =
+      entry.fileSizeMB === undefined ||
+      (Number.isFinite(entry.fileSizeMB) && entry.fileSizeMB >= 0);
     if (
       !entry.datasetId ||
       !entry.displayName ||
@@ -270,7 +273,8 @@ export class RegionDatasetRegistry {
       !entry.unitPlural ||
       !entry.source ||
       !Number.isInteger(entry.size) ||
-      entry.size <= 0
+      entry.size <= 0 ||
+      !hasValidFileSize
     ) {
       throw new Error(
         `[Regions] Invalid dataset index entry for city ${cityCode}: ${JSON.stringify(entry)}`,
@@ -371,7 +375,7 @@ export class RegionDatasetRegistry {
         .map((entry) => this.validateStoredEntry(entry)),
     );
     const retainedStoredStatic = missingStoredEntries.filter(
-      (entry) => entry.isPresent || entry.fileSizeMB !== null,
+      (entry) => entry.isPresent || entry.fileSizeMB !== undefined,
     );
 
     // (TODO): We do not yet have any dynamic datasets but will need to further expand on this logic when they are added to include user-created datasets that may not be included in the static discovery process
@@ -381,7 +385,7 @@ export class RegionDatasetRegistry {
         .map((entry) => this.validateStoredEntry(entry)),
     );
     const retainedDynamicEntries = revalidatedDynamicEntries.filter(
-      (entry) => entry.isPresent || entry.fileSizeMB !== null,
+      (entry) => entry.isPresent || entry.fileSizeMB !== undefined,
     );
 
     return dedupeRegistryEntries([
@@ -416,6 +420,7 @@ export class RegionDatasetRegistry {
       unitPlural: entry.unitPlural,
       source: entry.source,
       size: entry.size,
+      fileSizeMB: entry.fileSizeMB,
     };
   }
 

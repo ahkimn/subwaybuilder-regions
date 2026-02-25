@@ -7,10 +7,7 @@ import type { RegionsSettings } from '@/core/storage/types';
 import type { ModdingAPI, SystemPerformanceInfo } from '@/types';
 
 import type {
-  InputFieldProperties,
-  LabelProperties,
   SortState,
-  SwitchProperties,
 } from '../types';
 import type { FetchParameters } from './fetch-helpers';
 
@@ -29,15 +26,14 @@ export type SettingsDatasetRow = {
   datasetId: string;
   displayName: string;
   origin: DatasetOrigin;
-  fileSizeMB: number | null;
+  fileSizeMB?: number;
   issue: SettingsDatasetIssue;
 };
 
 export type SettingsFetchSectionParams = {
-  params: FetchParameters;
+  fetchParams: FetchParameters;
   errors: string[];
   command: string;
-  isCopying: boolean;
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
   cityOptions: Array<{ code: string; name: string }>;
@@ -85,7 +81,4 @@ export type SettingsOverlayParams = {
   onClearMissing: () => void;
   isClearingMissing: boolean;
   fetch: SettingsFetchSectionParams;
-  Input: React.ComponentType<InputFieldProperties>;
-  Switch: React.ComponentType<SwitchProperties>;
-  Label: React.ComponentType<LabelProperties>;
 };
