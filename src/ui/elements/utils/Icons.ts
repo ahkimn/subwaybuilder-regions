@@ -3,14 +3,14 @@ import type { createElement, ReactNode } from 'react';
 type SVGNode =
   | { tag: 'path'; d: string; strokeWidth?: string; strokeLinecap?: string }
   | {
-    tag: 'rect';
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rx?: number;
-    ry?: number;
-  }
+      tag: 'rect';
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rx?: number;
+      ry?: number;
+    }
   | { tag: 'circle'; cx: number; cy: number; r: number };
 
 export interface IconDefinition {
@@ -241,6 +241,9 @@ export const CircleCheck: IconDefinition = {
 export const Copy: IconDefinition = {
   nodes: [
     { tag: 'rect', x: 8, y: 8, width: 14, height: 14, rx: 2, ry: 2 },
-    { tag: 'path', d: 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' },
+    {
+      tag: 'path',
+      d: 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2',
+    },
   ],
 };

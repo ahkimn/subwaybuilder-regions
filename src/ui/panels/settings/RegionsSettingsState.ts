@@ -33,56 +33,55 @@ export type RegionsSettingsState = {
 };
 
 /**
- * 
+ *
  */
 export type RegionsSettingsAction =
-  { type: 'open_overlay'; } |
-  { type: 'close_overlay'; } |
-  { type: 'set_search_term'; searchTerm: string; } |
-  { type: 'set_sort_state'; sortState: SortState; } |
-  {
-    type: 'settings_loaded';
-    settings: ReturnType<RegionsStorage['getSettings']>;
-  } |
-  {
-    type: 'settings_updated';
-    settings: ReturnType<RegionsStorage['getSettings']>;
-  } |
-  { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[]; } |
-  { type: 'registry_revision_bumped'; } |
-  { type: 'update_settings_started'; } |
-  { type: 'update_settings_finished'; } |
-  { type: 'refresh_registry_started'; } |
-  { type: 'refresh_registry_finished'; } |
-  { type: 'clear_missing_started'; } |
-  { type: 'clear_missing_finished'; } |
-  { type: 'set_fetch_city_code'; cityCode: string; } |
-  {
-    type: 'set_fetch_country_code';
-    countryCode: FetchCountryCode;
-    allowedDatasetIds: string[];
-    isAutoResolved?: boolean;
-  } |
-  { type: 'toggle_fetch_dataset'; datasetId: string; } |
-  {
-    type: 'set_fetch_bbox_fields';
-    west: string;
-    south: string;
-    east: string;
-    north: string;
-  } |
-  { type: 'set_fetch_command'; command: string; } |
-  { type: 'set_fetch_errors'; errors: string[]; } |
-  { type: 'copy_fetch_command_started'; } |
-  { type: 'copy_fetch_command_finished'; } |
-  { type: 'open_mods_folder_started'; } |
-  { type: 'open_mods_folder_finished'; } |
-  {
-    type: 'set_system_performance_info';
-    systemPerformanceInfo: SystemPerformanceInfo | null;
-  } |
-  { type: 'operation_failed'; message: string; };
-
+  | { type: 'open_overlay' }
+  | { type: 'close_overlay' }
+  | { type: 'set_search_term'; searchTerm: string }
+  | { type: 'set_sort_state'; sortState: SortState }
+  | {
+      type: 'settings_loaded';
+      settings: ReturnType<RegionsStorage['getSettings']>;
+    }
+  | {
+      type: 'settings_updated';
+      settings: ReturnType<RegionsStorage['getSettings']>;
+    }
+  | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
+  | { type: 'registry_revision_bumped' }
+  | { type: 'update_settings_started' }
+  | { type: 'update_settings_finished' }
+  | { type: 'refresh_registry_started' }
+  | { type: 'refresh_registry_finished' }
+  | { type: 'clear_missing_started' }
+  | { type: 'clear_missing_finished' }
+  | { type: 'set_fetch_city_code'; cityCode: string }
+  | {
+      type: 'set_fetch_country_code';
+      countryCode: FetchCountryCode;
+      allowedDatasetIds: string[];
+      isAutoResolved?: boolean;
+    }
+  | { type: 'toggle_fetch_dataset'; datasetId: string }
+  | {
+      type: 'set_fetch_bbox_fields';
+      west: string;
+      south: string;
+      east: string;
+      north: string;
+    }
+  | { type: 'set_fetch_command'; command: string }
+  | { type: 'set_fetch_errors'; errors: string[] }
+  | { type: 'copy_fetch_command_started' }
+  | { type: 'copy_fetch_command_finished' }
+  | { type: 'open_mods_folder_started' }
+  | { type: 'open_mods_folder_finished' }
+  | {
+      type: 'set_system_performance_info';
+      systemPerformanceInfo: SystemPerformanceInfo | null;
+    }
+  | { type: 'operation_failed'; message: string };
 
 export function regionsSettingsReducer(
   state: RegionsSettingsState,
@@ -181,8 +180,8 @@ export function regionsSettingsReducer(
       const exists = state.fetch.params.datasetIds.includes(action.datasetId);
       const nextDatasetIds = exists
         ? state.fetch.params.datasetIds.filter(
-          (datasetId) => datasetId !== action.datasetId,
-        )
+            (datasetId) => datasetId !== action.datasetId,
+          )
         : [...state.fetch.params.datasetIds, action.datasetId];
 
       return {
@@ -292,7 +291,8 @@ export const INITIAL_FETCH_STATE: FetchState = {
 };
 
 export function createInitialSettingsState(
-  storage: RegionsStorage): RegionsSettingsState {
+  storage: RegionsStorage,
+): RegionsSettingsState {
   return {
     isOpen: false,
     settings: storage.getSettings(),
@@ -323,4 +323,3 @@ function isStringArrayEqual(a: string[], b: string[]): boolean {
   }
   return a.every((value, index) => value === b[index]);
 }
-

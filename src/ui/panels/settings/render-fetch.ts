@@ -36,7 +36,8 @@ export function renderFetchDatasetsSection(
   const areDatasetsInvalid = params.params.datasetIds.length === 0;
   const isCommandInvalid = !canGenerateCommand;
   const commandErrorText =
-    params.errors[0] ?? 'Command cannot be generated. Please complete required fields.';
+    params.errors[0] ??
+    'Command cannot be generated. Please complete required fields.';
   const sortedCityOptions = [...params.cityOptions].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -57,7 +58,10 @@ export function renderFetchDatasetsSection(
         h('div', { className: 'flex flex-col gap-1.5' }, [
           h(
             'label',
-            { className: 'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5' },
+            {
+              className:
+                'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5',
+            },
             [
               'City',
               isCityInvalid
@@ -76,7 +80,10 @@ export function renderFetchDatasetsSection(
         h('div', { className: 'flex flex-col gap-1.5' }, [
           h(
             'label',
-            { className: 'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5' },
+            {
+              className:
+                'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5',
+            },
             [
               'Resolved Country',
               isCountryInvalid
@@ -91,7 +98,9 @@ export function renderFetchDatasetsSection(
             placeholder: 'N/A',
             disabled: params.isCountryAutoResolved,
             onValueChange: (value) => {
-              params.onCountryCodeChange(value as FetchParameters['countryCode']);
+              params.onCountryCodeChange(
+                value as FetchParameters['countryCode'],
+              );
             },
           }),
         ]),
@@ -99,58 +108,67 @@ export function renderFetchDatasetsSection(
       h('div', { className: 'flex flex-col gap-2' }, [
         h(
           'span',
-          { className: 'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5' },
+          {
+            className:
+              'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5',
+          },
           [
             'Datasets',
             areDatasetsInvalid
               ? renderInlineWarningLabel(
-                h,
-                'At least one must be selected',
-                WARNING_HEX,
-              )
+                  h,
+                  'At least one must be selected',
+                  WARNING_HEX,
+                )
               : null,
           ],
         ),
         params.datasets.length === 0
           ? h(
-            'p',
-            { className: 'text-xs text-muted-foreground' },
-            'No fetchable datasets available for the selected city/country.',
-          )
+              'p',
+              { className: 'text-xs text-muted-foreground' },
+              'No fetchable datasets available for the selected city/country.',
+            )
           : h(
-            'div',
-            { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5' },
-            params.datasets.map((dataset) =>
-              h(
-                'label',
-                {
-                  key: dataset.datasetId,
-                  className:
-                    'flex items-center gap-2 rounded-sm border border-border/35 p-2 bg-background/60',
-                },
-                [
-                  h('input', {
-                    type: 'checkbox',
-                    className: 'h-3.5 w-3.5 shrink-0',
-                    checked: selectedDatasetIds.has(dataset.datasetId),
-                    onChange: () => params.onToggleDataset(dataset.datasetId),
-                  }),
-                  h('div', { className: 'min-w-0 flex-1' }, [
-                    h(
-                      'span',
-                      { className: 'text-xs font-medium truncate' },
-                      dataset.displayName,
-                    ),
-                    h(
-                      'p',
-                      { className: 'text-[11px] text-muted-foreground truncate' },
-                      dataset.source,
-                    ),
-                  ]),
-                ],
+              'div',
+              {
+                className:
+                  'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
+              },
+              params.datasets.map((dataset) =>
+                h(
+                  'label',
+                  {
+                    key: dataset.datasetId,
+                    className:
+                      'flex items-center gap-2 rounded-sm border border-border/35 p-2 bg-background/60',
+                  },
+                  [
+                    h('input', {
+                      type: 'checkbox',
+                      className: 'h-3.5 w-3.5 shrink-0',
+                      checked: selectedDatasetIds.has(dataset.datasetId),
+                      onChange: () => params.onToggleDataset(dataset.datasetId),
+                    }),
+                    h('div', { className: 'min-w-0 flex-1' }, [
+                      h(
+                        'span',
+                        { className: 'text-xs font-medium truncate' },
+                        dataset.displayName,
+                      ),
+                      h(
+                        'p',
+                        {
+                          className:
+                            'text-[11px] text-muted-foreground truncate',
+                        },
+                        dataset.source,
+                      ),
+                    ]),
+                  ],
+                ),
               ),
             ),
-          ),
       ]),
       h('div', { className: 'flex flex-col gap-1.5' }, [
         h(
@@ -168,56 +186,50 @@ export function renderFetchDatasetsSection(
       h('div', { className: 'flex flex-col gap-1.5' }, [
         h(
           'label',
-          { className: 'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5' },
+          {
+            className:
+              'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5',
+          },
           [
             'Generated Command',
             isCommandInvalid
-              ? renderInlineStatusLabel(
-                h,
-                'Required',
-                CRITICAL_HEX,
-                OctagonX,
-              )
-              : renderInlineStatusLabel(
-                h,
-                'Ready',
-                SUCCESS_HEX,
-                CircleCheck,
-              ),
+              ? renderInlineStatusLabel(h, 'Required', CRITICAL_HEX, OctagonX)
+              : renderInlineStatusLabel(h, 'Ready', SUCCESS_HEX, CircleCheck),
           ],
         ),
         isCommandInvalid
           ? h(
-            'div',
-            {
-              className:
-                'min-h-[80px] w-full rounded-sm border border-red-500/40 bg-background/70 px-2 py-1 text-xs font-mono',
-            },
-            h(
               'div',
               {
-                className: 'inline-flex items-center gap-1.5 text-xs leading-none',
-                style: { color: CRITICAL_HEX },
+                className:
+                  'min-h-[80px] w-full rounded-sm border border-red-500/40 bg-background/70 px-2 py-1 text-xs font-mono',
               },
-              [
-                createReactIconElement(h, OctagonX, {
-                  size: 14,
-                  className: 'h-3.5 w-3.5 shrink-0',
-                }),
-                h(
-                  'span',
-                  null,
-                  `Command cannot be generated. ${commandErrorText}`,
-                ),
-              ],
-            ),
-          )
+              h(
+                'div',
+                {
+                  className:
+                    'inline-flex items-center gap-1.5 text-xs leading-none',
+                  style: { color: CRITICAL_HEX },
+                },
+                [
+                  createReactIconElement(h, OctagonX, {
+                    size: 14,
+                    className: 'h-3.5 w-3.5 shrink-0',
+                  }),
+                  h(
+                    'span',
+                    null,
+                    `Command cannot be generated. ${commandErrorText}`,
+                  ),
+                ],
+              ),
+            )
           : h('textarea', {
-            className:
-              'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/70 px-2 py-1 text-xs font-mono text-foreground',
-            readOnly: true,
-            value: params.command,
-          }),
+              className:
+                'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/70 px-2 py-1 text-xs font-mono text-foreground',
+              readOnly: true,
+              value: params.command,
+            }),
       ]),
       h('div', { className: 'flex flex-wrap items-center gap-2' }, [
         Button(h, {

@@ -26,7 +26,10 @@ function parseDatasets(value: string): string[] {
     .filter((entry) => entry.length > 0);
 }
 
-function readOptionValue(argvInput: string[], optionName: string): string | undefined {
+function readOptionValue(
+  argvInput: string[],
+  optionName: string,
+): string | undefined {
   for (let index = 0; index < argvInput.length; index += 1) {
     const current = argvInput[index];
     if (current === `--${optionName}`) {
@@ -65,12 +68,16 @@ export function parseFetchArgs(
   ).toUpperCase() as CountryCode;
   const datasets = parseDatasets(requireString(argv.datasets, 'datasets'));
   const bboxArgs = {
-    west: parseNumber(argv.west) ?? parseNumber(readOptionValue(argvInput, 'west')),
+    west:
+      parseNumber(argv.west) ?? parseNumber(readOptionValue(argvInput, 'west')),
     south:
-      parseNumber(argv.south) ?? parseNumber(readOptionValue(argvInput, 'south')),
-    east: parseNumber(argv.east) ?? parseNumber(readOptionValue(argvInput, 'east')),
+      parseNumber(argv.south) ??
+      parseNumber(readOptionValue(argvInput, 'south')),
+    east:
+      parseNumber(argv.east) ?? parseNumber(readOptionValue(argvInput, 'east')),
     north:
-      parseNumber(argv.north) ?? parseNumber(readOptionValue(argvInput, 'north')),
+      parseNumber(argv.north) ??
+      parseNumber(readOptionValue(argvInput, 'north')),
   };
   if (!hasExplicitBBox(bboxArgs)) {
     console.error(

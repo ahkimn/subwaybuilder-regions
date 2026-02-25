@@ -35,23 +35,21 @@ export function SelectMenu({
   buttonClassName = DEFAULT_BUTTON_CLASS,
   menuClassName = DEFAULT_MENU_CLASS,
 }: SelectMenuParams): ReactNode {
-  const selectedOption = options.find((option) => option.value === value) ?? null;
+  const selectedOption =
+    options.find((option) => option.value === value) ?? null;
   const displayLabel = selectedOption?.label ?? placeholder;
 
   if (disabled) {
-    return h(
-      'div',
-      { className: `${buttonClassName} opacity-70` },
-      [h('span', { className: 'truncate text-left' }, displayLabel)],
-    );
+    return h('div', { className: `${buttonClassName} opacity-70` }, [
+      h('span', { className: 'truncate text-left' }, displayLabel),
+    ]);
   }
 
   return h('details', { className: 'relative w-full' }, [
     h(
       'summary',
       {
-        className:
-          `${buttonClassName} cursor-pointer list-none [&::-webkit-details-marker]:hidden`,
+        className: `${buttonClassName} cursor-pointer list-none [&::-webkit-details-marker]:hidden`,
       },
       [
         h('span', { className: 'truncate text-left' }, displayLabel),
@@ -67,9 +65,9 @@ export function SelectMenu({
           {
             key: option.value,
             type: 'button',
-            className:
-              `w-full px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent ${option.value === value ? 'bg-accent/60' : 'bg-transparent'
-              }`,
+            className: `w-full px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent ${
+              option.value === value ? 'bg-accent/60' : 'bg-transparent'
+            }`,
             onClick: (event: Event) => {
               const target = event.currentTarget as HTMLElement;
               const details = target.closest('details');

@@ -6,10 +6,7 @@ import type { BBox } from 'geojson';
 import { z } from 'zod';
 
 import type { ModdingAPI } from '../../types';
-import type {
-  ElectronAPI,
-  SystemPerformanceInfo,
-} from '../../types/electron';
+import type { ElectronAPI, SystemPerformanceInfo } from '../../types/electron';
 import type { DemandDataFile } from '../../types/schemas';
 import {
   REGIONS_REGISTRY_STORAGE_KEY,
@@ -43,7 +40,7 @@ export class RegionsStorage {
     // TODO (Feature): Migrate all of these reads from the Electron API to the official game API / mod-specific storage when it is available
     private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
     private readonly electronApi: ElectronAPI = resolveElectronApi(),
-  ) { }
+  ) {}
 
   async initialize(): Promise<RegionsSettingsValue> {
     if (this.initialized) {
@@ -299,7 +296,9 @@ export class RegionsStorage {
 
     // Overall system performance is not mod-critical as we can obtain the user's platform from the user agent as a fallback
     if (!this.electronApi.getSystemPerformanceInfo) {
-      console.error('[Regions] electron.getSystemPerformanceInfo API is unavailable.');
+      console.error(
+        '[Regions] electron.getSystemPerformanceInfo API is unavailable.',
+      );
       return this.systemPerformanceInfo;
     }
 

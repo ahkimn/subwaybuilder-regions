@@ -27,7 +27,9 @@ export type FetchCommandContext = {
   outPath?: string;
 };
 
-export function resolveCityCountryCode(city: City | undefined): FetchCountryCode {
+export function resolveCityCountryCode(
+  city: City | undefined,
+): FetchCountryCode {
   if (!city) {
     return '';
   }
@@ -36,7 +38,11 @@ export function resolveCityCountryCode(city: City | undefined): FetchCountryCode
     code: city.code,
     country: city.country,
   });
-  if (resolvedCountry === 'US' || resolvedCountry === 'GB' || resolvedCountry === 'CA') {
+  if (
+    resolvedCountry === 'US' ||
+    resolvedCountry === 'GB' ||
+    resolvedCountry === 'CA'
+  ) {
     return resolvedCountry;
   }
 
@@ -52,7 +58,9 @@ export function getFetchableDatasetsForCountry(
 
   return resolveCountryDatasetOrder(countryCode)
     .map((datasetId) => DATASET_METADATA_CATALOG[datasetId])
-    .filter((metadata): metadata is DatasetTemplateMetadata => Boolean(metadata))
+    .filter((metadata): metadata is DatasetTemplateMetadata =>
+      Boolean(metadata),
+    )
     .filter((metadata) => metadata.existsOnlineSource);
 }
 

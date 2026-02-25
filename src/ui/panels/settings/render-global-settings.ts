@@ -19,35 +19,39 @@ export function renderGlobalSettingsSection(
     h,
     'Global Settings',
     [
-      h('div', { className: 'flex items-start justify-between gap-3 text-sm' }, [
-        // TODO: Let's make the Label + description + switch into a reusable component since we'll introduce additional toggles in the near future
-        // Toggle for showing unpopulated regions
-        h('div', { className: 'flex flex-col gap-0.5' }, [
-          h(
-            Label,
-            {
-              htmlFor: toggleId,
-              className: 'font-medium text-foreground',
+      h(
+        'div',
+        { className: 'flex items-start justify-between gap-3 text-sm' },
+        [
+          // TODO: Let's make the Label + description + switch into a reusable component since we'll introduce additional toggles in the near future
+          // Toggle for showing unpopulated regions
+          h('div', { className: 'flex flex-col gap-0.5' }, [
+            h(
+              Label,
+              {
+                htmlFor: toggleId,
+                className: 'font-medium text-foreground',
+              },
+              'Show unpopulated regions',
+            ),
+            h(
+              'span',
+              { className: 'text-xs text-muted-foreground' },
+              'Include regions without demand in map labels and table data.',
+            ),
+          ]),
+          h(Switch, {
+            id: toggleId,
+            checked: settings.showUnpopulatedRegions,
+            disabled: isUpdating,
+            onCheckedChange: onToggleShowUnpopulatedRegions,
+            onChange: (event: Event) => {
+              const target = event.target as HTMLInputElement;
+              onToggleShowUnpopulatedRegions(Boolean(target.checked));
             },
-            'Show unpopulated regions',
-          ),
-          h(
-            'span',
-            { className: 'text-xs text-muted-foreground' },
-            'Include regions without demand in map labels and table data.',
-          ),
-        ]),
-        h(Switch, {
-          id: toggleId,
-          checked: settings.showUnpopulatedRegions,
-          disabled: isUpdating,
-          onCheckedChange: onToggleShowUnpopulatedRegions,
-          onChange: (event: Event) => {
-            const target = event.target as HTMLInputElement;
-            onToggleShowUnpopulatedRegions(Boolean(target.checked));
-          },
-        }),
-      ]),
+          }),
+        ],
+      ),
     ],
     'flex flex-col gap-3',
   );

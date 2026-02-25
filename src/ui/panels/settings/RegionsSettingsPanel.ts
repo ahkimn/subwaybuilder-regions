@@ -21,7 +21,10 @@ import {
   getFetchCountryOptions,
   resolveCityCountryCode,
 } from './fetch-helpers';
-import { createInitialSettingsState, regionsSettingsReducer } from './RegionsSettingsState';
+import {
+  createInitialSettingsState,
+  regionsSettingsReducer,
+} from './RegionsSettingsState';
 import {
   filterSettingsRows,
   renderSettingsEntry,
@@ -130,7 +133,7 @@ export function RegionsSettingsPanel({
     };
 
     /**
-     * Initiate registry refresh 
+     * Initiate registry refresh
      */
     const refreshRegistry = () => {
       dispatch({ type: 'refresh_registry_started' });
@@ -268,7 +271,10 @@ export function RegionsSettingsPanel({
           });
         })
         .catch((error) => {
-          console.warn('[Regions] Failed to build demand bbox for fetch.', error);
+          console.warn(
+            '[Regions] Failed to build demand bbox for fetch.',
+            error,
+          );
           if (cancelled) {
             return;
           }
@@ -355,9 +361,13 @@ export function RegionsSettingsPanel({
       }
       dispatch({ type: 'copy_fetch_command_started' });
       // Copy to clipboard
-      void window.navigator.clipboard.writeText(state.fetch.command)
+      void window.navigator.clipboard
+        .writeText(state.fetch.command)
         .then(() => {
-          api.ui.showNotification('[Regions] Script command copied!', 'success');
+          api.ui.showNotification(
+            '[Regions] Script command copied!',
+            'success',
+          );
         })
         .catch((error) => {
           console.error('[Regions] Failed to copy fetch command.', error);
@@ -392,52 +402,54 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-          settings: state.settings,
-          isUpdating: state.pending.updating,
-          searchTerm: state.searchTerm,
-          sortState: state.sortState,
-          rows: sortedRows,
-          onClose: () => dispatch({ type: 'close_overlay' }),
-          onSearchTermChange: (searchTerm: string) =>
-            dispatch({ type: 'set_search_term', searchTerm }),
-          onSortChange: (columnIndex: number) => {
-            const nextSortState = getNextSortState<SettingsDatasetRow>(
-              state.sortState,
-              columnIndex,
-              resolveRegistrySortConfig,
-            );
-            dispatch({ type: 'set_sort_state', sortState: nextSortState });
-          },
-          onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-            updateSettings({ showUnpopulatedRegions: nextValue });
-          },
-          onRefreshRegistry: refreshRegistry,
-          isRefreshingRegistry: state.pending.refreshingRegistry,
-          onClearMissing: clearMissingEntries,
-          isClearingMissing: state.pending.clearingMissing,
-          fetch: {
-            params: state.fetch.params,
-            errors: state.fetch.errors,
-            command: state.fetch.command,
-            isCopying: state.fetch.isCopying,
-            isOpeningModsFolder: state.fetch.isOpeningModsFolder,
-            isCountryAutoResolved: state.fetch.isCountryAutoResolved,
-            cityOptions: Array.from(knownCitiesByCode.values()).map((city) => ({
-              code: city.code,
-              name: city.name,
-            })),
-            countryOptions,
-            datasets: fetchableDatasets,
-            relativeModPath,
-            systemPerformanceInfo: state.systemPerformanceInfo,
-            onCityCodeChange: onFetchCityCodeChange,
-            onCountryCodeChange: onFetchCountryCodeChange,
-            onToggleDataset: (datasetId: string) =>
-              dispatch({ type: 'toggle_fetch_dataset', datasetId }),
-            onCopyCommand: onCopyFetchCommand,
-            onOpenModsFolder,
-          },
-        })
+            settings: state.settings,
+            isUpdating: state.pending.updating,
+            searchTerm: state.searchTerm,
+            sortState: state.sortState,
+            rows: sortedRows,
+            onClose: () => dispatch({ type: 'close_overlay' }),
+            onSearchTermChange: (searchTerm: string) =>
+              dispatch({ type: 'set_search_term', searchTerm }),
+            onSortChange: (columnIndex: number) => {
+              const nextSortState = getNextSortState<SettingsDatasetRow>(
+                state.sortState,
+                columnIndex,
+                resolveRegistrySortConfig,
+              );
+              dispatch({ type: 'set_sort_state', sortState: nextSortState });
+            },
+            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+              updateSettings({ showUnpopulatedRegions: nextValue });
+            },
+            onRefreshRegistry: refreshRegistry,
+            isRefreshingRegistry: state.pending.refreshingRegistry,
+            onClearMissing: clearMissingEntries,
+            isClearingMissing: state.pending.clearingMissing,
+            fetch: {
+              params: state.fetch.params,
+              errors: state.fetch.errors,
+              command: state.fetch.command,
+              isCopying: state.fetch.isCopying,
+              isOpeningModsFolder: state.fetch.isOpeningModsFolder,
+              isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+              cityOptions: Array.from(knownCitiesByCode.values()).map(
+                (city) => ({
+                  code: city.code,
+                  name: city.name,
+                }),
+              ),
+              countryOptions,
+              datasets: fetchableDatasets,
+              relativeModPath,
+              systemPerformanceInfo: state.systemPerformanceInfo,
+              onCityCodeChange: onFetchCityCodeChange,
+              onCountryCodeChange: onFetchCountryCodeChange,
+              onToggleDataset: (datasetId: string) =>
+                dispatch({ type: 'toggle_fetch_dataset', datasetId }),
+              onCopyCommand: onCopyFetchCommand,
+              onOpenModsFolder,
+            },
+          })
         : null,
     ]);
   };
@@ -476,9 +488,7 @@ function buildSettingsDatasetRows(
       displayName: dataset.displayName,
       origin: origin,
       fileSizeMB:
-        origin === 'served'
-          ? null
-          : (matchingOriginEntry?.fileSizeMB ?? null),
+        origin === 'served' ? null : (matchingOriginEntry?.fileSizeMB ?? null),
       issue: !knownCityCodes.has(dataset.cityCode)
         ? 'missing_city'
         : matchingOriginEntry

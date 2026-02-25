@@ -14,7 +14,6 @@ import type {
 } from '../types';
 import type { FetchParameters } from './fetch-helpers';
 
-
 export type SettingsMenuComponentParams = {
   api: ModdingAPI;
   storage: RegionsStorage;
@@ -90,4 +89,3 @@ export type SettingsOverlayParams = {
   Switch: React.ComponentType<SwitchProperties>;
   Label: React.ComponentType<LabelProperties>;
 };
-

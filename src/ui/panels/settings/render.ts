@@ -3,10 +3,7 @@ import type { createElement, useState } from 'react';
 
 import { Button } from '../../elements/Button';
 import { ReactDivider } from '../../elements/Divider';
-import {
-  Arrow,
-  MapPinnedIcon,
-} from '../../elements/utils/Icons';
+import { Arrow, MapPinnedIcon } from '../../elements/utils/Icons';
 import type {
   InputFieldProperties,
   LabelProperties,

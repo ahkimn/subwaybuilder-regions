@@ -10,6 +10,5 @@ export enum DatasetStatus {
   Unloaded = 'unloaded',
   Loading = 'loading',
   Loaded = 'loaded',
-  Error = 'error'
+  Error = 'error',
 }
-

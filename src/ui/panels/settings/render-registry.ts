@@ -238,7 +238,8 @@ export function renderDatasetRegistrySection(
       h(
         'div',
         {
-          className: 'overflow-auto max-h-[40vh] rounded border border-border/40',
+          className:
+            'overflow-auto max-h-[40vh] rounded border border-border/40',
         },
         h(ReactDataTable, {
           h,
@@ -369,13 +370,13 @@ function renderDatasetStatusCell(
   const issueIcon =
     issue === 'missing_city'
       ? createReactIconElement(h, OctagonX, {
-        size: 14,
-        className: 'h-3.5 w-3.5 shrink-0',
-      })
+          size: 14,
+          className: 'h-3.5 w-3.5 shrink-0',
+        })
       : createReactIconElement(h, TriangleWarning, {
-        size: 14,
-        className: 'h-3.5 w-3.5 shrink-0',
-      });
+          size: 14,
+          className: 'h-3.5 w-3.5 shrink-0',
+        });
   const issueColor = issue === 'missing_city' ? CRITICAL_HEX : WARNING_HEX;
   const issueLabel = issue === 'missing_city' ? 'City Missing' : 'File Missing';
 

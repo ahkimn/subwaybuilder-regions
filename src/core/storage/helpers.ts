@@ -1,4 +1,4 @@
-import type { SystemPerformanceInfo } from "../../types";
+import type { SystemPerformanceInfo } from '../../types';
 
 export type LocalDatasetProps = {
   dataPath: string;
@@ -143,7 +143,8 @@ function bytesToMB(bytes: number): number {
 }
 
 export function resolveRuntimePlatform(
-  systemPerformanceInfo: SystemPerformanceInfo | null): string {
+  systemPerformanceInfo: SystemPerformanceInfo | null,
+): string {
   if (systemPerformanceInfo?.platform) {
     return systemPerformanceInfo.platform;
   }
