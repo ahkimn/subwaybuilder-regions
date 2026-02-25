@@ -90,14 +90,13 @@ export function renderSettingsOverlay(
           ariaLabel: 'Back',
           onClick: onClose,
           icon: Arrow,
+          size: 'sm',
           iconOptions: {
             size: 16,
             className: 'h-4 w-4 shrink-0',
             transform: 'rotate(180deg)',
           },
           wrapperClassName: 'w-fit',
-          buttonClassName:
-            'inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded-sm bg-background hover:bg-accent',
         }),
         h('div', { className: 'flex flex-col gap-1' }, [
           h('h1', { className: 'text-xl font-semibold' }, 'Regions Settings'),
