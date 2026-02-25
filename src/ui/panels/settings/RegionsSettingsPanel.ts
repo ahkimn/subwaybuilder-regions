@@ -6,10 +6,10 @@ import {
 import type React from 'react';
 
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
+import { resolveRuntimePlatform } from '@/core/storage/helpers';
 import type { City } from '@/types/cities';
 import { getGameReact } from '@/ui/react/get-game-react';
 
-import { resolveRuntimePlatform } from '../../../core/storage/helpers';
 import { getNextSortState } from '../shared/sort';
 import {
   type InputFieldProperties,
