@@ -11,17 +11,10 @@ import type {
 } from '../../elements/DataTable';
 import { ReactDataTable } from '../../elements/DataTable';
 import { buildSortableHeaderRow } from '../../elements/helpers/data-table-header';
+import { InlineStatus } from '../../elements/InlineStatus';
 import { PanelSection } from '../../elements/PanelSection';
 import { ReactSearchInput } from '../../elements/SearchInput';
-import {
-  CircleCheck,
-  createReactIconElement,
-  OctagonX,
-  RefreshIcon,
-  Trash2,
-  TriangleWarning,
-} from '../../elements/utils/Icons';
-import { getPrimaryChartColorByName } from '../../types/DisplayColor';
+import { RefreshIcon, Trash2 } from '../../elements/utils/Icons';
 import type { InputFieldProperties, SortConfig, TableAlign } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
@@ -43,10 +36,6 @@ const REGISTRY_TABLE_COLUMN_LABELS = [
 
 const REGISTRY_COLUMN_COUNT = REGISTRY_TABLE_COLUMN_LABELS.length;
 const FILESIZE_NOT_AVAILABLE_LABEL = 'N/A';
-
-const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
-const CRITICAL_HEX = getPrimaryChartColorByName('Red').hex;
-const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
 
 const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
   {
@@ -351,43 +340,22 @@ function renderDatasetStatusCell(
   issue: SettingsDatasetIssue,
 ): React.ReactNode {
   if (!issue) {
-    return h(
-      'span',
-      {
-        className: 'inline-flex items-center gap-1.5',
-        style: { color: SUCCESS_HEX },
-      },
-      [
-        createReactIconElement(h, CircleCheck, {
-          size: 14,
-          className: 'h-3.5 w-3.5 shrink-0',
-        }),
-        h('span', { className: 'truncate' }, 'Available'),
-      ],
-    );
+    return InlineStatus({
+      h,
+      label: 'Available',
+      status: 'success',
+      className: 'inline-flex items-center gap-1.5',
+      labelClassName: 'truncate',
+    });
   }
 
-  const issueIcon =
-    issue === 'missing_city'
-      ? createReactIconElement(h, OctagonX, {
-          size: 14,
-          className: 'h-3.5 w-3.5 shrink-0',
-        })
-      : createReactIconElement(h, TriangleWarning, {
-          size: 14,
-          className: 'h-3.5 w-3.5 shrink-0',
-        });
-  const issueColor = issue === 'missing_city' ? CRITICAL_HEX : WARNING_HEX;
-  const issueLabel = issue === 'missing_city' ? 'City Missing' : 'File Missing';
-
-  return h(
-    'span',
-    {
-      className: 'inline-flex items-center gap-1.5',
-      style: { color: issueColor },
-    },
-    [issueIcon, h('span', { className: 'truncate' }, issueLabel)],
-  );
+  return InlineStatus({
+    h,
+    label: issue === 'missing_city' ? 'City Missing' : 'File Missing',
+    status: issue === 'missing_city' ? 'error' : 'warning',
+    className: 'inline-flex items-center gap-1.5',
+    labelClassName: 'truncate',
+  });
 }
 
 function resolveStatusRank(issue: SettingsDatasetIssue): number {

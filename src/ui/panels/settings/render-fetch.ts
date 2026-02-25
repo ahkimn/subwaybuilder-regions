@@ -2,16 +2,14 @@ import type React from 'react';
 import { type createElement } from 'react';
 
 import { Button } from '../../elements/Button';
+import { InlineStatus } from '../../elements/InlineStatus';
 import { PanelSection } from '../../elements/PanelSection';
 import { SelectMenu } from '../../elements/SelectMenu';
 import {
-  CircleCheck,
   Copy,
   createReactIconElement,
-  type IconDefinition,
   MapPinnedIcon,
   OctagonX,
-  TriangleWarning,
 } from '../../elements/utils/Icons';
 import { getPrimaryChartColorByName } from '../../types/DisplayColor';
 import type { FetchParameters } from './fetch-helpers';
@@ -21,9 +19,6 @@ import type { SettingsFetchSectionParams } from './types';
 const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
 const CRITICAL_HEX = getPrimaryChartColorByName('Red').hex;
 const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
-const INLINE_STATUS_TEXT_CLASS =
-  'ml-2 inline-flex items-center gap-1 text-xs font-normal leading-none align-middle';
-const INLINE_STATUS_ICON_CLASS = 'h-3.5 w-3.5 shrink-0';
 const COMMAND_BOX_BASE_CLASS =
   'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2 text-xs font-mono text-foreground';
 
@@ -78,7 +73,12 @@ export function renderFetchDatasetsSection(
             [
               'City',
               isCityInvalid
-                ? renderInlineWarningLabel(h, 'Required', WARNING_HEX)
+                ? InlineStatus({
+                    h,
+                    label: 'Required',
+                    status: 'warning',
+                    colorHex: WARNING_HEX,
+                  })
                 : null,
             ],
           ),
@@ -100,7 +100,12 @@ export function renderFetchDatasetsSection(
             [
               'Country Code',
               isCountryInvalid
-                ? renderInlineWarningLabel(h, 'Required', WARNING_HEX)
+                ? InlineStatus({
+                    h,
+                    label: 'Required',
+                    status: 'warning',
+                    colorHex: WARNING_HEX,
+                  })
                 : null,
             ],
           ),
@@ -130,11 +135,12 @@ export function renderFetchDatasetsSection(
           [
             'Datasets',
             areDatasetsInvalid
-              ? renderInlineWarningLabel(
+              ? InlineStatus({
                   h,
-                  'At least one must be selected',
-                  WARNING_HEX,
-                )
+                  label: 'At least one must be selected',
+                  status: 'warning',
+                  colorHex: WARNING_HEX,
+                })
               : null,
           ],
         ),
@@ -208,7 +214,12 @@ export function renderFetchDatasetsSection(
           [
             'Generated Command',
             !isCommandInvalid
-              ? renderInlineStatusLabel(h, 'Ready', SUCCESS_HEX, CircleCheck)
+              ? InlineStatus({
+                  h,
+                  label: 'Ready',
+                  status: 'success',
+                  colorHex: SUCCESS_HEX,
+                })
               : null,
           ],
         ),
@@ -303,34 +314,4 @@ function renderBBoxValue(
       value || 'N/A',
     ),
   ]);
-}
-
-function renderInlineWarningLabel(
-  h: typeof createElement,
-  label: string,
-  colorHex: string,
-): React.ReactNode {
-  return renderInlineStatusLabel(h, label, colorHex, TriangleWarning);
-}
-
-function renderInlineStatusLabel(
-  h: typeof createElement,
-  label: string,
-  colorHex: string,
-  icon: IconDefinition,
-): React.ReactNode {
-  return h(
-    'span',
-    {
-      className: INLINE_STATUS_TEXT_CLASS,
-      style: { color: colorHex },
-    },
-    [
-      createReactIconElement(h, icon, {
-        size: 14,
-        className: INLINE_STATUS_ICON_CLASS,
-      }),
-      h('span', null, label),
-    ],
-  );
 }

@@ -238,6 +238,14 @@ export const CircleCheck: IconDefinition = {
   ],
 };
 
+export const CircleInfo: IconDefinition = {
+  nodes: [
+    { tag: 'circle', cx: 12, cy: 12, r: 10 },
+    { tag: 'path', d: 'M12 16v-4' },
+    { tag: 'path', d: 'M12 8h.01' },
+  ],
+};
+
 export const Copy: IconDefinition = {
   nodes: [
     { tag: 'rect', x: 8, y: 8, width: 14, height: 14, rx: 2, ry: 2 },
