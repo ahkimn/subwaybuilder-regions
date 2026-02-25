@@ -4,10 +4,7 @@ import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { SystemPerformanceInfo } from '@/types';
 
 import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '../types';
-import type {
-  FetchCountryCode,
-  FetchParameters,
-} from './fetch-helpers';
+import type { FetchCountryCode, FetchParameters } from './fetch-helpers';
 
 export type PendingFlags = {
   updating: boolean;
@@ -196,4 +193,3 @@ export function createInitialSettingsState(
     systemPerformanceInfo: null,
   };
 }
-

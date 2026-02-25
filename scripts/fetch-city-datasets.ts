@@ -12,10 +12,7 @@ const ANSI = {
 } as const;
 
 // Helper to provide color output to terminal
-function colorize(
-  value: string | number,
-  color: keyof typeof ANSI,
-): string {
+function colorize(value: string | number, color: keyof typeof ANSI): string {
   const text = String(value);
   if (!process.stdout.isTTY || process.env.NO_COLOR) {
     return text;
@@ -71,10 +68,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    colorize(
-      '[Fetch] It is now safe to close this terminal window.',
-      'dim',
-    ),
+    colorize('[Fetch] It is now safe to close this terminal window.', 'dim'),
   );
 }
 

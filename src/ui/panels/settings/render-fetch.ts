@@ -1,7 +1,9 @@
 import type React from 'react';
 import { type createElement } from 'react';
 
+import type { DatasetTemplateMetadata } from '../../../../shared/datasets/catalog';
 import { Button } from '../../elements/Button';
+import type { InlineStatusVariant } from '../../elements/InlineStatus';
 import { InlineStatus } from '../../elements/InlineStatus';
 import { PanelSection } from '../../elements/PanelSection';
 import { SelectMenu } from '../../elements/SelectMenu';
@@ -13,12 +15,12 @@ import {
 } from '../../elements/utils/Icons';
 import { getPrimaryChartColorByName } from '../../types/DisplayColor';
 import type { FetchParameters } from './fetch-helpers';
-import { renderSystemPerformanceFooter } from './render-footer';
 import type { SettingsFetchSectionParams } from './types';
 
 const COMMAND_BOX_BASE_CLASS =
   'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2 text-xs font-mono text-foreground';
-const FIELD_HEADER_BASE_CLASS = 'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5'
+const FIELD_HEADER_BASE_CLASS =
+  'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5';
 const ERROR_HEX = getPrimaryChartColorByName('Red').hex;
 
 export function renderFetchDatasetsSection(
@@ -28,7 +30,6 @@ export function renderFetchDatasetsSection(
   const isCityInvalid = !Boolean(params.fetchParams.cityCode);
   const isCountryInvalid = params.fetchParams.countryCode === null;
   const existsSelectedDatset = params.fetchParams.datasetIds.length > 0;
-  const selectedDatasetIds = new Set(params.fetchParams.datasetIds);
   const isValidCommand =
     !isCityInvalid &&
     !isCountryInvalid &&
@@ -36,9 +37,7 @@ export function renderFetchDatasetsSection(
     params.fetchParams.bbox !== null &&
     params.errors.length === 0 &&
     !!params.command;
-  const commandErrorText =
-    params.errors[0] ??
-    'Command cannot be generated. Please complete required fields.';
+
   const sortedCityOptions = [...params.cityOptions].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -56,24 +55,10 @@ export function renderFetchDatasetsSection(
     h,
     'Fetch Datasets',
     [
+      // City / Country selector (single row)
       h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' }, [
         h('div', { className: 'flex flex-col gap-1.5' }, [
-          h(
-            'label',
-            {
-              className: FIELD_HEADER_BASE_CLASS,
-            },
-            [
-              'City',
-              isCityInvalid
-                ? InlineStatus({
-                  h,
-                  label: 'Required',
-                  status: 'warning',
-                })
-                : null,
-            ],
-          ),
+          renderFetchHeader(h, 'City', isCityInvalid, 'Required', 'warning'),
           SelectMenu({
             h,
             value: params.fetchParams.cityCode,
@@ -83,22 +68,12 @@ export function renderFetchDatasetsSection(
           }),
         ]),
         h('div', { className: 'flex flex-col gap-1.5' }, [
-          h(
-            'label',
-            {
-              className: FIELD_HEADER_BASE_CLASS,
-
-            },
-            [
-              'Country Code',
-              isCountryInvalid
-                ? InlineStatus({
-                  h,
-                  label: 'Required',
-                  status: 'warning',
-                })
-                : null,
-            ],
+          renderFetchHeader(
+            h,
+            'Country',
+            isCountryInvalid,
+            'Required',
+            'warning',
           ),
           SelectMenu({
             h,
@@ -116,70 +91,18 @@ export function renderFetchDatasetsSection(
           }),
         ]),
       ]),
-      h('div', { className: 'flex flex-col gap-2' }, [
-        h(
-          'span',
-          {
-            className: FIELD_HEADER_BASE_CLASS,
-          },
-          [
-            'Datasets',
-            !existsSelectedDatset
-              ? InlineStatus({
-                h,
-                label: 'Required',
-                status: 'warning',
-              })
-              : null,
-          ],
+      // Dataset selector
+      h('div', { className: 'flex flex-col gap-1.5' }, [
+        renderFetchHeader(
+          h,
+          'Datasets',
+          !existsSelectedDatset,
+          'Select at least one',
+          'warning',
         ),
-        params.datasets.length === 0
-          ? h(
-            'p',
-            { className: 'text-xs text-muted-foreground' },
-            'No fetchable datasets available for the selected city/country.',
-          )
-          : h(
-            'div',
-            {
-              className:
-                'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
-            },
-            params.datasets.map((dataset) =>
-              h(
-                'label',
-                {
-                  key: dataset.datasetId,
-                  className:
-                    'flex items-center gap-2 rounded-sm border border-border/35 p-1.5 bg-background/60',
-                },
-                [
-                  h('input', {
-                    type: 'checkbox',
-                    className: 'h-3.5 w-3.5 shrink-0',
-                    checked: selectedDatasetIds.has(dataset.datasetId),
-                    onChange: () => params.onToggleDataset(dataset.datasetId),
-                  }),
-                  h('div', { className: 'min-w-0 flex-1' }, [
-                    h(
-                      'span',
-                      { className: 'text-xs font-medium truncate' },
-                      dataset.displayName,
-                    ),
-                    h(
-                      'p',
-                      {
-                        className:
-                          'text-[11px] text-muted-foreground truncate',
-                      },
-                      dataset.source,
-                    ),
-                  ]),
-                ],
-              ),
-            ),
-          ),
+        renderDatasetOptions(h, params),
       ]),
+      // Bounding box display
       h('div', { className: 'flex flex-col gap-1.5' }, [
         h(
           'span',
@@ -193,67 +116,24 @@ export function renderFetchDatasetsSection(
           renderBBoxValue(h, 'North', params.fetchParams.bbox?.north ?? ''),
         ]),
       ]),
+      // Generated command display
       h('div', { className: 'flex flex-col gap-1.5' }, [
-        h(
-          'label',
-          {
-            className: FIELD_HEADER_BASE_CLASS,
-          },
-          [
-            'Generated Command',
-            isValidCommand
-              ? InlineStatus({
-                h,
-                label: 'Ready',
-                status: 'success',
-              })
-              : null,
-          ],
+        renderFetchHeader(
+          h,
+          'Generated Command',
+          isValidCommand,
+          'Ready',
+          'success',
         ),
-        !isValidCommand
-          ? h(
-            'div',
-            {
-              className: `${COMMAND_BOX_BASE_CLASS} border-red-500/40 flex items-center justify-start text-center`,
-            },
-            h(
-              'div',
-              {
-                className: 'inline-flex items-center gap-1.5 text-xs leading-none',
-                style: { color: ERROR_HEX },
-              },
-              [
-                createReactIconElement(h, OctagonX, {
-                  size: 14,
-                  className: 'h-3.5 w-3.5 shrink-0',
-                }),
-                h(
-                  'span',
-                  null,
-                  `Command cannot be generated. ${commandErrorText}`,
-                ),
-              ],
-            ),
-          )
-          : h(
-            'div',
-            { className: COMMAND_BOX_BASE_CLASS },
-            h(
-              'pre',
-              {
-                className: 'm-0 whitespace-pre-wrap break-all select-text',
-              },
-              params.command,
-            ),
-          ),
+        renderGeneratedCommand(h, isValidCommand, params),
       ]),
-      renderFetchButtons(h, params, isValidCommand),
+      // Action buttons
+      renderActionButtons(h, params, isValidCommand),
       h(
         'p',
         { className: 'text-[11px] text-muted-foreground' },
         `Run command from the mods directory after opening it. Command paths target ./${params.relativeModPath}.`,
       ),
-      renderSystemPerformanceFooter(h, params.systemPerformanceInfo),
     ],
     'flex flex-col gap-3',
   );
@@ -277,10 +157,139 @@ function renderBBoxValue(
   ]);
 }
 
-function renderFetchButtons(
+// Helper to style a field header with an optional inline status indicator
+function renderFetchHeader(
+  h: typeof createElement,
+  headerText: string,
+  statusCondition: boolean,
+  statusLabel: string,
+  statusType: InlineStatusVariant,
+): React.ReactNode {
+  return h(
+    'label',
+    {
+      className: FIELD_HEADER_BASE_CLASS,
+    },
+    [
+      headerText,
+      statusCondition
+        ? InlineStatus({
+            h,
+            label: statusLabel,
+            status: statusType,
+          })
+        : null,
+    ],
+  );
+}
+
+function renderDatasetOptions(
   h: typeof createElement,
   params: SettingsFetchSectionParams,
-  canFetch: boolean
+): React.ReactNode {
+  return params.datasets.length === 0
+    ? h(
+        'p',
+        { className: 'text-xs text-muted-foreground' },
+        'No fetchable datasets available for the selected city/country.',
+      )
+    : h(
+        'div',
+        {
+          className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
+        },
+        // Render each available dataset as a checkbox within the grid
+        params.datasets.map((metadata) =>
+          renderDatasetOption(h, metadata, params),
+        ),
+      );
+}
+
+function renderDatasetOption(
+  h: typeof createElement,
+  metadata: DatasetTemplateMetadata,
+  params: SettingsFetchSectionParams,
+): React.ReactNode {
+  const selectedDatasetIds = new Set(params.fetchParams.datasetIds);
+  return h(
+    'label',
+    {
+      key: metadata.datasetId,
+      className:
+        'flex items-center gap-2 rounded-sm border border-border/35 p-1.5 bg-background/60',
+    },
+    [
+      h('input', {
+        type: 'checkbox',
+        className: 'h-3.5 w-3.5 shrink-0',
+        checked: selectedDatasetIds.has(metadata.datasetId),
+        onChange: () => params.onToggleDataset(metadata.datasetId),
+      }),
+      h('div', { className: 'min-w-0 flex-1' }, [
+        h(
+          'span',
+          { className: 'text-xs font-medium truncate' },
+          metadata.displayName,
+        ),
+        h(
+          'p',
+          {
+            className: 'text-[11px] text-muted-foreground truncate',
+          },
+          metadata.source,
+        ),
+      ]),
+    ],
+  );
+}
+
+function renderGeneratedCommand(
+  h: typeof createElement,
+  isValidCommand: boolean,
+  params: SettingsFetchSectionParams,
+): React.ReactNode {
+  const commandErrorText =
+    params.errors[0] ??
+    'Command cannot be generated. Please complete required fields.';
+
+  return isValidCommand
+    ? h(
+        'div',
+        { className: COMMAND_BOX_BASE_CLASS },
+        h(
+          'pre',
+          {
+            className: 'm-0 whitespace-pre-wrap break-all select-text',
+          },
+          params.command,
+        ),
+      )
+    : h(
+        'div',
+        {
+          className: `${COMMAND_BOX_BASE_CLASS} flex items-center justify-start text-center`,
+        },
+        h(
+          'div',
+          {
+            className: 'inline-flex items-center gap-1.5 text-xs leading-none',
+            style: { color: ERROR_HEX },
+          },
+          [
+            createReactIconElement(h, OctagonX, {
+              size: 14,
+              className: 'h-3.5 w-3.5 shrink-0',
+            }),
+            h('span', null, `Command cannot be generated. ${commandErrorText}`),
+          ],
+        ),
+      );
+}
+
+function renderActionButtons(
+  h: typeof createElement,
+  params: SettingsFetchSectionParams,
+  canFetch: boolean,
 ): React.ReactNode {
   return h('div', { className: 'flex flex-wrap items-center gap-2' }, [
     Button(h, {
@@ -307,5 +316,5 @@ function renderFetchButtons(
       wrapperClassName: 'w-fit',
       iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
     }),
-  ])
+  ]);
 }

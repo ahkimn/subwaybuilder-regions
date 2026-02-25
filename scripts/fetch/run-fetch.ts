@@ -80,9 +80,7 @@ export async function runFetch(
   const totalDatasets = request.datasets.length;
 
   await fs.ensureDir(request.out);
-  console.log(
-    `[Fetch] Progress ${renderProgressSummary(0, totalDatasets)}`,
-  );
+  console.log(`[Fetch] Progress ${renderProgressSummary(0, totalDatasets)}`);
 
   for (let index = 0; index < request.datasets.length; index += 1) {
     const datasetId = request.datasets[index];

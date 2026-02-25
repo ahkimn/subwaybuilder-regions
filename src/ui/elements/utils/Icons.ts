@@ -3,14 +3,14 @@ import type { createElement, ReactNode } from 'react';
 type SVGNode =
   | { tag: 'path'; d: string; strokeWidth?: string; strokeLinecap?: string }
   | {
-    tag: 'rect';
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rx?: number;
-    ry?: number;
-  }
+      tag: 'rect';
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rx?: number;
+      ry?: number;
+    }
   | { tag: 'circle'; cx: number; cy: number; r: number };
 
 export interface IconDefinition {
@@ -260,7 +260,7 @@ export const FolderOpen: IconDefinition = {
   nodes: [
     {
       tag: 'path',
-      d: 'm6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2'
+      d: 'm6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2',
     },
-  ]
-}
+  ],
+};

@@ -10,6 +10,7 @@ import type {
   SwitchProperties,
 } from '../types';
 import { renderFetchDatasetsSection } from './render-fetch';
+import { renderSystemPerformanceFooter } from './render-footer';
 import { renderGlobalSettingsSection } from './render-global-settings';
 import { renderDatasetRegistrySection } from './render-registry';
 import type { SettingsOverlayParams } from './types';
@@ -73,7 +74,7 @@ export function renderSettingsOverlay(
     isRefreshingRegistry,
     onClearMissing,
     isClearingMissing,
-    fetch,
+    fetchParams: fetch,
   } = params;
 
   return h(
@@ -106,6 +107,7 @@ export function renderSettingsOverlay(
             'Settings apply immediately and are stored locally.',
           ),
         ]),
+        ReactDivider(h, 1),
         renderGlobalSettingsSection(h, Switch, Label, {
           settings,
           isUpdating,
@@ -125,6 +127,8 @@ export function renderSettingsOverlay(
         }),
         ReactDivider(h, 1),
         renderFetchDatasetsSection(h, fetch),
+        ReactDivider(h, 1),
+        renderSystemPerformanceFooter(h, fetch.systemPerformanceInfo),
       ]),
     ],
   );

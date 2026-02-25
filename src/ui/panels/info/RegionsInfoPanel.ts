@@ -38,9 +38,7 @@ import {
 } from './commuters-state';
 import { renderCommutersView } from './render-commuters';
 import { renderStatisticsView } from './render-statistics';
-import {
-  RegionsInfoPanelView,
-} from './types';
+import { RegionsInfoPanelView } from './types';
 
 export type RegionsInfoPanelProps = {
   regionDataManager: RegionDataManager;

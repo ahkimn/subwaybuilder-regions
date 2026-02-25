@@ -119,7 +119,9 @@ export async function getFeatureCountForLocalDataset(
 }
 
 // Small helper function to resolve a local file's size in MB for user information and logging purposes.
-async function resolveFileSizeMB(response: Response): Promise<number | undefined> {
+async function resolveFileSizeMB(
+  response: Response,
+): Promise<number | undefined> {
   const headerValue = response.headers.get('content-length');
   if (headerValue) {
     const parsed = Number.parseInt(headerValue, 10);

@@ -43,16 +43,14 @@ export function createDefaultCommutersViewState(): CommutersViewState {
   };
 }
 
-function setIfChanged<T, K extends keyof T>(
-  state: T,
-  key: K,
-  value: T[K],
-): T {
+function setIfChanged<T, K extends keyof T>(state: T, key: K, value: T[K]): T {
   if (state[key] === value) return state;
   return { ...state, [key]: value };
 }
 
-function setTableOptionIfChanged<K extends keyof CommutersViewState['tableOptions']>(
+function setTableOptionIfChanged<
+  K extends keyof CommutersViewState['tableOptions'],
+>(
   state: CommutersViewState,
   key: K,
   value: CommutersViewState['tableOptions'][K],
@@ -137,4 +135,3 @@ export function commutersViewReducer(
       return current;
   }
 }
-

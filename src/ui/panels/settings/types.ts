@@ -6,9 +6,7 @@ import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { RegionsSettings } from '@/core/storage/types';
 import type { ModdingAPI, SystemPerformanceInfo } from '@/types';
 
-import type {
-  SortState,
-} from '../types';
+import type { SortState } from '../types';
 import type { FetchParameters } from './fetch-helpers';
 
 export type SettingsMenuComponentParams = {
@@ -80,5 +78,5 @@ export type SettingsOverlayParams = {
   isRefreshingRegistry: boolean;
   onClearMissing: () => void;
   isClearingMissing: boolean;
-  fetch: SettingsFetchSectionParams;
+  fetchParams: SettingsFetchSectionParams;
 };

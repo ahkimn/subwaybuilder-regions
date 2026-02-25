@@ -117,7 +117,6 @@ export function RegionsSettingsPanel({
     );
     const countryOptions = [...CATALOG_STATIC_COUNTRIES];
 
-
     const fetchErrors = buildFetchErrors({
       hasCity: Boolean(state.fetch.params.cityCode),
       hasCountry: state.fetch.params.countryCode !== null,
@@ -128,11 +127,11 @@ export function RegionsSettingsPanel({
       fetchErrors.length > 0
         ? ''
         : formatFetchCommand({
-          platform: runtimePlatform,
-          params: state.fetch.params,
-          relativeModPath,
-          outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
-        });
+            platform: runtimePlatform,
+            params: state.fetch.params,
+            relativeModPath,
+            outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
+          });
 
     type RunAsyncOperationParams = {
       key: PendingFlagKey;
@@ -180,13 +179,16 @@ export function RegionsSettingsPanel({
     const refreshRegistry = () => {
       runAsyncOperation({
         key: 'refreshingRegistry',
-        errorMessage: '[Regions] Failed to refresh registry. Check logs for details.',
+        errorMessage:
+          '[Regions] Failed to refresh registry. Check logs for details.',
         notifyOnError:
           '[Regions] Failed to refresh registry. Check logs for details.',
         task: () =>
           datasetRegistry
             .build(() => {
-              console.warn('[Regions] Failed to load dataset index from server');
+              console.warn(
+                '[Regions] Failed to load dataset index from server',
+              );
             })
             .then(({ servedCount, localCount }) => {
               if (servedCount > 0 || localCount > 0) {
@@ -355,7 +357,10 @@ export function RegionsSettingsPanel({
       void window.navigator.clipboard
         .writeText(fetchCommand)
         .then(() => {
-          api.ui.showNotification('[Regions] Script command copied!', 'success');
+          api.ui.showNotification(
+            '[Regions] Script command copied!',
+            'success',
+          );
         })
         .catch((error) => {
           console.error('[Regions] Failed to copy fetch command.', error);
@@ -372,7 +377,10 @@ export function RegionsSettingsPanel({
         .openModsFolder()
         .catch((error) => {
           console.error('[Regions] Failed to open mods folder.', error);
-          api.ui.showNotification('[Regions] Failed to open mods folder.', 'error');
+          api.ui.showNotification(
+            '[Regions] Failed to open mods folder.',
+            'error',
+          );
         })
         .finally(() => {
           dispatch({ type: 'set_is_opening_mods_folder', value: false });
@@ -383,53 +391,53 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
         ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-          settings: state.settings,
-          isUpdating: state.pending.updating,
-          searchTerm: state.searchTerm,
-          sortState: state.sortState,
-          rows: sortedRows,
-          onClose: () => dispatch({ type: 'close_overlay' }),
-          onSearchTermChange: (searchTerm: string) =>
-            dispatch({ type: 'set_search_term', searchTerm }),
-          onSortChange: (columnIndex: number) => {
-            const nextSortState = getNextSortState<SettingsDatasetRow>(
-              state.sortState,
-              columnIndex,
-              resolveRegistrySortConfig,
-            );
-            dispatch({ type: 'set_sort_state', sortState: nextSortState });
-          },
-          onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-            updateSettings({ showUnpopulatedRegions: nextValue });
-          },
-          onRefreshRegistry: refreshRegistry,
-          isRefreshingRegistry: state.pending.refreshingRegistry,
-          onClearMissing: clearMissingEntries,
-          isClearingMissing: state.pending.clearingMissing,
-          fetch: {
-            fetchParams: state.fetch.params,
-            errors: fetchErrors,
-            command: fetchCommand,
-            isOpeningModsFolder: state.fetch.isOpeningModsFolder,
-            isCountryAutoResolved: state.fetch.isCountryAutoResolved,
-            cityOptions: Array.from(knownCitiesByCode.values()).map(
-              (city) => ({
-                code: city.code,
-                name: city.name,
-              }),
-            ),
-            countryOptions,
-            datasets: fetchableDatasets,
-            relativeModPath,
-            systemPerformanceInfo: state.systemPerformanceInfo,
-            onCityCodeChange: onFetchCityCodeChange,
-            onCountryCodeChange: onFetchCountryCodeChange,
-            onToggleDataset: (datasetId: string) =>
-              dispatch({ type: 'toggle_fetch_dataset', datasetId }),
-            onCopyCommand: onCopyFetchCommand,
-            onOpenModsFolder,
-          },
-        })
+            settings: state.settings,
+            isUpdating: state.pending.updating,
+            searchTerm: state.searchTerm,
+            sortState: state.sortState,
+            rows: sortedRows,
+            onClose: () => dispatch({ type: 'close_overlay' }),
+            onSearchTermChange: (searchTerm: string) =>
+              dispatch({ type: 'set_search_term', searchTerm }),
+            onSortChange: (columnIndex: number) => {
+              const nextSortState = getNextSortState<SettingsDatasetRow>(
+                state.sortState,
+                columnIndex,
+                resolveRegistrySortConfig,
+              );
+              dispatch({ type: 'set_sort_state', sortState: nextSortState });
+            },
+            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+              updateSettings({ showUnpopulatedRegions: nextValue });
+            },
+            onRefreshRegistry: refreshRegistry,
+            isRefreshingRegistry: state.pending.refreshingRegistry,
+            onClearMissing: clearMissingEntries,
+            isClearingMissing: state.pending.clearingMissing,
+            fetchParams: {
+              fetchParams: state.fetch.params,
+              errors: fetchErrors,
+              command: fetchCommand,
+              isOpeningModsFolder: state.fetch.isOpeningModsFolder,
+              isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+              cityOptions: Array.from(knownCitiesByCode.values()).map(
+                (city) => ({
+                  code: city.code,
+                  name: city.name,
+                }),
+              ),
+              countryOptions,
+              datasets: fetchableDatasets,
+              relativeModPath,
+              systemPerformanceInfo: state.systemPerformanceInfo,
+              onCityCodeChange: onFetchCityCodeChange,
+              onCountryCodeChange: onFetchCountryCodeChange,
+              onToggleDataset: (datasetId: string) =>
+                dispatch({ type: 'toggle_fetch_dataset', datasetId }),
+              onCopyCommand: onCopyFetchCommand,
+              onOpenModsFolder,
+            },
+          })
         : null,
     ]);
   };

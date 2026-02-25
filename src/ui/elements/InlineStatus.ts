@@ -10,7 +10,7 @@ import {
   TriangleWarning,
 } from './utils/Icons';
 
-type InlineStatusVariant = 'success' | 'warning' | 'error' | 'info';
+export type InlineStatusVariant = 'success' | 'warning' | 'error' | 'info';
 
 interface InlineStatusProps {
   h: typeof createElement;
