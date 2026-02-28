@@ -32,12 +32,12 @@ import {
   FileChartColumnIcon,
   TramFrontIcon,
 } from '../../elements/utils/Icons';
+import { renderCommutersView } from './tabs/commuters';
 import {
   commutersViewReducer,
   createDefaultCommutersViewState,
-} from './commuters-state';
-import { renderCommutersView } from './render-commuters';
-import { renderStatisticsView } from './render-statistics';
+} from './tabs/commuters-state';
+import { renderStatisticsView } from './tabs/statistics';
 import { RegionsInfoPanelView } from './types';
 
 export type RegionsInfoPanelProps = {

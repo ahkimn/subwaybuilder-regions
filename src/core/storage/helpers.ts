@@ -25,7 +25,6 @@ export function buildLocalDatasetCandidatePaths(
   datasetId: string,
 ): [string, string] {
   return [
-    // Add support for both compressed (.gz) and uncompressed GeoJSON files, with a preference for compressed files
     buildLocalDatasetPath(
       localModsDataRoot,
       cityCode,

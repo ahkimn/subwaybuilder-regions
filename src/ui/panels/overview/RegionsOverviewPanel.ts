@@ -15,10 +15,13 @@ import { getNextSortState } from '../shared/sort';
 import type { InputFieldProperties, SortState } from '../types';
 import { DEFAULT_SORT_STATE } from '../types';
 import { renderLayerSelectorRow, renderOverviewTabs } from './render';
-import { renderHistoricalTabContent } from './render-historical';
-import type { OverviewSortMetrics } from './render-overview';
-import { renderOverviewTabContent, resolveSortConfig } from './render-overview';
-import { renderRidershipTabContent } from './render-ridership';
+import { renderHistoricalTabContent } from './tabs/render-historical';
+import type { OverviewSortMetrics } from './tabs/render-overview';
+import {
+  renderOverviewTabContent,
+  resolveSortConfig,
+} from './tabs/render-overview';
+import { renderRidershipTabContent } from './tabs/render-ridership';
 import type { RegionsOverviewPanelState, RegionsOverviewTab } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
 

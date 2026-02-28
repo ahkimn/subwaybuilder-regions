@@ -163,7 +163,9 @@ export async function copyTextWithFallback(text: string): Promise<boolean> {
       await clipboardApi.writeText(text);
       return true;
     } catch {
-      // Fall through to legacy copy fallback.
+      console.warn(
+        'Failed to copy using navigator.clipboard API, falling back to execCommand method',
+      );
     }
   }
 

@@ -378,7 +378,9 @@ export class RegionDatasetRegistry {
         request.cityCode,
         datasetId,
       );
+
       const result = await tryLocalDatasetPaths(candidatePaths);
+
       if (result.isPresent) {
         foundIds.push(datasetId);
       } else {
@@ -401,10 +403,11 @@ export class RegionDatasetRegistry {
       });
     }
 
-    await this.upsertDynamicEntries(
+    await this.upserEntriesByOrigin(
       request.cityCode,
       request.datasetIds,
       updatedEntries,
+      'dynamic',
     );
 
     return {
@@ -486,10 +489,11 @@ export class RegionDatasetRegistry {
     };
   }
 
-  private async upsertDynamicEntries(
+  private async upserEntriesByOrigin(
     cityCode: string,
     datasetIds: string[],
     nextDynamicEntries: RegistryCacheEntry[],
+    origin: DatasetOrigin,
   ): Promise<void> {
     const storedRegistry = await this.storage.loadStoredRegistry();
     const existingEntries = storedRegistry?.entries ?? [];
@@ -497,7 +501,7 @@ export class RegionDatasetRegistry {
     const retainedEntries = existingEntries.filter(
       (entry) =>
         !(
-          entry.origin === 'dynamic' &&
+          entry.origin === origin &&
           entry.cityCode === cityCode &&
           datasetIdSet.has(entry.datasetId)
         ),
