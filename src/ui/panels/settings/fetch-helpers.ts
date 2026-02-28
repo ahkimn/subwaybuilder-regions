@@ -26,6 +26,7 @@ export type LastCopiedFetchRequest = {
   cityCode: string;
   countryCode: FetchCountryCode;
   datasetIds: string[];
+  bbox: FetchBBox;
   copiedAt: number;
 };
 
@@ -42,6 +43,13 @@ export type FetchCommandContext = {
   params: FetchParameters;
   relativeModPath: string;
   outPath?: string;
+};
+
+type FetchActionAvailabilityArgs = {
+  command: string;
+  request: FetchParameters;
+  lastCopiedRequest: LastCopiedFetchRequest | null;
+  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
 };
 
 export function resolveCityCountryCode(
@@ -113,6 +121,72 @@ export function formatFetchCommand({
     `--north ${bbox.north}`,
     `--out "${resolvedOutPath}"`,
   ].join(' ');
+}
+
+export function isFetchRequestSnapshotCurrent(
+  snapshot: LastCopiedFetchRequest | null,
+  request: FetchParameters,
+): boolean {
+  if (!snapshot) {
+    return false;
+  }
+  const bbox = request.bbox;
+  if (!bbox) {
+    return false;
+  }
+
+  if (snapshot.cityCode !== request.cityCode) {
+    return false;
+  }
+  if (snapshot.countryCode !== request.countryCode) {
+    return false;
+  }
+  if (snapshot.datasetIds.length !== request.datasetIds.length) {
+    return false;
+  }
+  for (let index = 0; index < snapshot.datasetIds.length; index += 1) {
+    if (snapshot.datasetIds[index] !== request.datasetIds[index]) {
+      return false;
+    }
+  }
+  if (snapshot.bbox.west !== bbox.west) {
+    return false;
+  }
+  if (snapshot.bbox.south !== bbox.south) {
+    return false;
+  }
+  if (snapshot.bbox.east !== bbox.east) {
+    return false;
+  }
+  if (snapshot.bbox.north !== bbox.north) {
+    return false;
+  }
+
+  return true;
+}
+
+export function deriveFetchActionAvailability({
+  command,
+  request,
+  lastCopiedRequest,
+  lastOpenedModsFolderRequest,
+}: FetchActionAvailabilityArgs): {
+  canCopyCommand: boolean;
+  canOpenModsFolder: boolean;
+  canValidateDatasets: boolean;
+} {
+  const canCopyCommand = command.length > 0;
+  const canOpenModsFolder =
+    canCopyCommand && isFetchRequestSnapshotCurrent(lastCopiedRequest, request);
+  const canValidateDatasets =
+    canOpenModsFolder &&
+    isFetchRequestSnapshotCurrent(lastOpenedModsFolderRequest, request);
+
+  return {
+    canCopyCommand,
+    canOpenModsFolder,
+    canValidateDatasets,
+  };
 }
 
 // Errors displayed when generating fetch command when required parameters are missing

@@ -119,7 +119,8 @@ export function renderFetchDatasetsSection(
               value: params.request.countryCode ?? '',
               options: countryMenuOptions,
               placeholder: 'N/A',
-              disabled: params.isCountryAutoResolved,
+              disabled:
+                params.isCountryAutoResolved || !params.request.cityCode,
               onValueChange: (value) => {
                 params.onCountryCodeChange(
                   value.length > 0
@@ -179,7 +180,7 @@ export function renderFetchDatasetsSection(
           renderGeneratedCommand(h, isValidCommand, params),
         ),
         // User action buttons + validation status
-        renderActionButtons(h, params, isValidCommand),
+        renderActionButtons(h, params),
         h(
           'p',
           { className: 'text-[11px] text-muted-foreground' },
@@ -352,7 +353,6 @@ function renderGeneratedCommand(
 function renderActionButtons(
   h: typeof createElement,
   params: SettingsFetchSectionParams,
-  canFetch: boolean,
 ): React.ReactNode {
   const sharedClassNames = {
     iconPlacement: 'start',
@@ -374,7 +374,7 @@ function renderActionButtons(
         label: 'Copy Command',
         ariaLabel: 'Copy fetch command',
         onClick: params.onCopyCommand,
-        disabled: !canFetch,
+        disabled: !params.canCopyCommand,
         icon: Copy,
         ...sharedClassNames,
         dataRegionsId: REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
@@ -383,7 +383,7 @@ function renderActionButtons(
         label: params.isOpeningModsFolder ? 'Opening' : 'Open Mods Folder',
         ariaLabel: 'Open mods folder',
         onClick: params.onOpenModsFolder,
-        disabled: params.isOpeningModsFolder,
+        disabled: !params.canOpenModsFolder || params.isOpeningModsFolder,
         icon: FolderOpen,
         ...sharedClassNames,
         dataRegionsId: REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
@@ -432,7 +432,19 @@ function renderValidationStatus(
       InlineStatus({
         h,
         status: 'info',
-        label: 'Copy a command to enable dataset validation.',
+        label: 'Copy a command to enable opening mods folder.',
+      }),
+    );
+  }
+
+  if (!params.canValidateDatasets) {
+    return h(
+      'div',
+      { className: 'text-xs' },
+      InlineStatus({
+        h,
+        status: 'info',
+        label: 'Open mods folder to enable dataset validation.',
       }),
     );
   }

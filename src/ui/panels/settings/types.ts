@@ -43,6 +43,8 @@ export type SettingsFetchSectionParams = {
   request: FetchParameters;
   errors: string[];
   command: string;
+  canCopyCommand: boolean;
+  canOpenModsFolder: boolean;
   canValidateDatasets: boolean;
   isValidatingDatasets: boolean;
   isOpeningModsFolder: boolean;

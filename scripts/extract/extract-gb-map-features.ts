@@ -124,9 +124,9 @@ async function extractDistrictBoundaries(
   const boundaries: GeoJSON.FeatureCollection = useLocal
     ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_BOUNDARIES))
     : await fetchGeoJSONFromArcGIS(getDistrictONSQuery(bbox));
-  const populationCharacteristics: Row[] = loadCSV(
-    path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS),
-  );
+  const populationCharacteristics: Row[] = useLocal
+    ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS))
+    : [];
   const populationIndex: Map<string, string> = buildCSVIndex(
     populationCharacteristics,
     'Code',
@@ -142,9 +142,9 @@ async function extractBUABoundaries(
   const boundaries: GeoJSON.FeatureCollection = useLocal
     ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_BUA_BOUNDARIES))
     : await fetchGeoJSONFromArcGIS(getBUAONSQuery(bbox));
-  const populationCharacteristics: Row[] = loadCSV(
-    path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS),
-  );
+  const populationCharacteristics: Row[] = useLocal
+    ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS))
+    : [];
   const populationIndex: Map<string, string> = buildCSVIndex(
     populationCharacteristics,
     'Code',
@@ -163,9 +163,9 @@ async function extractWardBoundaries(
       )
     : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox));
   console.log(boundaries.features[0]);
-  const populationCharacteristics: Row[] = loadCSV(
-    path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS),
-  );
+  const populationCharacteristics: Row[] = useLocal
+    ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS))
+    : [];
   const populationIndex: Map<string, string> = buildCSVIndex(
     populationCharacteristics,
     'Code',

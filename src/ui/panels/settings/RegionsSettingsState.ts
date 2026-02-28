@@ -25,6 +25,7 @@ export type FetchState = {
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
   lastCopiedRequest: LastCopiedFetchRequest | null;
+  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
   lastValidationResult: FetchValidationResult | null;
 };
 
@@ -68,6 +69,10 @@ export type RegionsSettingsAction =
       request: LastCopiedFetchRequest | null;
     }
   | {
+      type: 'set_last_opened_mods_folder_request';
+      request: LastCopiedFetchRequest | null;
+    }
+  | {
       type: 'set_last_fetch_validation_result';
       result: FetchValidationResult | null;
     }
@@ -85,7 +90,7 @@ export function regionsSettingsReducer(
     case 'open_overlay':
       return { ...state, isOpen: true };
     case 'close_overlay':
-      return { ...state, isOpen: false };
+      return { ...state, isOpen: false, fetch: { ...INITIAL_FETCH_STATE } };
     case 'set_search_term':
       return { ...state, searchTerm: action.searchTerm };
     case 'set_sort_state':
@@ -117,6 +122,9 @@ export function regionsSettingsReducer(
             ...state.fetch.params,
             ...action.params,
           },
+          lastCopiedRequest: null,
+          lastOpenedModsFolderRequest: null,
+          lastValidationResult: null,
         },
       };
     case 'set_fetch_country_code':
@@ -133,6 +141,9 @@ export function regionsSettingsReducer(
           },
           isCountryAutoResolved:
             action.isAutoResolved ?? state.fetch.isCountryAutoResolved,
+          lastCopiedRequest: null,
+          lastOpenedModsFolderRequest: null,
+          lastValidationResult: null,
         },
       };
     case 'toggle_fetch_dataset': {
@@ -151,6 +162,9 @@ export function regionsSettingsReducer(
             ...state.fetch.params,
             datasetIds: nextDatasetIds,
           },
+          lastCopiedRequest: null,
+          lastOpenedModsFolderRequest: null,
+          lastValidationResult: null,
         },
       };
     }
@@ -168,6 +182,14 @@ export function regionsSettingsReducer(
         fetch: {
           ...state.fetch,
           lastCopiedRequest: action.request,
+        },
+      };
+    case 'set_last_opened_mods_folder_request':
+      return {
+        ...state,
+        fetch: {
+          ...state.fetch,
+          lastOpenedModsFolderRequest: action.request,
         },
       };
     case 'set_last_fetch_validation_result':
@@ -195,6 +217,7 @@ export const INITIAL_FETCH_STATE: FetchState = {
   isOpeningModsFolder: false,
   isCountryAutoResolved: false,
   lastCopiedRequest: null,
+  lastOpenedModsFolderRequest: null,
   lastValidationResult: null,
 };
 

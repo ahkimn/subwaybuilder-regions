@@ -16,18 +16,19 @@ import {
   REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
   REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
   REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
+  REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
   REGIONS_SETTINGS_FETCH_STATUS_ID,
   REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
 } from '../../../../../src/core/constants';
 import type {
   FetchBBox,
-  FetchCountryCode,
   FetchParameters,
   FetchValidationResult,
   LastCopiedFetchRequest,
 } from '../../../../../src/ui/panels/settings/fetch-helpers';
 import {
   buildFetchErrors,
+  deriveFetchActionAvailability,
   formatFetchCommand,
   resolveCityCountryCode,
 } from '../../../../../src/ui/panels/settings/fetch-helpers';
@@ -81,10 +82,25 @@ const ATL_CITY: City = {
   },
 };
 
+const PVD_CITY: City = {
+  code: 'PVD',
+  name: 'Providence',
+  description: 'Fixture unresolved-country city',
+  mapImageUrl: '',
+  population: 1000,
+  initialViewState: {
+    zoom: 11,
+    latitude: 41.824,
+    longitude: -71.4128,
+    bearing: 0,
+  },
+};
+
 type FetchHarnessState = {
   request: FetchParameters;
   isCountryAutoResolved: boolean;
   lastCopiedRequest: LastCopiedFetchRequest | null;
+  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
   lastValidationResult: FetchValidationResult | null;
   isValidatingDatasets: boolean;
 };
@@ -99,11 +115,12 @@ function FetchDatasetsHarness(): React.ReactNode {
     },
     isCountryAutoResolved: false,
     lastCopiedRequest: null,
+    lastOpenedModsFolderRequest: null,
     lastValidationResult: null,
     isValidatingDatasets: false,
   });
 
-  const cities = useMemo(() => [ATL_CITY, BOSTON_CITY], []);
+  const cities = useMemo(() => [ATL_CITY, BOSTON_CITY, PVD_CITY], []);
   const cityByCode = useMemo(
     () => new Map(cities.map((city) => [city.code, city])),
     [cities],
@@ -129,12 +146,20 @@ function FetchDatasetsHarness(): React.ReactNode {
   const datasets = resolveCountryDatasets(state.request.countryCode, {
     onlineOnly: true,
   });
+  const actionAvailability = deriveFetchActionAvailability({
+    command,
+    request: state.request,
+    lastCopiedRequest: state.lastCopiedRequest,
+    lastOpenedModsFolderRequest: state.lastOpenedModsFolderRequest,
+  });
 
   const fetchParams: SettingsFetchSectionParams = {
     request: state.request,
     errors,
     command,
-    canValidateDatasets: state.lastCopiedRequest !== null,
+    canCopyCommand: actionAvailability.canCopyCommand,
+    canOpenModsFolder: actionAvailability.canOpenModsFolder,
+    canValidateDatasets: actionAvailability.canValidateDatasets,
     isValidatingDatasets: state.isValidatingDatasets,
     isOpeningModsFolder: false,
     isCountryAutoResolved: state.isCountryAutoResolved,
@@ -187,22 +212,37 @@ function FetchDatasetsHarness(): React.ReactNode {
       if (!command || !state.request.countryCode) {
         return;
       }
+      const bbox = state.request.bbox;
+      if (!bbox) {
+        return;
+      }
       setState((prev) => ({
         ...prev,
         lastCopiedRequest: {
           cityCode: prev.request.cityCode,
           countryCode: prev.request.countryCode!,
           datasetIds: [...prev.request.datasetIds],
+          bbox: { ...bbox },
           copiedAt: Date.now(),
         },
+        lastOpenedModsFolderRequest: null,
         lastValidationResult: null,
       }));
     },
     onOpenModsFolder: () => {
-      // no-op in UI harness
+      if (!actionAvailability.canOpenModsFolder || !state.lastCopiedRequest) {
+        return;
+      }
+      setState((prev) => ({
+        ...prev,
+        lastOpenedModsFolderRequest: {
+          ...prev.lastCopiedRequest!,
+          copiedAt: Date.now(),
+        },
+      }));
     },
     onValidateDatasets: () => {
-      if (!state.lastCopiedRequest) {
+      if (!state.lastCopiedRequest || !actionAvailability.canValidateDatasets) {
         return;
       }
       setState((prev) => ({
@@ -249,6 +289,10 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     assert.equal(existsWarning('datasets', container), true);
     assert.equal(existsWarning('command', container), true);
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
+    assertButtonDisabled(
+      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
 
     const cityField = byRegionsId(
@@ -267,6 +311,10 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     assert.equal(existsWarning('datasets', container), true);
     assert.equal(existsWarning('command', container), true);
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
+    assertButtonDisabled(
+      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
 
     const datasetsField = byRegionsId(
@@ -287,6 +335,10 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
       0,
     );
     assertButtonEnabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
+    assertButtonDisabled(
+      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
 
     const copyButton = byRegionsId(
@@ -294,6 +346,23 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
       container,
     );
     await user.click(copyButton);
+
+    assertButtonEnabled(
+      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
+    assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
+    assertText(
+      REGIONS_SETTINGS_FETCH_STATUS_ID,
+      /Open mods folder to enable dataset validation./,
+      container,
+    );
+
+    const openModsFolderButton = byRegionsId(
+      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
+    await user.click(openModsFolderButton);
 
     assertButtonEnabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
     assertText(
@@ -312,6 +381,41 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
       REGIONS_SETTINGS_FETCH_STATUS_ID,
       /Validated BOS: 1 found, 0 missing/,
       container,
+    );
+  });
+
+  it('disables country selector when no city is selected and enables it for unresolved city', async () => {
+    const user = userEvent.setup({ document: globalThis.document });
+    const { container, getByRole } = render(
+      React.createElement(FetchDatasetsHarness),
+    );
+
+    const countryFieldInitial = byRegionsId(
+      REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+      container,
+    );
+    assert.equal(
+      countryFieldInitial.querySelector('summary'),
+      null,
+      'Expected country selector disabled before city selection',
+    );
+
+    const cityField = byRegionsId(
+      REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
+      container,
+    );
+    const cityMenuTrigger = cityField.querySelector('summary');
+    assert.ok(cityMenuTrigger, 'Expected city SelectMenu trigger');
+    await user.click(cityMenuTrigger as HTMLElement);
+    await user.click(getByRole('button', { name: 'Providence (PVD)' }));
+
+    const countryFieldAfterPvd = byRegionsId(
+      REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+      container,
+    );
+    assert.ok(
+      countryFieldAfterPvd.querySelector('summary'),
+      'Expected country selector enabled for unresolved city',
     );
   });
 });

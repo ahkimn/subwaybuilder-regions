@@ -2,24 +2,81 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { resolveCountryDatasets } from '../../../../../shared/datasets/catalog';
-import type { City } from '../../../../../src/types/cities';
 import {
   buildFetchErrors,
+  deriveFetchActionAvailability,
+  type FetchBBox,
   type FetchCountryCode,
+  type FetchParameters,
   formatFetchCommand,
-  resolveCityCountryCode,
+  type LastCopiedFetchRequest,
 } from '../../../../../src/ui/panels/settings/fetch-helpers';
 import {
   type FetchState,
   INITIAL_FETCH_STATE,
+  type RegionsSettingsAction,
+  type RegionsSettingsState,
+  regionsSettingsReducer,
 } from '../../../../../src/ui/panels/settings/RegionsSettingsState';
+import { SortDirection } from '../../../../../src/ui/panels/types';
 
 type DerivedFetchUi = {
   errors: string[];
   command: string;
   canCopyCommand: boolean;
+  canOpenModsFolder: boolean;
   canValidateDatasets: boolean;
 };
+
+const DEFAULT_BOS_BBOX: FetchBBox = {
+  west: '-71.6694',
+  south: '41.5557',
+  east: '-71.1263',
+  north: '42.0151',
+};
+
+function createFetchSnapshot(
+  request: FetchParameters,
+  copiedAt: number = Date.now(),
+): LastCopiedFetchRequest {
+  assert.ok(request.countryCode, 'Expected countryCode for snapshot');
+  assert.ok(request.bbox, 'Expected bbox for snapshot');
+  return {
+    cityCode: request.cityCode,
+    countryCode: request.countryCode,
+    datasetIds: [...request.datasetIds],
+    bbox: { ...request.bbox },
+    copiedAt,
+  };
+}
+
+function createHappyFetchState(
+  overrides?: Partial<FetchState>,
+  requestOverrides?: Partial<FetchParameters>,
+): FetchState {
+  const usDataset = resolveCountryDatasets('US', { onlineOnly: true })[0];
+  assert.ok(usDataset, 'Expected at least one US dataset');
+
+  const baseRequest: FetchParameters = {
+    cityCode: 'BOS',
+    countryCode: 'US',
+    datasetIds: [usDataset.datasetId],
+    bbox: DEFAULT_BOS_BBOX,
+  };
+
+  return {
+    params: {
+      ...baseRequest,
+      ...requestOverrides,
+    },
+    isOpeningModsFolder: false,
+    isCountryAutoResolved: true,
+    lastCopiedRequest: null,
+    lastOpenedModsFolderRequest: null,
+    lastValidationResult: null,
+    ...overrides,
+  };
+}
 
 function deriveFetchUi(fetchState: FetchState): DerivedFetchUi {
   const errors = buildFetchErrors({
@@ -39,188 +96,227 @@ function deriveFetchUi(fetchState: FetchState): DerivedFetchUi {
           outPath: '.\\regions\\data',
         });
 
+  const availability = deriveFetchActionAvailability({
+    command,
+    request: fetchState.params,
+    lastCopiedRequest: fetchState.lastCopiedRequest,
+    lastOpenedModsFolderRequest: fetchState.lastOpenedModsFolderRequest,
+  });
+
   return {
     errors,
     command,
-    canCopyCommand: command.length > 0,
-    canValidateDatasets: fetchState.lastCopiedRequest !== null,
+    ...availability,
   };
 }
 
-// Simulate selecting a city, which may also auto-resolve the country and filter datasets based on the city-country
-function simulateCitySelection(
-  currentState: FetchState,
-  cityCode: string,
-  countryCode: FetchCountryCode | null,
-): FetchState {
-  const allowedDatasetIds = resolveCountryDatasets(countryCode, {
-    onlineOnly: true,
-  }).map((dataset) => dataset.datasetId);
-
-  const resetState: FetchState = {
-    ...currentState,
-    params: {
-      cityCode,
-      countryCode: null,
-      datasetIds: [],
-      bbox: null,
-    },
-  };
-
+function buildStateWithFetch(fetch: FetchState): RegionsSettingsState {
   return {
-    ...resetState,
-    params: {
-      ...resetState.params,
-      countryCode,
-      datasetIds: resetState.params.datasetIds.filter((datasetId) =>
-        allowedDatasetIds.includes(datasetId),
-      ),
+    isOpen: false,
+    settings: { showUnpopulatedRegions: false },
+    cachedRegistryEntries: [],
+    searchTerm: '',
+    sortState: {
+      sortIndex: 0,
+      sortDirection: SortDirection.Asc,
+      previousSortIndex: 0,
+      previousSortDirection: SortDirection.Asc,
     },
-    isCountryAutoResolved: Boolean(countryCode),
+    pending: {
+      updating: false,
+      refreshingRegistry: false,
+      clearingMissing: false,
+      validatingFetchDatasets: false,
+    },
+    fetch,
+    systemPerformanceInfo: null,
   };
 }
 
-describe('settings fetch datasets happy path (state/contract)', () => {
-  it('transitions initial -> city -> dataset -> copy -> validate success', () => {
-    const bosCity: City = {
-      code: 'BOS',
-      name: 'Boston',
-      description: 'Fixture city for fetch tests',
-      mapImageUrl: '',
-      population: 1000,
-      initialViewState: {
-        zoom: 12,
-        latitude: 42.3601,
-        longitude: -71.0589,
-        bearing: 0,
-      },
-      country: 'US',
-    };
+function reduceFetchState(
+  fetch: FetchState,
+  action: RegionsSettingsAction,
+): FetchState {
+  return regionsSettingsReducer(buildStateWithFetch(fetch), action).fetch;
+}
 
-    let fetchState: FetchState = {
-      ...INITIAL_FETCH_STATE,
-      params: {
-        ...INITIAL_FETCH_STATE.params,
-      },
-    };
+describe('settings fetch datasets action gating (state/contract)', () => {
+  it('gates actions in order: copy -> open mods folder -> validate', () => {
+    let fetchState = createHappyFetchState();
 
-    // Initially, all required parameters are missing, so we expect all validation errors to be present
     const initial = deriveFetchUi(fetchState);
-    assert.equal(fetchState.params.cityCode, '');
-    assert.equal(fetchState.params.countryCode, null);
-    assert.equal(fetchState.params.bbox, null);
-    assert.equal(initial.command, '');
-    assert.equal(initial.canCopyCommand, false); // Copy command should not be available when there are validation errors
+    assert.equal(initial.canCopyCommand, true);
+    assert.equal(initial.canOpenModsFolder, false);
     assert.equal(initial.canValidateDatasets, false);
-    assert.equal(initial.errors.length, 4);
-    assert.ok(
-      initial.errors.some((error) => error.includes('Select a city')),
-      'Expected city warning in initial errors',
-    );
-    assert.ok(
-      initial.errors.some((error) => error.includes('supported fetch country')),
-      'Expected country warning in initial errors',
-    );
-    assert.ok(
-      initial.errors.some((error) =>
-        error.includes('Select at least one dataset'),
-      ),
-      'Expected dataset warning in initial errors',
-    );
-    assert.ok(
-      initial.errors.some((error) => error.includes('bbox unavailable')),
-      'Expected bbox warning in initial errors',
-    );
 
-    const resolvedCountry = resolveCityCountryCode(bosCity);
-    assert.equal(resolvedCountry, 'US');
-    fetchState = simulateCitySelection(
-      fetchState,
-      bosCity.code,
-      resolvedCountry,
-    );
+    const copiedSnapshot = createFetchSnapshot(fetchState.params);
     fetchState = {
       ...fetchState,
-      params: {
-        ...fetchState.params,
-        bbox: {
-          west: '-71.6694',
-          south: '41.5557',
-          east: '-71.1263',
-          north: '42.0151',
-        },
-      },
-    };
-
-    const afterCity = deriveFetchUi(fetchState);
-    assert.equal(fetchState.params.cityCode, 'BOS');
-    assert.equal(fetchState.params.countryCode, 'US');
-    assert.notEqual(fetchState.params.bbox, null);
-    assert.equal(
-      afterCity.errors.some((error) => error.includes('Select a city')),
-      false,
-    );
-    assert.equal(
-      afterCity.errors.some((error) =>
-        error.includes('supported fetch country'),
-      ),
-      false,
-    );
-    assert.equal(afterCity.canCopyCommand, false);
-    assert.equal(afterCity.canValidateDatasets, false);
-
-    const allowedDatasetIds = resolveCountryDatasets('US', {
-      onlineOnly: true,
-    }).map((dataset) => dataset.datasetId);
-    const selectedDatasetId = allowedDatasetIds[0];
-    assert.ok(selectedDatasetId, 'Expected at least one US fetch dataset');
-
-    fetchState = {
-      ...fetchState,
-      params: {
-        ...fetchState.params,
-        datasetIds: [selectedDatasetId],
-      },
-    };
-
-    const afterDatasetSelection = deriveFetchUi(fetchState);
-    assert.equal(afterDatasetSelection.errors.length, 0);
-    assert.notEqual(afterDatasetSelection.command, '');
-    assert.equal(afterDatasetSelection.canCopyCommand, true);
-    assert.equal(afterDatasetSelection.canValidateDatasets, false);
-
-    fetchState = {
-      ...fetchState,
-      lastCopiedRequest: {
-        cityCode: fetchState.params.cityCode,
-        countryCode: fetchState.params.countryCode ?? 'US',
-        datasetIds: [...fetchState.params.datasetIds],
-        copiedAt: Date.now(),
-      },
+      lastCopiedRequest: copiedSnapshot,
       lastValidationResult: null,
     };
 
     const afterCopy = deriveFetchUi(fetchState);
-    assert.equal(afterCopy.canValidateDatasets, true);
-    assert.deepEqual(fetchState.lastCopiedRequest?.datasetIds, [
-      selectedDatasetId,
-    ]);
+    assert.equal(afterCopy.canCopyCommand, true);
+    assert.equal(afterCopy.canOpenModsFolder, true);
+    assert.equal(afterCopy.canValidateDatasets, false);
+
+    fetchState = {
+      ...fetchState,
+      lastOpenedModsFolderRequest: createFetchSnapshot(fetchState.params),
+    };
+
+    const afterOpenModsFolder = deriveFetchUi(fetchState);
+    assert.equal(afterOpenModsFolder.canCopyCommand, true);
+    assert.equal(afterOpenModsFolder.canOpenModsFolder, true);
+    assert.equal(afterOpenModsFolder.canValidateDatasets, true);
 
     fetchState = {
       ...fetchState,
       lastValidationResult: {
         cityCode: fetchState.params.cityCode,
-        foundIds: [selectedDatasetId],
+        foundIds: [...fetchState.params.datasetIds],
         missingIds: [],
         updatedEntries: [],
         validatedAt: Date.now(),
       },
     };
 
-    assert.equal(
-      fetchState.lastValidationResult?.foundIds.includes(selectedDatasetId),
-      true,
-    );
     assert.equal(fetchState.lastValidationResult?.missingIds.length, 0);
+  });
+
+  it('resets open/validate progression when request inputs change', () => {
+    const usDatasets = resolveCountryDatasets('US', { onlineOnly: true });
+    const gbDatasets = resolveCountryDatasets('GB', { onlineOnly: true });
+    assert.ok(usDatasets.length > 1, 'Expected multiple US datasets');
+    assert.ok(gbDatasets.length > 0, 'Expected GB datasets');
+
+    const baseState = createHappyFetchState(
+      {
+        isCountryAutoResolved: false,
+      },
+      {
+        cityCode: 'PVD',
+        countryCode: 'US',
+        datasetIds: [usDatasets[0].datasetId],
+      },
+    );
+    const progressedState: FetchState = {
+      ...baseState,
+      lastCopiedRequest: createFetchSnapshot(baseState.params, 1),
+      lastOpenedModsFolderRequest: createFetchSnapshot(baseState.params, 2),
+      lastValidationResult: {
+        cityCode: 'PVD',
+        foundIds: [...baseState.params.datasetIds],
+        missingIds: [],
+        updatedEntries: [],
+        validatedAt: Date.now(),
+      },
+    };
+
+    const mutations: Array<{
+      name: string;
+      mutate: (state: FetchState) => FetchState;
+      expectedCanCopyCommand: boolean;
+    }> = [
+      {
+        name: 'city',
+        mutate: (state) =>
+          reduceFetchState(state, {
+            type: 'set_fetch_params',
+            params: {
+              cityCode: 'BOS',
+              countryCode: 'US',
+              datasetIds: [usDatasets[0].datasetId],
+              bbox: DEFAULT_BOS_BBOX,
+            },
+          }),
+        expectedCanCopyCommand: true,
+      },
+      {
+        name: 'countryCode',
+        mutate: (state) =>
+          reduceFetchState(state, {
+            type: 'set_fetch_country_code',
+            countryCode: 'GB' as FetchCountryCode,
+            allowedDatasetIds: gbDatasets.map((dataset) => dataset.datasetId),
+            isAutoResolved: false,
+          }),
+        expectedCanCopyCommand: false,
+      },
+      {
+        name: 'datasetIds',
+        mutate: (state) =>
+          reduceFetchState(state, {
+            type: 'toggle_fetch_dataset',
+            datasetId: usDatasets[1].datasetId,
+          }),
+        expectedCanCopyCommand: true,
+      },
+    ];
+
+    for (const mutation of mutations) {
+      const mutated = mutation.mutate(progressedState);
+      const derived = deriveFetchUi(mutated);
+
+      assert.equal(
+        mutated.lastCopiedRequest,
+        null,
+        `Expected copied snapshot reset after ${mutation.name} mutation`,
+      );
+      assert.equal(
+        mutated.lastOpenedModsFolderRequest,
+        null,
+        `Expected open-folder snapshot reset after ${mutation.name} mutation`,
+      );
+      assert.equal(
+        mutated.lastValidationResult,
+        null,
+        `Expected validation result reset after ${mutation.name} mutation`,
+      );
+      assert.equal(
+        derived.canOpenModsFolder,
+        false,
+        `Expected open button re-gated after ${mutation.name} mutation`,
+      );
+      assert.equal(
+        derived.canValidateDatasets,
+        false,
+        `Expected validate button re-gated after ${mutation.name} mutation`,
+      );
+      assert.equal(
+        derived.canCopyCommand,
+        mutation.expectedCanCopyCommand,
+        `Unexpected copy availability after ${mutation.name} mutation`,
+      );
+    }
+  });
+
+  it('clears fetch state when overlay closes', () => {
+    const dirtyFetchState: FetchState = {
+      ...createHappyFetchState(),
+      isOpeningModsFolder: true,
+      isCountryAutoResolved: true,
+      lastCopiedRequest: createFetchSnapshot(createHappyFetchState().params, 1),
+      lastOpenedModsFolderRequest: createFetchSnapshot(
+        createHappyFetchState().params,
+        2,
+      ),
+      lastValidationResult: {
+        cityCode: 'BOS',
+        foundIds: ['counties'],
+        missingIds: [],
+        updatedEntries: [],
+        validatedAt: Date.now(),
+      },
+    };
+
+    const nextState = regionsSettingsReducer(
+      { ...buildStateWithFetch(dirtyFetchState), isOpen: true },
+      { type: 'close_overlay' },
+    );
+
+    assert.equal(nextState.isOpen, false);
+    assert.deepEqual(nextState.fetch, INITIAL_FETCH_STATE);
   });
 });

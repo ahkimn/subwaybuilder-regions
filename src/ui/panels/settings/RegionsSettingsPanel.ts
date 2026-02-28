@@ -15,6 +15,7 @@ import {
   buildDefaultFetchOutPath,
   buildFetchErrors,
   copyTextWithFallback,
+  deriveFetchActionAvailability,
   type FetchCountryCode,
   formatFetchCommand,
   resolveCityCountryCode,
@@ -142,6 +143,12 @@ export function RegionsSettingsPanel({
             relativeModPath,
             outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
           });
+    const fetchActionAvailability = deriveFetchActionAvailability({
+      command: fetchCommand,
+      request: state.fetch.params,
+      lastCopiedRequest: state.fetch.lastCopiedRequest,
+      lastOpenedModsFolderRequest: state.fetch.lastOpenedModsFolderRequest,
+    });
 
     type RunAsyncOperationParams = {
       key: PendingFlagKey;
@@ -361,7 +368,7 @@ export function RegionsSettingsPanel({
     };
 
     const onCopyFetchCommand = () => {
-      if (!fetchCommand) {
+      if (!fetchActionAvailability.canCopyCommand) {
         return;
       }
       void copyTextWithFallback(fetchCommand)
@@ -374,17 +381,24 @@ export function RegionsSettingsPanel({
             return;
           }
           const countryCode = state.fetch.params.countryCode;
-          if (!countryCode) {
+          const bbox = state.fetch.params.bbox;
+          if (!countryCode || !bbox) {
             return;
           }
+          const requestSnapshot = {
+            cityCode: state.fetch.params.cityCode,
+            countryCode,
+            datasetIds: [...state.fetch.params.datasetIds],
+            bbox: { ...bbox },
+            copiedAt: Date.now(),
+          };
           dispatch({
             type: 'set_last_copied_fetch_request',
-            request: {
-              cityCode: state.fetch.params.cityCode,
-              countryCode,
-              datasetIds: [...state.fetch.params.datasetIds],
-              copiedAt: Date.now(),
-            },
+            request: requestSnapshot,
+          });
+          dispatch({
+            type: 'set_last_opened_mods_folder_request',
+            request: null,
           });
           dispatch({
             type: 'set_last_fetch_validation_result',
@@ -405,6 +419,9 @@ export function RegionsSettingsPanel({
     };
 
     const onValidateDatasets = () => {
+      if (!fetchActionAvailability.canValidateDatasets) {
+        return;
+      }
       const lastCopiedRequest = state.fetch.lastCopiedRequest;
       if (!lastCopiedRequest) {
         return;
@@ -458,9 +475,31 @@ export function RegionsSettingsPanel({
     };
 
     const onOpenModsFolder = () => {
+      if (!fetchActionAvailability.canOpenModsFolder) {
+        return;
+      }
       dispatch({ type: 'set_is_opening_mods_folder', value: true });
+      const countryCode = state.fetch.params.countryCode;
+      const bbox = state.fetch.params.bbox;
+      const cityCode = state.fetch.params.cityCode;
+      const datasetIds = [...state.fetch.params.datasetIds];
       void storage
         .openModsFolder()
+        .then(() => {
+          if (!countryCode || !bbox) {
+            return;
+          }
+          dispatch({
+            type: 'set_last_opened_mods_folder_request',
+            request: {
+              cityCode,
+              countryCode,
+              datasetIds,
+              bbox: { ...bbox },
+              copiedAt: Date.now(),
+            },
+          });
+        })
         .catch((error) => {
           console.error('[Regions] Failed to open mods folder.', error);
           api.ui.showNotification(
@@ -512,7 +551,9 @@ export function RegionsSettingsPanel({
               request: state.fetch.params,
               errors: fetchErrors,
               command: fetchCommand,
-              canValidateDatasets: state.fetch.lastCopiedRequest !== null,
+              canCopyCommand: fetchActionAvailability.canCopyCommand,
+              canOpenModsFolder: fetchActionAvailability.canOpenModsFolder,
+              canValidateDatasets: fetchActionAvailability.canValidateDatasets,
               isValidatingDatasets: state.pending.validatingFetchDatasets,
               isOpeningModsFolder: state.fetch.isOpeningModsFolder,
               isCountryAutoResolved: state.fetch.isCountryAutoResolved,
