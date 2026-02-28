@@ -243,7 +243,7 @@ export class RegionDatasetRegistry {
       }
       localEntries = normalizedCache.entries;
     }
-    const localCount = this.registerLocalEntries(localEntries);
+    let localCount = this.registerLocalEntries(localEntries);
 
     let servedCount = 0;
     const servedIndex = await this.fetchServedIndex(onFetchError);
@@ -252,7 +252,19 @@ export class RegionDatasetRegistry {
       servedCount = this.buildFromIndex(servedIndex);
     }
 
-    // TODO (Feature): This should be an error only once in-game downloads are made available
+    if (this.datasets.size === 0) {
+      // When the stored cache exists but is stale/empty, force a local disk re-scan once before failing.
+      const refreshedLocalCount = await this.refreshRegistryCache();
+      if (refreshedLocalCount > 0) {
+        const refreshedRegistry = await this.storage.loadStoredRegistry();
+        const refreshedEntries = mergeLocalRegistryEntries(
+          refreshedRegistry?.entries ?? [],
+        );
+        localCount = this.registerLocalEntries(refreshedEntries);
+      }
+    }
+
+    // TODO (Feature): This should be an error only once in-game downloads are made available.
     if (this.datasets.size === 0) {
       throw new Error(
         '[Regions] No datasets available from server index or cached local registry',
