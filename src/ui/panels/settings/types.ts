@@ -7,7 +7,11 @@ import type { RegionsSettings } from '@/core/storage/types';
 import type { ModdingAPI, SystemPerformanceInfo } from '@/types';
 
 import type { SortState } from '../types';
-import type { FetchParameters } from './fetch-helpers';
+import type {
+  FetchParameters,
+  FetchValidationResult,
+  LastCopiedFetchRequest,
+} from './fetch-helpers';
 
 export type SettingsMenuComponentParams = {
   api: ModdingAPI;
@@ -32,8 +36,12 @@ export type SettingsFetchSectionParams = {
   fetchParams: FetchParameters;
   errors: string[];
   command: string;
+  canValidateDatasets: boolean;
+  isValidatingDatasets: boolean;
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
+  lastCopiedRequest: LastCopiedFetchRequest | null;
+  lastValidationResult: FetchValidationResult | null;
   cityOptions: Array<{ code: string; name: string }>;
   countryOptions: Array<NonNullable<FetchParameters['countryCode']>>;
   datasets: DatasetTemplateMetadata[];
@@ -44,6 +52,7 @@ export type SettingsFetchSectionParams = {
   onToggleDataset: (datasetId: string) => void;
   onCopyCommand: () => void;
   onOpenModsFolder: () => void;
+  onValidateDatasets: () => void;
 };
 
 export type GlobalSettingsSectionParams = {

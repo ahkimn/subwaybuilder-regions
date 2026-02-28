@@ -8,6 +8,7 @@ import { InlineStatus } from '../../elements/InlineStatus';
 import { PanelSection } from '../../elements/PanelSection';
 import { SelectMenu } from '../../elements/SelectMenu';
 import {
+  CircleCheck,
   Copy,
   createReactIconElement,
   FolderOpen,
@@ -38,17 +39,21 @@ export function renderFetchDatasetsSection(
     params.errors.length === 0 &&
     !!params.command;
 
+  // List of cities available as per the game state, sorted alphabetically by name.
   const sortedCityOptions = [...params.cityOptions].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
+  // Show city code alongside name for better clarity (this matches the format used in the registry as well as on disk)
   const cityOptions = sortedCityOptions.map((cityOption) => ({
     value: cityOption.code,
     label: `${cityOption.name} (${cityOption.code})`,
   }));
+  // List of all countries available as defined by the static templates
   const countryOptions = params.countryOptions.map((countryCode) => ({
     value: countryCode,
     label: countryCode,
   }));
+  // N/A is included when we cannot immediately ascertain what country a city belongs to.
   const countryMenuOptions = [{ value: '', label: 'N/A' }, ...countryOptions];
 
   return PanelSection(
@@ -91,6 +96,7 @@ export function renderFetchDatasetsSection(
           }),
         ]),
       ]),
+
       // Dataset selector
       h('div', { className: 'flex flex-col gap-1.5' }, [
         renderFetchHeader(
@@ -102,6 +108,7 @@ export function renderFetchDatasetsSection(
         ),
         renderDatasetOptions(h, params),
       ]),
+
       // Bounding box display
       h('div', { className: 'flex flex-col gap-1.5' }, [
         h(
@@ -109,13 +116,14 @@ export function renderFetchDatasetsSection(
           { className: 'text-sm font-medium text-foreground' },
           'Boundary Box',
         ),
-        h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-1.5' }, [
+        h('div', { className: 'flex flex-wrap items-start gap-3 max-w-fit' }, [
           renderBBoxValue(h, 'West', params.fetchParams.bbox?.west ?? ''),
           renderBBoxValue(h, 'South', params.fetchParams.bbox?.south ?? ''),
           renderBBoxValue(h, 'East', params.fetchParams.bbox?.east ?? ''),
           renderBBoxValue(h, 'North', params.fetchParams.bbox?.north ?? ''),
         ]),
       ]),
+
       // Generated command display
       h('div', { className: 'flex flex-col gap-1.5' }, [
         renderFetchHeader(
@@ -127,6 +135,7 @@ export function renderFetchDatasetsSection(
         ),
         renderGeneratedCommand(h, isValidCommand, params),
       ]),
+
       // Action buttons
       renderActionButtons(h, params, isValidCommand),
       h(
@@ -291,30 +300,110 @@ function renderActionButtons(
   params: SettingsFetchSectionParams,
   canFetch: boolean,
 ): React.ReactNode {
-  return h('div', { className: 'flex flex-wrap items-center gap-2' }, [
-    Button(h, {
-      label: 'Copy Command',
-      ariaLabel: 'Copy fetch command',
-      onClick: params.onCopyCommand,
-      disabled: !canFetch,
-      icon: Copy,
-      iconPlacement: 'start',
-      role: 'secondary',
-      size: 'xs',
-      wrapperClassName: 'w-fit',
-      iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+  return h(
+    'div',
+    { className: 'flex flex-wrap items-center justify-between gap-2' },
+    [
+      h('div', { className: 'flex flex-wrap items-center gap-2' }, [
+        Button(h, {
+          label: 'Copy Command',
+          ariaLabel: 'Copy fetch command',
+          onClick: params.onCopyCommand,
+          disabled: !canFetch,
+          icon: Copy,
+          iconPlacement: 'start',
+          role: 'secondary',
+          size: 'xs',
+          wrapperClassName: 'w-fit',
+          iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        }),
+        Button(h, {
+          label: params.isOpeningModsFolder ? 'Opening' : 'Open Mods Folder',
+          ariaLabel: 'Open mods folder',
+          onClick: params.onOpenModsFolder,
+          disabled: params.isOpeningModsFolder,
+          icon: FolderOpen,
+          iconPlacement: 'start',
+          role: 'secondary',
+          size: 'xs',
+          wrapperClassName: 'w-fit',
+          iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        }),
+        Button(h, {
+          label: params.isValidatingDatasets
+            ? 'Validating'
+            : 'Validate Datasets',
+          ariaLabel: 'Validate generated datasets',
+          onClick: params.onValidateDatasets,
+          disabled: !params.canValidateDatasets || params.isValidatingDatasets,
+          icon: CircleCheck,
+          iconPlacement: 'start',
+          role: 'secondary',
+          size: 'xs',
+          wrapperClassName: 'w-fit',
+          iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        }),
+      ]),
+      h(
+        'div',
+        { className: 'min-w-0 text-xs' },
+        renderValidationStatus(h, params),
+      ),
+    ],
+  );
+}
+
+function renderValidationStatus(
+  h: typeof createElement,
+  params: SettingsFetchSectionParams,
+): React.ReactNode {
+  if (params.isValidatingDatasets) {
+    return h('div', { className: 'text-xs' }, [
+      InlineStatus({
+        h,
+        status: 'info',
+        label: 'Validating generated datasets...',
+      }),
+    ]);
+  }
+
+  if (!params.lastCopiedRequest) {
+    return h('div', { className: 'text-xs' }, [
+      InlineStatus({
+        h,
+        status: 'info',
+        label: 'Copy a command to enable dataset validation.',
+      }),
+    ]);
+  }
+
+  if (!params.lastValidationResult) {
+    return h('div', { className: 'text-xs' }, [
+      InlineStatus({
+        h,
+        status: 'info',
+        label: `Ready to validate ${params.lastCopiedRequest.cityCode}: ${params.lastCopiedRequest.datasetIds.join(', ')}`,
+      }),
+    ]);
+  }
+
+  const foundCount = params.lastValidationResult.foundIds.length;
+  const missingCount = params.lastValidationResult.missingIds.length;
+  const status: InlineStatusVariant =
+    missingCount === 0 ? 'success' : 'warning';
+
+  return h('div', { className: 'flex flex-col gap-1 text-xs' }, [
+    InlineStatus({
+      h,
+      status,
+      label: `Validated ${params.lastValidationResult.cityCode}: ${foundCount} found, ${missingCount} missing`,
     }),
-    Button(h, {
-      label: params.isOpeningModsFolder ? 'Opening' : 'Open Mods Folder',
-      ariaLabel: 'Open mods folder',
-      onClick: params.onOpenModsFolder,
-      disabled: params.isOpeningModsFolder,
-      icon: FolderOpen,
-      iconPlacement: 'start',
-      role: 'secondary',
-      size: 'xs',
-      wrapperClassName: 'w-fit',
-      iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
-    }),
+    missingCount > 0
+      ? h(
+          'p',
+          { className: 'text-[11px] text-muted-foreground' },
+          `Missing datasets: ${params.lastValidationResult.missingIds.join(', ')}`,
+        )
+      : null,
   ]);
 }

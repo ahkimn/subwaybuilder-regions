@@ -19,6 +19,7 @@ import {
 import {
   buildDefaultFetchOutPath,
   buildFetchErrors,
+  copyTextWithFallback,
   type FetchCountryCode,
   formatFetchCommand,
   resolveCityCountryCode,
@@ -354,21 +355,97 @@ export function RegionsSettingsPanel({
       if (!fetchCommand) {
         return;
       }
-      void window.navigator.clipboard
-        .writeText(fetchCommand)
-        .then(() => {
+      void copyTextWithFallback(fetchCommand)
+        .then((copied) => {
+          if (!copied) {
+            api.ui.showNotification(
+              '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
+              'error',
+            );
+            return;
+          }
+          const countryCode = state.fetch.params.countryCode;
+          if (!countryCode) {
+            return;
+          }
+          dispatch({
+            type: 'set_last_copied_fetch_request',
+            request: {
+              cityCode: state.fetch.params.cityCode,
+              countryCode,
+              datasetIds: [...state.fetch.params.datasetIds],
+              copiedAt: Date.now(),
+            },
+          });
+          dispatch({
+            type: 'set_last_fetch_validation_result',
+            result: null,
+          });
           api.ui.showNotification(
             '[Regions] Script command copied!',
             'success',
           );
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           console.error('[Regions] Failed to copy fetch command.', error);
           api.ui.showNotification(
             '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
             'error',
           );
         });
+    };
+
+    const onValidateDatasets = () => {
+      const lastCopiedRequest = state.fetch.lastCopiedRequest;
+      if (!lastCopiedRequest) {
+        return;
+      }
+
+      runAsyncOperation({
+        key: 'validatingFetchDatasets',
+        errorMessage:
+          '[Regions] Failed to validate generated datasets. Check logs for details.',
+        notifyOnError:
+          '[Regions] Failed to validate generated datasets. Check logs for details.',
+        task: () =>
+          datasetRegistry
+            .validateDynamicFetchOutputs(lastCopiedRequest)
+            .then((validation) => {
+              const foundCount = validation.foundIds.length;
+              const missingCount = validation.missingIds.length;
+
+              return datasetRegistry
+                .buildFromCache(() => {
+                  console.warn(
+                    '[Regions] Failed to load dataset index from server during dataset validation reconcile.',
+                  );
+                })
+                .then(() => reloadCachedRegistry())
+                .then(() => {
+                  dispatch({
+                    type: 'set_last_fetch_validation_result',
+                    result: {
+                      ...validation,
+                      validatedAt: Date.now(),
+                    },
+                  });
+
+                  if (missingCount === 0) {
+                    api.ui.showNotification(
+                      `[Regions] Validation complete: ${foundCount} dataset${foundCount === 1 ? '' : 's'} found.`,
+                      'success',
+                    );
+                    return;
+                  }
+
+                  const missingSummary = validation.missingIds.join(', ');
+                  api.ui.showNotification(
+                    `[Regions] Validation complete: ${foundCount} found, ${missingCount} missing (${missingSummary}).`,
+                    'warning',
+                  );
+                });
+            }),
+      });
     };
 
     const onOpenModsFolder = () => {
@@ -418,8 +495,12 @@ export function RegionsSettingsPanel({
               fetchParams: state.fetch.params,
               errors: fetchErrors,
               command: fetchCommand,
+              canValidateDatasets: state.fetch.lastCopiedRequest !== null,
+              isValidatingDatasets: state.pending.validatingFetchDatasets,
               isOpeningModsFolder: state.fetch.isOpeningModsFolder,
               isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+              lastCopiedRequest: state.fetch.lastCopiedRequest,
+              lastValidationResult: state.fetch.lastValidationResult,
               cityOptions: Array.from(knownCitiesByCode.values()).map(
                 (city) => ({
                   code: city.code,
@@ -436,6 +517,7 @@ export function RegionsSettingsPanel({
                 dispatch({ type: 'toggle_fetch_dataset', datasetId }),
               onCopyCommand: onCopyFetchCommand,
               onOpenModsFolder,
+              onValidateDatasets,
             },
           })
         : null,
@@ -493,16 +575,6 @@ function buildSettingsDatasetRows(
       return;
     }
     const issue = resolveCachedEntryIssue(entry, knownCityCodes);
-
-    if (!issue) {
-      // If this triggers, there a few potential causes, each of which is worthy of investigation
-      // 1) The activte registry failed to load a valid datset that was present in the cached registry
-      // 2) The cached registry has been corrupted in some way (e.g. manual edit, or a failed write that resulted in a partial entry being saved)
-      console.warn(
-        `[Regions] Found cached registry entry with no identifiable issue that missing from the active registry. Entry details: ${JSON.stringify(entry)}`,
-      );
-    }
-
     rows.set(rowKey, {
       rowKey,
       cityCode: entry.cityCode,

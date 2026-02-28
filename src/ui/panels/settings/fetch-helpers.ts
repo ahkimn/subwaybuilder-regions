@@ -1,3 +1,4 @@
+import type { RegistryCacheEntry } from '@shared/dataset-index';
 import {
   isStaticCountryCode,
   type StaticCountryCode,
@@ -19,6 +20,21 @@ export type FetchParameters = {
   countryCode: FetchCountryCode | null;
   datasetIds: string[];
   bbox: FetchBBox | null;
+};
+
+export type LastCopiedFetchRequest = {
+  cityCode: string;
+  countryCode: FetchCountryCode;
+  datasetIds: string[];
+  copiedAt: number;
+};
+
+export type FetchValidationResult = {
+  cityCode: string;
+  foundIds: string[];
+  missingIds: string[];
+  updatedEntries: RegistryCacheEntry[];
+  validatedAt: number;
 };
 
 export type FetchCommandContext = {
@@ -138,6 +154,41 @@ export function buildDefaultFetchOutPath(
   return normalizedRelativeModPath
     ? `./${normalizedRelativeModPath}/data`
     : './data';
+}
+
+export async function copyTextWithFallback(text: string): Promise<boolean> {
+  const clipboardApi = window.navigator?.clipboard;
+  if (clipboardApi?.writeText) {
+    try {
+      await clipboardApi.writeText(text);
+      return true;
+    } catch {
+      // Fall through to legacy copy fallback.
+    }
+  }
+
+  const doc = window.document;
+  const textarea = doc.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '-9999px';
+  textarea.style.left = '-9999px';
+  textarea.style.opacity = '0';
+
+  try {
+    doc.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const copied = doc.execCommand('copy');
+    return copied;
+  } catch {
+    return false;
+  } finally {
+    if (textarea.parentNode) {
+      textarea.parentNode.removeChild(textarea);
+    }
+  }
 }
 
 function normalizeRelativePath(pathValue: string): string {

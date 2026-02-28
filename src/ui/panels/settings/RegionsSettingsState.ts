@@ -4,12 +4,18 @@ import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { SystemPerformanceInfo } from '@/types';
 
 import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '../types';
-import type { FetchCountryCode, FetchParameters } from './fetch-helpers';
+import type {
+  FetchCountryCode,
+  FetchParameters,
+  FetchValidationResult,
+  LastCopiedFetchRequest,
+} from './fetch-helpers';
 
 export type PendingFlags = {
   updating: boolean;
   refreshingRegistry: boolean;
   clearingMissing: boolean;
+  validatingFetchDatasets: boolean;
 };
 
 export type PendingFlagKey = keyof PendingFlags;
@@ -18,6 +24,8 @@ export type FetchState = {
   params: FetchParameters;
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
+  lastCopiedRequest: LastCopiedFetchRequest | null;
+  lastValidationResult: FetchValidationResult | null;
 };
 
 export type RegionsSettingsState = {
@@ -60,6 +68,14 @@ export type RegionsSettingsAction =
     }
   | { type: 'toggle_fetch_dataset'; datasetId: string }
   | { type: 'set_is_opening_mods_folder'; value: boolean }
+  | {
+      type: 'set_last_copied_fetch_request';
+      request: LastCopiedFetchRequest | null;
+    }
+  | {
+      type: 'set_last_fetch_validation_result';
+      result: FetchValidationResult | null;
+    }
   | {
       type: 'set_system_performance_info';
       systemPerformanceInfo: SystemPerformanceInfo | null;
@@ -153,6 +169,22 @@ export function regionsSettingsReducer(
           isOpeningModsFolder: action.value,
         },
       };
+    case 'set_last_copied_fetch_request':
+      return {
+        ...state,
+        fetch: {
+          ...state.fetch,
+          lastCopiedRequest: action.request,
+        },
+      };
+    case 'set_last_fetch_validation_result':
+      return {
+        ...state,
+        fetch: {
+          ...state.fetch,
+          lastValidationResult: action.result,
+        },
+      };
     case 'set_system_performance_info':
       return { ...state, systemPerformanceInfo: action.systemPerformanceInfo };
     default:
@@ -169,6 +201,8 @@ export const INITIAL_FETCH_STATE: FetchState = {
   },
   isOpeningModsFolder: false,
   isCountryAutoResolved: false,
+  lastCopiedRequest: null,
+  lastValidationResult: null,
 };
 
 export function createInitialSettingsState(
@@ -188,6 +222,7 @@ export function createInitialSettingsState(
       updating: false,
       refreshingRegistry: false,
       clearingMissing: false,
+      validatingFetchDatasets: false,
     },
     fetch: INITIAL_FETCH_STATE,
     systemPerformanceInfo: null,

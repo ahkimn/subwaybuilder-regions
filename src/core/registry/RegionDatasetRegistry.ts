@@ -3,6 +3,7 @@ import type {
   DatasetMetadata,
   RegistryCacheEntry,
 } from '@shared/dataset-index';
+import { DATASET_METADATA_CATALOG } from '@shared/datasets/catalog';
 
 import type { ModdingAPI } from '../../types/api';
 import { RegionDataset } from '../datasets/RegionDataset';
@@ -18,6 +19,19 @@ import {
 } from '../storage/helpers';
 import type { RegionsStorage } from '../storage/RegionsStorage';
 import { resolveStaticTemplateCountry, STATIC_TEMPLATES } from './static';
+
+export type DynamicValidationRequest = {
+  cityCode: string;
+  countryCode: string;
+  datasetIds: string[];
+};
+
+export type DynamicValidationResult = {
+  cityCode: string;
+  foundIds: string[];
+  missingIds: string[];
+  updatedEntries: RegistryCacheEntry[];
+};
 
 export class RegionDatasetRegistry {
   readonly datasets: Map<string, RegionDataset>;
@@ -339,6 +353,68 @@ export class RegionDatasetRegistry {
     return entries;
   }
 
+  // --- Dynamic Dataset Helpers --- //
+
+  async validateDynamicFetchOutputs(
+    request: DynamicValidationRequest,
+  ): Promise<DynamicValidationResult> {
+    const localModsDataRoot = await this.storage.resolveLocalModsDataRoot();
+    const foundIds: string[] = [];
+    const missingIds: string[] = [];
+    const updatedEntries: RegistryCacheEntry[] = [];
+
+    for (const datasetId of request.datasetIds) {
+      const metadata = DATASET_METADATA_CATALOG[datasetId];
+      if (!metadata) {
+        console.warn(
+          `[Regions] Missing catalog metadata for dynamic dataset ${datasetId}; skipping validation for city ${request.cityCode}.`,
+        );
+        missingIds.push(datasetId);
+        continue;
+      }
+
+      const candidatePaths = buildLocalDatasetCandidatePaths(
+        localModsDataRoot,
+        request.cityCode,
+        datasetId,
+      );
+      const result = await tryLocalDatasetPaths(candidatePaths);
+      if (result.isPresent) {
+        foundIds.push(datasetId);
+      } else {
+        missingIds.push(datasetId);
+      }
+
+      updatedEntries.push({
+        cityCode: request.cityCode,
+        datasetId: metadata.datasetId,
+        displayName: metadata.displayName,
+        unitSingular: metadata.unitSingular,
+        unitPlural: metadata.unitPlural,
+        source: metadata.source,
+        size: 0,
+        dataPath: result.dataPath,
+        isPresent: result.isPresent,
+        origin: 'dynamic',
+        fileSizeMB: result.fileSizeMB,
+        compressed: result.compressed,
+      });
+    }
+
+    await this.upsertDynamicEntries(
+      request.cityCode,
+      request.datasetIds,
+      updatedEntries,
+    );
+
+    return {
+      cityCode: request.cityCode,
+      foundIds,
+      missingIds,
+      updatedEntries,
+    };
+  }
+
   // --- Local Cache Helpers --- //
 
   private async resolveAndPersistLocalCacheEntries(): Promise<
@@ -408,6 +484,32 @@ export class RegionDatasetRegistry {
         ? probeResult.compressed
         : entry.compressed,
     };
+  }
+
+  private async upsertDynamicEntries(
+    cityCode: string,
+    datasetIds: string[],
+    nextDynamicEntries: RegistryCacheEntry[],
+  ): Promise<void> {
+    const storedRegistry = await this.storage.loadStoredRegistry();
+    const existingEntries = storedRegistry?.entries ?? [];
+    const datasetIdSet = new Set(datasetIds);
+    const retainedEntries = existingEntries.filter(
+      (entry) =>
+        !(
+          entry.origin === 'dynamic' &&
+          entry.cityCode === cityCode &&
+          datasetIdSet.has(entry.datasetId)
+        ),
+    );
+
+    await this.storage.saveRegistry({
+      updatedAt: Date.now(),
+      entries: dedupeRegistryEntries([
+        ...retainedEntries,
+        ...nextDynamicEntries,
+      ]),
+    });
   }
 
   private buildDatasetEntryFromStorage(

@@ -36,6 +36,9 @@ export interface ElectronAPI {
     value: unknown,
   ) => Promise<{ success: boolean }>;
   setSetting: (key: string, value: unknown) => Promise<{ success: boolean }>;
+
+  /** Gets the user's current language setting (e.g. "en", "fr", "de"). */
+  getLanguage(): Promise<string>;
 }
 
 export type SystemPerformanceInfo = {
