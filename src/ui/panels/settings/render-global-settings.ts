@@ -2,17 +2,20 @@ import type React from 'react';
 import type { createElement } from 'react';
 
 import { PanelSection } from '../../elements/PanelSection';
-import type { LabelProperties, SwitchProperties } from '../types';
 import type { GlobalSettingsSectionParams } from './types';
 
 // Renders the "Global Settings" section near the top of the settings menu
 export function renderGlobalSettingsSection(
   h: typeof createElement,
-  Switch: React.ComponentType<SwitchProperties>,
-  Label: React.ComponentType<LabelProperties>,
   params: GlobalSettingsSectionParams,
 ): React.ReactNode {
-  const { settings, isUpdating, onToggleShowUnpopulatedRegions } = params;
+  const {
+    Switch,
+    Label,
+    settings,
+    isUpdating,
+    onToggleShowUnpopulatedRegions,
+  } = params;
   const toggleId = 'regions-show-unpopulated-toggle';
 
   return PanelSection(

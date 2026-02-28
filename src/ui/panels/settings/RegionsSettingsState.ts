@@ -34,15 +34,11 @@ export type RegionsSettingsState = {
   cachedRegistryEntries: RegistryCacheEntry[];
   searchTerm: string;
   sortState: SortState;
-  registryRevision: number;
   pending: PendingFlags;
   fetch: FetchState;
   systemPerformanceInfo: SystemPerformanceInfo | null;
 };
 
-/**
- *
- */
 export type RegionsSettingsAction =
   | { type: 'open_overlay' }
   | { type: 'close_overlay' }
@@ -57,7 +53,6 @@ export type RegionsSettingsAction =
       settings: ReturnType<RegionsStorage['getSettings']>;
     }
   | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
-  | { type: 'registry_revision_bumped' }
   | { type: 'set_pending_flag'; key: PendingFlagKey; value: boolean }
   | { type: 'set_fetch_params'; params: Partial<FetchParameters> }
   | {
@@ -102,8 +97,6 @@ export function regionsSettingsReducer(
       return { ...state, settings: action.settings };
     case 'registry_entries_loaded':
       return { ...state, cachedRegistryEntries: action.entries };
-    case 'registry_revision_bumped':
-      return { ...state, registryRevision: state.registryRevision + 1 };
 
     // Async lifecycle actions
     case 'set_pending_flag':
@@ -217,7 +210,6 @@ export function createInitialSettingsState(
       ...DEFAULT_SORT_STATE,
       sortDirection: SortDirection.Asc,
     },
-    registryRevision: 0,
     pending: {
       updating: false,
       refreshingRegistry: false,

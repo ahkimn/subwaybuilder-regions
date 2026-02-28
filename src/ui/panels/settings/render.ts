@@ -1,16 +1,11 @@
 import type React from 'react';
-import type { createElement, useState } from 'react';
+import type { createElement } from 'react';
 
 import { Button } from '../../elements/Button';
 import { ReactDivider } from '../../elements/Divider';
 import { Arrow, MapPinnedIcon } from '../../elements/utils/Icons';
-import type {
-  InputFieldProperties,
-  LabelProperties,
-  SwitchProperties,
-} from '../types';
 import { renderFetchDatasetsSection } from './render-fetch';
-import { renderSystemPerformanceFooter } from './render-footer';
+import { renderFooterSection } from './render-footer';
 import { renderGlobalSettingsSection } from './render-global-settings';
 import { renderDatasetRegistrySection } from './render-registry';
 import type { SettingsOverlayParams } from './types';
@@ -54,28 +49,9 @@ export function renderSettingsEntry(
 
 export function renderSettingsOverlay(
   h: typeof createElement,
-  useStateHook: typeof useState,
-  Input: React.ComponentType<InputFieldProperties>,
-  Switch: React.ComponentType<SwitchProperties>,
-  Label: React.ComponentType<LabelProperties>,
   params: SettingsOverlayParams,
 ): React.ReactNode {
-  const {
-    settings,
-    isUpdating,
-    searchTerm,
-    sortState,
-    rows,
-    onClose,
-    onSearchTermChange,
-    onSortChange,
-    onToggleShowUnpopulatedRegions,
-    onRefreshRegistry,
-    isRefreshingRegistry,
-    onClearMissing,
-    isClearingMissing,
-    fetchParams: fetch,
-  } = params;
+  const { onClose } = params;
 
   return h(
     'div',
@@ -108,27 +84,13 @@ export function renderSettingsOverlay(
           ),
         ]),
         ReactDivider(h, 1),
-        renderGlobalSettingsSection(h, Switch, Label, {
-          settings,
-          isUpdating,
-          onToggleShowUnpopulatedRegions,
-        }),
+        renderGlobalSettingsSection(h, params.globalParams),
         ReactDivider(h, 1),
-        renderDatasetRegistrySection(h, useStateHook, Input, {
-          rows,
-          searchTerm,
-          sortState,
-          onSearchTermChange,
-          onSortChange,
-          onRefreshRegistry,
-          isRefreshingRegistry,
-          onClearMissing,
-          isClearingMissing,
-        }),
+        renderDatasetRegistrySection(h, params.registryParams),
         ReactDivider(h, 1),
-        renderFetchDatasetsSection(h, fetch),
+        renderFetchDatasetsSection(h, params.fetchParams),
         ReactDivider(h, 1),
-        renderSystemPerformanceFooter(h, fetch.systemPerformanceInfo),
+        renderFooterSection(h, params.footerParams),
       ]),
     ],
   );

@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { createElement, useState } from 'react';
+import type { createElement } from 'react';
 
 import { formatNumberOrDefault } from '@/core/utils';
 
@@ -15,7 +15,7 @@ import { InlineStatus } from '../../elements/InlineStatus';
 import { PanelSection } from '../../elements/PanelSection';
 import { ReactSearchInput } from '../../elements/SearchInput';
 import { RefreshIcon, Trash2 } from '../../elements/utils/Icons';
-import type { InputFieldProperties, SortConfig, TableAlign } from '../types';
+import type { SortConfig, TableAlign } from '../types';
 import type { SortState } from '../types';
 import { SortDirection } from '../types';
 import type {
@@ -164,11 +164,11 @@ export function sortSettingsRows(
 
 export function renderDatasetRegistrySection(
   h: typeof createElement,
-  useStateHook: typeof useState,
-  Input: React.ComponentType<InputFieldProperties>,
   params: RegistrySectionParams,
 ): React.ReactNode {
   const {
+    useStateHook,
+    Input,
     rows,
     searchTerm,
     onSearchTermChange,

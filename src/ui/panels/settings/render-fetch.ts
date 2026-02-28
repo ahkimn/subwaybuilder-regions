@@ -28,14 +28,14 @@ export function renderFetchDatasetsSection(
   h: typeof createElement,
   params: SettingsFetchSectionParams,
 ): React.ReactNode {
-  const isCityInvalid = !Boolean(params.fetchParams.cityCode);
-  const isCountryInvalid = params.fetchParams.countryCode === null;
-  const existsSelectedDatset = params.fetchParams.datasetIds.length > 0;
+  const isCityInvalid = !Boolean(params.request.cityCode);
+  const isCountryInvalid = params.request.countryCode === null;
+  const existsSelectedDatset = params.request.datasetIds.length > 0;
   const isValidCommand =
     !isCityInvalid &&
     !isCountryInvalid &&
     existsSelectedDatset &&
-    params.fetchParams.bbox !== null &&
+    params.request.bbox !== null &&
     params.errors.length === 0 &&
     !!params.command;
 
@@ -66,7 +66,7 @@ export function renderFetchDatasetsSection(
           renderFetchHeader(h, 'City', isCityInvalid, 'Required', 'warning'),
           SelectMenu({
             h,
-            value: params.fetchParams.cityCode,
+            value: params.request.cityCode,
             options: cityOptions,
             placeholder: 'Select city',
             onValueChange: params.onCityCodeChange,
@@ -82,7 +82,7 @@ export function renderFetchDatasetsSection(
           ),
           SelectMenu({
             h,
-            value: params.fetchParams.countryCode ?? '',
+            value: params.request.countryCode ?? '',
             options: countryMenuOptions,
             placeholder: 'N/A',
             disabled: params.isCountryAutoResolved,
@@ -117,10 +117,10 @@ export function renderFetchDatasetsSection(
           'Boundary Box',
         ),
         h('div', { className: 'flex flex-wrap items-start gap-3 max-w-fit' }, [
-          renderBBoxValue(h, 'West', params.fetchParams.bbox?.west ?? ''),
-          renderBBoxValue(h, 'South', params.fetchParams.bbox?.south ?? ''),
-          renderBBoxValue(h, 'East', params.fetchParams.bbox?.east ?? ''),
-          renderBBoxValue(h, 'North', params.fetchParams.bbox?.north ?? ''),
+          renderBBoxValue(h, 'West', params.request.bbox?.west ?? ''),
+          renderBBoxValue(h, 'South', params.request.bbox?.south ?? ''),
+          renderBBoxValue(h, 'East', params.request.bbox?.east ?? ''),
+          renderBBoxValue(h, 'North', params.request.bbox?.north ?? ''),
         ]),
       ]),
 
@@ -219,7 +219,7 @@ function renderDatasetOption(
   metadata: DatasetTemplateMetadata,
   params: SettingsFetchSectionParams,
 ): React.ReactNode {
-  const selectedDatasetIds = new Set(params.fetchParams.datasetIds);
+  const selectedDatasetIds = new Set(params.request.datasetIds);
   return h(
     'label',
     {

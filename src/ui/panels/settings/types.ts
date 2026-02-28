@@ -1,4 +1,6 @@
 import type { DatasetTemplateMetadata } from '@shared/datasets/catalog';
+import type React from 'react';
+import type { useState } from 'react';
 
 import type { DatasetOrigin } from '@/core/domain';
 import type { RegionDatasetRegistry } from '@/core/registry/RegionDatasetRegistry';
@@ -6,7 +8,12 @@ import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { RegionsSettings } from '@/core/storage/types';
 import type { ModdingAPI, SystemPerformanceInfo } from '@/types';
 
-import type { SortState } from '../types';
+import type {
+  InputFieldProperties,
+  LabelProperties,
+  SortState,
+  SwitchProperties,
+} from '../types';
 import type {
   FetchParameters,
   FetchValidationResult,
@@ -33,7 +40,7 @@ export type SettingsDatasetRow = {
 };
 
 export type SettingsFetchSectionParams = {
-  fetchParams: FetchParameters;
+  request: FetchParameters;
   errors: string[];
   command: string;
   canValidateDatasets: boolean;
@@ -46,7 +53,6 @@ export type SettingsFetchSectionParams = {
   countryOptions: Array<NonNullable<FetchParameters['countryCode']>>;
   datasets: DatasetTemplateMetadata[];
   relativeModPath: string;
-  systemPerformanceInfo: SystemPerformanceInfo | null;
   onCityCodeChange: (cityCode: string) => void;
   onCountryCodeChange: (countryCode: FetchParameters['countryCode']) => void;
   onToggleDataset: (datasetId: string) => void;
@@ -55,37 +61,36 @@ export type SettingsFetchSectionParams = {
   onValidateDatasets: () => void;
 };
 
+export type SettingsFooterSectionParams = {
+  systemPerformanceInfo: SystemPerformanceInfo | null;
+};
+
 export type GlobalSettingsSectionParams = {
+  Switch: React.ComponentType<SwitchProperties>;
+  Label: React.ComponentType<LabelProperties>;
   settings: RegionsSettings;
   isUpdating: boolean;
   onToggleShowUnpopulatedRegions: (nextValue: boolean) => void;
 };
 
 export type RegistrySectionParams = {
+  useStateHook: typeof useState;
+  Input: React.ComponentType<InputFieldProperties>;
   rows: SettingsDatasetRow[];
   searchTerm: string;
   sortState: SortState;
+  isRefreshingRegistry: boolean;
+  isClearingMissing: boolean;
   onSearchTermChange: (searchTerm: string) => void;
   onSortChange: (columnIndex: number) => void;
   onRefreshRegistry: () => void;
-  isRefreshingRegistry: boolean;
   onClearMissing: () => void;
-  isClearingMissing: boolean;
 };
 
 export type SettingsOverlayParams = {
-  settings: RegionsSettings;
-  isUpdating: boolean;
-  searchTerm: string;
-  sortState: SortState;
-  rows: SettingsDatasetRow[];
   onClose: () => void;
-  onSearchTermChange: (searchTerm: string) => void;
-  onSortChange: (columnIndex: number) => void;
-  onToggleShowUnpopulatedRegions: (nextValue: boolean) => void;
-  onRefreshRegistry: () => void;
-  isRefreshingRegistry: boolean;
-  onClearMissing: () => void;
-  isClearingMissing: boolean;
+  globalParams: GlobalSettingsSectionParams;
+  registryParams: RegistrySectionParams;
   fetchParams: SettingsFetchSectionParams;
+  footerParams: SettingsFooterSectionParams;
 };

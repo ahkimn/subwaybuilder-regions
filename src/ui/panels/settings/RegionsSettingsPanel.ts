@@ -12,11 +12,6 @@ import { getGameReact } from '@/ui/react/get-game-react';
 
 import { getNextSortState } from '../shared/sort';
 import {
-  type InputFieldProperties,
-  type LabelProperties,
-  type SwitchProperties,
-} from '../types';
-import {
   buildDefaultFetchOutPath,
   buildFetchErrors,
   copyTextWithFallback,
@@ -46,14 +41,15 @@ export function RegionsSettingsPanel({
   storage,
   datasetRegistry,
 }: SettingsMenuComponentParams): () => React.ReactNode {
-  const { h, Fragment, useEffectHook, useReducerHook, useStateHook } =
-    getGameReact(api);
-  const Input = api.utils.components
-    .Input as React.ComponentType<InputFieldProperties>;
-  const Switch = api.utils.components
-    .Switch as React.ComponentType<SwitchProperties>;
-  const Label = api.utils.components
-    .Label as React.ComponentType<LabelProperties>;
+  const {
+    h,
+    Fragment,
+    useEffectHook,
+    useReducerHook,
+    useStateHook,
+    components,
+  } = getGameReact(api);
+  const { Input, Switch, Label } = components;
 
   return function RegionsSettingsMenuComponent() {
     const [state, dispatch] = useReducerHook(
@@ -75,6 +71,19 @@ export function RegionsSettingsPanel({
 
     useEffectHook(() => {
       let mounted = true;
+      let registryReloadScheduled = false;
+
+      const scheduleRegistryReload = () => {
+        if (registryReloadScheduled) {
+          return;
+        }
+        registryReloadScheduled = true;
+        queueMicrotask(() => {
+          registryReloadScheduled = false;
+          void reloadCachedRegistry();
+        });
+      };
+
       void storage.initialize().then((loaded) => {
         if (mounted) {
           dispatch({ type: 'settings_loaded', settings: loaded });
@@ -90,7 +99,7 @@ export function RegionsSettingsPanel({
         dispatch({ type: 'settings_updated', settings: nextSettings });
       });
       const unsubscribeRegistry = datasetRegistry.listen(() => {
-        dispatch({ type: 'registry_revision_bumped' });
+        scheduleRegistryReload();
       });
 
       return () => {
@@ -467,32 +476,40 @@ export function RegionsSettingsPanel({
     return h(Fragment, null, [
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
-        ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-            settings: state.settings,
-            isUpdating: state.pending.updating,
-            searchTerm: state.searchTerm,
-            sortState: state.sortState,
-            rows: sortedRows,
+        ? renderSettingsOverlay(h, {
             onClose: () => dispatch({ type: 'close_overlay' }),
-            onSearchTermChange: (searchTerm: string) =>
-              dispatch({ type: 'set_search_term', searchTerm }),
-            onSortChange: (columnIndex: number) => {
-              const nextSortState = getNextSortState<SettingsDatasetRow>(
-                state.sortState,
-                columnIndex,
-                resolveRegistrySortConfig,
-              );
-              dispatch({ type: 'set_sort_state', sortState: nextSortState });
+            globalParams: {
+              Switch,
+              Label,
+              settings: state.settings,
+              isUpdating: state.pending.updating,
+              onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+                updateSettings({ showUnpopulatedRegions: nextValue });
+              },
             },
-            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-              updateSettings({ showUnpopulatedRegions: nextValue });
+            registryParams: {
+              useStateHook,
+              Input,
+              rows: sortedRows,
+              searchTerm: state.searchTerm,
+              sortState: state.sortState,
+              onSearchTermChange: (searchTerm: string) =>
+                dispatch({ type: 'set_search_term', searchTerm }),
+              onSortChange: (columnIndex: number) => {
+                const nextSortState = getNextSortState<SettingsDatasetRow>(
+                  state.sortState,
+                  columnIndex,
+                  resolveRegistrySortConfig,
+                );
+                dispatch({ type: 'set_sort_state', sortState: nextSortState });
+              },
+              onRefreshRegistry: refreshRegistry,
+              isRefreshingRegistry: state.pending.refreshingRegistry,
+              onClearMissing: clearMissingEntries,
+              isClearingMissing: state.pending.clearingMissing,
             },
-            onRefreshRegistry: refreshRegistry,
-            isRefreshingRegistry: state.pending.refreshingRegistry,
-            onClearMissing: clearMissingEntries,
-            isClearingMissing: state.pending.clearingMissing,
             fetchParams: {
-              fetchParams: state.fetch.params,
+              request: state.fetch.params,
               errors: fetchErrors,
               command: fetchCommand,
               canValidateDatasets: state.fetch.lastCopiedRequest !== null,
@@ -510,7 +527,6 @@ export function RegionsSettingsPanel({
               countryOptions,
               datasets: fetchableDatasets,
               relativeModPath,
-              systemPerformanceInfo: state.systemPerformanceInfo,
               onCityCodeChange: onFetchCityCodeChange,
               onCountryCodeChange: onFetchCountryCodeChange,
               onToggleDataset: (datasetId: string) =>
@@ -518,6 +534,9 @@ export function RegionsSettingsPanel({
               onCopyCommand: onCopyFetchCommand,
               onOpenModsFolder,
               onValidateDatasets,
+            },
+            footerParams: {
+              systemPerformanceInfo: state.systemPerformanceInfo,
             },
           })
         : null,
