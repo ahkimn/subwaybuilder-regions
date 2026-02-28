@@ -1,0 +1,22 @@
+{
+  "BOS": [
+    {
+      "datasetId": "counties",
+      "displayName": "Counties",
+      "unitSingular": "county",
+      "unitPlural": "counties",
+      "source": "fixture",
+      "size": 10
+    }
+  ],
+  "SFO": [
+    {
+      "datasetId": "districts",
+      "displayName": "Districts",
+      "unitSingular": "district",
+      "unitPlural": "districts",
+      "source": "fixture",
+      "size": 20
+    }
+  ]
+}
