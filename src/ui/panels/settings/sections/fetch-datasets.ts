@@ -269,11 +269,11 @@ function renderDatasetOption(
 ): React.ReactNode {
   const isSelected = params.request.datasetIds.includes(metadata.datasetId);
   const datasetCardClassName = [
-    'group flex w-full items-center justify-between gap-2 rounded-sm border px-2 py-1.5 text-left transition-colors',
+    'group flex w-full items-center justify-between gap-2 rounded-sm border px-2 py-1 text-left transition-colors duration-150',
     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60',
     isSelected
-      ? 'border-primary/50 bg-primary/10'
-      : 'border-border/35 bg-background/60 hover:bg-accent/40 hover:border-border/60',
+      ? 'border-primary/50 bg-primary/10 hover:bg-primary/15'
+      : 'border-border/35 bg-background/60 hover:bg-accent/60 hover:border-border/70',
   ].join(' ');
 
   return h(
@@ -293,13 +293,14 @@ function renderDatasetOption(
       { className: 'min-w-0 flex-1' },
       h(
         'span',
-        { className: 'text-xs font-medium truncate' },
+        { className: 'block text-xs font-medium truncate leading-tight' },
         metadata.displayName,
       ),
       h(
-        'p',
+        'span',
         {
-          className: 'text-[11px] text-muted-foreground truncate',
+          className:
+            'block text-[11px] text-muted-foreground truncate leading-tight',
         },
         metadata.source,
       ),
