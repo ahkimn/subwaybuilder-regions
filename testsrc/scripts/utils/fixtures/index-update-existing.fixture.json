@@ -1,0 +1,12 @@
+{
+  "NYC": [
+    {
+      "datasetId": "districts",
+      "displayName": "Old Districts",
+      "unitSingular": "district",
+      "unitPlural": "districts",
+      "source": "fixture",
+      "size": 1
+    }
+  ]
+}
