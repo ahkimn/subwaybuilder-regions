@@ -251,7 +251,10 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
 
-    const cityField = byRegionsId(REGIONS_SETTINGS_FETCH_CITY_FIELD_ID, container);
+    const cityField = byRegionsId(
+      REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
+      container,
+    );
     const cityMenuTrigger = cityField.querySelector('summary');
     assert.ok(cityMenuTrigger, 'Expected city SelectMenu trigger');
     await user.click(cityMenuTrigger as HTMLElement);
@@ -279,14 +282,17 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     assert.equal(existsWarning('datasets', container), false);
     assert.equal(
       container.querySelectorAll(
-        `[data-regions-id="${REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID}"]`
+        `[data-regions-id="${REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID}"]`,
       ).length,
       0,
     );
     assertButtonEnabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
     assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
 
-    const copyButton = byRegionsId(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
+    const copyButton = byRegionsId(
+      REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
+      container,
+    );
     await user.click(copyButton);
 
     assertButtonEnabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);

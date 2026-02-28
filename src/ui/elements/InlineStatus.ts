@@ -77,12 +77,10 @@ export function InlineStatus({
       style: { color: colorHex ?? defaults.colorHex },
       ...(dataRegionsId ? { [REGIONS_ID_ATTR]: dataRegionsId } : {}),
     },
-    [
-      createReactIconElement(h, icon ?? defaults.icon, {
-        size: 14,
-        className: iconClassName ?? INLINE_STATUS_ICON_CLASS,
-      }),
-      h('span', { className: labelClassName }, label),
-    ],
+    createReactIconElement(h, icon ?? defaults.icon, {
+      size: 14,
+      className: iconClassName ?? INLINE_STATUS_ICON_CLASS,
+    }),
+    h('span', { className: labelClassName }, label),
   );
 }

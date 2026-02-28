@@ -57,6 +57,8 @@ export const REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID =
   'settings-fetch-command-warning';
 export const REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID =
   'settings-fetch-copy-button';
+export const REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID =
+  'settings-fetch-open-mod-folder-button';
 export const REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID =
   'settings-fetch-validate-button';
 export const REGIONS_SETTINGS_FETCH_STATUS_ID = 'settings-fetch-status';

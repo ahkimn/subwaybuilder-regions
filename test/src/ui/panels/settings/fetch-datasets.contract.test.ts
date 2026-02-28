@@ -33,11 +33,11 @@ function deriveFetchUi(fetchState: FetchState): DerivedFetchUi {
     errors.length > 0
       ? ''
       : formatFetchCommand({
-        platform: 'win32',
-        params: fetchState.params,
-        relativeModPath: 'regions',
-        outPath: '.\\regions\\data',
-      });
+          platform: 'win32',
+          params: fetchState.params,
+          relativeModPath: 'regions',
+          outPath: '.\\regions\\data',
+        });
 
   return {
     errors,
@@ -122,7 +122,9 @@ describe('settings fetch datasets happy path (state/contract)', () => {
       'Expected country warning in initial errors',
     );
     assert.ok(
-      initial.errors.some((error) => error.includes('Select at least one dataset')),
+      initial.errors.some((error) =>
+        error.includes('Select at least one dataset'),
+      ),
       'Expected dataset warning in initial errors',
     );
     assert.ok(
@@ -132,7 +134,11 @@ describe('settings fetch datasets happy path (state/contract)', () => {
 
     const resolvedCountry = resolveCityCountryCode(bosCity);
     assert.equal(resolvedCountry, 'US');
-    fetchState = simulateCitySelection(fetchState, bosCity.code, resolvedCountry);
+    fetchState = simulateCitySelection(
+      fetchState,
+      bosCity.code,
+      resolvedCountry,
+    );
     fetchState = {
       ...fetchState,
       params: {
@@ -155,7 +161,9 @@ describe('settings fetch datasets happy path (state/contract)', () => {
       false,
     );
     assert.equal(
-      afterCity.errors.some((error) => error.includes('supported fetch country')),
+      afterCity.errors.some((error) =>
+        error.includes('supported fetch country'),
+      ),
       false,
     );
     assert.equal(afterCity.canCopyCommand, false);
@@ -194,7 +202,9 @@ describe('settings fetch datasets happy path (state/contract)', () => {
 
     const afterCopy = deriveFetchUi(fetchState);
     assert.equal(afterCopy.canValidateDatasets, true);
-    assert.deepEqual(fetchState.lastCopiedRequest?.datasetIds, [selectedDatasetId]);
+    assert.deepEqual(fetchState.lastCopiedRequest?.datasetIds, [
+      selectedDatasetId,
+    ]);
 
     fetchState = {
       ...fetchState,
@@ -207,7 +217,10 @@ describe('settings fetch datasets happy path (state/contract)', () => {
       },
     };
 
-    assert.equal(fetchState.lastValidationResult?.foundIds.includes(selectedDatasetId), true);
+    assert.equal(
+      fetchState.lastValidationResult?.foundIds.includes(selectedDatasetId),
+      true,
+    );
     assert.equal(fetchState.lastValidationResult?.missingIds.length, 0);
   });
 });

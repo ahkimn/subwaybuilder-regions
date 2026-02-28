@@ -1,8 +1,6 @@
 import type React from 'react';
 import { type createElement } from 'react';
 
-import type { DatasetTemplateMetadata } from '../../../../../shared/datasets/catalog';
-
 import {
   REGIONS_ID_ATTR,
   REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
@@ -15,10 +13,14 @@ import {
   REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
   REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
   REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
+  REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
   REGIONS_SETTINGS_FETCH_SECTION_ID,
   REGIONS_SETTINGS_FETCH_STATUS_ID,
   REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
 } from '@/core/constants';
+
+import type { DatasetTemplateMetadata } from '../../../../../shared/datasets/catalog';
+import type { ButtonOptions } from '../../../elements/Button';
 import { Button } from '../../../elements/Button';
 import type { InlineStatusVariant } from '../../../elements/InlineStatus';
 import { InlineStatus } from '../../../elements/InlineStatus';
@@ -39,6 +41,7 @@ const COMMAND_BOX_BASE_CLASS =
   'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2 text-xs font-mono text-foreground';
 const FIELD_HEADER_BASE_CLASS =
   'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-none min-h-5';
+const ICON_CLASSES = { size: 14, className: 'h-3.5 w-3.5 shrink-0' };
 const ERROR_HEX = getPrimaryChartColorByName('Red').hex;
 
 export function renderFetchDatasetsSection(
@@ -128,6 +131,7 @@ export function renderFetchDatasetsSection(
           ),
         ),
 
+        // Dataset selection row
         wrapFetchField(
           h,
           REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
@@ -142,6 +146,7 @@ export function renderFetchDatasetsSection(
           renderDatasetOptions(h, params),
         ),
 
+        // Auto-generated boundary box fields
         wrapFetchField(
           h,
           REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
@@ -160,13 +165,20 @@ export function renderFetchDatasetsSection(
           ),
         ),
 
+        // Generated command field
         wrapFetchField(
           h,
           REGIONS_SETTINGS_FETCH_COMMAND_FIELD_ID,
-          renderFetchHeader(h, 'Generated Command', isValidCommand, 'Ready', 'success'),
+          renderFetchHeader(
+            h,
+            'Generated Command',
+            isValidCommand,
+            'Ready',
+            'success',
+          ),
           renderGeneratedCommand(h, isValidCommand, params),
         ),
-
+        // User action buttons + validation status
         renderActionButtons(h, params, isValidCommand),
         h(
           'p',
@@ -331,10 +343,7 @@ function renderGeneratedCommand(
             className: 'inline-flex items-center gap-1.5 text-xs leading-none',
             style: { color: ERROR_HEX },
           },
-          createReactIconElement(h, OctagonX, {
-            size: 14,
-            className: 'h-3.5 w-3.5 shrink-0',
-          }),
+          createReactIconElement(h, OctagonX, ICON_CLASSES),
           h('span', null, `Command cannot be generated. ${commandErrorText}`),
         ),
       );
@@ -345,6 +354,16 @@ function renderActionButtons(
   params: SettingsFetchSectionParams,
   canFetch: boolean,
 ): React.ReactNode {
+  const sharedClassNames = {
+    iconPlacement: 'start',
+    role: 'secondary',
+    size: 'xs',
+    wrapperClassName: 'w-fit',
+    iconOptions: ICON_CLASSES,
+  } satisfies Pick<
+    ButtonOptions,
+    'iconPlacement' | 'role' | 'size' | 'wrapperClassName' | 'iconOptions'
+  >;
   return h(
     'div',
     { className: 'flex flex-wrap items-center justify-between gap-2' },
@@ -357,11 +376,7 @@ function renderActionButtons(
         onClick: params.onCopyCommand,
         disabled: !canFetch,
         icon: Copy,
-        iconPlacement: 'start',
-        role: 'secondary',
-        size: 'xs',
-        wrapperClassName: 'w-fit',
-        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        ...sharedClassNames,
         dataRegionsId: REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
       }),
       Button(h, {
@@ -370,11 +385,8 @@ function renderActionButtons(
         onClick: params.onOpenModsFolder,
         disabled: params.isOpeningModsFolder,
         icon: FolderOpen,
-        iconPlacement: 'start',
-        role: 'secondary',
-        size: 'xs',
-        wrapperClassName: 'w-fit',
-        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        ...sharedClassNames,
+        dataRegionsId: REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
       }),
       Button(h, {
         label: params.isValidatingDatasets ? 'Validating' : 'Validate Datasets',
@@ -382,11 +394,7 @@ function renderActionButtons(
         onClick: params.onValidateDatasets,
         disabled: !params.canValidateDatasets || params.isValidatingDatasets,
         icon: CircleCheck,
-        iconPlacement: 'start',
-        role: 'secondary',
-        size: 'xs',
-        wrapperClassName: 'w-fit',
-        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        ...sharedClassNames,
         dataRegionsId: REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
       }),
     ),

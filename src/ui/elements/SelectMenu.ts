@@ -40,21 +40,23 @@ export function SelectMenu({
   const displayLabel = selectedOption?.label ?? placeholder;
 
   if (disabled) {
-    return h('div', { className: `${buttonClassName} opacity-70` }, [
+    return h(
+      'div',
+      { className: `${buttonClassName} opacity-70` },
       h('span', { className: 'truncate text-left' }, displayLabel),
-    ]);
+    );
   }
 
-  return h('details', { className: 'relative w-full' }, [
+  return h(
+    'details',
+    { className: 'relative w-full' },
     h(
       'summary',
       {
         className: `${buttonClassName} cursor-pointer list-none [&::-webkit-details-marker]:hidden`,
       },
-      [
-        h('span', { className: 'truncate text-left' }, displayLabel),
-        h('span', { className: 'shrink-0 text-xs text-muted-foreground' }, '▾'),
-      ],
+      h('span', { className: 'truncate text-left' }, displayLabel),
+      h('span', { className: 'shrink-0 text-xs text-muted-foreground' }, '▾'),
     ),
     h(
       'div',
@@ -79,5 +81,5 @@ export function SelectMenu({
         ),
       ),
     ),
-  ]);
+  );
 }

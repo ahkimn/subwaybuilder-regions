@@ -74,14 +74,8 @@ export function Button(
       })
     : null;
 
-  const children: ReactNode[] = [];
-  if (iconPlacement === 'start') {
-    iconElement && children.push(iconElement);
-    children.push(labelElement);
-  } else {
-    children.push(labelElement);
-    iconElement && children.push(iconElement);
-  }
+  const leadingChild = iconPlacement === 'start' ? iconElement : labelElement;
+  const trailingChild = iconPlacement === 'start' ? labelElement : iconElement;
 
   return h(
     'div',
@@ -97,7 +91,8 @@ export function Button(
         onClick,
         ...(dataRegionsId ? { [REGIONS_ID_ATTR]: dataRegionsId } : {}),
       },
-      children,
+      leadingChild,
+      trailingChild,
     ),
   );
 }
