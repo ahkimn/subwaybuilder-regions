@@ -1,6 +1,23 @@
 import type React from 'react';
 import { type createElement } from 'react';
 
+import {
+  REGIONS_ID_ATTR,
+  REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
+  REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
+  REGIONS_SETTINGS_FETCH_CITY_WARNING_ID,
+  REGIONS_SETTINGS_FETCH_COMMAND_FIELD_ID,
+  REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
+  REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
+  REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+  REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
+  REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
+  REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
+  REGIONS_SETTINGS_FETCH_SECTION_ID,
+  REGIONS_SETTINGS_FETCH_STATUS_ID,
+  REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+} from '@/core/constants';
+
 import type { DatasetTemplateMetadata } from '../../../../../shared/datasets/catalog';
 import { Button } from '../../../elements/Button';
 import type { InlineStatusVariant } from '../../../elements/InlineStatus';
@@ -56,97 +73,147 @@ export function renderFetchDatasetsSection(
   // N/A is included when we cannot immediately ascertain what country a city belongs to.
   const countryMenuOptions = [{ value: '', label: 'N/A' }, ...countryOptions];
 
-  return PanelSection(
-    h,
-    'Fetch Datasets',
-    [
-      // City / Country selector (single row)
-      h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' }, [
-        h('div', { className: 'flex flex-col gap-1.5' }, [
-          renderFetchHeader(h, 'City', isCityInvalid, 'Required', 'warning'),
-          SelectMenu({
-            h,
-            value: params.request.cityCode,
-            options: cityOptions,
-            placeholder: 'Select city',
-            onValueChange: params.onCityCodeChange,
-          }),
-        ]),
-        h('div', { className: 'flex flex-col gap-1.5' }, [
-          renderFetchHeader(
-            h,
-            'Country',
-            isCountryInvalid,
-            'Required',
-            'warning',
-          ),
-          SelectMenu({
-            h,
-            value: params.request.countryCode ?? '',
-            options: countryMenuOptions,
-            placeholder: 'N/A',
-            disabled: params.isCountryAutoResolved,
-            onValueChange: (value) => {
-              params.onCountryCodeChange(
-                value.length > 0
-                  ? (value as FetchParameters['countryCode'])
-                  : null,
-              );
+  return h(
+    'div',
+    {
+      [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_SECTION_ID,
+    },
+    PanelSection(
+      h,
+      'Fetch Datasets',
+      [
+        // City / Country selector (single row)
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' }, [
+          h(
+            'div',
+            {
+              className: 'flex flex-col gap-1.5',
+              [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
             },
-          }),
+            [
+              renderFetchHeader(
+                h,
+                'City',
+                isCityInvalid,
+                'Required',
+                'warning',
+                REGIONS_SETTINGS_FETCH_CITY_WARNING_ID,
+              ),
+              SelectMenu({
+                h,
+                value: params.request.cityCode,
+                options: cityOptions,
+                placeholder: 'Select city',
+                onValueChange: params.onCityCodeChange,
+              }),
+            ]),
+          h(
+            'div',
+            {
+              className: 'flex flex-col gap-1.5',
+              [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+            },
+            [
+              renderFetchHeader(
+                h,
+                'Country',
+                isCountryInvalid,
+                'Required',
+                'warning',
+                REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
+              ),
+              SelectMenu({
+                h,
+                value: params.request.countryCode ?? '',
+                options: countryMenuOptions,
+                placeholder: 'N/A',
+                disabled: params.isCountryAutoResolved,
+                onValueChange: (value) => {
+                  params.onCountryCodeChange(
+                    value.length > 0
+                      ? (value as FetchParameters['countryCode'])
+                      : null,
+                  );
+                },
+              }),
+            ]),
         ]),
-      ]),
 
-      // Dataset selector
-      h('div', { className: 'flex flex-col gap-1.5' }, [
-        renderFetchHeader(
-          h,
-          'Datasets',
-          !existsSelectedDatset,
-          'Select at least one',
-          'warning',
+        // Dataset selector
+        wrapFetchSection(h,
+          [
+            renderFetchHeader(
+              h,
+              'Datasets',
+              !existsSelectedDatset,
+              'Select at least one',
+              'warning',
+              REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
+            ),
+            renderDatasetOptions(h, params),
+          ],
+          REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
         ),
-        renderDatasetOptions(h, params),
-      ]),
-
-      // Bounding box display
-      h('div', { className: 'flex flex-col gap-1.5' }, [
+        // Bounding box display
         h(
-          'span',
-          { className: 'text-sm font-medium text-foreground' },
-          'Boundary Box',
-        ),
-        h('div', { className: 'flex flex-wrap items-start gap-3 max-w-fit' }, [
-          renderBBoxValue(h, 'West', params.request.bbox?.west ?? ''),
-          renderBBoxValue(h, 'South', params.request.bbox?.south ?? ''),
-          renderBBoxValue(h, 'East', params.request.bbox?.east ?? ''),
-          renderBBoxValue(h, 'North', params.request.bbox?.north ?? ''),
-        ]),
-      ]),
+          'div',
+          {
+            className: 'flex flex-col gap-1.5',
+            [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
+          },
+          [
+            h(
+              'span',
+              { className: 'text-sm font-medium text-foreground' },
+              'Boundary Box',
+            ),
+            h('div', { className: 'flex flex-wrap items-start gap-3 max-w-fit' }, [
+              renderBBoxValue(h, 'West', params.request.bbox?.west ?? ''),
+              renderBBoxValue(h, 'South', params.request.bbox?.south ?? ''),
+              renderBBoxValue(h, 'East', params.request.bbox?.east ?? ''),
+              renderBBoxValue(h, 'North', params.request.bbox?.north ?? ''),
+            ]),
+          ]),
 
-      // Generated command display
-      h('div', { className: 'flex flex-col gap-1.5' }, [
-        renderFetchHeader(
-          h,
-          'Generated Command',
-          isValidCommand,
-          'Ready',
-          'success',
+        // Generated command display
+        wrapFetchSection(h,
+          [
+            renderFetchHeader(
+              h,
+              'Generated Command',
+              isValidCommand,
+              'Ready',
+              'success',
+            ),
+            renderGeneratedCommand(h, isValidCommand, params),
+          ],
+          REGIONS_SETTINGS_FETCH_COMMAND_FIELD_ID,
         ),
-        renderGeneratedCommand(h, isValidCommand, params),
-      ]),
-
-      // Action buttons
-      renderActionButtons(h, params, isValidCommand),
-      h(
-        'p',
-        { className: 'text-[11px] text-muted-foreground' },
-        `Run command from the mods directory after opening it. Command paths target ./${params.relativeModPath}.`,
-      ),
-    ],
-    'flex flex-col gap-3',
+        // Action buttons
+        renderActionButtons(h, params, isValidCommand),
+        h(
+          'p',
+          { className: 'text-[11px] text-muted-foreground' },
+          `Run command from the mods directory after opening it. Command paths target ./${params.relativeModPath}.`,
+        ),
+      ],
+      'flex flex-col gap-3',
+    ),
   );
 }
+
+// Consistent styling wrapper for fields/selectors within the fetch section, with optional regionsId
+function wrapFetchSection(h: typeof createElement, content: React.ReactNode, regionsId?: string): React.ReactNode {
+  return h(
+    'div',
+    {
+      className: 'flex flex-col gap-1.5',
+      [REGIONS_ID_ATTR]: regionsId,
+    },
+    content,
+  )
+}
+
 
 function renderBBoxValue(
   h: typeof createElement,
@@ -173,6 +240,7 @@ function renderFetchHeader(
   statusCondition: boolean,
   statusLabel: string,
   statusType: InlineStatusVariant,
+  warningRegionsId?: string,
 ): React.ReactNode {
   return h(
     'label',
@@ -183,10 +251,11 @@ function renderFetchHeader(
       headerText,
       statusCondition
         ? InlineStatus({
-            h,
-            label: statusLabel,
-            status: statusType,
-          })
+          h,
+          label: statusLabel,
+          status: statusType,
+          dataRegionsId: warningRegionsId,
+        })
         : null,
     ],
   );
@@ -198,20 +267,20 @@ function renderDatasetOptions(
 ): React.ReactNode {
   return params.datasets.length === 0
     ? h(
-        'p',
-        { className: 'text-xs text-muted-foreground' },
-        'No fetchable datasets available for the selected city/country.',
-      )
+      'p',
+      { className: 'text-xs text-muted-foreground' },
+      'No fetchable datasets available for the selected city/country.',
+    )
     : h(
-        'div',
-        {
-          className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
-        },
-        // Render each available dataset as a checkbox within the grid
-        params.datasets.map((metadata) =>
-          renderDatasetOption(h, metadata, params),
-        ),
-      );
+      'div',
+      {
+        className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
+      },
+      // Render each available dataset as a checkbox within the grid
+      params.datasets.map((metadata) =>
+        renderDatasetOption(h, metadata, params),
+      ),
+    );
 }
 
 function renderDatasetOption(
@@ -263,36 +332,37 @@ function renderGeneratedCommand(
 
   return isValidCommand
     ? h(
-        'div',
-        { className: COMMAND_BOX_BASE_CLASS },
-        h(
-          'pre',
-          {
-            className: 'm-0 whitespace-pre-wrap break-all select-text',
-          },
-          params.command,
-        ),
-      )
+      'div',
+      { className: COMMAND_BOX_BASE_CLASS },
+      h(
+        'pre',
+        {
+          className: 'm-0 whitespace-pre-wrap break-all select-text',
+        },
+        params.command,
+      ),
+    )
     : h(
+      'div',
+      {
+        [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
+        className: `${COMMAND_BOX_BASE_CLASS} flex items-center justify-start text-center`,
+      },
+      h(
         'div',
         {
-          className: `${COMMAND_BOX_BASE_CLASS} flex items-center justify-start text-center`,
+          className: 'inline-flex items-center gap-1.5 text-xs leading-none',
+          style: { color: ERROR_HEX },
         },
-        h(
-          'div',
-          {
-            className: 'inline-flex items-center gap-1.5 text-xs leading-none',
-            style: { color: ERROR_HEX },
-          },
-          [
-            createReactIconElement(h, OctagonX, {
-              size: 14,
-              className: 'h-3.5 w-3.5 shrink-0',
-            }),
-            h('span', null, `Command cannot be generated. ${commandErrorText}`),
-          ],
-        ),
-      );
+        [
+          createReactIconElement(h, OctagonX, {
+            size: 14,
+            className: 'h-3.5 w-3.5 shrink-0',
+          }),
+          h('span', null, `Command cannot be generated. ${commandErrorText}`),
+        ],
+      ),
+    );
 }
 
 function renderActionButtons(
@@ -316,6 +386,7 @@ function renderActionButtons(
           size: 'xs',
           wrapperClassName: 'w-fit',
           iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+          dataRegionsId: REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
         }),
         Button(h, {
           label: params.isOpeningModsFolder ? 'Opening' : 'Open Mods Folder',
@@ -330,9 +401,7 @@ function renderActionButtons(
           iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
         }),
         Button(h, {
-          label: params.isValidatingDatasets
-            ? 'Validating'
-            : 'Validate Datasets',
+          label: params.isValidatingDatasets ? 'Validating' : 'Validate Datasets',
           ariaLabel: 'Validate generated datasets',
           onClick: params.onValidateDatasets,
           disabled: !params.canValidateDatasets || params.isValidatingDatasets,
@@ -342,11 +411,15 @@ function renderActionButtons(
           size: 'xs',
           wrapperClassName: 'w-fit',
           iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+          dataRegionsId: REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
         }),
       ]),
       h(
         'div',
-        { className: 'min-w-0 text-xs' },
+        {
+          className: 'min-w-0 text-xs',
+          [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_STATUS_ID,
+        },
         renderValidationStatus(h, params),
       ),
     ],
@@ -400,10 +473,10 @@ function renderValidationStatus(
     }),
     missingCount > 0
       ? h(
-          'p',
-          { className: 'text-[11px] text-muted-foreground' },
-          `Missing datasets: ${params.lastValidationResult.missingIds.join(', ')}`,
-        )
+        'p',
+        { className: 'text-[11px] text-muted-foreground' },
+        `Missing datasets: ${params.lastValidationResult.missingIds.join(', ')}`,
+      )
       : null,
   ]);
 }

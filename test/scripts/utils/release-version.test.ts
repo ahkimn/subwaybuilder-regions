@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 
 import { getLatestReleaseVersionFromChangelog } from '../../../scripts/utils/release-version';
 
-const fixturesDir = join(process.cwd(), 'testsrc/scripts/utils/fixtures');
+const fixturesDir = join(process.cwd(), 'test/scripts/utils/fixtures');
 
 describe('scripts/utils/release-version', () => {
   it('getLatestReleaseVersionFromChangelog_shouldReturnBareAndWithV_whenVersionHeadingIsValid', () => {

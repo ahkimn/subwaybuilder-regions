@@ -1,5 +1,7 @@
 import type { createElement, ReactNode } from 'react';
 
+import { REGIONS_ID_ATTR } from '@/core/constants';
+
 import { getPrimaryChartColorByName } from '../types/DisplayColor';
 import {
   CircleCheck,
@@ -21,6 +23,7 @@ interface InlineStatusProps {
   className?: string;
   iconClassName?: string;
   labelClassName?: string;
+  dataRegionsId?: string;
 }
 
 const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
@@ -63,6 +66,7 @@ export function InlineStatus({
   className,
   iconClassName,
   labelClassName,
+  dataRegionsId,
 }: InlineStatusProps): ReactNode {
   const defaults = INLINE_STATUS_DEFAULTS[status];
 
@@ -71,6 +75,7 @@ export function InlineStatus({
     {
       className: className ?? INLINE_STATUS_TEXT_CLASS,
       style: { color: colorHex ?? defaults.colorHex },
+      ...(dataRegionsId ? { [REGIONS_ID_ATTR]: dataRegionsId } : {}),
     },
     [
       createReactIconElement(h, icon ?? defaults.icon, {

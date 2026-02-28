@@ -115,6 +115,7 @@ export function formatFetchCommand({
   ].join(' ');
 }
 
+// Errors displayed when generating fetch command when required parameters are missing
 export function buildFetchErrors(args: {
   hasCity: boolean;
   hasCountry: boolean;

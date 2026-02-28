@@ -1,5 +1,8 @@
 {
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@terraformer/arcgis": "^2.1.2",
     "@types/fs-extra": "^11.0.4",
     "@types/minimist": "^1.2.5",
@@ -14,6 +17,7 @@
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-simple-import-sort": "^12.1.1",
+    "jsdom": "^26.1.0",
     "osmtogeojson": "^3.0.0-beta.5",
     "polylabel": "^2.0.1",
     "prettier": "^3.8.1",
@@ -50,8 +54,8 @@
     "serve": "tsx scripts/serve-data.ts",
     "extract:map-features": "tsx scripts/extract-map-features.ts",
     "fetch:city": "tsx scripts/fetch-city-datasets.ts",
-    "test": "node --import tsx --test \"testsrc/**/*.test.ts\"",
-    "test:watch": "node --import tsx --test --watch \"testsrc/**/*.test.ts\"",
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "test:watch": "node --import tsx --test --watch \"test/**/*.test.ts\"",
     "build:fetch-cli": "tsx scripts/build/build-fetch-cli.ts",
     "export": "tsx scripts/export-data-archives.ts",
     "release:version": "tsx scripts/build/resolve-release-version.ts",
