@@ -1,6 +1,8 @@
 import type React from 'react';
 import { type createElement } from 'react';
 
+import type { DatasetTemplateMetadata } from '../../../../../shared/datasets/catalog';
+
 import {
   REGIONS_ID_ATTR,
   REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
@@ -17,8 +19,6 @@ import {
   REGIONS_SETTINGS_FETCH_STATUS_ID,
   REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
 } from '@/core/constants';
-
-import type { DatasetTemplateMetadata } from '../../../../../shared/datasets/catalog';
 import { Button } from '../../../elements/Button';
 import type { InlineStatusVariant } from '../../../elements/InlineStatus';
 import { InlineStatus } from '../../../elements/InlineStatus';
@@ -47,30 +47,26 @@ export function renderFetchDatasetsSection(
 ): React.ReactNode {
   const isCityInvalid = !Boolean(params.request.cityCode);
   const isCountryInvalid = params.request.countryCode === null;
-  const existsSelectedDatset = params.request.datasetIds.length > 0;
+  const existsSelectedDataset = params.request.datasetIds.length > 0;
   const isValidCommand =
     !isCityInvalid &&
     !isCountryInvalid &&
-    existsSelectedDatset &&
+    existsSelectedDataset &&
     params.request.bbox !== null &&
     params.errors.length === 0 &&
     !!params.command;
 
-  // List of cities available as per the game state, sorted alphabetically by name.
   const sortedCityOptions = [...params.cityOptions].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
-  // Show city code alongside name for better clarity (this matches the format used in the registry as well as on disk)
   const cityOptions = sortedCityOptions.map((cityOption) => ({
     value: cityOption.code,
     label: `${cityOption.name} (${cityOption.code})`,
   }));
-  // List of all countries available as defined by the static templates
   const countryOptions = params.countryOptions.map((countryCode) => ({
     value: countryCode,
     label: countryCode,
   }));
-  // N/A is included when we cannot immediately ascertain what country a city belongs to.
   const countryMenuOptions = [{ value: '', label: 'N/A' }, ...countryOptions];
 
   return h(
@@ -82,114 +78,95 @@ export function renderFetchDatasetsSection(
       h,
       'Fetch Datasets',
       [
-        // City / Country selector (single row)
-        h('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' }, [
-          h(
-            'div',
-            {
-              className: 'flex flex-col gap-1.5',
-              [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
-            },
-            [
-              renderFetchHeader(
-                h,
-                'City',
-                isCityInvalid,
-                'Required',
-                'warning',
-                REGIONS_SETTINGS_FETCH_CITY_WARNING_ID,
-              ),
-              SelectMenu({
-                h,
-                value: params.request.cityCode,
-                options: cityOptions,
-                placeholder: 'Select city',
-                onValueChange: params.onCityCodeChange,
-              }),
-            ]),
-          h(
-            'div',
-            {
-              className: 'flex flex-col gap-1.5',
-              [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
-            },
-            [
-              renderFetchHeader(
-                h,
-                'Country',
-                isCountryInvalid,
-                'Required',
-                'warning',
-                REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
-              ),
-              SelectMenu({
-                h,
-                value: params.request.countryCode ?? '',
-                options: countryMenuOptions,
-                placeholder: 'N/A',
-                disabled: params.isCountryAutoResolved,
-                onValueChange: (value) => {
-                  params.onCountryCodeChange(
-                    value.length > 0
-                      ? (value as FetchParameters['countryCode'])
-                      : null,
-                  );
-                },
-              }),
-            ]),
-        ]),
-
-        // Dataset selector
-        wrapFetchSection(h,
-          [
-            renderFetchHeader(
-              h,
-              'Datasets',
-              !existsSelectedDatset,
-              'Select at least one',
-              'warning',
-              REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
-            ),
-            renderDatasetOptions(h, params),
-          ],
-          REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
-        ),
-        // Bounding box display
         h(
           'div',
-          {
-            className: 'flex flex-col gap-1.5',
-            [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
-          },
-          [
-            h(
-              'span',
-              { className: 'text-sm font-medium text-foreground' },
-              'Boundary Box',
-            ),
-            h('div', { className: 'flex flex-wrap items-start gap-3 max-w-fit' }, [
-              renderBBoxValue(h, 'West', params.request.bbox?.west ?? ''),
-              renderBBoxValue(h, 'South', params.request.bbox?.south ?? ''),
-              renderBBoxValue(h, 'East', params.request.bbox?.east ?? ''),
-              renderBBoxValue(h, 'North', params.request.bbox?.north ?? ''),
-            ]),
-          ]),
-
-        // Generated command display
-        wrapFetchSection(h,
-          [
+          { className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+          wrapFetchField(
+            h,
+            REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
             renderFetchHeader(
               h,
-              'Generated Command',
-              isValidCommand,
-              'Ready',
-              'success',
+              'City',
+              isCityInvalid,
+              'Required',
+              'warning',
+              REGIONS_SETTINGS_FETCH_CITY_WARNING_ID,
             ),
-            renderGeneratedCommand(h, isValidCommand, params),
-          ],
-          REGIONS_SETTINGS_FETCH_COMMAND_FIELD_ID,
+            SelectMenu({
+              h,
+              value: params.request.cityCode,
+              options: cityOptions,
+              placeholder: 'Select city',
+              onValueChange: params.onCityCodeChange,
+            }),
+          ),
+          wrapFetchField(
+            h,
+            REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+            renderFetchHeader(
+              h,
+              'Country',
+              isCountryInvalid,
+              'Required',
+              'warning',
+              REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
+            ),
+            SelectMenu({
+              h,
+              value: params.request.countryCode ?? '',
+              options: countryMenuOptions,
+              placeholder: 'N/A',
+              disabled: params.isCountryAutoResolved,
+              onValueChange: (value) => {
+                params.onCountryCodeChange(
+                  value.length > 0
+                    ? (value as FetchParameters['countryCode'])
+                    : null,
+                );
+              },
+            }),
+          ),
         ),
-        // Action buttons
+
+        wrapFetchField(
+          h,
+          REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
+          renderFetchHeader(
+            h,
+            'Datasets',
+            !existsSelectedDataset,
+            'Select at least one',
+            'warning',
+            REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
+          ),
+          renderDatasetOptions(h, params),
+        ),
+
+        wrapFetchField(
+          h,
+          REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
+          h(
+            'span',
+            { className: 'text-sm font-medium text-foreground' },
+            'Boundary Box',
+          ),
+          h(
+            'div',
+            { className: 'flex flex-wrap items-start gap-3 max-w-fit' },
+            renderBBoxValue(h, 'West', params.request.bbox?.west ?? ''),
+            renderBBoxValue(h, 'South', params.request.bbox?.south ?? ''),
+            renderBBoxValue(h, 'East', params.request.bbox?.east ?? ''),
+            renderBBoxValue(h, 'North', params.request.bbox?.north ?? ''),
+          ),
+        ),
+
+        wrapFetchField(
+          h,
+          REGIONS_SETTINGS_FETCH_COMMAND_FIELD_ID,
+          renderFetchHeader(h, 'Generated Command', isValidCommand, 'Ready', 'success'),
+          renderGeneratedCommand(h, isValidCommand, params),
+        ),
+
         renderActionButtons(h, params, isValidCommand),
         h(
           'p',
@@ -202,25 +179,29 @@ export function renderFetchDatasetsSection(
   );
 }
 
-// Consistent styling wrapper for fields/selectors within the fetch section, with optional regionsId
-function wrapFetchSection(h: typeof createElement, content: React.ReactNode, regionsId?: string): React.ReactNode {
+function wrapFetchField(
+  h: typeof createElement,
+  regionsId: string,
+  ...content: React.ReactNode[]
+): React.ReactNode {
   return h(
     'div',
     {
       className: 'flex flex-col gap-1.5',
       [REGIONS_ID_ATTR]: regionsId,
     },
-    content,
-  )
+    ...content,
+  );
 }
-
 
 function renderBBoxValue(
   h: typeof createElement,
   label: string,
   value: string,
 ): React.ReactNode {
-  return h('div', { className: 'flex flex-col gap-0.5' }, [
+  return h(
+    'div',
+    { className: 'flex flex-col gap-0.5' },
     h('span', { className: 'text-[11px] text-muted-foreground' }, label),
     h(
       'code',
@@ -230,10 +211,9 @@ function renderBBoxValue(
       },
       value || 'N/A',
     ),
-  ]);
+  );
 }
 
-// Helper to style a field header with an optional inline status indicator
 function renderFetchHeader(
   h: typeof createElement,
   headerText: string,
@@ -247,17 +227,15 @@ function renderFetchHeader(
     {
       className: FIELD_HEADER_BASE_CLASS,
     },
-    [
-      headerText,
-      statusCondition
-        ? InlineStatus({
+    headerText,
+    statusCondition
+      ? InlineStatus({
           h,
           label: statusLabel,
           status: statusType,
           dataRegionsId: warningRegionsId,
         })
-        : null,
-    ],
+      : null,
   );
 }
 
@@ -267,20 +245,19 @@ function renderDatasetOptions(
 ): React.ReactNode {
   return params.datasets.length === 0
     ? h(
-      'p',
-      { className: 'text-xs text-muted-foreground' },
-      'No fetchable datasets available for the selected city/country.',
-    )
+        'p',
+        { className: 'text-xs text-muted-foreground' },
+        'No fetchable datasets available for the selected city/country.',
+      )
     : h(
-      'div',
-      {
-        className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
-      },
-      // Render each available dataset as a checkbox within the grid
-      params.datasets.map((metadata) =>
-        renderDatasetOption(h, metadata, params),
-      ),
-    );
+        'div',
+        {
+          className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
+        },
+        params.datasets.map((metadata) =>
+          renderDatasetOption(h, metadata, params),
+        ),
+      );
 }
 
 function renderDatasetOption(
@@ -296,28 +273,28 @@ function renderDatasetOption(
       className:
         'flex items-center gap-2 rounded-sm border border-border/35 p-1.5 bg-background/60',
     },
-    [
-      h('input', {
-        type: 'checkbox',
-        className: 'h-3.5 w-3.5 shrink-0',
-        checked: selectedDatasetIds.has(metadata.datasetId),
-        onChange: () => params.onToggleDataset(metadata.datasetId),
-      }),
-      h('div', { className: 'min-w-0 flex-1' }, [
-        h(
-          'span',
-          { className: 'text-xs font-medium truncate' },
-          metadata.displayName,
-        ),
-        h(
-          'p',
-          {
-            className: 'text-[11px] text-muted-foreground truncate',
-          },
-          metadata.source,
-        ),
-      ]),
-    ],
+    h('input', {
+      type: 'checkbox',
+      className: 'h-3.5 w-3.5 shrink-0',
+      checked: selectedDatasetIds.has(metadata.datasetId),
+      onChange: () => params.onToggleDataset(metadata.datasetId),
+    }),
+    h(
+      'div',
+      { className: 'min-w-0 flex-1' },
+      h(
+        'span',
+        { className: 'text-xs font-medium truncate' },
+        metadata.displayName,
+      ),
+      h(
+        'p',
+        {
+          className: 'text-[11px] text-muted-foreground truncate',
+        },
+        metadata.source,
+      ),
+    ),
   );
 }
 
@@ -332,37 +309,35 @@ function renderGeneratedCommand(
 
   return isValidCommand
     ? h(
-      'div',
-      { className: COMMAND_BOX_BASE_CLASS },
-      h(
-        'pre',
-        {
-          className: 'm-0 whitespace-pre-wrap break-all select-text',
-        },
-        params.command,
-      ),
-    )
+        'div',
+        { className: COMMAND_BOX_BASE_CLASS },
+        h(
+          'pre',
+          {
+            className: 'm-0 whitespace-pre-wrap break-all select-text',
+          },
+          params.command,
+        ),
+      )
     : h(
-      'div',
-      {
-        [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
-        className: `${COMMAND_BOX_BASE_CLASS} flex items-center justify-start text-center`,
-      },
-      h(
         'div',
         {
-          className: 'inline-flex items-center gap-1.5 text-xs leading-none',
-          style: { color: ERROR_HEX },
+          [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
+          className: `${COMMAND_BOX_BASE_CLASS} flex items-center justify-start text-center`,
         },
-        [
+        h(
+          'div',
+          {
+            className: 'inline-flex items-center gap-1.5 text-xs leading-none',
+            style: { color: ERROR_HEX },
+          },
           createReactIconElement(h, OctagonX, {
             size: 14,
             className: 'h-3.5 w-3.5 shrink-0',
           }),
           h('span', null, `Command cannot be generated. ${commandErrorText}`),
-        ],
-      ),
-    );
+        ),
+      );
 }
 
 function renderActionButtons(
@@ -373,56 +348,56 @@ function renderActionButtons(
   return h(
     'div',
     { className: 'flex flex-wrap items-center justify-between gap-2' },
-    [
-      h('div', { className: 'flex flex-wrap items-center gap-2' }, [
-        Button(h, {
-          label: 'Copy Command',
-          ariaLabel: 'Copy fetch command',
-          onClick: params.onCopyCommand,
-          disabled: !canFetch,
-          icon: Copy,
-          iconPlacement: 'start',
-          role: 'secondary',
-          size: 'xs',
-          wrapperClassName: 'w-fit',
-          iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
-          dataRegionsId: REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
-        }),
-        Button(h, {
-          label: params.isOpeningModsFolder ? 'Opening' : 'Open Mods Folder',
-          ariaLabel: 'Open mods folder',
-          onClick: params.onOpenModsFolder,
-          disabled: params.isOpeningModsFolder,
-          icon: FolderOpen,
-          iconPlacement: 'start',
-          role: 'secondary',
-          size: 'xs',
-          wrapperClassName: 'w-fit',
-          iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
-        }),
-        Button(h, {
-          label: params.isValidatingDatasets ? 'Validating' : 'Validate Datasets',
-          ariaLabel: 'Validate generated datasets',
-          onClick: params.onValidateDatasets,
-          disabled: !params.canValidateDatasets || params.isValidatingDatasets,
-          icon: CircleCheck,
-          iconPlacement: 'start',
-          role: 'secondary',
-          size: 'xs',
-          wrapperClassName: 'w-fit',
-          iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
-          dataRegionsId: REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
-        }),
-      ]),
-      h(
-        'div',
-        {
-          className: 'min-w-0 text-xs',
-          [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_STATUS_ID,
-        },
-        renderValidationStatus(h, params),
-      ),
-    ],
+    h(
+      'div',
+      { className: 'flex flex-wrap items-center gap-2' },
+      Button(h, {
+        label: 'Copy Command',
+        ariaLabel: 'Copy fetch command',
+        onClick: params.onCopyCommand,
+        disabled: !canFetch,
+        icon: Copy,
+        iconPlacement: 'start',
+        role: 'secondary',
+        size: 'xs',
+        wrapperClassName: 'w-fit',
+        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        dataRegionsId: REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
+      }),
+      Button(h, {
+        label: params.isOpeningModsFolder ? 'Opening' : 'Open Mods Folder',
+        ariaLabel: 'Open mods folder',
+        onClick: params.onOpenModsFolder,
+        disabled: params.isOpeningModsFolder,
+        icon: FolderOpen,
+        iconPlacement: 'start',
+        role: 'secondary',
+        size: 'xs',
+        wrapperClassName: 'w-fit',
+        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+      }),
+      Button(h, {
+        label: params.isValidatingDatasets ? 'Validating' : 'Validate Datasets',
+        ariaLabel: 'Validate generated datasets',
+        onClick: params.onValidateDatasets,
+        disabled: !params.canValidateDatasets || params.isValidatingDatasets,
+        icon: CircleCheck,
+        iconPlacement: 'start',
+        role: 'secondary',
+        size: 'xs',
+        wrapperClassName: 'w-fit',
+        iconOptions: { size: 14, className: 'h-3.5 w-3.5 shrink-0' },
+        dataRegionsId: REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+      }),
+    ),
+    h(
+      'div',
+      {
+        className: 'min-w-0 text-xs',
+        [REGIONS_ID_ATTR]: REGIONS_SETTINGS_FETCH_STATUS_ID,
+      },
+      renderValidationStatus(h, params),
+    ),
   );
 }
 
@@ -431,33 +406,39 @@ function renderValidationStatus(
   params: SettingsFetchSectionParams,
 ): React.ReactNode {
   if (params.isValidatingDatasets) {
-    return h('div', { className: 'text-xs' }, [
+    return h(
+      'div',
+      { className: 'text-xs' },
       InlineStatus({
         h,
         status: 'info',
         label: 'Validating generated datasets...',
       }),
-    ]);
+    );
   }
 
   if (!params.lastCopiedRequest) {
-    return h('div', { className: 'text-xs' }, [
+    return h(
+      'div',
+      { className: 'text-xs' },
       InlineStatus({
         h,
         status: 'info',
         label: 'Copy a command to enable dataset validation.',
       }),
-    ]);
+    );
   }
 
   if (!params.lastValidationResult) {
-    return h('div', { className: 'text-xs' }, [
+    return h(
+      'div',
+      { className: 'text-xs' },
       InlineStatus({
         h,
         status: 'info',
         label: `Ready to validate ${params.lastCopiedRequest.cityCode}: ${params.lastCopiedRequest.datasetIds.join(', ')}`,
       }),
-    ]);
+    );
   }
 
   const foundCount = params.lastValidationResult.foundIds.length;
@@ -465,7 +446,9 @@ function renderValidationStatus(
   const status: InlineStatusVariant =
     missingCount === 0 ? 'success' : 'warning';
 
-  return h('div', { className: 'flex flex-col gap-1 text-xs' }, [
+  return h(
+    'div',
+    { className: 'flex flex-col gap-1 text-xs' },
     InlineStatus({
       h,
       status,
@@ -473,10 +456,10 @@ function renderValidationStatus(
     }),
     missingCount > 0
       ? h(
-        'p',
-        { className: 'text-[11px] text-muted-foreground' },
-        `Missing datasets: ${params.lastValidationResult.missingIds.join(', ')}`,
-      )
+          'p',
+          { className: 'text-[11px] text-muted-foreground' },
+          `Missing datasets: ${params.lastValidationResult.missingIds.join(', ')}`,
+        )
       : null,
-  ]);
+  );
 }
