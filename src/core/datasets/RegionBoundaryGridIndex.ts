@@ -29,6 +29,13 @@ export class RegionBoundaryGridIndex {
     xCells: number,
     yCells: number,
   ): RegionBoundaryGridIndex | null {
+    if (regionBoundaryParamsMap.size === 0) {
+      console.warn(
+        `[Regions] Cannot build boundary grid index for dataset ${datasetId}: no boundary params were provided.`,
+      );
+      return null;
+    }
+
     let minLng = Number.POSITIVE_INFINITY;
     let minLat = Number.POSITIVE_INFINITY;
     let maxLng = Number.NEGATIVE_INFINITY;
