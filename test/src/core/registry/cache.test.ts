@@ -78,7 +78,10 @@ describe('core/registry/cache', () => {
       fileSizeMB: 1.25,
     });
 
-    const merged = mergeLocalRegistryEntries([staticEntry, dynamicMissingEntry]);
+    const merged = mergeLocalRegistryEntries([
+      staticEntry,
+      dynamicMissingEntry,
+    ]);
     assert.equal(merged.length, 1);
     assert.equal(merged[0].origin, 'dynamic');
     assert.equal(merged[0].isPresent, false);
@@ -102,7 +105,10 @@ describe('core/registry/cache', () => {
   it('canonicalizeLocalRegistryEntries_shouldReportChanged_whenMergeRewritesEntries', () => {
     const staticEntry = createEntry('static', 'AUS', 'counties');
     const dynamicEntry = createEntry('dynamic', 'AUS', 'counties');
-    const result = canonicalizeLocalRegistryEntries([staticEntry, dynamicEntry]);
+    const result = canonicalizeLocalRegistryEntries([
+      staticEntry,
+      dynamicEntry,
+    ]);
 
     assert.equal(result.changed, true);
     assert.equal(result.entries.length, 1);

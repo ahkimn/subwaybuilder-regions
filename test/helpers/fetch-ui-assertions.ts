@@ -1,20 +1,15 @@
 import assert from 'node:assert/strict';
 
-import {
-  modRegionsIdSelector,
-  REGIONS_SETTINGS_FETCH_CITY_WARNING_ID,
-  REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
-  REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
-  REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
-} from '../../src/core/constants';
+import { modRegionsIdSelector } from '../../src/core/constants/ui/common';
+import * as SettingsUI from '../../src/core/constants/ui/settings';
 
 type FetchWarningField = 'city' | 'country' | 'datasets' | 'command';
 
 const WARNING_ID_BY_FIELD: Record<FetchWarningField, string> = {
-  city: REGIONS_SETTINGS_FETCH_CITY_WARNING_ID,
-  country: REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
-  datasets: REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
-  command: REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
+  city: SettingsUI.REGIONS_SETTINGS_FETCH_CITY_WARNING_ID,
+  country: SettingsUI.REGIONS_SETTINGS_FETCH_COUNTRY_WARNING_ID,
+  datasets: SettingsUI.REGIONS_SETTINGS_FETCH_DATASETS_WARNING_ID,
+  command: SettingsUI.REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
 };
 
 export function queryByRegionsId(

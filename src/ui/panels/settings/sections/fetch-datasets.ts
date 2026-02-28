@@ -7,7 +7,10 @@ import * as SettingsUI from '@/core/constants/ui/settings';
 import type { DatasetTemplateMetadata } from '../../../../../shared/datasets/catalog';
 import type { ButtonOptions } from '../../../elements/Button';
 import { Button } from '../../../elements/Button';
-import type { InlineStatusProps, InlineStatusVariant } from '../../../elements/InlineStatus';
+import type {
+  InlineStatusProps,
+  InlineStatusVariant,
+} from '../../../elements/InlineStatus';
 import { InlineStatus } from '../../../elements/InlineStatus';
 import { PanelSection } from '../../../elements/PanelSection';
 import { SelectMenu } from '../../../elements/SelectMenu';
@@ -26,9 +29,12 @@ const COMMAND_BOX_BASE_CLASS =
   'min-h-[80px] w-full rounded-sm border border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2 text-xs font-mono text-foreground';
 const FIELD_HEADER_BASE_CLASS =
   'inline-flex items-center gap-1.5 text-sm font-medium text-foreground leading-tight min-h-5';
-const FETCH_ICON_SIZE = 14
+const FETCH_ICON_SIZE = 14;
 const FETCH_ICON_CLASS = 'h-3.5 w-3.5 shrink-0';
-const FETCH_ICON_PARAMS = { size: FETCH_ICON_SIZE, className: FETCH_ICON_CLASS };
+const FETCH_ICON_PARAMS = {
+  size: FETCH_ICON_SIZE,
+  className: FETCH_ICON_CLASS,
+};
 const ERROR_HEX = getPrimaryChartColorByName('Red').hex;
 
 export function renderFetchDatasetsSection(
@@ -118,8 +124,6 @@ export function renderFetchDatasetsSection(
             }),
           ),
         ),
-
-        // Dataset selection row
         wrapFetchField(
           h,
           SettingsUI.REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
@@ -133,8 +137,6 @@ export function renderFetchDatasetsSection(
           ),
           renderDatasetOptions(h, params),
         ),
-
-        // Auto-generated boundary box fields
         wrapFetchField(
           h,
           SettingsUI.REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
@@ -152,8 +154,6 @@ export function renderFetchDatasetsSection(
             renderBBoxValue(h, 'North', params.request.bbox?.north ?? ''),
           ),
         ),
-
-        // Generated command field
         wrapFetchField(
           h,
           SettingsUI.REGIONS_SETTINGS_FETCH_COMMAND_FIELD_ID,
@@ -166,7 +166,6 @@ export function renderFetchDatasetsSection(
           ),
           renderGeneratedCommand(h, isValidCommand, params),
         ),
-        // User action buttons + validation status
         renderActionButtons(h, params),
         h(
           'p',
@@ -230,14 +229,14 @@ function renderFetchHeader(
     headerText,
     statusCondition
       ? InlineStatus({
-        h,
-        label: statusLabel,
-        status: statusType,
-        className: 'inline-flex items-center gap-1 text-xs leading-none',
-        iconClassName: FETCH_ICON_CLASS,
-        labelClassName: 'leading-none',
-        dataRegionsId: warningRegionsId,
-      })
+          h,
+          label: statusLabel,
+          status: statusType,
+          className: 'inline-flex items-center gap-1 text-xs leading-none',
+          iconClassName: FETCH_ICON_CLASS,
+          labelClassName: 'leading-none',
+          dataRegionsId: warningRegionsId,
+        })
       : null,
   );
 }
@@ -248,19 +247,19 @@ function renderDatasetOptions(
 ): React.ReactNode {
   return params.datasets.length === 0
     ? h(
-      'p',
-      { className: 'text-xs text-muted-foreground' },
-      'No fetchable datasets available for the selected city/country.',
-    )
+        'p',
+        { className: 'text-xs text-muted-foreground' },
+        'No fetchable datasets available for the selected city/country.',
+      )
     : h(
-      'div',
-      {
-        className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
-      },
-      params.datasets.map((metadata) =>
-        renderDatasetOption(h, metadata, params),
-      ),
-    );
+        'div',
+        {
+          className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5',
+        },
+        params.datasets.map((metadata) =>
+          renderDatasetOption(h, metadata, params),
+        ),
+      );
 }
 
 function renderDatasetOption(
@@ -268,8 +267,7 @@ function renderDatasetOption(
   metadata: DatasetTemplateMetadata,
   params: SettingsFetchSectionParams,
 ): React.ReactNode {
-  const selectedDatasetIds = new Set(params.request.datasetIds);
-  const isSelected = selectedDatasetIds.has(metadata.datasetId);
+  const isSelected = params.request.datasetIds.includes(metadata.datasetId);
   const datasetCardClassName = [
     'group flex w-full items-center justify-between gap-2 rounded-sm border px-2 py-1.5 text-left transition-colors',
     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60',
@@ -285,8 +283,9 @@ function renderDatasetOption(
       type: 'button',
       className: datasetCardClassName,
       'aria-pressed': isSelected,
-      [REGIONS_ID_ATTR]:
-        SettingsUI.regionsFetchDatasetCardId(metadata.datasetId),
+      [REGIONS_ID_ATTR]: SettingsUI.regionsFetchDatasetCardId(
+        metadata.datasetId,
+      ),
       onClick: () => params.onToggleDataset(metadata.datasetId),
     },
     h(
@@ -307,9 +306,9 @@ function renderDatasetOption(
     ),
     isSelected
       ? createReactIconElement(h, CircleCheck, {
-        size: 14,
-        className: 'h-3.5 w-3.5 shrink-0 text-primary',
-      })
+          size: FETCH_ICON_SIZE,
+          className: 'h-3.5 w-3.5 shrink-0 text-primary',
+        })
       : null,
   );
 }
@@ -325,32 +324,33 @@ function renderGeneratedCommand(
 
   return isValidCommand
     ? h(
-      'div',
-      { className: COMMAND_BOX_BASE_CLASS },
-      h(
-        'pre',
-        {
-          className: 'm-0 whitespace-pre-wrap break-all select-text',
-        },
-        params.command,
-      ),
-    )
+        'div',
+        { className: COMMAND_BOX_BASE_CLASS },
+        h(
+          'pre',
+          {
+            className: 'm-0 whitespace-pre-wrap break-all select-text',
+          },
+          params.command,
+        ),
+      )
     : h(
-      'div',
-      {
-        [REGIONS_ID_ATTR]: SettingsUI.REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
-        className: `${COMMAND_BOX_BASE_CLASS} flex items-center justify-start text-center`,
-      },
-      h(
         'div',
         {
-          className: 'inline-flex items-center gap-1.5 text-xs leading-none',
-          style: { color: ERROR_HEX },
+          [REGIONS_ID_ATTR]:
+            SettingsUI.REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
+          className: `${COMMAND_BOX_BASE_CLASS} flex items-center justify-start text-center`,
         },
-        createReactIconElement(h, OctagonX, FETCH_ICON_PARAMS),
-        h('span', null, `Command cannot be generated. ${commandErrorText}`),
-      ),
-    );
+        h(
+          'div',
+          {
+            className: 'inline-flex items-center gap-1.5 text-xs leading-none',
+            style: { color: ERROR_HEX },
+          },
+          createReactIconElement(h, OctagonX, FETCH_ICON_PARAMS),
+          h('span', null, `Command cannot be generated. ${commandErrorText}`),
+        ),
+      );
 }
 
 function renderActionButtons(
@@ -367,6 +367,7 @@ function renderActionButtons(
     ButtonOptions,
     'iconPlacement' | 'role' | 'size' | 'wrapperClassName' | 'iconOptions'
   >;
+
   return h(
     'div',
     { className: 'flex flex-wrap items-start justify-between gap-2' },
@@ -389,7 +390,8 @@ function renderActionButtons(
         disabled: !params.canOpenModsFolder || params.isOpeningModsFolder,
         icon: FolderOpen,
         ...sharedClassNames,
-        dataRegionsId: SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+        dataRegionsId:
+          SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
       }),
       Button(h, {
         label: params.isValidatingDatasets ? 'Validating' : 'Validate Datasets',
@@ -412,61 +414,79 @@ function renderActionButtons(
   );
 }
 
-
-function validationTextWrapper(h: typeof createElement, status: InlineStatusVariant, label: string, wrapperClass?: string): React.ReactNode {
+function validationTextWrapper(
+  h: typeof createElement,
+  status: InlineStatusVariant,
+  label: string,
+): React.ReactNode {
   const baseValidationParams = {
     className: 'inline-flex items-center gap-1 text-xs leading-none',
     iconClassName: FETCH_ICON_CLASS,
     labelClassName: 'leading-none',
-  } satisfies Pick<InlineStatusProps, 'className' | 'iconClassName' | 'labelClassName'>;
+  } satisfies Pick<
+    InlineStatusProps,
+    'className' | 'iconClassName' | 'labelClassName'
+  >;
 
-  return h(
-    'div',
-    { className: wrapperClass },
-    InlineStatus({
-      h,
-      status,
-      label,
-      ...baseValidationParams,
-    }),
-  );
+  return InlineStatus({
+    h,
+    status,
+    label,
+    ...baseValidationParams,
+  });
 }
-
 
 function renderValidationStatus(
   h: typeof createElement,
   params: SettingsFetchSectionParams,
 ): React.ReactNode {
-
   if (params.isValidatingDatasets) {
     return validationTextWrapper(h, 'info', 'Validating generated datasets...');
-  } else if (!params.lastCopiedRequest) {
-    return validationTextWrapper(h, 'info', 'Copy a command to enable opening mods folder.');
-  } else if (!params.canValidateDatasets) {
-    return validationTextWrapper(h, 'info', 'Open mods folder to enable dataset validation.');
-  } else if (!params.lastValidationResult) {
-    return validationTextWrapper(h, 'info', `Ready to validate ${params.lastCopiedRequest.cityCode}: ${params.lastCopiedRequest.datasetIds.join(', ')}`);
-  } else {
+  }
 
-    const foundCount = params.lastValidationResult.foundIds.length;
-    const missingCount = params.lastValidationResult.missingIds.length;
-    const status: InlineStatusVariant =
-      missingCount === 0 ? 'success' : 'warning';
+  if (!params.lastCopiedRequest) {
+    return validationTextWrapper(
+      h,
+      'info',
+      'Copy a command to enable opening mods folder.',
+    );
+  }
 
-    const subDiv = missingCount > 0
-      ? h(
-        'p',
-        { className: 'text-[11px] text-muted-foreground' },
-        `Missing datasets: ${params.lastValidationResult.missingIds.join(', ')}`,
-      )
-      : null
+  if (!params.canValidateDatasets) {
+    return validationTextWrapper(
+      h,
+      'info',
+      'Open mods folder to enable dataset validation.',
+    );
+  }
 
-    return [subDiv, validationTextWrapper(
+  if (!params.lastValidationResult) {
+    return validationTextWrapper(
+      h,
+      'info',
+      `Ready to validate ${params.lastCopiedRequest.cityCode}: ${params.lastCopiedRequest.datasetIds.join(', ')}`,
+    );
+  }
+
+  const foundCount = params.lastValidationResult.foundIds.length;
+  const missingCount = params.lastValidationResult.missingIds.length;
+  const status: InlineStatusVariant =
+    missingCount === 0 ? 'success' : 'warning';
+
+  return h(
+    'div',
+    { className: 'flex flex-col gap-1' },
+    validationTextWrapper(
       h,
       status,
       `Validated ${params.lastValidationResult.cityCode}: ${foundCount} found, ${missingCount} missing`,
-      'flex flex-col gap-1',
     ),
-    ];
-  }
+    missingCount > 0
+      ? h(
+          'p',
+          { className: 'text-[11px] text-muted-foreground' },
+          `Missing datasets: ${params.lastValidationResult.missingIds.join(', ')}`,
+        )
+      : null,
+  );
 }

@@ -35,7 +35,9 @@ export function mergeLocalRegistryEntries(
   return Array.from(deduped.values());
 }
 
-export function canonicalizeLocalRegistryEntries(entries: RegistryCacheEntry[]): {
+export function canonicalizeLocalRegistryEntries(
+  entries: RegistryCacheEntry[],
+): {
   entries: RegistryCacheEntry[];
   changed: boolean;
 } {

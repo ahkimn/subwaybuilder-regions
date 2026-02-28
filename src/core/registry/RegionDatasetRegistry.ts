@@ -463,10 +463,7 @@ export class RegionDatasetRegistry {
     const missingStoredEntries = await Promise.all(
       storedEntries
         .filter((entry) => entry.origin === 'static')
-        .filter(
-          (entry) =>
-            !locatedKeySet.has(toLogicalDatasetKey(entry)),
-        )
+        .filter((entry) => !locatedKeySet.has(toLogicalDatasetKey(entry)))
         .map((entry) => this.validateStoredEntry(entry)),
     );
     const retainedStoredStatic = missingStoredEntries.filter(

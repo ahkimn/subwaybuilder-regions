@@ -9,18 +9,7 @@ import React, { useMemo, useState } from 'react';
 import { cleanup, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {
-  REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
-  REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
-  REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID,
-  REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
-  REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
-  REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
-  REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
-  REGIONS_SETTINGS_FETCH_STATUS_ID,
-  REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
-  regionsFetchDatasetCardId,
-} from '../../../../../src/core/constants';
+import * as SettingsUI from '../../../../../src/core/constants/ui/settings';
 import type {
   FetchBBox,
   FetchParameters,
@@ -285,22 +274,40 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
       React.createElement(FetchDatasetsHarness),
     );
 
-    assertText(REGIONS_SETTINGS_FETCH_CITY_FIELD_ID, 'Select city', container);
-    assertText(REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID, 'N/A', container);
-    assertText(REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID, 'N/A', container);
+    assertText(
+      SettingsUI.REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
+      'Select city',
+      container,
+    );
+    assertText(
+      SettingsUI.REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+      'N/A',
+      container,
+    );
+    assertText(
+      SettingsUI.REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
+      'N/A',
+      container,
+    );
     assert.equal(existsWarning('city', container), true);
     assert.equal(existsWarning('country', container), true);
     assert.equal(existsWarning('datasets', container), true);
     assert.equal(existsWarning('command', container), true);
-    assertButtonDisabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
     assertButtonDisabled(
-      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
       container,
     );
-    assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+      container,
+    );
 
     const cityField = byRegionsId(
-      REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
       container,
     );
     const cityMenuTrigger = cityField.querySelector('summary');
@@ -308,25 +315,39 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     await user.click(cityMenuTrigger as HTMLElement);
     await user.click(getByRole('button', { name: 'Boston (BOS)' }));
 
-    assertText(REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID, 'US', container);
-    assert.equal(existsWarning('city', container), false);
-    assert.equal(existsWarning('country', container), false);
-    assertText(REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID, BOS_BBOX.west, container);
-    assert.equal(existsWarning('datasets', container), true);
-    assert.equal(existsWarning('command', container), true);
-    assertButtonDisabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
-    assertButtonDisabled(
-      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+    assertText(
+      SettingsUI.REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+      'US',
       container,
     );
-    assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
+    assert.equal(existsWarning('city', container), false);
+    assert.equal(existsWarning('country', container), false);
+    assertText(
+      SettingsUI.REGIONS_SETTINGS_FETCH_BBOX_FIELD_ID,
+      BOS_BBOX.west,
+      container,
+    );
+    assert.equal(existsWarning('datasets', container), true);
+    assert.equal(existsWarning('command', container), true);
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
+      container,
+    );
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+      container,
+    );
 
     const datasetsField = byRegionsId(
-      REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
       container,
     );
     const firstDatasetCard = datasetsField.querySelector(
-      `[data-regions-id="${regionsFetchDatasetCardId(FIRST_US_DATASET_ID)}"]`,
+      `[data-regions-id="${SettingsUI.regionsFetchDatasetCardId(FIRST_US_DATASET_ID)}"]`,
     );
     assert.ok(firstDatasetCard, 'Expected first dataset card');
     assert.equal(
@@ -351,55 +372,67 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     assert.equal(existsWarning('datasets', container), false);
     assert.equal(
       container.querySelectorAll(
-        `[data-regions-id="${REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID}"]`,
+        `[data-regions-id="${SettingsUI.REGIONS_SETTINGS_FETCH_COMMAND_WARNING_ID}"]`,
       ).length,
       0,
     );
-    assertButtonEnabled(REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID, container);
-    assertButtonDisabled(
-      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+    assertButtonEnabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
       container,
     );
-    assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      container,
+    );
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+      container,
+    );
 
     const copyButton = byRegionsId(
-      REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_COPY_BUTTON_ID,
       container,
     );
     await user.click(copyButton);
 
     assertButtonEnabled(
-      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
       container,
     );
-    assertButtonDisabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
+    assertButtonDisabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+      container,
+    );
     assertText(
-      REGIONS_SETTINGS_FETCH_STATUS_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_STATUS_ID,
       /Open mods folder to enable dataset validation./,
       container,
     );
 
     const openModsFolderButton = byRegionsId(
-      REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
       container,
     );
     await user.click(openModsFolderButton);
 
-    assertButtonEnabled(REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID, container);
+    assertButtonEnabled(
+      SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+      container,
+    );
     assertText(
-      REGIONS_SETTINGS_FETCH_STATUS_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_STATUS_ID,
       /Ready to validate BOS:/,
       container,
     );
 
     const validateButton = byRegionsId(
-      REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
       container,
     );
     await user.click(validateButton);
 
     assertText(
-      REGIONS_SETTINGS_FETCH_STATUS_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_STATUS_ID,
       /Validated BOS: 1 found, 0 missing/,
       container,
     );
@@ -412,7 +445,7 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     );
 
     const countryFieldInitial = byRegionsId(
-      REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
       container,
     );
     assert.equal(
@@ -422,7 +455,7 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     );
 
     const cityField = byRegionsId(
-      REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_CITY_FIELD_ID,
       container,
     );
     const cityMenuTrigger = cityField.querySelector('summary');
@@ -431,7 +464,7 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
     await user.click(getByRole('button', { name: 'Providence (PVD)' }));
 
     const countryFieldAfterPvd = byRegionsId(
-      REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
+      SettingsUI.REGIONS_SETTINGS_FETCH_COUNTRY_FIELD_ID,
       container,
     );
     assert.ok(
