@@ -4,6 +4,7 @@ import type { createElement } from 'react';
 import { formatNumberOrDefault } from '@/core/utils';
 
 import { Button } from '../../../elements/Button';
+import { CountChip } from '../../../elements/CountChip';
 import type {
   ReactDataTableRow,
   TableCellPaddingClassName,
@@ -182,10 +183,19 @@ export function renderDatasetRegistrySection(
 
   return PanelSection(
     h,
-    `Dataset Registry (${rows.length})`,
+    h(
+      'div',
+      { className: 'inline-flex items-center gap-2' },
+      h('span', null, 'Dataset Registry'),
+      CountChip({ h, count: rows.length, label: 'active' }),
+    ),
     [
-      h('div', { className: 'flex items-center justify-between gap-2' }, [
-        h('div', { className: 'min-w-0 flex-1' }, [
+      h(
+        'div',
+        { className: 'flex items-center justify-between gap-2' },
+        h(
+          'div',
+          { className: 'min-w-0 flex-1' },
           ReactSearchInput({
             h,
             Input,
@@ -193,8 +203,10 @@ export function renderDatasetRegistrySection(
             placeholder: 'Search by city, dataset ID/name...',
             onValueChange: onSearchTermChange,
           }),
-        ]),
-        h('div', { className: 'flex items-center gap-2' }, [
+        ),
+        h(
+          'div',
+          { className: 'flex items-center gap-2' },
           Button(h, {
             label: isRefreshingRegistry ? 'Refreshing' : 'Refresh',
             ariaLabel: 'Refresh local registry cache',
@@ -222,8 +234,8 @@ export function renderDatasetRegistrySection(
               className: 'h-3.5 w-3.5 shrink-0 text-white',
             },
           }),
-        ]),
-      ]),
+        ),
+      ),
       h(
         'div',
         {
@@ -237,12 +249,14 @@ export function renderDatasetRegistrySection(
           tableValues: buildRegistryTableRows(h, rows, sortState, onSortChange),
         }),
       ),
-      h('p', { className: 'text-[11px] text-muted-foreground' }, [
+      h(
+        'p',
+        { className: 'text-[11px] text-muted-foreground' },
         'Missing entries represent datasets that were previously detected locally. ',
         'Served datasets can still show city-unavailable warnings, but ',
         h('span', { className: 'font-medium' }, 'Clear Missing'),
         ' only removes cached local entries.',
-      ]),
+      ),
     ],
     'flex flex-col gap-3',
   );

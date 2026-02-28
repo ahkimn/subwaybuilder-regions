@@ -14,7 +14,7 @@ import {
 
 export type InlineStatusVariant = 'success' | 'warning' | 'error' | 'info';
 
-interface InlineStatusProps {
+export interface InlineStatusProps {
   h: typeof createElement;
   label: string;
   status?: InlineStatusVariant;

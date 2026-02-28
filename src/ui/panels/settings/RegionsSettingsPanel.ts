@@ -5,6 +5,7 @@ import {
 } from '@shared/datasets/catalog';
 import type React from 'react';
 
+import { REGIONS_DESELECT_KEY } from '@/core/constants';
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
 import { resolveRuntimePlatform } from '@/core/storage/helpers';
 import type { City } from '@/types/cities';
@@ -109,6 +110,24 @@ export function RegionsSettingsPanel({
         unsubscribeRegistry();
       };
     }, []);
+
+    useEffectHook(() => {
+      if (!state.isOpen) {
+        return;
+      }
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== REGIONS_DESELECT_KEY) {
+          return;
+        }
+        dispatch({ type: 'close_overlay' });
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [state.isOpen]);
 
     const knownCitiesByCode = new Map<string, City>(
       api.utils.getCities().map((city) => [city.code, city]),

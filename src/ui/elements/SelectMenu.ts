@@ -1,5 +1,7 @@
 import type { createElement, ReactNode } from 'react';
 
+import { ChevronDownIcon, createReactIconElement } from './utils/Icons';
+
 type SelectMenuOption = {
   value: string;
   label: string;
@@ -56,7 +58,10 @@ export function SelectMenu({
         className: `${buttonClassName} cursor-pointer list-none [&::-webkit-details-marker]:hidden`,
       },
       h('span', { className: 'truncate text-left' }, displayLabel),
-      h('span', { className: 'shrink-0 text-xs text-muted-foreground' }, '▾'),
+      createReactIconElement(h, ChevronDownIcon, {
+        size: 14,
+        className: 'h-3.5 w-3.5 shrink-0 text-muted-foreground',
+      }),
     ),
     h(
       'div',

@@ -18,6 +18,11 @@ import {
   tryLocalDatasetPaths,
 } from '../storage/helpers';
 import type { RegionsStorage } from '../storage/RegionsStorage';
+import {
+  canonicalizeLocalRegistryEntries,
+  mergeLocalRegistryEntries,
+  toLogicalDatasetKey,
+} from './cache';
 import { resolveStaticTemplateCountry, STATIC_TEMPLATES } from './static';
 
 export type DynamicValidationRequest = {
@@ -221,10 +226,23 @@ export class RegionDatasetRegistry {
 
     const storedRegistry = await this.storage.loadStoredRegistry();
     // On first registry build, there will be no cache so we will need to attempt to resolve local datasets from disk and build an initial cache
-    const localEntries =
+    let localEntries =
       storedRegistry === null
         ? await this.resolveAndPersistLocalCacheEntries()
-        : dedupeRegistryEntries(storedRegistry.entries);
+        : mergeLocalRegistryEntries(storedRegistry.entries);
+
+    if (storedRegistry !== null) {
+      const normalizedCache = canonicalizeLocalRegistryEntries(
+        storedRegistry.entries,
+      );
+      if (normalizedCache.changed) {
+        await this.storage.saveRegistry({
+          updatedAt: Date.now(),
+          entries: normalizedCache.entries,
+        });
+      }
+      localEntries = normalizedCache.entries;
+    }
     const localCount = this.registerLocalEntries(localEntries);
 
     let servedCount = 0;
@@ -438,9 +456,7 @@ export class RegionDatasetRegistry {
     const locatedEntries = await this.locateStaticLocalDatasets();
     // In the registry, datasets are uniquely identified by their cityCode/datasetId pair
     const locatedKeySet = new Set(
-      locatedEntries.map((entry) =>
-        getEntryKey(entry.cityCode, entry.datasetId),
-      ),
+      locatedEntries.map((entry) => toLogicalDatasetKey(entry)),
     );
 
     // Retain any previously stored static entries that were not located on disk via the discovery process -- the user may opt to purge these entries from the cache manually but we do not want to automatically discard them
@@ -449,7 +465,7 @@ export class RegionDatasetRegistry {
         .filter((entry) => entry.origin === 'static')
         .filter(
           (entry) =>
-            !locatedKeySet.has(getEntryKey(entry.cityCode, entry.datasetId)),
+            !locatedKeySet.has(toLogicalDatasetKey(entry)),
         )
         .map((entry) => this.validateStoredEntry(entry)),
     );
@@ -467,7 +483,7 @@ export class RegionDatasetRegistry {
       (entry) => entry.isPresent || entry.fileSizeMB !== undefined,
     );
 
-    return dedupeRegistryEntries([
+    return mergeLocalRegistryEntries([
       ...locatedEntries,
       ...retainedStoredStatic,
       ...retainedDynamicEntries,
@@ -509,7 +525,7 @@ export class RegionDatasetRegistry {
 
     await this.storage.saveRegistry({
       updatedAt: Date.now(),
-      entries: dedupeRegistryEntries([
+      entries: mergeLocalRegistryEntries([
         ...retainedEntries,
         ...nextDynamicEntries,
       ]),
@@ -533,18 +549,4 @@ export class RegionDatasetRegistry {
   private emit(): void {
     this.listeners.forEach((listener) => listener());
   }
-}
-
-function getEntryKey(cityCode: string, datasetId: string): string {
-  return `${cityCode}-${datasetId}`;
-}
-
-function dedupeRegistryEntries(
-  entries: RegistryCacheEntry[],
-): RegistryCacheEntry[] {
-  const deduped = new Map<string, RegistryCacheEntry>();
-  entries.forEach((entry) => {
-    deduped.set(`${entry.cityCode}-${entry.datasetId}-${entry.origin}`, entry);
-  });
-  return Array.from(deduped.values());
 }

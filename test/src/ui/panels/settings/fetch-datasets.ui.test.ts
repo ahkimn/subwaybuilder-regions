@@ -19,6 +19,7 @@ import {
   REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
   REGIONS_SETTINGS_FETCH_STATUS_ID,
   REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
+  regionsFetchDatasetCardId,
 } from '../../../../../src/core/constants';
 import type {
   FetchBBox,
@@ -51,6 +52,9 @@ const BOS_BBOX: FetchBBox = {
   east: '-71.1263',
   north: '42.0151',
 };
+const FIRST_US_DATASET_ID =
+  resolveCountryDatasets('US', { onlineOnly: true })[0]?.datasetId ??
+  'counties';
 
 const BOSTON_CITY: City = {
   code: 'BOS',
@@ -321,11 +325,28 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
       REGIONS_SETTINGS_FETCH_DATASETS_FIELD_ID,
       container,
     );
-    const firstDatasetCheckbox = datasetsField.querySelector(
-      'input[type="checkbox"]',
+    const firstDatasetCard = datasetsField.querySelector(
+      `[data-regions-id="${regionsFetchDatasetCardId(FIRST_US_DATASET_ID)}"]`,
     );
-    assert.ok(firstDatasetCheckbox, 'Expected at least one dataset checkbox');
-    await user.click(firstDatasetCheckbox as HTMLElement);
+    assert.ok(firstDatasetCard, 'Expected first dataset card');
+    assert.equal(
+      firstDatasetCard?.getAttribute('aria-pressed'),
+      'false',
+      'Expected dataset card to be unselected by default',
+    );
+    await user.click(firstDatasetCard as HTMLElement);
+    assert.equal(
+      firstDatasetCard?.getAttribute('aria-pressed'),
+      'true',
+      'Expected dataset card to be selected after first click',
+    );
+    await user.click(firstDatasetCard as HTMLElement);
+    assert.equal(
+      firstDatasetCard?.getAttribute('aria-pressed'),
+      'false',
+      'Expected dataset card to be deselected after second click',
+    );
+    await user.click(firstDatasetCard as HTMLElement);
 
     assert.equal(existsWarning('datasets', container), false);
     assert.equal(

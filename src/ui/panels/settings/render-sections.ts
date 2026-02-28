@@ -61,7 +61,7 @@ export function renderSettingsOverlay(
         'absolute inset-0 w-full h-full overflow-auto bg-background p-4 z-50',
     },
     [
-      h('div', { className: 'max-w-5xl mx-auto flex flex-col gap-4' }, [
+      h('div', { className: 'max-w-5xl mx-auto flex flex-col gap-5' }, [
         Button(h, {
           label: 'Back',
           ariaLabel: 'Back',
@@ -75,8 +75,8 @@ export function renderSettingsOverlay(
           },
           wrapperClassName: 'w-fit',
         }),
-        h('div', { className: 'flex flex-col gap-1' }, [
-          h('h1', { className: 'text-xl font-semibold' }, 'Regions Settings'),
+        h('div', { className: 'flex flex-col gap-1.5' }, [
+          h('h1', { className: 'text-2xl font-semibold' }, 'Regions Settings'),
           h(
             'p',
             { className: 'text-sm text-muted-foreground' },
