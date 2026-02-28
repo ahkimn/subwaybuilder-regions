@@ -1,13 +1,20 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { parseExportArgs, requireNumber, requireString } from '../../../scripts/utils/cli';
+import {
+  getBBoxFromArgs,
+  hasExplicitBBox,
+  parseExportArgs,
+  parseNumber,
+  requireNumber,
+  requireString,
+} from '../../../scripts/utils/cli';
 import {
   createScriptTestHarness,
   expectExitCode,
 } from '../../helpers/script-test-harness';
 
-describe('scripts/utils/cli script behavior', () => {
+describe('scripts/utils/cli utilities', () => {
   const harness = createScriptTestHarness();
   const originalArgv = process.argv;
 
@@ -20,20 +27,95 @@ describe('scripts/utils/cli script behavior', () => {
     process.argv = originalArgv;
   });
 
-  it('requireString_shouldExitWithCode1_whenValueIsMissing', async () => {
+  it('parseNumber_shouldReturnNumber_whenInputIsNumeric', () => {
+    assert.equal(parseNumber(42), 42);
+    assert.equal(parseNumber(-2.5), -2.5);
+  });
+
+  it('parseNumber_shouldParseCommaFormattedAndTrimmedStrings', () => {
+    assert.equal(parseNumber('1,234,567'), 1234567);
+    assert.equal(parseNumber('  98.5  '), 98.5);
+  });
+
+  it('parseNumber_shouldReturnUndefined_whenInputIsInvalid', () => {
+    assert.equal(parseNumber('not-a-number'), undefined);
+    assert.equal(parseNumber({}), undefined);
+  });
+
+  it('hasExplicitBBox_shouldReturnTrue_onlyWhenAllCoordinatesAreFiniteNumbers', () => {
+    assert.equal(
+      hasExplicitBBox({ south: 1, west: 2, north: 3, east: 4 }),
+      true,
+    );
+
+    assert.equal(
+      hasExplicitBBox({ south: 1, west: 2, north: 3, east: Number.NaN }),
+      false,
+    );
+    assert.equal(
+      hasExplicitBBox({ south: 1, west: 2, north: Number.POSITIVE_INFINITY, east: 4 }),
+      false,
+    );
+    assert.equal(hasExplicitBBox({ south: 1, west: 2, north: 3 }), false);
+  });
+
+  it('getBBoxFromArgs_shouldReturnOrderedBoundaryBoxStructure', () => {
+    const bbox = getBBoxFromArgs({
+      south: -10,
+      west: -20,
+      north: 10,
+      east: 20,
+    });
+
+    assert.deepEqual(bbox, {
+      south: -10,
+      west: -20,
+      north: 10,
+      east: 20,
+    });
+  });
+
+  it('requireStringAndRequireNumber_shouldReturnValues_whenValid', () => {
+    assert.equal(requireString('nyc', 'city-code'), 'nyc');
+    assert.equal(requireNumber(15, 'preview-count', true), 15);
+    assert.equal(requireNumber(-15, 'signed-number'), -15);
+  });
+
+  it('requireString_shouldExitWithCode1_whenValueIsMissingOrInvalid', async () => {
     await expectExitCode(
-      () => requireString(undefined, 'city-code'),
+      () => requireString('', 'city-code'),
+      1,
+      'Missing or invalid argument: --city-code',
+      harness.calls.error,
+    );
+
+    await expectExitCode(
+      () => requireString(123 as unknown as string, 'city-code'),
       1,
       'Missing or invalid argument: --city-code',
       harness.calls.error,
     );
   });
 
-  it('requireNumber_shouldExitWithCode1_whenPositiveIsRequiredAndValueIsNotPositive', async () => {
+  it('requireNumber_shouldExitWithCode1_whenValueIsMissingOrInvalidOrNotPositive', async () => {
+    await expectExitCode(
+      () => requireNumber(Number.NaN, 'preview-count'),
+      1,
+      'Missing or invalid argument: --preview-count',
+      harness.calls.error,
+    );
+
+    await expectExitCode(
+      () => requireNumber('42' as unknown as number, 'preview-count'),
+      1,
+      'Missing or invalid argument: --preview-count',
+      harness.calls.error,
+    );
+
     await expectExitCode(
       () => requireNumber(0, 'preview-count', true),
       1,
-      /Expected a positive number/,
+      'Missing or invalid argument: --preview-count. Expected a positive number.',
       harness.calls.error,
     );
   });

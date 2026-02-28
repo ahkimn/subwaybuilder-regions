@@ -86,8 +86,8 @@ export function parseNumber(value: unknown): number | undefined {
 export function hasExplicitBBox<T extends CoordinateBoxArgs>(
   args: T,
 ): args is T & BoundaryBox {
-  return [args.south, args.west, args.north, args.east].every(
-    (v) => typeof v === 'number',
+  return [args.south, args.west, args.north, args.east].every((v) =>
+    Number.isFinite(v),
   );
 }
 
