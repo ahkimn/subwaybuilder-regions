@@ -1,28 +1,16 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 
 import { parseFetchArgs } from '../../../scripts/fetch/parse-fetch-args';
 import { validateFetchRequest } from '../../../scripts/fetch/validate-fetch-request';
 import {
-  createScriptTestHarness,
   expectExitCode,
 } from '../../helpers/script-test-harness';
-import { installNoExternalIoGuards } from '../../helpers/no-external-io';
+import { withScriptHarness } from '../../helpers/script-test-suite';
 
 describe('scripts/fetch-city-datasets smoke flow (parse + validate)', () => {
-  const harness = createScriptTestHarness();
-  let restoreNoExternalIo: (() => void) | undefined;
-
-  beforeEach(() => {
-    harness.install();
-    const guards = installNoExternalIoGuards('fetch-cli smoke tests');
-    restoreNoExternalIo = guards.restore;
-  });
-
-  afterEach(() => {
-    harness.restore();
-    restoreNoExternalIo?.();
-    restoreNoExternalIo = undefined;
+  const harness = withScriptHarness({
+    noExternalIoContextLabel: 'fetch-cli smoke tests',
   });
 
   it('fails fast with parse-time messaging when bbox arguments are incomplete', async () => {
