@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 
 import {
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasets,
 } from '@shared/datasets/catalog';
-import { installDomEnvironment } from '@test/helpers/dom-environment';
 import {
   assertButtonDisabled,
   assertButtonEnabled,
@@ -13,7 +12,8 @@ import {
   byRegionsId,
   existsWarning,
 } from '@test/helpers/fetch-ui-assertions';
-import { cleanup, render } from '@testing-library/react';
+import { setupDomTestLifecycle } from '@test/helpers/ui-test-suite';
+import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React, { useMemo, useState } from 'react';
 
@@ -255,17 +255,7 @@ function FetchDatasetsHarness(): React.ReactNode {
 }
 
 describe('settings fetch datasets happy path (DOM interaction)', () => {
-  let restoreDom: (() => void) | null = null;
-
-  beforeEach(() => {
-    restoreDom = installDomEnvironment();
-  });
-
-  afterEach(() => {
-    cleanup();
-    restoreDom?.();
-    restoreDom = null;
-  });
+  setupDomTestLifecycle();
 
   it('renders and transitions through happy path states', async () => {
     const user = userEvent.setup({ document: globalThis.document });

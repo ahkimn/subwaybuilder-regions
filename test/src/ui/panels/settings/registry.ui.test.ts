@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 
-import { installDomEnvironment } from '@test/helpers/dom-environment';
-import { cleanup, render } from '@testing-library/react';
+import { setupDomTestLifecycle } from '@test/helpers/ui-test-suite';
+import { render } from '@testing-library/react';
 import React, { useState } from 'react';
 
 import { renderDatasetRegistrySection } from '@/ui/panels/settings/sections/registry';
@@ -21,17 +21,7 @@ const TEST_ROW: SettingsDatasetRow = {
 };
 
 describe('settings registry UI', () => {
-  let restoreDom: (() => void) | null = null;
-
-  beforeEach(() => {
-    restoreDom = installDomEnvironment();
-  });
-
-  afterEach(() => {
-    cleanup();
-    restoreDom?.();
-    restoreDom = null;
-  });
+  setupDomTestLifecycle();
 
   it('renders registry title with active count chip styling', () => {
     const rows = Array.from({ length: 23 }, (_, index) => ({
