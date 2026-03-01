@@ -13,7 +13,7 @@ import { getGameReact } from '@/ui/react/get-game-react';
 import { ViewHeader } from '../../elements/ViewHeader';
 import { getNextSortState } from '../shared/sort';
 import type { InputFieldProperties, SortState } from '../types';
-import { DEFAULT_SORT_STATE } from '../types';
+import { DEFAULT_SORT_STATE, SortDirection } from '../types';
 import { renderLayerSelectorRow, renderOverviewTabs } from './render-tabs';
 import { renderHistoricalTabContent } from './tabs/historical-data';
 import type { OverviewSortMetrics } from './tabs/overview';
@@ -40,7 +40,9 @@ export function renderRegionsOverviewPanel(
     return null;
   }
 
-  const { h, useEffectHook, useStateHook } = getGameReact(props.api);
+  const { h, useEffectHook, useMemoHook, useStateHook } = getGameReact(
+    props.api,
+  );
   const Input = props.api.utils.components
     .Input as React.ComponentType<InputFieldProperties>;
 
@@ -65,9 +67,13 @@ export function renderRegionsOverviewPanel(
   const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(
     () => props.initialState?.activeTab ?? RegionsOverviewTabs.Overview,
   );
-  const [, setSummaryRenderToken] = useStateHook<number>(0);
+  const [summaryRenderToken, setSummaryRenderToken] = useStateHook<number>(0);
   const [sortState, setSortState] = useStateHook<SortState>(
-    props.initialState?.sortState ?? DEFAULT_SORT_STATE,
+    // If no initial state is provided, default to sorting by region name ascending
+    props.initialState?.sortState ?? {
+      ...DEFAULT_SORT_STATE,
+      sortDirection: SortDirection.Asc,
+    },
   );
 
   useEffectHook(() => {
@@ -158,9 +164,11 @@ export function renderRegionsOverviewPanel(
     case RegionsOverviewTabs.Overview:
       tabContent = renderOverviewTabContent(
         h,
+        useMemoHook,
         useStateHook,
         Input,
         datasetGameData,
+        summaryRenderToken,
         selectedDatasetIdentifier,
         activeSelection,
         sortState,

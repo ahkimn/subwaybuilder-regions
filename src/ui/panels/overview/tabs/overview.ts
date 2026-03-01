@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { createElement, useState } from 'react';
+import type { createElement, useMemo, useState } from 'react';
 
 import { LOADING_VALUE_DISPLAY } from '@/core/constants';
 import {
@@ -123,9 +123,11 @@ const SORT_CONFIGS: ReadonlyArray<SortConfig<OverviewSortMetrics>> = [
 
 export function renderOverviewTabContent(
   h: typeof createElement,
+  useMemoHook: typeof useMemo,
   useStateHook: typeof useState,
   Input: React.ComponentType<InputFieldProperties>,
   datasetGameData: Map<string | number, RegionGameData>,
+  summaryRenderToken: number,
   selectedDatasetIdentifier: string,
   activeSelection: RegionSelection | null,
   sortState: SortState,
@@ -136,16 +138,34 @@ export function renderOverviewTabContent(
   onDoubleClickRow: (selection: RegionSelection) => void,
   showUnpopulatedRegions: boolean,
 ): React.ReactNode {
-  const rows = sortRows(
-    filterRows(
-      buildRows(
-        datasetGameData,
-        selectedDatasetIdentifier,
-        showUnpopulatedRegions,
+  // Memoize the processed rows to avoid unnecessary re-computation on every render (e.g. when the user resizes the panel or drags it across the screen)
+  const rows = useMemoHook(
+    () =>
+      // Main computational pipeline for generating the rows to be displayed, consisting of:
+      // 1. Building the initial rows from the game data
+      // 2. Filtering the rows based on the search term
+      // 3. Sorting the rows based on the current sort state
+      sortRows(
+        filterRows(
+          buildRows(
+            datasetGameData,
+            selectedDatasetIdentifier,
+            showUnpopulatedRegions,
+          ),
+          searchTerm,
+        ),
+        sortState,
       ),
+    [
+      datasetGameData,
+      // Include summaryRenderToken in dependencies to trigger re-computation when commuter summary data is updated
+      summaryRenderToken,
+      selectedDatasetIdentifier,
+      showUnpopulatedRegions,
       searchTerm,
-    ),
-    sortState,
+      sortState.sortIndex,
+      sortState.sortDirection,
+    ],
   );
 
   return h(

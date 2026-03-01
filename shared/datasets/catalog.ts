@@ -130,6 +130,54 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'FR IGN G\u00E9oPF',
     existsOnlineSource: true,
   },
+  sa3s: {
+    datasetId: 'sa3s',
+    displayName: 'Statistical Areas Level 3',
+    unitSingular: 'Statistical Area Level 3',
+    unitPlural: 'Statistical Areas Level 3',
+    source: 'AU ABS (ASGS 2021)',
+    existsOnlineSource: true,
+  },
+  sa2s: {
+    datasetId: 'sa2s',
+    displayName: 'Statistical Areas Level 2',
+    unitSingular: 'Statistical Area Level 2',
+    unitPlural: 'Statistical Areas Level 2',
+    source: 'AU ABS (ASGS 2021)',
+    existsOnlineSource: true,
+  },
+  ceds: {
+    datasetId: 'ceds',
+    displayName: 'Commonwealth Electoral Divisions',
+    unitSingular: 'Commonwealth Electoral Division',
+    unitPlural: 'Commonwealth Electoral Divisions',
+    source: 'AU ABS (ASGS 2021)',
+    existsOnlineSource: true,
+  },
+  seds: {
+    datasetId: 'seds',
+    displayName: 'State Electoral Divisions',
+    unitSingular: 'State Electoral Division',
+    unitPlural: 'State Electoral Divisions',
+    source: 'AU ABS (ASGS 2021)',
+    existsOnlineSource: true,
+  },
+  lgas: {
+    datasetId: 'lgas',
+    displayName: 'Local Government Areas',
+    unitSingular: 'Local Government Area',
+    unitPlural: 'Local Government Areas',
+    source: 'AU ABS (ASGS 2021)',
+    existsOnlineSource: true,
+  },
+  poas: {
+    datasetId: 'poas',
+    displayName: 'Postal Areas',
+    unitSingular: 'Postal Area',
+    unitPlural: 'Postal Areas',
+    source: 'AU ABS (ASGS 2021)',
+    existsOnlineSource: true,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -139,9 +187,10 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   CA: ['feds', 'peds', 'csds', 'fsas'],
   GB: ['districts', 'bua', 'wards'],
   FR: ['departments', 'arrondissements', 'cantons', 'epci', 'communes'],
+  AU: ['sa3s', 'sa2s', 'ceds', 'seds', 'lgas', 'poas'],
 });
 
-export const CATALOG_STATIC_COUNTRIES = ['US', 'CA', 'GB', 'FR'] as const;
+export const CATALOG_STATIC_COUNTRIES = ['US', 'CA', 'GB', 'FR', 'AU'] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 
 export function isStaticCountryCode(value: string): value is StaticCountryCode {

@@ -1,6 +1,6 @@
 # Releasing SubwayBuilder Regions
 
-[Back to README](README.md)
+[Back to README](../README.md)
 
 This document describes the release flow for publishing a GitHub Release package for end users.
 
@@ -20,7 +20,7 @@ The zip contains only:
 
 ## Per-Release Steps
 
-1. Update `CHANGELOG.md` with a new top entry using:
+1. Update `docs/CHANGELOG.md` with a new top entry using:
    - `## vX.Y.Z - YYYY-MM-DD`
 2. Merge release-ready changes to `main`.
 3. Sync local `main`:
@@ -39,10 +39,10 @@ The zip contains only:
 
 On push of `v*` tag, the release workflow:
 
-1. Resolves release version from latest `CHANGELOG.md` entry.
+1. Resolves release version from latest `docs/CHANGELOG.md` entry.
 2. Verifies pushed tag matches that version.
 3. Builds project and runs `npm run release:package`.
-4. Extracts release notes from matching `CHANGELOG.md` section.
+4. Extracts release notes from matching `docs/CHANGELOG.md` section.
 5. Publishes GitHub Release with:
    - tag/name `vX.Y.Z`
    - release zip asset

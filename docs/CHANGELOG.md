@@ -1,6 +1,41 @@
 # Changelog
 
-[Back to README](README.md)
+[Back to README](../README.md)
+
+## v0.4.1 - 2026-03-01
+
+_Game version_ v1.1.0
+
+- Added support for French regions
+  - Displayed in the `Settings Menu` as `FR`
+  - Five available region types:
+    - Départements, Arrondissemenets, Communes
+    - Cantons
+    - Établissement public de coopération intercommunale (EPCI)
+  - All regions have real population data based on underlying communes
+  - Source: FR IGN (GéoPF/INSEE)
+- Added support for Australian regions
+  - Displayed in the `Settings Menu` as `AU`
+  - Six available region types:
+    - Statistical Areas Level 2 & 3
+    - Commonwealth / State Electoral Divisions
+    - Local Government Areas
+    - Postal Areas
+  - All regions have real population data
+  - Source: AU ABS (ASGS 2021)
+
+### Other Updates
+
+- Raised per city dataset soft-cap from five datasets to eight
+  - Added additional default layer colors so that the same color is not reused for cities with more than five datasets
+  - Updated layer selection in the `Overview Panel` to be by dropdown
+- Repository documents are now listed under docs/XXX.md to clean up top-level directory space
+
+### Bugfixes
+
+- Fixed non-deterministic dataset ordering/coloring in map layers for cached (`static`/`dynamic`) datasets by adding country metadata to each registry cache entry
+- Fixed overview panel recalculating/sorting overview table rows on every re-render by adding memoization
+- Fixed dropdown persisting even when user navigates/interacts with other components
 
 ## v0.4.0 - 2026-02-28
 

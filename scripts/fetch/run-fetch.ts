@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 
+import { extractAUBoundaries } from '../extract/extract-au-map-features';
 import { extractCABoundaries } from '../extract/extract-ca-map-features';
 import { extractFRBoundaries } from '../extract/extract-fr-map-features';
 import { extractGBBoundaries } from '../extract/extract-gb-map-features';
@@ -24,6 +25,7 @@ type CountryExtractorMap = Record<
 >;
 
 const COUNTRY_EXTRACTORS: CountryExtractorMap = {
+  AU: extractAUBoundaries,
   US: extractUSBoundaries,
   GB: extractGBBoundaries,
   CA: extractCABoundaries,

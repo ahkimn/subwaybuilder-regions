@@ -1,6 +1,6 @@
 # Known Issues
 
-[Back to README](README.md)
+[Back to README](../README.md)
 
 This document contains a list of currently known issues affecting the SubwayBuilder Regions mod, split into major and minor items.
 
@@ -65,3 +65,15 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
 10. _Multiple Simultaneous Data Requests_ (`🔴 Open`)
     - On overview panel load of a dataset, all commuter summary / infra data is requested at a dataset level.
       - Requests may not complete by the time the user navigates to a different tab; if they reopen the same tab again before the request completion, a duplicate request can be spawned
+
+## Optimizations
+
+Performance or computational optimizations that should be addressed in the future
+
+1. _Restrict Map State Polling_ (`🔴 Open`)
+   - Once map layer attachment within the game is stabilizied, remove map observers that are no longer needed (e.g. those watching for label layer drop)
+2. _Info Panel Commuters Memoization_ (`🔴 Open`)
+   - The info panel is rendered in a separate mod-controlled React root, so optimization work here should use local panel-level memoization patterns rather than assumptions tied to the game UI render path.
+   - Current re-renders are mainly driven by commuter refresh updates and expected UI events (selection/theme/settings changes).
+   - Given current behavior, memoization is deferred for now as likely low-impact.
+   - Future improvement: memoize commuter-derived view computations using semantic dependencies (e.g. commuter metadata timestamps) if profiling shows measurable cost.
