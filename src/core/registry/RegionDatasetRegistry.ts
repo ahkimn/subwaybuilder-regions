@@ -21,6 +21,7 @@ import type { RegionsStorage } from '../storage/RegionsStorage';
 import {
   canonicalizeLocalRegistryEntries,
   mergeLocalRegistryEntries,
+  sortEntriesByCountryDatasetOrder,
   toLogicalDatasetKey,
 } from './cache';
 import { resolveStaticTemplateCountry, STATIC_TEMPLATES } from './static';
@@ -66,9 +67,18 @@ export class RegionDatasetRegistry {
 
   // -- Dataset Getters -- //
   getCityDatasets(cityCode: string): RegionDataset[] {
-    return Array.from(this.datasets.values()).filter(
+    const cityDatasets = Array.from(this.datasets.values()).filter(
       (dataset) => dataset.cityCode === cityCode,
     );
+
+    // For cities with multiple datasets, attempt to return the deterministic ordering defined statically in the dataset catalog.
+    const sortableEntries = cityDatasets.map((dataset) => ({
+      datasetId: dataset.id,
+      country: dataset.country ?? null,
+      dataset,
+    }));
+    const sortedEntries = sortEntriesByCountryDatasetOrder(sortableEntries);
+    return sortedEntries.map((entry) => entry.dataset);
   }
 
   getCityDatasetIds(cityCode: string): string[] {
@@ -310,6 +320,8 @@ export class RegionDatasetRegistry {
     const hasValidFileSize =
       entry.fileSizeMB === undefined ||
       (Number.isFinite(entry.fileSizeMB) && entry.fileSizeMB >= 0);
+    const hasValidCountry =
+      entry.country === undefined || typeof entry.country === 'string';
     if (
       !entry.datasetId ||
       !entry.displayName ||
@@ -318,7 +330,8 @@ export class RegionDatasetRegistry {
       !entry.source ||
       !Number.isInteger(entry.size) ||
       entry.size <= 0 ||
-      !hasValidFileSize
+      !hasValidFileSize ||
+      !hasValidCountry
     ) {
       throw new Error(
         `[Regions] Invalid dataset index entry for city ${cityCode}: ${JSON.stringify(entry)}`,
@@ -367,6 +380,7 @@ export class RegionDatasetRegistry {
         entries.push({
           cityCode: city.code,
           datasetId: template.datasetId,
+          country: resolvedCountry ?? undefined,
           displayName: template.displayName,
           unitSingular: template.unitSingular,
           unitPlural: template.unitPlural,
@@ -420,6 +434,7 @@ export class RegionDatasetRegistry {
       updatedEntries.push({
         cityCode: request.cityCode,
         datasetId: metadata.datasetId,
+        country: request.countryCode,
         displayName: metadata.displayName,
         unitSingular: metadata.unitSingular,
         unitPlural: metadata.unitPlural,
@@ -546,6 +561,7 @@ export class RegionDatasetRegistry {
   ): DatasetMetadata {
     return {
       datasetId: entry.datasetId,
+      country: entry.country,
       displayName: entry.displayName,
       unitSingular: entry.unitSingular,
       unitPlural: entry.unitPlural,

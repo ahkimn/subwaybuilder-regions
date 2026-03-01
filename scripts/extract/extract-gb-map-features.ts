@@ -18,6 +18,7 @@ import {
   getDistrictONSQuery,
   getWardONSQuery,
 } from '../utils/queries';
+import { createDataConfigFromCatalog } from './data-config';
 import type { BoundaryDataHandler, DataConfig } from './handler-types';
 import { processAndSaveBoundaries } from './process';
 
@@ -57,12 +58,7 @@ const WARD_NAME_PROPERTY = 'WD25NM';
 const WARD_WELSH_NAME_PROPERTY = 'WD25NMW';
 
 const GB_DATA_CONFIGS: Record<string, DataConfig> = {
-  districts: {
-    datasetId: 'districts',
-    displayName: 'Districts',
-    unitSingular: 'District',
-    unitPlural: 'Districts',
-    source: 'UK ONS',
+  districts: createDataConfigFromCatalog('districts', {
     idProperty: DISTRICT_CODE_PROPERTY,
     nameProperty: DISTRICT_NAME_PROPERTY,
     applicableNameProperties: [
@@ -70,13 +66,8 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
       DISTRICT_NAME_PROPERTY,
     ],
     populationProperty: 'Population',
-  },
-  bua: {
-    datasetId: 'bua',
-    displayName: 'Built-Up Areas',
-    unitSingular: 'Built-Up Area',
-    unitPlural: 'Built-Up Areas',
-    source: 'UK ONS',
+  }),
+  bua: createDataConfigFromCatalog('bua', {
     idProperty: BUA_CODE_PROPERTY,
     nameProperty: BUA_NAME_PROPERTY,
     applicableNameProperties: [
@@ -85,18 +76,13 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
       BUA_NAME_PROPERTY,
     ],
     populationProperty: 'Population',
-  },
-  wards: {
-    datasetId: 'wards',
-    displayName: 'Electoral Wards',
-    unitSingular: 'Electoral Ward',
-    unitPlural: 'Electoral Wards',
-    source: 'UK ONS',
+  }),
+  wards: createDataConfigFromCatalog('wards', {
     idProperty: WARD_CODE_PROPERTY,
     nameProperty: WARD_NAME_PROPERTY,
     applicableNameProperties: [WARD_WELSH_NAME_PROPERTY, WARD_NAME_PROPERTY],
     populationProperty: 'Population',
-  },
+  }),
 };
 
 const GB_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {

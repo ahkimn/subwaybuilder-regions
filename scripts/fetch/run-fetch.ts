@@ -1,9 +1,11 @@
 import fs from 'fs-extra';
 
 import { extractCABoundaries } from '../extract/extract-ca-map-features';
+import { extractFRBoundaries } from '../extract/extract-fr-map-features';
 import { extractGBBoundaries } from '../extract/extract-gb-map-features';
 import { extractUSBoundaries } from '../extract/extract-us-map-features';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
+import type { BoundaryBox } from '../utils/geometry';
 import type { FetchDatasetArgs } from './parse-fetch-args';
 
 export type FetchFailure = {
@@ -14,6 +16,18 @@ export type FetchFailure = {
 export type FetchResult = {
   successes: string[];
   failures: FetchFailure[];
+};
+
+type CountryExtractorMap = Record<
+  FetchDatasetArgs['countryCode'],
+  (args: ExtractMapFeaturesArgs, bbox: BoundaryBox) => Promise<void>
+>;
+
+const COUNTRY_EXTRACTORS: CountryExtractorMap = {
+  US: extractUSBoundaries,
+  GB: extractGBBoundaries,
+  CA: extractCABoundaries,
+  FR: extractFRBoundaries,
 };
 
 function renderProgressBar(completed: number, total: number): string {
@@ -30,8 +44,9 @@ function renderProgressSummary(completed: number, total: number): string {
   return `${renderProgressBar(completed, total)} ${percent}% (${completed}/${total})`;
 }
 
-async function runCountryExtractor(
+export async function runCountryExtractor(
   args: ExtractMapFeaturesArgs,
+  extractors: CountryExtractorMap = COUNTRY_EXTRACTORS,
 ): Promise<void> {
   const bbox = {
     west: args.west!,
@@ -40,19 +55,13 @@ async function runCountryExtractor(
     north: args.north!,
   };
 
-  switch (args.countryCode) {
-    case 'US':
-      await extractUSBoundaries(args, bbox);
-      return;
-    case 'GB':
-      await extractGBBoundaries(args, bbox);
-      return;
-    case 'CA':
-      await extractCABoundaries(args, bbox);
-      return;
-    default:
-      throw new Error(`Unsupported countryCode: ${args.countryCode}`);
+  const extractor =
+    extractors[args.countryCode as FetchDatasetArgs['countryCode']];
+  if (!extractor) {
+    throw new Error(`Unsupported countryCode: ${args.countryCode}`);
   }
+
+  await extractor(args, bbox);
 }
 
 function buildExtractorArgs(

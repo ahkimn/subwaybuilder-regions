@@ -90,6 +90,46 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'UK ONS',
     existsOnlineSource: true,
   },
+  departments: {
+    datasetId: 'departments',
+    displayName: 'D\u00E9partements',
+    unitSingular: 'D\u00E9partement',
+    unitPlural: 'D\u00E9partements',
+    source: 'FR IGN G\u00E9oPF',
+    existsOnlineSource: true,
+  },
+  arrondissements: {
+    datasetId: 'arrondissements',
+    displayName: 'Arrondissements',
+    unitSingular: 'Arrondissement',
+    unitPlural: 'Arrondissements',
+    source: 'FR IGN G\u00E9oPF',
+    existsOnlineSource: true,
+  },
+  cantons: {
+    datasetId: 'cantons',
+    displayName: 'Cantons',
+    unitSingular: 'Canton',
+    unitPlural: 'Cantons',
+    source: 'FR IGN G\u00E9oPF',
+    existsOnlineSource: true,
+  },
+  epci: {
+    datasetId: 'epci',
+    displayName: 'EPCI',
+    unitSingular: 'EPCI',
+    unitPlural: 'EPCI',
+    source: 'FR IGN G\u00E9oPF',
+    existsOnlineSource: true,
+  },
+  communes: {
+    datasetId: 'communes',
+    displayName: 'Communes',
+    unitSingular: 'Commune',
+    unitPlural: 'Communes',
+    source: 'FR IGN G\u00E9oPF',
+    existsOnlineSource: true,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -98,9 +138,10 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   US: ['counties', 'county-subdivisions', 'zctas'],
   CA: ['feds', 'peds', 'csds', 'fsas'],
   GB: ['districts', 'bua', 'wards'],
+  FR: ['departments', 'arrondissements', 'cantons', 'epci', 'communes'],
 });
 
-export const CATALOG_STATIC_COUNTRIES = ['US', 'CA', 'GB'] as const;
+export const CATALOG_STATIC_COUNTRIES = ['US', 'CA', 'GB', 'FR'] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 
 export function isStaticCountryCode(value: string): value is StaticCountryCode {

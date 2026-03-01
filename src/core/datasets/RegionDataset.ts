@@ -44,6 +44,7 @@ import { RegionBoundaryGridIndex } from './RegionBoundaryGridIndex';
 export class RegionDataset {
   readonly id: string; // name (e.x. "districts", "bua", "my_zones")
   readonly cityCode: string; // city identifier (e.x. "LON", "MAN", "BOS")
+  readonly country?: string; // ISO country code (e.x. "GB", "US", "FR"). Optional due to backwards compatibility (introduced in 0.4.1)
   readonly source: DatasetSource;
 
   // Optional, mutable display names for UI
@@ -81,6 +82,7 @@ export class RegionDataset {
   ) {
     this.id = indexEntry.datasetId;
     this.cityCode = cityCode;
+    this.country = indexEntry.country;
     this.source = source;
     this.displayName = indexEntry.displayName || indexEntry.datasetId;
 

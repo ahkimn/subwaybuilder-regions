@@ -36,6 +36,11 @@ describe('validateFetchRequest', () => {
     { countryCode: 'GB', datasetId: 'districts' },
     { countryCode: 'GB', datasetId: 'bua' },
     { countryCode: 'GB', datasetId: 'wards' },
+    { countryCode: 'FR', datasetId: 'departments' },
+    { countryCode: 'FR', datasetId: 'arrondissements' },
+    { countryCode: 'FR', datasetId: 'cantons' },
+    { countryCode: 'FR', datasetId: 'epci' },
+    { countryCode: 'FR', datasetId: 'communes' },
   ];
 
   for (const testCase of validCountryDatasetCases) {

@@ -14,7 +14,7 @@ export type SelectRowStyle = {
   iconWrapperClass: string;
 };
 
-export const MAX_SELECT_BUTTONS = 4;
+export const MAX_SELECT_BUTTONS = 5;
 const DEFAULT_SELECT_ROW_STYLE: SelectRowStyle = {
   containerClass: 'flex items-center gap-1 h-8',
   baseButtonClass: [

@@ -4,12 +4,13 @@ import type { DatasetOrigin } from '../src/core/domain';
 
 export type DatasetMetadata = {
   datasetId: string;
+  country?: string; // Optional due to backwards compatibility (introduced in 0.4.1)
   displayName: string;
   unitSingular: string;
   unitPlural: string;
   source: string;
   size: number;
-  fileSizeMB?: number;
+  fileSizeMB?: number; // Optional due to served datasets where size is not a constraint
 };
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
@@ -30,6 +31,7 @@ export type RegistryCacheEntry = DatasetMetadata & {
 export const StaticRegistryCacheEntrySchema = z.object({
   cityCode: z.string(),
   datasetId: z.string(),
+  country: z.string().optional(),
   displayName: z.string(),
   unitSingular: z.string(),
   unitPlural: z.string(),

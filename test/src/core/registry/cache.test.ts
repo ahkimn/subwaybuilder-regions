@@ -6,6 +6,7 @@ import type { RegistryCacheEntry, RegistryOrigin } from '@shared/dataset-index';
 import {
   canonicalizeLocalRegistryEntries,
   mergeLocalRegistryEntries,
+  sortEntriesByCountryDatasetOrder,
   toLogicalDatasetKey,
 } from '@/core/registry/cache';
 
@@ -124,5 +125,35 @@ describe('core/registry/cache', () => {
     assert.equal(result.entries.length, 2);
     assert.equal(result.entries[0], entries[0]);
     assert.equal(result.entries[1], entries[1]);
+  });
+
+  it('sortEntriesByCountryDatasetOrder_shouldSortByCatalogOrder_whenCountryPresent', () => {
+    const entries = [
+      createEntry('dynamic', 'LYN', 'communes', { country: 'FR' }),
+      createEntry('dynamic', 'LYN', 'epci', { country: 'FR' }),
+      createEntry('dynamic', 'LYN', 'cantons', { country: 'FR' }),
+      createEntry('dynamic', 'LYN', 'departments', { country: 'FR' }),
+      createEntry('dynamic', 'LYN', 'arrondissements', { country: 'FR' }),
+    ];
+
+    const sorted = sortEntriesByCountryDatasetOrder(entries);
+    assert.deepEqual(
+      sorted.map((entry) => entry.datasetId),
+      ['departments', 'arrondissements', 'cantons', 'epci', 'communes'],
+    );
+  });
+
+  it('sortEntriesByCountryDatasetOrder_shouldFallbackToInsertionOrder_whenCountryMissing', () => {
+    const entries = [
+      createEntry('dynamic', 'LYN', 'communes'),
+      createEntry('dynamic', 'LYN', 'departments'),
+      createEntry('dynamic', 'LYN', 'cantons'),
+    ];
+
+    const sorted = sortEntriesByCountryDatasetOrder(entries);
+    assert.deepEqual(
+      sorted.map((entry) => entry.datasetId),
+      entries.map((entry) => entry.datasetId),
+    );
   });
 });

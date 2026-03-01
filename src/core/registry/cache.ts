@@ -1,4 +1,5 @@
 import type { RegistryCacheEntry, RegistryOrigin } from '@shared/dataset-index';
+import { resolveCountryDatasetOrder } from '@shared/datasets/catalog';
 
 export const LOCAL_ORIGIN_PRECEDENCE: Record<RegistryOrigin, number> = {
   static: 0,
@@ -33,6 +34,40 @@ export function mergeLocalRegistryEntries(
   }
 
   return Array.from(deduped.values());
+}
+
+// Helper to return a deterministic ordering for datasets for the same city based on the country's statically defined dataset ordering.
+// Within the cache, insertion order is not guaranteed to be consistent as the user may request datasets in any order
+export function sortEntriesByCountryDatasetOrder<
+  T extends { datasetId: string; country?: string | null },
+>(entries: T[]): T[] {
+  if (entries.length <= 1) {
+    return entries;
+  }
+
+  const country = entries.find((entry) => entry.country)?.country;
+  // Country is not always available (it was introduced into the Cache in 0.4.1) so we maintain this fallback to avoid errors
+  if (!country) {
+    return entries;
+  }
+
+  const datasetOrder = resolveCountryDatasetOrder(country);
+  if (datasetOrder.length === 0) {
+    return entries;
+  }
+
+  const orderIndex = new Map<string, number>(
+    datasetOrder.map((datasetId, index) => [datasetId, index]),
+  );
+
+  return [...entries].sort((a, b) => {
+    const aOrder = orderIndex.get(a.datasetId);
+    const bOrder = orderIndex.get(b.datasetId);
+    if (aOrder == null || bOrder == null) {
+      return 0;
+    }
+    return aOrder - bOrder;
+  });
 }
 
 export function canonicalizeLocalRegistryEntries(
