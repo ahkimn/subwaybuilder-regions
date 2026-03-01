@@ -1,22 +1,14 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 
 import { parseFetchArgs } from '@scripts/fetch/parse-fetch-args';
 import {
-  createScriptTestHarness,
   expectExitCode,
 } from '@test/helpers/script-test-harness';
+import { withScriptHarness } from '@test/helpers/script-test-suite';
 
 describe('scripts/fetch/parse-fetch-args script behavior', () => {
-  const harness = createScriptTestHarness();
-
-  beforeEach(() => {
-    harness.install();
-  });
-
-  afterEach(() => {
-    harness.restore();
-  });
+  const harness = withScriptHarness();
 
   it('shouldParseAllRequiredArgs_whenHappyPath', () => {
     const args = parseFetchArgs([
