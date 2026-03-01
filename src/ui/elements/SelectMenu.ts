@@ -44,36 +44,40 @@ export const COMPACT_SELECT_MENU_BUTTON_CLASS =
 export const COMPACT_SELECT_MENU_OPTION_CLASS =
   'w-full px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-accent';
 
+// Memo for open dropdowns to their click handlers (as there may be more than on SelectMenu open at once), to allow for proper cleanup of listeners
 const OUTSIDE_POINTER_HANDLER_BY_MENU = new WeakMap<
   HTMLDetailsElement,
   (event: PointerEvent) => void
 >();
 
-function detachOutsidePointerCloseListener(details: HTMLDetailsElement): void {
+function detachCloseListener(details: HTMLDetailsElement): void {
   const existingHandler = OUTSIDE_POINTER_HANDLER_BY_MENU.get(details);
   if (!existingHandler) return;
   document.removeEventListener('pointerdown', existingHandler, true);
   OUTSIDE_POINTER_HANDLER_BY_MENU.delete(details);
 }
 
-function attachOutsidePointerCloseListener(details: HTMLDetailsElement): void {
+function attachCloseListener(details: HTMLDetailsElement): void {
   if (OUTSIDE_POINTER_HANDLER_BY_MENU.has(details)) {
     return;
   }
 
+  // Detect clicks outside of this menu to close it when open
   const outsidePointerHandler = (event: PointerEvent) => {
     if (!details.isConnected) {
-      detachOutsidePointerCloseListener(details);
+      detachCloseListener(details);
       return;
     }
 
+    // If click is within the menu, do nothing
     const target = event.target as Node | null;
     if (target && details.contains(target)) {
       return;
     }
 
+    // If click was outside of the menu, close it and remove the listener
     details.removeAttribute('open');
-    detachOutsidePointerCloseListener(details);
+    detachCloseListener(details);
   };
 
   document.addEventListener('pointerdown', outsidePointerHandler, true);
@@ -110,24 +114,27 @@ export function SelectMenu({
     'details',
     {
       className: 'relative w-full',
+      // Attach a listener to detect clicks outside the menu when it is opened, and remove the listener when closed
+      onToggle: (event: Event) => {
+        const currentTarget = event.currentTarget as HTMLDetailsElement;
+        if (currentTarget.open) {
+          // Listener to close the dropdown when the user clicks outside of it
+          attachCloseListener(currentTarget);
+          return;
+        }
+        detachCloseListener(currentTarget);
+      },
+      // Handle expected auto-close behavior for navigation outside of pointer events (e.g. keyboard navigation) by closing the menu when focus leaves
       onBlur: (event: FocusEvent) => {
         const currentTarget = event.currentTarget as HTMLElement;
         const relatedTarget = event.relatedTarget as Node | null;
 
-        // Keep menu open while focus moves within this SelectMenu; close when focus leaves.
+        // Keep dropdown open while focus moves within this SelectMenu; close when focus leaves.
         if (relatedTarget && currentTarget.contains(relatedTarget)) {
           return;
         }
 
         currentTarget.removeAttribute('open');
-      },
-      onToggle: (event: Event) => {
-        const currentTarget = event.currentTarget as HTMLDetailsElement;
-        if (currentTarget.open) {
-          attachOutsidePointerCloseListener(currentTarget);
-          return;
-        }
-        detachOutsidePointerCloseListener(currentTarget);
       },
     },
     h(
