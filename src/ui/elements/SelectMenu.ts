@@ -44,6 +44,42 @@ export const COMPACT_SELECT_MENU_BUTTON_CLASS =
 export const COMPACT_SELECT_MENU_OPTION_CLASS =
   'w-full px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-accent';
 
+const OUTSIDE_POINTER_HANDLER_BY_MENU = new WeakMap<
+  HTMLDetailsElement,
+  (event: PointerEvent) => void
+>();
+
+function detachOutsidePointerCloseListener(details: HTMLDetailsElement): void {
+  const existingHandler = OUTSIDE_POINTER_HANDLER_BY_MENU.get(details);
+  if (!existingHandler) return;
+  document.removeEventListener('pointerdown', existingHandler, true);
+  OUTSIDE_POINTER_HANDLER_BY_MENU.delete(details);
+}
+
+function attachOutsidePointerCloseListener(details: HTMLDetailsElement): void {
+  if (OUTSIDE_POINTER_HANDLER_BY_MENU.has(details)) {
+    return;
+  }
+
+  const outsidePointerHandler = (event: PointerEvent) => {
+    if (!details.isConnected) {
+      detachOutsidePointerCloseListener(details);
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && details.contains(target)) {
+      return;
+    }
+
+    details.removeAttribute('open');
+    detachOutsidePointerCloseListener(details);
+  };
+
+  document.addEventListener('pointerdown', outsidePointerHandler, true);
+  OUTSIDE_POINTER_HANDLER_BY_MENU.set(details, outsidePointerHandler);
+}
+
 // UI element for dropdown select menus
 export function SelectMenu({
   h,
@@ -72,7 +108,28 @@ export function SelectMenu({
 
   return h(
     'details',
-    { className: 'relative w-full' },
+    {
+      className: 'relative w-full',
+      onBlur: (event: FocusEvent) => {
+        const currentTarget = event.currentTarget as HTMLElement;
+        const relatedTarget = event.relatedTarget as Node | null;
+
+        // Keep menu open while focus moves within this SelectMenu; close when focus leaves.
+        if (relatedTarget && currentTarget.contains(relatedTarget)) {
+          return;
+        }
+
+        currentTarget.removeAttribute('open');
+      },
+      onToggle: (event: Event) => {
+        const currentTarget = event.currentTarget as HTMLDetailsElement;
+        if (currentTarget.open) {
+          attachOutsidePointerCloseListener(currentTarget);
+          return;
+        }
+        detachOutsidePointerCloseListener(currentTarget);
+      },
+    },
     h(
       'summary',
       {

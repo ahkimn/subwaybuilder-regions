@@ -138,8 +138,13 @@ export function renderOverviewTabContent(
   onDoubleClickRow: (selection: RegionSelection) => void,
   showUnpopulatedRegions: boolean,
 ): React.ReactNode {
+  // Memoize the processed rows to avoid unnecessary re-computation on every render (e.g. when the user resizes the panel or drags it across the screen)
   const rows = useMemoHook(
     () =>
+      // Main computational pipeline for generating the rows to be displayed, consisting of:
+      // 1. Building the initial rows from the game data
+      // 2. Filtering the rows based on the search term
+      // 3. Sorting the rows based on the current sort state
       sortRows(
         filterRows(
           buildRows(
@@ -153,6 +158,7 @@ export function renderOverviewTabContent(
       ),
     [
       datasetGameData,
+      // Include summaryRenderToken in dependencies to trigger re-computation when commuter summary data is updated
       summaryRenderToken,
       selectedDatasetIdentifier,
       showUnpopulatedRegions,
