@@ -98,7 +98,7 @@ export function formatFetchCommand({
       : './fetch.sh';
   const scriptInvocation = isWindowsPlatform(platform)
     ? `& "${scriptPath}"`
-    : scriptPath;
+    : `sh "${scriptPath}"`;
   const resolvedOutPath = outPath.length
     ? outPath
     : isWindowsPlatform(platform)

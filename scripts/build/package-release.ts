@@ -38,15 +38,31 @@ function ensurePathExists(filePath: string): void {
 
 function createZipFromStaging(stagingPath: string, zipPath: string): void {
   if (process.platform === 'win32') {
-    execFileSync(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-Command',
-        `Compress-Archive -Path "${path.join(stagingPath, '*')}" -DestinationPath "${zipPath}" -Force`,
-      ],
-      { stdio: 'inherit' },
-    );
+    const escapedStagingPath = escapePowerShellStringLiteral(stagingPath);
+    const escapedZipPath = escapePowerShellStringLiteral(zipPath);
+    const command = [
+      "$ErrorActionPreference = 'Stop'",
+      'Add-Type -AssemblyName System.IO.Compression',
+      'Add-Type -AssemblyName System.IO.Compression.FileSystem',
+      `$source = (Resolve-Path '${escapedStagingPath}').Path`,
+      `$destination = '${escapedZipPath}'`,
+      'if (Test-Path $destination) { Remove-Item $destination -Force }',
+      '$archive = [System.IO.Compression.ZipFile]::Open($destination, [System.IO.Compression.ZipArchiveMode]::Create)',
+      'try {',
+      '  $files = Get-ChildItem -Path $source -Recurse -File',
+      '  foreach ($file in $files) {',
+      '    $relative = $file.FullName.Substring($source.Length)',
+      "    $relative = $relative -replace '^[\\\\/]+', ''",
+      "    $relative = $relative -replace '\\\\', '/'",
+      '    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $file.FullName, $relative, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null',
+      '  }',
+      '} finally {',
+      '  $archive.Dispose()',
+      '}',
+    ].join('; ');
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', command], {
+      stdio: 'inherit',
+    });
     return;
   }
 
@@ -67,6 +83,15 @@ function syncManifestVersion(manifestFilePath: string, version: string): void {
   manifest.version = version;
   const updatedManifest = `${JSON.stringify(manifest, null, 2)}\n`;
   writeFileSync(manifestFilePath, updatedManifest, 'utf8');
+}
+
+function copyAsLfLineEndings(sourcePath: string, targetPath: string): void {
+  const content = readFileSync(sourcePath, 'utf8').replace(/\r\n/g, '\n');
+  writeFileSync(targetPath, content, 'utf8');
+}
+
+function escapePowerShellStringLiteral(value: string): string {
+  return value.replace(/'/g, "''");
 }
 
 function main(): void {
@@ -94,7 +119,7 @@ function main(): void {
   copyFileSync(manifestPath, path.join(stagingDir, 'manifest.json'));
   copyFileSync(bundlePath, path.join(stagingDir, 'index.js'));
   copyFileSync(fetchPowershellWrapperPath, path.join(stagingDir, 'fetch.ps1'));
-  copyFileSync(fetchShellWrapperPath, path.join(stagingDir, 'fetch.sh'));
+  copyAsLfLineEndings(fetchShellWrapperPath, path.join(stagingDir, 'fetch.sh'));
   mkdirSync(path.join(stagingDir, 'tools'), { recursive: true });
   copyFileSync(fetchCliPath, path.join(stagingDir, 'tools', 'fetch-cli.cjs'));
 
