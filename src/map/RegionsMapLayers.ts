@@ -1,3 +1,5 @@
+import { resolveCountryDatasetOrder } from '@shared/datasets/catalog';
+
 import {
   OVERVIEW_REGION_FOCUS_DURATION_MS,
   OVERVIEW_REGION_FOCUS_MAX_PADDING_PX,
@@ -543,7 +545,7 @@ export class RegionsMapLayers {
     this.updateSource(layerState.sourceId, dataset.boundaryData!);
     this.updateSource(layerState.labelSourceId, dataset.labelData!);
 
-    this.addBoundaryLayer(layerState);
+    this.addBoundaryLayer(dataset, layerState);
     this.addLabelLayer(layerState);
     this.applyDemandExistsFilterToLayerState(layerState);
     this.applyLightModeToLayerState(layerState);
@@ -575,22 +577,34 @@ export class RegionsMapLayers {
     }
   }
 
-  private determineStyle(datasetIdentifier: string): MapLayerStyle {
+  private resolveFillColor(dataset: RegionDataset): MapDisplayColor {
+    if (dataset.country) {
+      const orderedDatasetIds = resolveCountryDatasetOrder(dataset.country);
+      const orderIndex = orderedDatasetIds.indexOf(dataset.id);
+      if (orderIndex >= 0) {
+        return PRIMARY_FILL_COLORS[orderIndex % PRIMARY_FILL_COLORS.length];
+      }
+    }
+
+    const fallbackColor =
+      PRIMARY_FILL_COLORS[this.nextColorIndex % PRIMARY_FILL_COLORS.length];
+    this.nextColorIndex++;
+    return fallbackColor;
+  }
+
+  private determineStyle(dataset: RegionDataset): MapLayerStyle {
+    const datasetIdentifier = RegionDataset.getIdentifier(dataset);
     if (this.layerStyles.has(datasetIdentifier)) {
       return this.layerStyles.get(datasetIdentifier)!;
     }
 
-    const color =
-      PRIMARY_FILL_COLORS[this.nextColorIndex % PRIMARY_FILL_COLORS.length];
-    this.nextColorIndex++;
-
-    const style: MapLayerStyle = { fillColor: color };
+    const style: MapLayerStyle = { fillColor: this.resolveFillColor(dataset) };
     this.layerStyles.set(datasetIdentifier, style);
     return style;
   }
 
-  private addBoundaryLayer(layerState: MapLayerState) {
-    const style = this.determineStyle(layerState.datasetIdentifier);
+  private addBoundaryLayer(dataset: RegionDataset, layerState: MapLayerState) {
+    const style = this.determineStyle(dataset);
     if (!this.tryGetLayer(layerState.boundaryLayerId)) {
       this.map.addLayer({
         id: layerState.boundaryLayerId,
