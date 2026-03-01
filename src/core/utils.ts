@@ -82,7 +82,7 @@ async function fetchGeoJSONFromPath(
   }
 }
 
-async function decompressGzipResponse(
+export async function decompressGzipResponse(
   response: Response,
   dataPath: string,
 ): Promise<string> {

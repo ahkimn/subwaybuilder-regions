@@ -21,10 +21,25 @@ export interface ElectronAPI {
   importMetroFile(): Promise<unknown>;
   setLicenseKey(key: string): Promise<void>;
 
-  getModsFolder?: () => Promise<string>;
-  openModsFolder?: () => Promise<void>;
-  getSystemPerformanceInfo?: () => Promise<SystemPerformanceInfo>;
+  /** Gets the absolute path to the game's "mods" folder, where users  place mod files. */
+  getModsFolder: () => Promise<string>;
+  /** Opens the game's "mods" folder in the user's file explorer. */
+  openModsFolder?: () => Promise<unknown>;
+  /** Scans the mods folder and returns a list of mod statuses. */
   scanMods: () => Promise<{ success: boolean; mods: ModStatus[] }>;
+  /** Enables or disables a mod by its ID, returning whether a game restart is required. */
+  setModEnabled: (
+    modId: string,
+    enabled: boolean,
+  ) => Promise<{ success: boolean }>;
+
+  /** Scans the set of data files for a particular city */
+  scanCityDataFiles: (
+    cityCode: string,
+  ) => Promise<{ success: boolean; basePath: string; files: unknown[] }>;
+
+  /** Gets information about the user's system including OS platform/architecture*/
+  getSystemPerformanceInfo?: () => Promise<SystemPerformanceInfo>;
 
   /** Gets a value from the game's settings file metro-maker4/settings.json. */
   getStorageItem: (key: string) => Promise<{ success: boolean; data: unknown }>;
@@ -39,6 +54,12 @@ export interface ElectronAPI {
 
   /** Gets the user's current language setting (e.g. "en", "fr", "de"). */
   getLanguage(): Promise<string>;
+  setLanguage(locale: string): Promise<void>; // This is currently a no-op
+
+  /** Game log operations */
+  getLogFilePath(): Promise<string>;
+  /** Retrieves ten most recent errors from the game's log file */
+  getRecentErrors(): Promise<ErrorLog[]>;
 }
 
 export type SystemPerformanceInfo = {

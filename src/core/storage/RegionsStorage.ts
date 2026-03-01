@@ -14,6 +14,7 @@ import {
 } from '../constants';
 import { DEFAULT_MOD_FOLDER, MOD_ID } from '../constants/global';
 import { buildPaddedBBoxForDemandData } from '../geometry/helpers';
+import { decompressGzipResponse } from '../utils';
 import { DEFAULT_REGIONS_SETTINGS } from './settings';
 import {
   clone,
@@ -249,6 +250,9 @@ export class RegionsStorage {
   }
 
   async fetchLocalDemandData(cityCode: string): Promise<DemandDataFile | null> {
+    const cityPath = (
+      await this.electronApi.scanCityDataFiles(cityCode)
+    ).basePath.replace(/\\/g, '/');
     const candidatePaths = [
       `/data/${cityCode}/demand_data.json.gz`,
       `/data/${cityCode}/demand_data.json`,
@@ -267,6 +271,38 @@ export class RegionsStorage {
         );
       }
     }
+
+    // Fallback: attempt direct absolute path fetch for current city data root.
+    const urlCandidatePaths = [
+      `${cityPath}/demand_data.json.gz`,
+      `${cityPath}/demand_data.json`,
+    ];
+
+    for (const absolutePath of urlCandidatePaths) {
+      try {
+        const response = await fetch(absolutePath);
+        if (!response.ok) {
+          console.warn(
+            `[Regions] Failed to fetch demand data from absolute path ${absolutePath}: ${response.status} ${response.statusText}`,
+          );
+          continue;
+        }
+
+        const payload = absolutePath.endsWith('.gz')
+          ? JSON.parse(await decompressGzipResponse(response, absolutePath))
+          : await response.json();
+
+        if (isDemandDataFile(payload)) {
+          return payload;
+        }
+      } catch (error) {
+        console.warn(
+          `[Regions] Failed to load demand data from absolute path ${absolutePath}:`,
+          error,
+        );
+      }
+    }
+
     return null;
   }
 
