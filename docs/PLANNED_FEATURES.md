@@ -1,6 +1,6 @@
 # Planned Features
 
-[Back to README](README.md)
+[Back to README](../README.md)
 
 This document contains a snapshot of features under consideration for the SubwayBuilder Regions mod, grouped by complexity and priority.
 Those with :construction: are currently under implementation.

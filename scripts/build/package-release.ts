@@ -26,7 +26,7 @@ const bundlePath = path.join(rootDir, 'dist', 'index.js');
 const fetchCliPath = path.join(rootDir, 'dist', 'tools', 'fetch-cli.cjs');
 const fetchPowershellWrapperPath = path.join(rootDir, 'fetch.ps1');
 const fetchShellWrapperPath = path.join(rootDir, 'fetch.sh');
-const changelogPath = path.join(rootDir, 'CHANGELOG.md');
+const changelogPath = path.join(rootDir, 'docs', 'CHANGELOG.md');
 const outputDir = path.join(rootDir, 'release');
 const stagingDir = path.join(outputDir, '.staging');
 

@@ -4,7 +4,7 @@
   "description": "Add support for displaying/analyzing regional data within SubwayBuilder",
   "dependencies": {},
   "icon": "Pin",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": {
     "name": "ahkimn",
     "url": "https://github.com/ahkimn"
@@ -17,6 +17,6 @@
     "type": "git",
     "url": "https://github.com/ahkimn/subwaybuilder-regions"
   },
-  "keywords": ["subway-builder", "mod", "trains"],
+  "keywords": ["subway-builder", "mod", "regions", "boundaries", "geospatial"],
   "subwayBuilderVersion": ">=1.1.0"
 }

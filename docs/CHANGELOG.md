@@ -1,6 +1,6 @@
 # Changelog
 
-[Back to README](README.md)
+[Back to README](../README.md)
 
 ## v0.4.1 - 2026-03-01
 
@@ -29,6 +29,7 @@ _Game version_ v1.1.0
 - Raised per city dataset soft-cap from five datasets to eight
   - Added additional default layer colors so that the same color is not reused for cities with more than five datasets
   - Updated layer selection in the `Overview Panel` to be by dropdown
+- Repository documents are now listed under docs/XXX.md to clean up top-level directory space
 
 ### Bugfixes
 

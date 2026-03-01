@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.4.0`  
+_Latest Mod Version:_ `v0.4.1`  
 _Latest Tested Game Version:_ `v1.1.0`
-_Latest Changelog Entry:_ [v0.4.0](CHANGELOG.md#v040---2026-02-28)
+_Latest Changelog Entry:_ [v0.4.1](docs/CHANGELOG.md#v041---2026-03-01)
 
 ## Table of Contents
 
@@ -20,12 +20,12 @@ _Latest Changelog Entry:_ [v0.4.0](CHANGELOG.md#v040---2026-02-28)
   - [General User Installation](#general-user-installation)
   - [Dev Installation](#dev-installation)
 - [Usage](#usage)
-- [Planned Features](PLANNED_FEATURES.md#planned-features)
-- [Known Issues](KNOWN_ISSUES.md#known-issues)
-- [Changelog](CHANGELOG.md#changelog)
+- [Planned Features](docs/PLANNED_FEATURES.md#planned-features)
+- [Known Issues](docs/KNOWN_ISSUES.md#known-issues)
+- [Changelog](docs/CHANGELOG.md#changelog)
 - [Contributing](#contributing)
   - [Developer Commands](#developer-commands)
-  - [Release Process](RELEASING.md#releasing-subwaybuilder-regions)
+  - [Release Process](docs/RELEASING.md#releasing-subwaybuilder-regions)
 - [Credits](#credits)
 
 ## Features
@@ -187,20 +187,7 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    **Preset Parameters**
 
-   The following are the current valid combinations of `country-code` and `data-type` for preset data
-
-   | `country-code` | `data-type `        | description                             | source                       |
-   | -------------- | ------------------- | --------------------------------------- | ---------------------------- |
-   | **CA**         | feds                | Federal Electoral Districts             | Statistics Canada API        |
-   | **CA**         | peds                | Provincial Electoral Districts          | Provincial Elections GeoJSON |
-   | **CA**         | csds                | Census Subdivisions                     | Statistics Canada API        |
-   | **CA**         | fsas                | Forward Sortation Areas                 | Statistics Canada API        |
-   | **GB**         | districts           | Local Authority Districts (LADs)        | ONS (online)                 |
-   | **GB**         | bua                 | Built Up Areas                          | ONS (online)                 |
-   | **GB**         | wards               | Electoral Wards                         | ONS (online)                 |
-   | **US**         | counties            | Counties                                | TIGERweb API (online)        |
-   | **US**         | county-subdivisions | County Subdivisions (Towns/Cities/CDPs) | TIGERweb API (online)        |
-   | **US**         | zctas               | ZIP Code Tabulation Areas               | TIGERweb API (online)        |
+   The current valid combinations of `country-code` and `data-type` for preset extraction are documented in [Preset Dataset Reference](docs/PRESET_DATA_REFERENCE.md).
 
    :warning: If adding boundaries for a custom city, `city-code` must be in `boundaries.csv`
 
@@ -221,10 +208,9 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
      --compress=true
    ```
 
-   Supported datasets for this runtime CLI:
-   - `US`: `counties`, `county-subdivisions`, `zctas`
-   - `GB`: `districts`, `bua`, `wards`
-   - `CA`: `feds`, `csds`, `fsas` (`peds` requires a local dataset)
+   This CLI has the additional benefit of supporting multiple datasets per city, as shown above
+
+   Supported datasets for this runtime CLI are the limited to those having `online` equal to `Yes` in [Preset Dataset Reference](docs/PRESET_DATA_REFERENCE.md).
 
    **Rest of the World**
 
@@ -234,26 +220,26 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    ```
     {
-      "countryCode": "FR",
-      "availableBoundaryTypes": [
-        {
-          "adminLevels": [7],
-          "datasetId": "arrondissements",
-          "suffixesToTrim": [],
-          "prefixesToTrim": [],
-          "unitSingular": "Arrondissement",
-          "unitPlural": "Arrondissements"
-        },
-        {
-          "adminLevels": [8],
-          "datasetId": "communes",
-          "suffixesToTrim": [],
-          "prefixesToTrim": [],
-          "unitSingular": "Commune",
-          "unitPlural": "Communes"
-        }
-      ]
-    }
+    "countryCode": "DK",
+    "availableBoundaryTypes": [
+      {
+        "adminLevels": [4],
+        "datasetId": "regions",
+        "suffixesToTrim": [],
+        "prefixesToTrim": ["Region"],
+        "unitSingular": "Region",
+        "unitPlural": "Regioner"
+      },
+      {
+        "adminLevels": [7],
+        "datasetId": "communes",
+        "suffixesToTrim": ["Kommune", "Regionskommune"],
+        "prefixesToTrim": [],
+        "unitSingular": "Kommune",
+        "unitPlural": "Kommuner"
+      }
+    ]
+   }
    ```
 
    Once an entry is added to this JSON, run the extraction script as follows:
@@ -265,13 +251,13 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
      --city-code={ ??? }
    ```
 
-   For example, given the example config for France and an entry for `PAR` within `boundaries.csv` you could run the following to get boundary data for Paris:
+   For example, given the example config for Denmark and an entry for `CPH` within `boundaries.csv` you could run the following to get boundary data for Copenhagen:
 
    ```
    npx tsx scripts/extract-map-features.ts \
-     --country-code=FR \
+     --country-code=DK \
      --data-type=communes \
-     --city-code=PAR
+     --city-code=CPH
    ```
 
 4. Export City Archives (Optional)
@@ -503,15 +489,15 @@ This tab is currently WIP
 
 ## Planned Features
 
-See [PLANNED_FEATURES.md](PLANNED_FEATURES.md) for the current list of planned features and long-term ideas.
+See [PLANNED_FEATURES.md](docs/PLANNED_FEATURES.md) for the current list of planned features and long-term ideas.
 
 ## Known Issues
 
-See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for the current list of major/minor issues and workarounds.
+See [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the current list of major/minor issues and workarounds.
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md#changelog) for full release notes.
+See [CHANGELOG.md](docs/CHANGELOG.md#changelog) for full release notes.
 
 ## Contributing
 
@@ -555,12 +541,12 @@ The following are developer commands available within the repository, grouped by
 #### Release
 
 - `npm run build:fetch-cli`: Bundles runtime fetch CLI for release (`dist/tools/fetch-cli.cjs`).
-- `npm run release:version`: Resolves the latest release version from the top `CHANGELOG.md` entry.
+- `npm run release:version`: Resolves the latest release version from the top `docs/CHANGELOG.md` entry.
 - `npm run release:package`: Builds the mod + fetch CLI and creates the release zip in `release/`.
 
 ### Release Process
 
-See [RELEASING.md](RELEASING.md#releasing-subwaybuilder-regions) for the tag-based release workflow and packaging details.
+See [RELEASING.md](docs/RELEASING.md#releasing-subwaybuilder-regions) for the tag-based release workflow and packaging details.
 
 ## Credits
 

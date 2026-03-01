@@ -1,6 +1,6 @@
 # Known Issues
 
-[Back to README](README.md)
+[Back to README](../README.md)
 
 This document contains a list of currently known issues affecting the SubwayBuilder Regions mod, split into major and minor items.
 
