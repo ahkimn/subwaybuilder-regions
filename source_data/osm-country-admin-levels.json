@@ -71,41 +71,12 @@
     ]
   },
   {
-    "countryCode": "FR",
-    "availableBoundaryTypes": [
-      {
-        "adminLevels": [6],
-        "datasetId": "departments",
-        "suffixesToTrim": [],
-        "prefixesToTrim": [],
-        "unitSingular": "Département",
-        "unitPlural": "Départements"
-      },
-      {
-        "adminLevels": [7],
-        "datasetId": "arrondissements",
-        "suffixesToTrim": [],
-        "prefixesToTrim": [],
-        "unitSingular": "Arrondissement",
-        "unitPlural": "Arrondissements"
-      },
-      {
-        "adminLevels": [8],
-        "datasetId": "communes",
-        "suffixesToTrim": [],
-        "prefixesToTrim": [],
-        "unitSingular": "Commune",
-        "unitPlural": "Communes"
-      }
-    ]
-  },
-  {
     "countryCode": "JP",
     "availableBoundaryTypes": [
       {
         "adminLevels": [4],
         "datasetId": "prefectures",
-        "suffixesToTrim": ["県", "都", "府", "道"],
+        "suffixesToTrim": ["\u770c", "\u90fd", "\u5e9c", "\u9053"],
         "prefixesToTrim": [],
         "unitSingular": "Prefecture",
         "unitPlural": "Prefectures"
@@ -113,7 +84,7 @@
       {
         "adminLevels": [7],
         "datasetId": "cities",
-        "suffixesToTrim": ["市", "町", "村", "区"],
+        "suffixesToTrim": ["\u5e02", "\u753a", "\u6751", "\u533a"],
         "prefixesToTrim": [],
         "unitSingular": "City",
         "unitPlural": "Cities"

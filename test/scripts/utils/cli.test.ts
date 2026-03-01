@@ -8,6 +8,8 @@ import {
   parseNumber,
   requireNumber,
   requireString,
+  toNonEmptyString,
+  toPositiveInteger,
 } from '@scripts/utils/cli';
 import {
   createScriptTestHarness,
@@ -40,6 +42,20 @@ describe('scripts/utils/cli utilities', () => {
   it('parseNumber_shouldReturnUndefined_whenInputIsInvalid', () => {
     assert.equal(parseNumber('not-a-number'), undefined);
     assert.equal(parseNumber({}), undefined);
+  });
+
+  it('toNonEmptyString_shouldReturnTrimmedStringOrUndefined', () => {
+    assert.equal(toNonEmptyString('  hello  '), 'hello');
+    assert.equal(toNonEmptyString('   '), undefined);
+    assert.equal(toNonEmptyString(10), undefined);
+  });
+
+  it('toPositiveInteger_shouldReturnPositiveIntegersOnly', () => {
+    assert.equal(toPositiveInteger(5), 5);
+    assert.equal(toPositiveInteger('42'), 42);
+    assert.equal(toPositiveInteger('3.5'), undefined);
+    assert.equal(toPositiveInteger(0), undefined);
+    assert.equal(toPositiveInteger(-7), undefined);
   });
 
   it('hasExplicitBBox_shouldReturnTrue_onlyWhenAllCoordinatesAreFiniteNumbers', () => {

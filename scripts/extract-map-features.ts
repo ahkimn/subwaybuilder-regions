@@ -3,6 +3,7 @@ import path from 'path';
 
 import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/constants';
 import { extractCABoundaries } from './extract/extract-ca-map-features';
+import { extractFRBoundaries } from './extract/extract-fr-map-features';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
 import { extractWorldMapFeatures } from './extract/extract-row-map-features';
 import { extractUSBoundaries } from './extract/extract-us-map-features';
@@ -52,6 +53,9 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
       break;
     case 'GB':
       await extractGBBoundaries(args, bbox);
+      break;
+    case 'FR':
+      await extractFRBoundaries(args, bbox);
       break;
     case 'US':
       await extractUSBoundaries(args, bbox);

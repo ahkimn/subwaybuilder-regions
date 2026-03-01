@@ -8,7 +8,7 @@ import {
 } from '../utils/cli';
 import type { BoundaryBox } from '../utils/geometry';
 
-export type CountryCode = 'US' | 'GB' | 'CA';
+export type CountryCode = 'US' | 'GB' | 'CA' | 'FR';
 
 export type FetchDatasetArgs = {
   cityCode: string;

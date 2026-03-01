@@ -18,6 +18,7 @@ import {
   fetchPlacePopulations,
   fetchZctaPopulations,
 } from '../utils/queries';
+import { createDataConfigFromCatalog } from './data-config';
 import type { BoundaryDataHandler, DataConfig } from './handler-types';
 import { processAndSaveBoundaries } from './process';
 
@@ -76,40 +77,25 @@ const COUNTY_SUBDIVISION_LSADC_UNIT_TYPE_MAP: Record<string, string> = {
 };
 
 const US_DATA_CONFIGS: Record<string, DataConfig> = {
-  counties: {
-    datasetId: 'counties',
-    displayName: 'Counties',
-    unitSingular: 'County',
-    unitPlural: 'Counties',
-    source: 'US Census Bureau',
+  counties: createDataConfigFromCatalog('counties', {
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['NAME'],
     unitTypeProperty: 'LSADC',
     unitTypeCodeMap: COUNTY_LSADC_UNIT_TYPE_MAP,
-  },
-  'county-subdivisions': {
-    datasetId: 'county-subdivisions',
-    displayName: 'County Subdivisions',
-    unitSingular: 'County Subdivision',
-    unitPlural: 'County Subdivisions',
-    source: 'US Census Bureau',
+  }),
+  'county-subdivisions': createDataConfigFromCatalog('county-subdivisions', {
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['BASENAME', 'NAME'],
     unitTypeProperty: 'LSADC',
     unitTypeCodeMap: COUNTY_SUBDIVISION_LSADC_UNIT_TYPE_MAP,
-  },
-  zctas: {
-    datasetId: 'zctas',
-    displayName: 'ZIP Code Tabulation Areas',
-    unitSingular: 'ZCTA',
-    unitPlural: 'ZCTAs',
-    source: 'US Census Bureau',
+  }),
+  zctas: createDataConfigFromCatalog('zctas', {
     idProperty: 'GEOID',
     nameProperty: 'NAME',
     applicableNameProperties: ['BASENAME', 'NAME'],
-  },
+  }),
   neighborhoods: {
     datasetId: 'neighborhoods',
     displayName: 'Neighborhoods',

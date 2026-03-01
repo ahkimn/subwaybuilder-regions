@@ -11,6 +11,7 @@ const ONS_API_BASE_URL =
   'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services';
 const CA_STATCAN_BASE_URL =
   'https://geo.statcan.gc.ca/geo_wa/rest/services/2021/Cartographic_boundary_files/MapServer/';
+const IGN_ADMIN_WFS_BASE_URL = 'https://data.geopf.fr/wfs/wfs';
 
 // List of states (by FIPS code) where cities or towns are used as county subdivisions in Census data, rather than minor civil divisions.
 export const STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS = new Set([
@@ -41,7 +42,16 @@ export type ArcGISQueryRequest = {
   params: URLSearchParams;
 };
 
+export type WFSQueryRequest = {
+  url: string;
+  params: URLSearchParams;
+};
+
 export type ArcGISFetchOptions = {
+  featureType?: string;
+};
+
+export type WFSFetchOptions = {
   featureType?: string;
 };
 
@@ -138,6 +148,36 @@ export function buildCountyUrl(queryBBox: BoundaryBox): ArcGISQueryRequest {
       outFields: 'GEOID,NAME,LSADC',
       returnGeometry: 'true',
       f: 'json',
+    }),
+  };
+}
+
+export function bboxToWfsBbox(
+  queryBBox: BoundaryBox,
+  srs: string = 'EPSG:4326',
+): string {
+  return `${queryBBox.west},${queryBBox.south},${queryBBox.east},${queryBBox.north},${srs}`;
+}
+
+export function buildIgnAdminWfsQuery(
+  queryBBox: BoundaryBox,
+  typeName:
+    | 'ADMINEXPRESS-COG-CARTO.LATEST:departement'
+    | 'ADMINEXPRESS-COG-CARTO.LATEST:arrondissement'
+    | 'ADMINEXPRESS-COG-CARTO.LATEST:canton'
+    | 'ADMINEXPRESS-COG-CARTO.LATEST:epci'
+    | 'ADMINEXPRESS-COG-CARTO.LATEST:commune',
+): WFSQueryRequest {
+  return {
+    url: IGN_ADMIN_WFS_BASE_URL,
+    params: new URLSearchParams({
+      service: 'WFS',
+      version: '2.0.0',
+      request: 'GetFeature',
+      typeNames: typeName,
+      srsName: 'EPSG:4326',
+      outputFormat: 'application/json',
+      bbox: bboxToWfsBbox(queryBBox),
     }),
   };
 }
@@ -284,6 +324,35 @@ export async function fetchGeoJSONFromArcGIS(
   }
 
   console.log('[ArcGIS] Query completed.', {
+    featureType,
+    featureCount: geoJson.features.length,
+    url: request.url,
+  });
+  return geoJson;
+}
+
+export async function fetchGeoJSONFromWFS(
+  request: WFSQueryRequest,
+  options?: WFSFetchOptions,
+): Promise<GeoJSON.FeatureCollection> {
+  const featureType = options?.featureType ?? 'features';
+  const requestUrl = new URL(request.url);
+  requestUrl.search = request.params.toString();
+
+  const response = await fetchJsonWithRetry(requestUrl, undefined, {
+    label: 'WFS',
+  });
+  const geoJson = response as GeoJSON.GeoJSON;
+
+  if (!isFeatureCollection(geoJson)) {
+    const responseType =
+      isObject(response) && 'type' in response
+        ? String((response as { type?: unknown }).type)
+        : typeof response;
+    throw new Error(`[WFS] Expected FeatureCollection, got ${responseType}`);
+  }
+
+  console.log('[WFS] Query completed.', {
     featureType,
     featureCount: geoJson.features.length,
     url: request.url,

@@ -10,6 +10,7 @@ import {
   buildCAStatCanArcGISQuery,
   fetchGeoJSONFromArcGIS,
 } from '../utils/queries';
+import { createDataConfigFromCatalog } from './data-config';
 import type { DataConfig } from './handler-types';
 import { processAndSaveBoundaries } from './process';
 
@@ -27,46 +28,26 @@ const CA_PED_BOUNDARIES = path.resolve(
 const PREVIEW_OUT_FIELDS = '*';
 
 export const CA_DATA_CONFIGS: Record<string, DataConfig> = {
-  feds: {
-    datasetId: 'feds',
-    displayName: 'Federal Electoral Districts',
-    unitSingular: 'Federal Electoral District',
-    unitPlural: 'Federal Electoral Districts',
-    source: 'CA Statistics Canada',
+  feds: createDataConfigFromCatalog('feds', {
     idProperty: 'FEDUID',
     nameProperty: 'FEDENAME',
     applicableNameProperties: ['FEDENAME', 'FEDNAME', 'FEDFNAME'],
-  },
-  peds: {
-    datasetId: 'peds',
-    displayName: 'Provincial Electoral Districts',
-    unitSingular: 'Provincial Electoral District',
-    unitPlural: 'Provincial Electoral Districts',
-    source: 'CA Provincial Electoral Districts',
+  }),
+  peds: createDataConfigFromCatalog('peds', {
     idProperty: 'ID',
     nameProperty: 'DISPLAY_NAME',
     applicableNameProperties: ['DISPLAY_NAME', 'NAME'],
-  },
-  csds: {
-    datasetId: 'csds',
-    displayName: 'Census Subdivisions',
-    unitSingular: 'Census Subdivision',
-    unitPlural: 'Census Subdivisions',
-    source: 'CA Statistics Canada',
+  }),
+  csds: createDataConfigFromCatalog('csds', {
     idProperty: 'CSDUID',
     nameProperty: 'CSDNAME',
     applicableNameProperties: ['CSDNAME'],
-  },
-  fsas: {
-    datasetId: 'fsas',
-    displayName: 'Forward Sortation Areas',
-    unitSingular: 'Forward Sortation Area',
-    unitPlural: 'Forward Sortation Areas',
-    source: 'CA Statistics Canada',
+  }),
+  fsas: createDataConfigFromCatalog('fsas', {
     idProperty: 'CFSAUID',
     nameProperty: 'CFSAUID',
     applicableNameProperties: ['CFSAUID', 'PRNAME'],
-  },
+  }),
 };
 
 type CABoundaryDataHandler = {

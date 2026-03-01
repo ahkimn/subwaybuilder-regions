@@ -5,7 +5,7 @@ import minimist from 'minimist';
 import type { BoundaryBox } from './geometry';
 import { getSupportedCountryCodes } from './osm-country-config';
 
-const BUILT_IN_COUNTRY_CODES = ['CA', 'GB', 'US'];
+const BUILT_IN_COUNTRY_CODES = ['CA', 'FR', 'GB', 'US'];
 
 function getAvailableCountryCodes(): Set<string> {
   return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);
@@ -81,6 +81,24 @@ export function parseNumber(value: unknown): number | undefined {
   const parsedNumber = Number(normalizedValue);
 
   return Number.isFinite(parsedNumber) ? parsedNumber : undefined;
+}
+
+export function toNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
+}
+
+export function toPositiveInteger(value: unknown): number | undefined {
+  const parsedNumber = parseNumber(value);
+  if (parsedNumber === undefined) {
+    return undefined;
+  }
+  return Number.isInteger(parsedNumber) && parsedNumber > 0
+    ? parsedNumber
+    : undefined;
 }
 
 export function hasExplicitBBox<T extends CoordinateBoxArgs>(

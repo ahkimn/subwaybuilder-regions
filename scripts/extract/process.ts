@@ -76,6 +76,7 @@ export function saveBoundaries(
 
   const indexEntry: DatasetMetadata = {
     datasetId: dataConfig.datasetId,
+    country: args.countryCode,
     displayName: dataConfig.displayName,
     unitSingular: dataConfig.unitSingular,
     unitPlural: dataConfig.unitPlural,
