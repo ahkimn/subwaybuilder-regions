@@ -1,6 +1,13 @@
 import type { createElement, ReactNode } from 'react';
 
-import { getPrimaryChartColorByName } from '../types/DisplayColor';
+import { REGIONS_ID_ATTR } from '@/core/constants';
+
+import {
+  ERROR_HEX,
+  INFO_HEX,
+  SUCCESS_HEX,
+  WARNING_HEX,
+} from '../../core/constants/ui/common';
 import {
   CircleCheck,
   CircleInfo,
@@ -10,9 +17,9 @@ import {
   TriangleWarning,
 } from './utils/Icons';
 
-type InlineStatusVariant = 'success' | 'warning' | 'error' | 'info';
+export type InlineStatusVariant = 'success' | 'warning' | 'error' | 'info';
 
-interface InlineStatusProps {
+export interface InlineStatusProps {
   h: typeof createElement;
   label: string;
   status?: InlineStatusVariant;
@@ -21,12 +28,8 @@ interface InlineStatusProps {
   className?: string;
   iconClassName?: string;
   labelClassName?: string;
+  dataRegionsId?: string;
 }
-
-const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
-const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
-const ERROR_HEX = getPrimaryChartColorByName('Red').hex;
-const INFO_HEX = getPrimaryChartColorByName('Blue').hex;
 
 const INLINE_STATUS_TEXT_CLASS =
   'ml-2 inline-flex items-center gap-1 text-xs font-normal leading-none align-middle';
@@ -63,6 +66,7 @@ export function InlineStatus({
   className,
   iconClassName,
   labelClassName,
+  dataRegionsId,
 }: InlineStatusProps): ReactNode {
   const defaults = INLINE_STATUS_DEFAULTS[status];
 
@@ -71,13 +75,12 @@ export function InlineStatus({
     {
       className: className ?? INLINE_STATUS_TEXT_CLASS,
       style: { color: colorHex ?? defaults.colorHex },
+      ...(dataRegionsId ? { [REGIONS_ID_ATTR]: dataRegionsId } : {}),
     },
-    [
-      createReactIconElement(h, icon ?? defaults.icon, {
-        size: 14,
-        className: iconClassName ?? INLINE_STATUS_ICON_CLASS,
-      }),
-      h('span', { className: labelClassName }, label),
-    ],
+    createReactIconElement(h, icon ?? defaults.icon, {
+      size: 14,
+      className: iconClassName ?? INLINE_STATUS_ICON_CLASS,
+    }),
+    h('span', { className: labelClassName }, label),
   );
 }

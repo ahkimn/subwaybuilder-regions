@@ -1,26 +1,32 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
+
 import type { RegionsStorage } from '@/core/storage/RegionsStorage';
 import type { SystemPerformanceInfo } from '@/types';
+
 import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '../types';
 import type {
   FetchCountryCode,
   FetchParameters,
+  FetchValidationResult,
+  LastCopiedFetchRequest,
 } from './fetch-helpers';
 
 export type PendingFlags = {
   updating: boolean;
   refreshingRegistry: boolean;
   clearingMissing: boolean;
+  validatingFetchDatasets: boolean;
 };
 
-export type FetchFlagKey = 'isCopying' | 'isOpeningModsFolder';
 export type PendingFlagKey = keyof PendingFlags;
 
 export type FetchState = {
   params: FetchParameters;
-  isCopying: boolean;
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
+  lastCopiedRequest: LastCopiedFetchRequest | null;
+  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
+  lastValidationResult: FetchValidationResult | null;
 };
 
 export type RegionsSettingsState = {
@@ -29,16 +35,11 @@ export type RegionsSettingsState = {
   cachedRegistryEntries: RegistryCacheEntry[];
   searchTerm: string;
   sortState: SortState;
-  registryRevision: number;
   pending: PendingFlags;
   fetch: FetchState;
   systemPerformanceInfo: SystemPerformanceInfo | null;
-  error: string | null;
 };
 
-/**
- *
- */
 export type RegionsSettingsAction =
   | { type: 'open_overlay' }
   | { type: 'close_overlay' }
@@ -53,7 +54,6 @@ export type RegionsSettingsAction =
       settings: ReturnType<RegionsStorage['getSettings']>;
     }
   | { type: 'registry_entries_loaded'; entries: RegistryCacheEntry[] }
-  | { type: 'registry_revision_bumped' }
   | { type: 'set_pending_flag'; key: PendingFlagKey; value: boolean }
   | { type: 'set_fetch_params'; params: Partial<FetchParameters> }
   | {
@@ -63,12 +63,23 @@ export type RegionsSettingsAction =
       isAutoResolved?: boolean;
     }
   | { type: 'toggle_fetch_dataset'; datasetId: string }
-  | { type: 'set_fetch_flag'; key: FetchFlagKey; value: boolean }
+  | { type: 'set_is_opening_mods_folder'; value: boolean }
+  | {
+      type: 'set_last_copied_fetch_request';
+      request: LastCopiedFetchRequest | null;
+    }
+  | {
+      type: 'set_last_opened_mods_folder_request';
+      request: LastCopiedFetchRequest | null;
+    }
+  | {
+      type: 'set_last_fetch_validation_result';
+      result: FetchValidationResult | null;
+    }
   | {
       type: 'set_system_performance_info';
       systemPerformanceInfo: SystemPerformanceInfo | null;
-    }
-  | { type: 'operation_failed'; message: string };
+    };
 
 export function regionsSettingsReducer(
   state: RegionsSettingsState,
@@ -79,7 +90,7 @@ export function regionsSettingsReducer(
     case 'open_overlay':
       return { ...state, isOpen: true };
     case 'close_overlay':
-      return { ...state, isOpen: false };
+      return { ...state, isOpen: false, fetch: { ...INITIAL_FETCH_STATE } };
     case 'set_search_term':
       return { ...state, searchTerm: action.searchTerm };
     case 'set_sort_state':
@@ -91,8 +102,6 @@ export function regionsSettingsReducer(
       return { ...state, settings: action.settings };
     case 'registry_entries_loaded':
       return { ...state, cachedRegistryEntries: action.entries };
-    case 'registry_revision_bumped':
-      return { ...state, registryRevision: state.registryRevision + 1 };
 
     // Async lifecycle actions
     case 'set_pending_flag':
@@ -102,7 +111,6 @@ export function regionsSettingsReducer(
           ...state.pending,
           [action.key]: action.value,
         },
-        error: action.value ? null : state.error,
       };
     // Fetch-related actions
     case 'set_fetch_params':
@@ -114,6 +122,9 @@ export function regionsSettingsReducer(
             ...state.fetch.params,
             ...action.params,
           },
+          lastCopiedRequest: null,
+          lastOpenedModsFolderRequest: null,
+          lastValidationResult: null,
         },
       };
     case 'set_fetch_country_code':
@@ -130,6 +141,9 @@ export function regionsSettingsReducer(
           },
           isCountryAutoResolved:
             action.isAutoResolved ?? state.fetch.isCountryAutoResolved,
+          lastCopiedRequest: null,
+          lastOpenedModsFolderRequest: null,
+          lastValidationResult: null,
         },
       };
     case 'toggle_fetch_dataset': {
@@ -148,21 +162,46 @@ export function regionsSettingsReducer(
             ...state.fetch.params,
             datasetIds: nextDatasetIds,
           },
+          lastCopiedRequest: null,
+          lastOpenedModsFolderRequest: null,
+          lastValidationResult: null,
         },
       };
     }
-    case 'set_fetch_flag':
+    case 'set_is_opening_mods_folder':
       return {
         ...state,
         fetch: {
           ...state.fetch,
-          [action.key]: action.value,
+          isOpeningModsFolder: action.value,
+        },
+      };
+    case 'set_last_copied_fetch_request':
+      return {
+        ...state,
+        fetch: {
+          ...state.fetch,
+          lastCopiedRequest: action.request,
+        },
+      };
+    case 'set_last_opened_mods_folder_request':
+      return {
+        ...state,
+        fetch: {
+          ...state.fetch,
+          lastOpenedModsFolderRequest: action.request,
+        },
+      };
+    case 'set_last_fetch_validation_result':
+      return {
+        ...state,
+        fetch: {
+          ...state.fetch,
+          lastValidationResult: action.result,
         },
       };
     case 'set_system_performance_info':
       return { ...state, systemPerformanceInfo: action.systemPerformanceInfo };
-    case 'operation_failed':
-      return { ...state, error: action.message };
     default:
       return state;
   }
@@ -175,9 +214,11 @@ export const INITIAL_FETCH_STATE: FetchState = {
     datasetIds: [],
     bbox: null,
   },
-  isCopying: false,
   isOpeningModsFolder: false,
   isCountryAutoResolved: false,
+  lastCopiedRequest: null,
+  lastOpenedModsFolderRequest: null,
+  lastValidationResult: null,
 };
 
 export function createInitialSettingsState(
@@ -192,15 +233,13 @@ export function createInitialSettingsState(
       ...DEFAULT_SORT_STATE,
       sortDirection: SortDirection.Asc,
     },
-    registryRevision: 0,
     pending: {
       updating: false,
       refreshingRegistry: false,
       clearingMissing: false,
+      validatingFetchDatasets: false,
     },
     fetch: INITIAL_FETCH_STATE,
     systemPerformanceInfo: null,
-    error: null,
   };
 }
-

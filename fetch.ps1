@@ -5,7 +5,9 @@ $releaseCliPath = Join-Path $scriptDir 'tools\fetch-cli.cjs'
 $devCliPath = Join-Path $scriptDir 'dist\tools\fetch-cli.cjs'
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-  Write-Error '[Fetch] Node.js is required but was not found in PATH.'
+  Write-Host '[Fetch] Node.js is required but was not found in PATH.' -ForegroundColor Red
+  Write-Host '[Fetch] Install Node.js (LTS): https://nodejs.org/en/download' -ForegroundColor Yellow
+  Write-Host '[Fetch] Windows quick install (PowerShell as admin): winget install OpenJS.NodeJS.LTS' -ForegroundColor Yellow
   exit 1
 }
 

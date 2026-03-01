@@ -5,6 +5,7 @@ import {
 } from '@shared/datasets/catalog';
 import type React from 'react';
 
+import { REGIONS_DESELECT_KEY } from '@/core/constants';
 import type { RegionDataset } from '@/core/datasets/RegionDataset';
 import { resolveRuntimePlatform } from '@/core/storage/helpers';
 import type { City } from '@/types/cities';
@@ -12,20 +13,16 @@ import { getGameReact } from '@/ui/react/get-game-react';
 
 import { getNextSortState } from '../shared/sort';
 import {
-  type InputFieldProperties,
-  type LabelProperties,
-  type SwitchProperties,
-} from '../types';
-import {
   buildDefaultFetchOutPath,
   buildFetchErrors,
+  copyTextWithFallback,
+  deriveFetchActionAvailability,
   type FetchCountryCode,
   formatFetchCommand,
   resolveCityCountryCode,
 } from './fetch-helpers';
 import {
   createInitialSettingsState,
-  type FetchFlagKey,
   type PendingFlagKey,
   regionsSettingsReducer,
 } from './RegionsSettingsState';
@@ -36,7 +33,7 @@ import {
   resolveRegistrySortConfig,
   type SettingsDatasetRow,
   sortSettingsRows,
-} from './render';
+} from './render-sections';
 import { type SettingsMenuComponentParams } from './types';
 
 const DEFAULT_FETCH_PADDING_KM = 10;
@@ -46,14 +43,15 @@ export function RegionsSettingsPanel({
   storage,
   datasetRegistry,
 }: SettingsMenuComponentParams): () => React.ReactNode {
-  const { h, Fragment, useEffectHook, useReducerHook, useStateHook } =
-    getGameReact(api);
-  const Input = api.utils.components
-    .Input as React.ComponentType<InputFieldProperties>;
-  const Switch = api.utils.components
-    .Switch as React.ComponentType<SwitchProperties>;
-  const Label = api.utils.components
-    .Label as React.ComponentType<LabelProperties>;
+  const {
+    h,
+    Fragment,
+    useEffectHook,
+    useReducerHook,
+    useStateHook,
+    components,
+  } = getGameReact(api);
+  const { Input, Switch, Label } = components;
 
   return function RegionsSettingsMenuComponent() {
     const [state, dispatch] = useReducerHook(
@@ -75,6 +73,19 @@ export function RegionsSettingsPanel({
 
     useEffectHook(() => {
       let mounted = true;
+      let registryReloadScheduled = false;
+
+      const scheduleRegistryReload = () => {
+        if (registryReloadScheduled) {
+          return;
+        }
+        registryReloadScheduled = true;
+        queueMicrotask(() => {
+          registryReloadScheduled = false;
+          void reloadCachedRegistry();
+        });
+      };
+
       void storage.initialize().then((loaded) => {
         if (mounted) {
           dispatch({ type: 'settings_loaded', settings: loaded });
@@ -90,7 +101,7 @@ export function RegionsSettingsPanel({
         dispatch({ type: 'settings_updated', settings: nextSettings });
       });
       const unsubscribeRegistry = datasetRegistry.listen(() => {
-        dispatch({ type: 'registry_revision_bumped' });
+        scheduleRegistryReload();
       });
 
       return () => {
@@ -99,6 +110,24 @@ export function RegionsSettingsPanel({
         unsubscribeRegistry();
       };
     }, []);
+
+    useEffectHook(() => {
+      if (!state.isOpen) {
+        return;
+      }
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== REGIONS_DESELECT_KEY) {
+          return;
+        }
+        dispatch({ type: 'close_overlay' });
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [state.isOpen]);
 
     const knownCitiesByCode = new Map<string, City>(
       api.utils.getCities().map((city) => [city.code, city]),
@@ -118,7 +147,6 @@ export function RegionsSettingsPanel({
     );
     const countryOptions = [...CATALOG_STATIC_COUNTRIES];
 
-
     const fetchErrors = buildFetchErrors({
       hasCity: Boolean(state.fetch.params.cityCode),
       hasCountry: state.fetch.params.countryCode !== null,
@@ -134,38 +162,27 @@ export function RegionsSettingsPanel({
             relativeModPath,
             outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
           });
+    const fetchActionAvailability = deriveFetchActionAvailability({
+      command: fetchCommand,
+      request: state.fetch.params,
+      lastCopiedRequest: state.fetch.lastCopiedRequest,
+      lastOpenedModsFolderRequest: state.fetch.lastOpenedModsFolderRequest,
+    });
 
-    type RunAsyncOperationParams =
-      | {
-          scope: 'pending';
-          key: PendingFlagKey;
-          errorMessage?: string;
-          notifyOnError?: string;
-          task: () => Promise<void>;
-        }
-      | {
-          scope: 'fetch';
-          key: FetchFlagKey;
-          errorMessage?: string;
-          notifyOnError?: string;
-          task: () => Promise<void>;
-        };
+    type RunAsyncOperationParams = {
+      key: PendingFlagKey;
+      errorMessage?: string;
+      notifyOnError?: string;
+      task: () => Promise<void>;
+    };
 
     const runAsyncOperation = (params: RunAsyncOperationParams) => {
-      if (params.scope === 'pending') {
-        dispatch({ type: 'set_pending_flag', key: params.key, value: true });
-      } else {
-        dispatch({ type: 'set_fetch_flag', key: params.key, value: true });
-      }
+      dispatch({ type: 'set_pending_flag', key: params.key, value: true });
 
       void params
         .task()
         .catch((error) => {
           if (params.errorMessage) {
-            dispatch({
-              type: 'operation_failed',
-              message: params.errorMessage,
-            });
             console.error(params.errorMessage, error);
           }
           if (params.notifyOnError) {
@@ -173,25 +190,16 @@ export function RegionsSettingsPanel({
           }
         })
         .finally(() => {
-          if (params.scope === 'pending') {
-            dispatch({
-              type: 'set_pending_flag',
-              key: params.key,
-              value: false,
-            });
-          } else {
-            dispatch({
-              type: 'set_fetch_flag',
-              key: params.key,
-              value: false,
-            });
-          }
+          dispatch({
+            type: 'set_pending_flag',
+            key: params.key,
+            value: false,
+          });
         });
     };
 
     const updateSettings = (patch: { showUnpopulatedRegions?: boolean }) => {
       runAsyncOperation({
-        scope: 'pending',
         key: 'updating',
         errorMessage: '[Regions] Failed to update settings.',
         task: () =>
@@ -206,15 +214,17 @@ export function RegionsSettingsPanel({
      */
     const refreshRegistry = () => {
       runAsyncOperation({
-        scope: 'pending',
         key: 'refreshingRegistry',
-        errorMessage: '[Regions] Failed to refresh registry. Check logs for details.',
+        errorMessage:
+          '[Regions] Failed to refresh registry. Check logs for details.',
         notifyOnError:
           '[Regions] Failed to refresh registry. Check logs for details.',
         task: () =>
           datasetRegistry
             .build(() => {
-              console.warn('[Regions] Failed to load dataset index from server');
+              console.warn(
+                '[Regions] Failed to load dataset index from server',
+              );
             })
             .then(({ servedCount, localCount }) => {
               if (servedCount > 0 || localCount > 0) {
@@ -233,7 +243,6 @@ export function RegionsSettingsPanel({
      */
     const clearMissingEntries = () => {
       runAsyncOperation({
-        scope: 'pending',
         key: 'clearingMissing',
         errorMessage:
           '[Regions] Failed to clear missing registry entries. Check logs for details.',
@@ -378,66 +387,197 @@ export function RegionsSettingsPanel({
     };
 
     const onCopyFetchCommand = () => {
-      if (!fetchCommand) {
+      if (!fetchActionAvailability.canCopyCommand) {
         return;
       }
+      void copyTextWithFallback(fetchCommand)
+        .then((copied) => {
+          if (!copied) {
+            api.ui.showNotification(
+              '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
+              'error',
+            );
+            return;
+          }
+          const countryCode = state.fetch.params.countryCode;
+          const bbox = state.fetch.params.bbox;
+          if (!countryCode || !bbox) {
+            return;
+          }
+          const requestSnapshot = {
+            cityCode: state.fetch.params.cityCode,
+            countryCode,
+            datasetIds: [...state.fetch.params.datasetIds],
+            bbox: { ...bbox },
+            copiedAt: Date.now(),
+          };
+          dispatch({
+            type: 'set_last_copied_fetch_request',
+            request: requestSnapshot,
+          });
+          dispatch({
+            type: 'set_last_opened_mods_folder_request',
+            request: null,
+          });
+          dispatch({
+            type: 'set_last_fetch_validation_result',
+            result: null,
+          });
+          api.ui.showNotification(
+            '[Regions] Script command copied!',
+            'success',
+          );
+        })
+        .catch((error: unknown) => {
+          console.error('[Regions] Failed to copy fetch command.', error);
+          api.ui.showNotification(
+            '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
+            'error',
+          );
+        });
+    };
+
+    const onValidateDatasets = () => {
+      if (!fetchActionAvailability.canValidateDatasets) {
+        return;
+      }
+      const lastCopiedRequest = state.fetch.lastCopiedRequest;
+      if (!lastCopiedRequest) {
+        return;
+      }
+
       runAsyncOperation({
-        scope: 'fetch',
-        key: 'isCopying',
-        errorMessage: '[Regions] Failed to copy fetch command.',
+        key: 'validatingFetchDatasets',
+        errorMessage:
+          '[Regions] Failed to validate generated datasets. Check logs for details.',
         notifyOnError:
-          '[Regions] Failed to copy command to clipboard. Please manually copy the generated command.',
+          '[Regions] Failed to validate generated datasets. Check logs for details.',
         task: () =>
-          window.navigator.clipboard.writeText(fetchCommand).then(() => {
-            api.ui.showNotification('[Regions] Script command copied!', 'success');
-          }),
+          datasetRegistry
+            .validateDynamicFetchOutputs(lastCopiedRequest)
+            .then((validation) => {
+              const foundCount = validation.foundIds.length;
+              const missingCount = validation.missingIds.length;
+
+              return datasetRegistry
+                .buildFromCache(() => {
+                  console.warn(
+                    '[Regions] Failed to load dataset index from server during dataset validation reconcile.',
+                  );
+                })
+                .then(() => reloadCachedRegistry())
+                .then(() => {
+                  dispatch({
+                    type: 'set_last_fetch_validation_result',
+                    result: {
+                      ...validation,
+                      validatedAt: Date.now(),
+                    },
+                  });
+
+                  if (missingCount === 0) {
+                    api.ui.showNotification(
+                      `[Regions] Validation complete: ${foundCount} dataset${foundCount === 1 ? '' : 's'} found.`,
+                      'success',
+                    );
+                    return;
+                  }
+
+                  const missingSummary = validation.missingIds.join(', ');
+                  api.ui.showNotification(
+                    `[Regions] Validation complete: ${foundCount} found, ${missingCount} missing (${missingSummary}).`,
+                    'warning',
+                  );
+                });
+            }),
       });
     };
 
     const onOpenModsFolder = () => {
-      runAsyncOperation({
-        scope: 'fetch',
-        key: 'isOpeningModsFolder',
-        errorMessage: '[Regions] Failed to open mods folder.',
-        notifyOnError: '[Regions] Failed to open mods folder.',
-        task: () => storage.openModsFolder(),
-      });
+      if (!fetchActionAvailability.canOpenModsFolder) {
+        return;
+      }
+      dispatch({ type: 'set_is_opening_mods_folder', value: true });
+      const countryCode = state.fetch.params.countryCode;
+      const bbox = state.fetch.params.bbox;
+      const cityCode = state.fetch.params.cityCode;
+      const datasetIds = [...state.fetch.params.datasetIds];
+      void storage
+        .openModsFolder()
+        .then(() => {
+          if (!countryCode || !bbox) {
+            return;
+          }
+          dispatch({
+            type: 'set_last_opened_mods_folder_request',
+            request: {
+              cityCode,
+              countryCode,
+              datasetIds,
+              bbox: { ...bbox },
+              copiedAt: Date.now(),
+            },
+          });
+        })
+        .catch((error) => {
+          console.error('[Regions] Failed to open mods folder.', error);
+          api.ui.showNotification(
+            '[Regions] Failed to open mods folder.',
+            'error',
+          );
+        })
+        .finally(() => {
+          dispatch({ type: 'set_is_opening_mods_folder', value: false });
+        });
     };
 
     return h(Fragment, null, [
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
-        ? renderSettingsOverlay(h, useStateHook, Input, Switch, Label, {
-            settings: state.settings,
-            isUpdating: state.pending.updating,
-            searchTerm: state.searchTerm,
-            sortState: state.sortState,
-            rows: sortedRows,
+        ? renderSettingsOverlay(h, {
             onClose: () => dispatch({ type: 'close_overlay' }),
-            onSearchTermChange: (searchTerm: string) =>
-              dispatch({ type: 'set_search_term', searchTerm }),
-            onSortChange: (columnIndex: number) => {
-              const nextSortState = getNextSortState<SettingsDatasetRow>(
-                state.sortState,
-                columnIndex,
-                resolveRegistrySortConfig,
-              );
-              dispatch({ type: 'set_sort_state', sortState: nextSortState });
+            globalParams: {
+              Switch,
+              Label,
+              settings: state.settings,
+              isUpdating: state.pending.updating,
+              onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+                updateSettings({ showUnpopulatedRegions: nextValue });
+              },
             },
-            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-              updateSettings({ showUnpopulatedRegions: nextValue });
+            registryParams: {
+              useStateHook,
+              Input,
+              rows: sortedRows,
+              searchTerm: state.searchTerm,
+              sortState: state.sortState,
+              onSearchTermChange: (searchTerm: string) =>
+                dispatch({ type: 'set_search_term', searchTerm }),
+              onSortChange: (columnIndex: number) => {
+                const nextSortState = getNextSortState<SettingsDatasetRow>(
+                  state.sortState,
+                  columnIndex,
+                  resolveRegistrySortConfig,
+                );
+                dispatch({ type: 'set_sort_state', sortState: nextSortState });
+              },
+              onRefreshRegistry: refreshRegistry,
+              isRefreshingRegistry: state.pending.refreshingRegistry,
+              onClearMissing: clearMissingEntries,
+              isClearingMissing: state.pending.clearingMissing,
             },
-            onRefreshRegistry: refreshRegistry,
-            isRefreshingRegistry: state.pending.refreshingRegistry,
-            onClearMissing: clearMissingEntries,
-            isClearingMissing: state.pending.clearingMissing,
-            fetch: {
-              params: state.fetch.params,
+            fetchParams: {
+              request: state.fetch.params,
               errors: fetchErrors,
               command: fetchCommand,
-              isCopying: state.fetch.isCopying,
+              canCopyCommand: fetchActionAvailability.canCopyCommand,
+              canOpenModsFolder: fetchActionAvailability.canOpenModsFolder,
+              canValidateDatasets: fetchActionAvailability.canValidateDatasets,
+              isValidatingDatasets: state.pending.validatingFetchDatasets,
               isOpeningModsFolder: state.fetch.isOpeningModsFolder,
               isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+              lastCopiedRequest: state.fetch.lastCopiedRequest,
+              lastValidationResult: state.fetch.lastValidationResult,
               cityOptions: Array.from(knownCitiesByCode.values()).map(
                 (city) => ({
                   code: city.code,
@@ -447,13 +587,16 @@ export function RegionsSettingsPanel({
               countryOptions,
               datasets: fetchableDatasets,
               relativeModPath,
-              systemPerformanceInfo: state.systemPerformanceInfo,
               onCityCodeChange: onFetchCityCodeChange,
               onCountryCodeChange: onFetchCountryCodeChange,
               onToggleDataset: (datasetId: string) =>
                 dispatch({ type: 'toggle_fetch_dataset', datasetId }),
               onCopyCommand: onCopyFetchCommand,
               onOpenModsFolder,
+              onValidateDatasets,
+            },
+            footerParams: {
+              systemPerformanceInfo: state.systemPerformanceInfo,
             },
           })
         : null,
@@ -494,7 +637,8 @@ function buildSettingsDatasetRows(
       displayName: dataset.displayName,
       origin: origin,
       fileSizeMB:
-        origin === 'served' ? null : (matchingOriginEntry?.fileSizeMB ?? null),
+        matchingOriginEntry?.fileSizeMB ??
+        (origin === 'served' ? dataset.fileSizeMB : undefined),
       issue: !knownCityCodes.has(dataset.cityCode)
         ? 'missing_city'
         : matchingOriginEntry
@@ -510,16 +654,6 @@ function buildSettingsDatasetRows(
       return;
     }
     const issue = resolveCachedEntryIssue(entry, knownCityCodes);
-
-    if (!issue) {
-      // If this triggers, there a few potential causes, each of which is worthy of investigation
-      // 1) The activte registry failed to load a valid datset that was present in the cached registry
-      // 2) The cached registry has been corrupted in some way (e.g. manual edit, or a failed write that resulted in a partial entry being saved)
-      console.warn(
-        `[Regions] Found cached registry entry with no identifiable issue that missing from the active registry. Entry details: ${JSON.stringify(entry)}`,
-      );
-    }
-
     rows.set(rowKey, {
       rowKey,
       cityCode: entry.cityCode,

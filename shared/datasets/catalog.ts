@@ -1,6 +1,9 @@
 import type { DatasetMetadata } from '../dataset-index';
 
-export type DatasetTemplateMetadata = Omit<DatasetMetadata, 'size'> & {
+export type DatasetTemplateMetadata = Omit<
+  DatasetMetadata,
+  'size' | 'fileSizeMB'
+> & {
   existsOnlineSource: boolean; // Indicates if the dataset is fetched from an online source
 };
 

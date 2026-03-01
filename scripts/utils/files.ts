@@ -11,10 +11,15 @@ import {
   COUNTRY_DATASET_ORDER,
   resolveCountryDatasetOrder,
 } from '../../shared/datasets/catalog';
+import { bytesToMB } from '../../shared/utils/size';
 import type { BoundaryBox } from './geometry';
 import { findOsmCountryConfig } from './osm-country-config';
 
 export type Row = Record<string, string>;
+export type SaveGeoJSONResult = {
+  resolvedFilePath: string;
+  fileSizeMB?: number;
+};
 
 const KNOWN_DATASET_ORDERS = Object.values(COUNTRY_DATASET_ORDER);
 
@@ -173,14 +178,14 @@ export function saveGeoJSON(
   filePath: string,
   featureCollection: GeoJSON.FeatureCollection,
   options?: { compress?: boolean },
-): void {
+): SaveGeoJSONResult {
   try {
     const compressOutput = options?.compress ?? false;
     const resolvedFilePath =
       compressOutput && !filePath.endsWith('.gz') ? `${filePath}.gz` : filePath;
 
     console.info(`Saving GeoJSON to: ${resolvedFilePath}`);
-    const saveDirectory = path.dirname(filePath);
+    const saveDirectory = path.dirname(resolvedFilePath);
     const temporaryFilePath = `${resolvedFilePath}.tmp`;
 
     // Ensure directory exists
@@ -194,6 +199,11 @@ export function saveGeoJSON(
     fs.moveSync(temporaryFilePath, resolvedFilePath, { overwrite: true });
 
     console.info(`Saved GeoJSON to: ${resolvedFilePath}`);
+    const fileBytes = fs.statSync(resolvedFilePath).size;
+    return {
+      resolvedFilePath,
+      fileSizeMB: fileBytes >= 0 ? bytesToMB(fileBytes) : undefined,
+    };
   } catch (err) {
     console.error(`Failed to save GeoJSON to: ${filePath} with error: ${err}`);
     process.exit(1);
