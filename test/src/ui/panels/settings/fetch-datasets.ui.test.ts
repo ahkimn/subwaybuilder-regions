@@ -129,11 +129,11 @@ function FetchDatasetsHarness(): React.ReactNode {
     errors.length > 0
       ? ''
       : formatFetchCommand({
-        platform: 'win32',
-        params: state.request,
-        relativeModPath: 'regions',
-        outPath: '.\\regions\\data',
-      });
+          platform: 'win32',
+          params: state.request,
+          relativeModPath: 'regions',
+          outPath: '.\\regions\\data',
+        });
 
   const datasets = resolveCountryDatasets(state.request.countryCode, {
     onlineOnly: true,

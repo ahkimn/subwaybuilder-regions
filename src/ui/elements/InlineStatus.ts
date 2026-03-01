@@ -2,7 +2,12 @@ import type { createElement, ReactNode } from 'react';
 
 import { REGIONS_ID_ATTR } from '@/core/constants';
 
-import { getPrimaryChartColorByName } from '../types/DisplayColor';
+import {
+  ERROR_HEX,
+  INFO_HEX,
+  SUCCESS_HEX,
+  WARNING_HEX,
+} from '../../core/constants/ui/common';
 import {
   CircleCheck,
   CircleInfo,
@@ -25,11 +30,6 @@ export interface InlineStatusProps {
   labelClassName?: string;
   dataRegionsId?: string;
 }
-
-const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
-const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
-const ERROR_HEX = getPrimaryChartColorByName('Red').hex;
-const INFO_HEX = getPrimaryChartColorByName('Blue').hex;
 
 const INLINE_STATUS_TEXT_CLASS =
   'ml-2 inline-flex items-center gap-1 text-xs font-normal leading-none align-middle';

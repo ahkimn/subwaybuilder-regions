@@ -1,3 +1,5 @@
+import { getPrimaryChartColorByName } from '../../../ui/types/DisplayColor';
+
 // For non-preset datasets or custom user datasets
 export const DEFAULT_UNIT_LABELS = { singular: 'Region', plural: 'Regions' };
 
@@ -48,3 +50,8 @@ export const FLOATING_PANEL_OFFSET_Y = 80;
 
 export const INFO_PANEL_MIN_WIDTH = 80;
 export const INFO_PANEL_MIN_VERTICAL_OFFSET = 100; // Minimum vertical offset from bottom of viewport to avoid rendering over the bottom bar
+
+export const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
+export const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
+export const ERROR_HEX = getPrimaryChartColorByName('Red').hex;
+export const INFO_HEX = getPrimaryChartColorByName('Blue').hex;

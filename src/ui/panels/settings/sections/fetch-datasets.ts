@@ -1,7 +1,7 @@
 import type React from 'react';
 import { type createElement } from 'react';
 
-import { REGIONS_ID_ATTR } from '@/core/constants';
+import { ERROR_HEX, REGIONS_ID_ATTR, SUCCESS_HEX } from '@/core/constants';
 import * as SettingsUI from '@/core/constants/ui/settings';
 
 import type { DatasetTemplateMetadata } from '../../../../../shared/datasets/catalog';
@@ -21,7 +21,6 @@ import {
   FolderOpen,
   OctagonX,
 } from '../../../elements/utils/Icons';
-import { getPrimaryChartColorByName } from '../../../types/DisplayColor';
 import type { FetchParameters } from '../fetch-helpers';
 import type { SettingsFetchSectionParams } from '../types';
 
@@ -35,7 +34,6 @@ const FETCH_ICON_PARAMS = {
   size: FETCH_ICON_SIZE,
   className: FETCH_ICON_CLASS,
 };
-const ERROR_HEX = getPrimaryChartColorByName('Red').hex;
 
 export function renderFetchDatasetsSection(
   h: typeof createElement,
@@ -272,8 +270,8 @@ function renderDatasetOption(
     'group flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm border px-2 py-1.5 text-left transition-colors duration-150',
     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60',
     isSelected
-      ? 'border-primary/60 bg-primary/12 hover:bg-primary/20'
-      : 'border-border/35 bg-background/50 hover:border-border/75 hover:bg-accent',
+      ? 'border-primary/70 bg-primary/20 hover:bg-primary/25'
+      : 'border-border/35 bg-background/50 hover:border-border/75 hover:bg-accent/80',
   ].join(' ');
 
   return h(
@@ -306,10 +304,14 @@ function renderDatasetOption(
       ),
     ),
     isSelected
-      ? createReactIconElement(h, CircleCheck, {
-          size: FETCH_ICON_SIZE,
-          className: 'h-3.5 w-3.5 shrink-0 text-primary',
-        })
+      ? h(
+          'span',
+          { className: 'inline-flex shrink-0', style: { color: SUCCESS_HEX } },
+          createReactIconElement(h, CircleCheck, {
+            size: FETCH_ICON_SIZE,
+            className: 'h-3.5 w-3.5 shrink-0',
+          }),
+        )
       : null,
   );
 }
