@@ -281,13 +281,6 @@ export class RegionsStorage {
     for (const absolutePath of urlCandidatePaths) {
       try {
         const response = await fetch(absolutePath);
-        if (!response.ok) {
-          console.warn(
-            `[Regions] Failed to fetch demand data from absolute path ${absolutePath}: ${response.status} ${response.statusText}`,
-          );
-          continue;
-        }
-
         const payload = absolutePath.endsWith('.gz')
           ? JSON.parse(await decompressGzipResponse(response, absolutePath))
           : await response.json();
