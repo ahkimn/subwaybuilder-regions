@@ -149,7 +149,9 @@ const US_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
 const US_NEIGHBORHOOD_ADMIN_LEVELS = [10];
 
 async function extractCountyBoundaries(bbox: BoundaryBox) {
-  const geoJson = await fetchGeoJSONFromArcGIS(buildCountyUrl(bbox));
+  const geoJson = await fetchGeoJSONFromArcGIS(buildCountyUrl(bbox), {
+    featureType: 'counties',
+  });
   const populationMap = await fetchCountyPopulations(
     extractStateCodesFromGeoIDs(geoJson.features),
   );
@@ -193,7 +195,9 @@ async function extractCountySubdivisionBoundaries(bbox: BoundaryBox) {
 }
 
 async function extractZctaBoundaries(bbox: BoundaryBox) {
-  const geoJson = await fetchGeoJSONFromArcGIS(buildZctaUrl(bbox));
+  const geoJson = await fetchGeoJSONFromArcGIS(buildZctaUrl(bbox), {
+    featureType: 'zctas',
+  });
   const populationMap = await fetchZctaPopulations();
   return { geoJson, populationMap };
 }

@@ -41,6 +41,10 @@ export type ArcGISQueryRequest = {
   params: URLSearchParams;
 };
 
+export type ArcGISFetchOptions = {
+  featureType?: string;
+};
+
 type ArcGISErrorResponse = {
   error?: {
     message?: string;
@@ -199,6 +203,7 @@ export async function fetchCouSubFeatures(
 ): Promise<GeoJSON.Feature[]> {
   const couSubGeoJson = await fetchGeoJSONFromArcGIS(
     buildCountySubdivisionUrl(bbox),
+    { featureType: 'county subdivisions' },
   );
 
   return couSubGeoJson.features.filter(
@@ -211,10 +216,15 @@ export async function fetchCouSubFeatures(
 export async function fetchPlaceFeatures(
   bbox: BoundaryBox,
 ): Promise<GeoJSON.Feature[]> {
-  let cdpGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 5));
-  let citiesGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 4));
+  let cdpGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 5), {
+    featureType: 'census designated places',
+  });
+  let citiesGeoJson = await fetchGeoJSONFromArcGIS(buildPlacesQuery(bbox, 4), {
+    featureType: 'places',
+  });
   let consolidatedCitiesGeoJson = await fetchGeoJSONFromArcGIS(
     buildPlacesQuery(bbox, 3),
+    { featureType: 'consolidated cities' },
   );
 
   let concatenatedFeatures = [
@@ -245,7 +255,10 @@ function normalizeArcGISResponse(data: unknown): GeoJSON.GeoJSON {
 
 export async function fetchGeoJSONFromArcGIS(
   request: ArcGISQueryRequest,
+  options?: ArcGISFetchOptions,
 ): Promise<GeoJSON.FeatureCollection> {
+  const featureType = options?.featureType ?? 'features';
+
   const arcgisJson = await fetchJsonWithRetry(
     request.url,
     {
@@ -270,7 +283,11 @@ export async function fetchGeoJSONFromArcGIS(
     throw new Error(`[ArcGIS] Expected FeatureCollection, got ${geoJson.type}`);
   }
 
-  console.log(`Fetched ${geoJson.features.length} features from ArcGIS.`);
+  console.log('[ArcGIS] Query completed.', {
+    featureType,
+    featureCount: geoJson.features.length,
+    url: request.url,
+  });
   return geoJson;
 }
 

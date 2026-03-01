@@ -35,7 +35,7 @@ Bugs or issues that are cosmetic / inconvenient but do not break the core mod fu
 
 1. _Unassigned Regions UI_ (`🔴 Open`)
    - These should not be clickable in any info panel as no boundary exists
-2. _Inaccurate Feature Bounds_ (`🔴 Open`)
+2. _Inaccurate Feature Bounds_ (`🟢 Resolved in 0.4.0`)
    - Map bounds used for preset regions are inaccurate
    - They should replaced either with a demand-based boundary OR a pre-set polygon provided by API / User
 3. _Excessive Console Outputs._ (`🔴 Open`)

@@ -123,7 +123,9 @@ async function extractDistrictBoundaries(
 ) {
   const boundaries: GeoJSON.FeatureCollection = useLocal
     ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_BOUNDARIES))
-    : await fetchGeoJSONFromArcGIS(getDistrictONSQuery(bbox));
+    : await fetchGeoJSONFromArcGIS(getDistrictONSQuery(bbox), {
+        featureType: 'districts',
+      });
   const populationCharacteristics: Row[] = useLocal
     ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS))
     : [];
@@ -141,7 +143,9 @@ async function extractBUABoundaries(
 ) {
   const boundaries: GeoJSON.FeatureCollection = useLocal
     ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_BUA_BOUNDARIES))
-    : await fetchGeoJSONFromArcGIS(getBUAONSQuery(bbox));
+    : await fetchGeoJSONFromArcGIS(getBUAONSQuery(bbox), {
+        featureType: 'built-up areas',
+      });
   const populationCharacteristics: Row[] = useLocal
     ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS))
     : [];
@@ -161,7 +165,9 @@ async function extractWardBoundaries(
     ? await loadGeoJSONFromNDJSON(
         path.resolve(SOURCE_DATA_DIR, GB_WARD_BOUNDARIES),
       )
-    : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox));
+    : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox), {
+        featureType: 'electoral wards',
+      });
   console.log(boundaries.features[0]);
   const populationCharacteristics: Row[] = useLocal
     ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS))

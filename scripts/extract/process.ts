@@ -38,7 +38,7 @@ export function processAndSaveBoundaries(
     `Filtered to ${filteredRegions.length} features within boundary box for ${countryCode} ${dataConfig.displayName}.`,
   );
 
-  if (populationMap) {
+  if (populationMap && populationMap.size > 0) {
     attachRegionPopulationData(filteredRegions, populationMap, 'ID');
   }
 
@@ -97,6 +97,8 @@ function attachRegionPopulationData(
   populationIndex: Map<string, string>,
   idProperty: string,
 ): void {
+  const shouldWarnOnMissingPopulation = populationIndex.size > 0;
+
   for (const feature of features) {
     if (feature.properties!.POPULATION != null) {
       continue; // Skip if population already set
@@ -113,7 +115,7 @@ function attachRegionPopulationData(
         ...feature.properties,
         POPULATION: featurePopulation,
       };
-    } else {
+    } else if (shouldWarnOnMissingPopulation) {
       console.warn(
         '  No population data found for feature:',
         feature.properties!.NAME,

@@ -2,14 +2,47 @@
 
 [Back to README](README.md)
 
+## v0.4.0 - 2026-02-28
+
+_Game version_ v1.1.0
+
+### New Features
+
+- Added in-game dataset fetching via the `Settings Menu`
+  - Users can now download `dynamic` boundaries for a select group of countries (CA/US/GB) without locally hosted or pre-downloaded GeoJSONs.
+  - Boundary box calculation is done automatically using the game's demand data.
+  - Boundary data can be generated for **ANY** city within CA/US/GB.
+- Added release-bundled runtime fetch tooling for non-developer users
+  - Added cross-platform wrapper scripts (`fetch.ps1` / `fetch.sh`) for running city-level boundary generation from the mod directory
+  - Added bundled runtime fetch CLI artifact to release packaging (`tools/fetch-cli.cjs`)
+- Added dynamic fetch verification flow in `Settings Menu`
+  - New sequential flow: `Copy Command` -> `Open Mods Folder` -> `Validate Datasets`
+  - Validation checks expected local outputs, persists them as `dynamic` cache entries, and refreshes runtime availability
+
+### Other Updates
+
+- Datasets now include optional `fileSizeMB` metadata surfaced in the `Settings Menu` and registry table.
+- Local registry cache normalization now deduplicates by `cityCode + datasetId` with local precedence `user > dynamic > static`.
+  - This will ensure compatibility with future user-generated or user-edited datasets
+- Runtime fetch eligibility is now driven by shared dataset metadata (`existsOnlineSource`) to keep scripts and UI behavior aligned.
+- `Settings Menu` style updated to be more consistent with in-game UI screens.
+- Added broader automated test coverage for settings UI/control flow and script/core utility paths.
+  - Test suites are now accessible via `npm test` during development.
+- ArcGIS query logging now includes descriptive `featureType` context (e.g. counties/districts/wards) for easier script traceability.
+
+### Bugfixes
+
+- Fixed static dataset search not being triggered when registry is empty
+- Reduced extraction log noise by suppressing per-feature missing-population warnings when the population input source is empty.
+
 ## v0.3.3 - 2026-02-23
 
 _Game version_ v1.1.0
 
 ### Other Updates
 
-- Update visual styling of boundary layers to be more consistent between dark/light modes and to be generally more subtle
-- Mod folder resolution made more robust by making use of the available `scanMods()` api.
+- Updated visual styling of boundary layers to be more consistent between dark/light modes and generally more subtle.
+- Mod folder resolution made more robust by using the available `scanMods()` API.
   - Regions mod folder no longer needs to be in `metro-maker4/mods/regions` for static dataset discovery to happen
 
 ## v0.3.2 - 2026-02-23
@@ -44,7 +77,7 @@ _Game version_ v1.1.0
 
 ### New Features
 
-- Added Settings Menu, available from the main menu under a new `Regions` button
+- Added `Settings Menu`, available from the main menu under a new `Regions` button
   - Exposes global settings, currently limited to `Show unpopulated regions` which determines if regions with no demand points are shown in map layers and mod panels
   - Adds a tabular display of all current datasets, broken down by their `Origin` (`static` or `served`) as well as warnings if a dataset may not be usable by the mod
     - Datasets are displayed as unusable if either the city they apply to is no longer available in the game, or if the mod cannot detect the dataset file
