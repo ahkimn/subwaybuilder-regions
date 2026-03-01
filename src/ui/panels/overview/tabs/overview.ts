@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { createElement, useState } from 'react';
+import type { createElement, useMemo, useState } from 'react';
 
 import { LOADING_VALUE_DISPLAY } from '@/core/constants';
 import {
@@ -123,9 +123,11 @@ const SORT_CONFIGS: ReadonlyArray<SortConfig<OverviewSortMetrics>> = [
 
 export function renderOverviewTabContent(
   h: typeof createElement,
+  useMemoHook: typeof useMemo,
   useStateHook: typeof useState,
   Input: React.ComponentType<InputFieldProperties>,
   datasetGameData: Map<string | number, RegionGameData>,
+  summaryRenderToken: number,
   selectedDatasetIdentifier: string,
   activeSelection: RegionSelection | null,
   sortState: SortState,
@@ -136,16 +138,28 @@ export function renderOverviewTabContent(
   onDoubleClickRow: (selection: RegionSelection) => void,
   showUnpopulatedRegions: boolean,
 ): React.ReactNode {
-  const rows = sortRows(
-    filterRows(
-      buildRows(
-        datasetGameData,
-        selectedDatasetIdentifier,
-        showUnpopulatedRegions,
+  const rows = useMemoHook(
+    () =>
+      sortRows(
+        filterRows(
+          buildRows(
+            datasetGameData,
+            selectedDatasetIdentifier,
+            showUnpopulatedRegions,
+          ),
+          searchTerm,
+        ),
+        sortState,
       ),
+    [
+      datasetGameData,
+      summaryRenderToken,
+      selectedDatasetIdentifier,
+      showUnpopulatedRegions,
       searchTerm,
-    ),
-    sortState,
+      sortState.sortIndex,
+      sortState.sortDirection,
+    ],
   );
 
   return h(

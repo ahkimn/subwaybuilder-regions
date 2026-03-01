@@ -41,6 +41,12 @@ describe('validateFetchRequest', () => {
     { countryCode: 'FR', datasetId: 'cantons' },
     { countryCode: 'FR', datasetId: 'epci' },
     { countryCode: 'FR', datasetId: 'communes' },
+    { countryCode: 'AU', datasetId: 'sa3s' },
+    { countryCode: 'AU', datasetId: 'sa2s' },
+    { countryCode: 'AU', datasetId: 'ceds' },
+    { countryCode: 'AU', datasetId: 'seds' },
+    { countryCode: 'AU', datasetId: 'lgas' },
+    { countryCode: 'AU', datasetId: 'poas' },
   ];
 
   for (const testCase of validCountryDatasetCases) {
@@ -83,6 +89,18 @@ describe('validateFetchRequest', () => {
     assert.throws(
       () => validateFetchRequest(args),
       /Unsupported datasets for CA: peds\. Allowed: feds, csds, fsas/,
+    );
+  });
+
+  it('rejects unsupported datasets for AU with allowed list', () => {
+    const args = buildArgs({
+      countryCode: 'AU',
+      datasets: ['counties'],
+    });
+
+    assert.throws(
+      () => validateFetchRequest(args),
+      /Unsupported datasets for AU: counties\. Allowed: sa3s, sa2s, ceds, seds, lgas, poas/,
     );
   });
 });

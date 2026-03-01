@@ -2,6 +2,7 @@
 import path from 'path';
 
 import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../shared/constants';
+import { extractAUBoundaries } from './extract/extract-au-map-features';
 import { extractCABoundaries } from './extract/extract-ca-map-features';
 import { extractFRBoundaries } from './extract/extract-fr-map-features';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
@@ -48,6 +49,9 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
     : cityMapBoundaries.get(args.cityCode)!;
 
   switch (args.countryCode) {
+    case 'AU':
+      await extractAUBoundaries(args, bbox);
+      break;
     case 'CA':
       await extractCABoundaries(args, bbox);
       break;

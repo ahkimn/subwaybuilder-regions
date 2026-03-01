@@ -1,6 +1,11 @@
 import type React from 'react';
 import type { createElement } from 'react';
 
+import {
+  COMPACT_SELECT_MENU_BUTTON_CLASS,
+  COMPACT_SELECT_MENU_OPTION_CLASS,
+  SelectMenu,
+} from '../../elements/SelectMenu';
 import type { SelectButtonConfig } from '../../elements/SelectRow';
 import { ReactSelectRow } from '../../elements/SelectRow';
 import type { RegionsOverviewTab } from './types';
@@ -13,22 +18,29 @@ export function renderLayerSelectorRow(
   getDatasetLabel: (datasetIdentifier: string) => string,
   onSelectDataset: (datasetIdentifier: string) => void,
 ): React.ReactNode {
-  const buttonConfigs: Map<string, SelectButtonConfig> = new Map();
-  datasetIdentifiers.forEach((datasetIdentifier) => {
-    buttonConfigs.set(datasetIdentifier, {
-      label: getDatasetLabel(datasetIdentifier),
-      onSelect: () => onSelectDataset(datasetIdentifier),
-    });
-  });
+  const options = datasetIdentifiers.map((datasetIdentifier) => ({
+    value: datasetIdentifier,
+    label: getDatasetLabel(datasetIdentifier),
+  }));
 
   return h(
     'div',
     { className: 'flex flex-col gap-1.5' },
-    ReactSelectRow(
-      h,
-      buttonConfigs,
-      selectedDatasetIdentifier,
-      'regions-overview-layer-select',
+    h(
+      'div',
+      {
+        id: 'regions-overview-layer-select',
+        className: 'w-full min-w-[220px] max-w-[360px]',
+      },
+      SelectMenu({
+        h,
+        value: selectedDatasetIdentifier,
+        options,
+        placeholder: 'Select dataset',
+        onValueChange: onSelectDataset,
+        buttonClassName: COMPACT_SELECT_MENU_BUTTON_CLASS,
+        optionClassName: COMPACT_SELECT_MENU_OPTION_CLASS,
+      }),
     ),
   );
 }

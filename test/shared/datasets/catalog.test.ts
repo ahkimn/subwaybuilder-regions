@@ -44,3 +44,35 @@ describe('shared/datasets/catalog FR metadata', () => {
     }
   });
 });
+
+describe('shared/datasets/catalog AU metadata', () => {
+  it('includes AU in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('AU'));
+  });
+
+  it('resolves AU dataset order', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('AU'), [
+      'sa3s',
+      'sa2s',
+      'ceds',
+      'seds',
+      'lgas',
+      'poas',
+    ]);
+  });
+
+  it('marks AU datasets as online-source eligible', () => {
+    const datasets = resolveCountryDatasets('AU', { onlineOnly: true });
+    assert.deepEqual(
+      datasets.map((entry) => entry.datasetId),
+      ['sa3s', 'sa2s', 'ceds', 'seds', 'lgas', 'poas'],
+    );
+
+    for (const datasetId of ['sa3s', 'sa2s', 'ceds', 'seds', 'lgas', 'poas']) {
+      assert.equal(
+        DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
+        true,
+      );
+    }
+  });
+});

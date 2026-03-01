@@ -88,8 +88,7 @@ export function installNoExternalIoGuards(
   fs.promises.appendFile =
     throwingFsPromiseMethod as typeof fs.promises.appendFile;
   fs.promises.mkdir = throwingFsPromiseMethod as typeof fs.promises.mkdir;
-  fs.promises.copyFile =
-    throwingFsPromiseMethod as typeof fs.promises.copyFile;
+  fs.promises.copyFile = throwingFsPromiseMethod as typeof fs.promises.copyFile;
   fs.promises.rename = throwingFsPromiseMethod as typeof fs.promises.rename;
   fs.promises.unlink = throwingFsPromiseMethod as typeof fs.promises.unlink;
   fs.promises.rm = throwingFsPromiseMethod as typeof fs.promises.rm;

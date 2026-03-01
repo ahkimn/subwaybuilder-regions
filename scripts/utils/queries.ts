@@ -11,6 +11,9 @@ const ONS_API_BASE_URL =
   'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services';
 const CA_STATCAN_BASE_URL =
   'https://geo.statcan.gc.ca/geo_wa/rest/services/2021/Cartographic_boundary_files/MapServer/';
+const AU_ASGS_BASE_URL = 'https://geo.abs.gov.au/arcgis/rest/services/ASGS2021';
+const AU_CENSUS_G01_BASE_URL =
+  'https://services1.arcgis.com/v8Kimc579yljmjSP/arcgis/rest/services/ABS_2021_Census_G01_Selected_person_characteristics_by_sex_Beta/FeatureServer';
 const IGN_ADMIN_WFS_BASE_URL = 'https://data.geopf.fr/wfs/wfs';
 
 // List of states (by FIPS code) where cities or towns are used as county subdivisions in Census data, rather than minor civil divisions.
@@ -99,6 +102,22 @@ function isArcGISFeatureResponse(
 
   const firstFeature = value.features[0]; // Validate based on the shape of first feature
   return isObject(firstFeature) && isObject(firstFeature.attributes);
+}
+
+function isArcGISAttributesResponse(
+  value: unknown,
+): value is { features: Array<{ attributes: Record<string, unknown> }> } {
+  if (!isObject(value) || !Array.isArray(value.features)) {
+    return false;
+  }
+
+  if (value.features.length === 0) {
+    return true;
+  }
+
+  return value.features.every(
+    (feature) => isObject(feature) && isObject(feature.attributes),
+  );
 }
 
 function isRawFeatureCollection(
@@ -329,6 +348,44 @@ export async function fetchGeoJSONFromArcGIS(
     url: request.url,
   });
   return geoJson;
+}
+
+export async function fetchArcGISAttributes(
+  request: ArcGISQueryRequest,
+  options?: ArcGISFetchOptions,
+): Promise<Array<Record<string, unknown>>> {
+  const featureType = options?.featureType ?? 'features';
+
+  const arcgisJson = await fetchJsonWithRetry(
+    request.url,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: request.params.toString(),
+    },
+    { label: 'ArcGIS' },
+  );
+
+  if (isArcGISErrorResponse(arcgisJson)) {
+    const errorMessage = arcgisJson.error?.message ?? 'Unknown ArcGIS error';
+    throw new Error(
+      `[ArcGIS] query failed for ${request.url}: ${errorMessage}`,
+    );
+  }
+
+  if (!isArcGISAttributesResponse(arcgisJson)) {
+    throw new Error('[ArcGIS] Expected feature attributes response');
+  }
+
+  const attributes = arcgisJson.features.map((feature) => feature.attributes);
+  console.log('[ArcGIS] Attribute query completed.', {
+    featureType,
+    featureCount: attributes.length,
+    url: request.url,
+  });
+  return attributes;
 }
 
 export async function fetchGeoJSONFromWFS(
@@ -580,6 +637,51 @@ export function buildCAStatCanArcGISQuery(
       outFields: outFields,
       returnGeometry: 'true',
       f: 'geojson',
+    }),
+  };
+}
+
+type AUASGSBoundaryType = 'SA3' | 'SA2' | 'CED' | 'SED' | 'LGA' | 'POA';
+
+export function buildAUASGSBoundaryQuery(
+  queryBBox: BoundaryBox,
+  boundaryType: AUASGSBoundaryType,
+  layerId: number,
+  outFields: string,
+): ArcGISQueryRequest {
+  return {
+    url: `${AU_ASGS_BASE_URL}/${boundaryType}/MapServer/${layerId}/query`,
+    params: new URLSearchParams({
+      where: '1=1',
+      geometry: bboxToGeometryString(queryBBox),
+      geometryType: 'esriGeometryEnvelope',
+      spatialRel: 'esriSpatialRelIntersects',
+      inSR: '4326',
+      outSR: '4326',
+      outFields,
+      returnGeometry: 'true',
+      f: 'json',
+    }),
+  };
+}
+
+export function buildAUCensusPopulationQuery(
+  queryBBox: BoundaryBox,
+  layerId: number,
+  outFields: string,
+): ArcGISQueryRequest {
+  return {
+    url: `${AU_CENSUS_G01_BASE_URL}/${layerId}/query`,
+    params: new URLSearchParams({
+      where: '1=1',
+      geometry: bboxToGeometryString(queryBBox),
+      geometryType: 'esriGeometryEnvelope',
+      spatialRel: 'esriSpatialRelIntersects',
+      inSR: '4326',
+      outSR: '4326',
+      outFields,
+      returnGeometry: 'false',
+      f: 'json',
     }),
   };
 }

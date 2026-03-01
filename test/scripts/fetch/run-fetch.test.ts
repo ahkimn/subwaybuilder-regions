@@ -5,7 +5,10 @@ import { runCountryExtractor } from '@scripts/fetch/run-fetch';
 import type { ExtractMapFeaturesArgs } from '@scripts/utils/cli';
 import type { BoundaryBox } from '@scripts/utils/geometry';
 
-function buildArgs(countryCode: string): ExtractMapFeaturesArgs {
+function buildArgs(
+  countryCode: string,
+  overrides?: Partial<ExtractMapFeaturesArgs>,
+): ExtractMapFeaturesArgs {
   return {
     dataType: 'departments',
     cityCode: 'PAR',
@@ -15,6 +18,7 @@ function buildArgs(countryCode: string): ExtractMapFeaturesArgs {
     east: 2.5,
     north: 49,
     compress: true,
+    ...overrides,
   };
 }
 
@@ -25,6 +29,9 @@ describe('scripts/fetch/run-fetch country dispatch', () => {
     const extractors = {
       US: async () => {
         calls.push('US');
+      },
+      AU: async () => {
+        calls.push('AU');
       },
       GB: async () => {
         calls.push('GB');
@@ -47,9 +54,51 @@ describe('scripts/fetch/run-fetch country dispatch', () => {
     assert.deepEqual(calls, ['FR']);
   });
 
+  it('routes AU extraction to AU handler', async () => {
+    const calls: string[] = [];
+
+    const extractors = {
+      US: async () => {
+        calls.push('US');
+      },
+      AU: async (_args: ExtractMapFeaturesArgs, bbox: BoundaryBox) => {
+        calls.push('AU');
+        assert.deepEqual(bbox, {
+          west: 150.6,
+          south: -34.2,
+          east: 151.4,
+          north: -33.4,
+        });
+      },
+      GB: async () => {
+        calls.push('GB');
+      },
+      CA: async () => {
+        calls.push('CA');
+      },
+      FR: async () => {
+        calls.push('FR');
+      },
+    };
+
+    await runCountryExtractor(
+      buildArgs('AU', {
+        dataType: 'sa3s',
+        cityCode: 'SYD',
+        west: 150.6,
+        south: -34.2,
+        east: 151.4,
+        north: -33.4,
+      }),
+      extractors,
+    );
+    assert.deepEqual(calls, ['AU']);
+  });
+
   it('throws when country extractor is unavailable', async () => {
     const extractors = {
       US: async () => {},
+      AU: async () => {},
       GB: async () => {},
       CA: async () => {},
       FR: async () => {},
