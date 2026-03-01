@@ -4,7 +4,7 @@
   "description": "Add support for displaying/analyzing regional data within SubwayBuilder",
   "dependencies": {},
   "icon": "Pin",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "author": {
     "name": "ahkimn",
     "url": "https://github.com/ahkimn"
