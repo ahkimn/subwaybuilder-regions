@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.3.3`  
+_Latest Mod Version:_ `v0.4.0`  
 _Latest Tested Game Version:_ `v1.1.0`
-_Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
+_Latest Changelog Entry:_ [v0.4.0](CHANGELOG.md#v040---2026-02-28)
 
 ## Table of Contents
 
@@ -103,7 +103,12 @@ _Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
 
     Un-zip the file and copy the `index.js` and `manifest.json` directly into the `mods/regions/` directory
 
-3.  Visit the shared [Google Drive](https://drive.google.com/drive/folders/1TPlqNRh-zqJTIoTs-KUNdZHVVTS0QCzd?usp=drive_link) and download the `.zip` files of the cities you intend to play with.
+3.  Open the game, navigate to `Mod Manager` within the `Settings` menu and enable the `Regions` mod.
+4.  Obtain boundaries files. The `Regions Mod` provides two options:
+
+**Option 1: Premade Boundaries**
+
+Visit the shared [Google Drive](https://drive.google.com/drive/folders/1TPlqNRh-zqJTIoTs-KUNdZHVVTS0QCzd?usp=drive_link) and download the `.zip` files of the cities you intend to play with.
 
     Un-zip each city's files into its own `mods/regions/data/{CITY_CODE}/` directory.
     For example, if you download the `ATL` .zip for Atlanta files your directory should look like
@@ -122,7 +127,12 @@ _Latest Changelog Entry:_ [v0.3.3](CHANGELOG.md#v033---2026-02-23)
             ...
     ```
 
-4.  Open the game, navigate to `Mod Manager` within the `Settings` menu and enable the `Regions` mod.
+**Option 2: Download From the Settings Menu**
+
+From the Main Menu, click on the `Regions` button to open the `Settings Menu`. Then follow the steps given in [Fetching Datasets In Game](#fetching-datasets-in-game).
+
+    :warning: This option requires Node.js and access to the Terminal!
+
 5.  Restart the game to ensure that the mod load properly.
 6.  Load a city for which you have downloaded region-level data and enjoy!
 
@@ -344,12 +354,48 @@ This section covers the core mod functionalities and their usage.
 
 ### Settings Menu
 
-From the game's main menu, open the `Regions` button to manage global mod settings and inspect dataset registry entries.
+From the game's main menu, open the `Regions` button to enter the mod's `Settings Menu`.
+
+#### Global Settings
+
+Mod-level settings are exposed within the `Global Settings` section near the top of the `Settings Menu`. Currently, this section includes the following toggles:
+
+- `Show unpopulated regions` => Toggles whether or not regions without demand data are visible within the mod's map layers and other UI surfaces
+
+![Global Settings](img/settings-global.png)
+
+#### Dataset Registry
+
+The current set of available datasets are displayed in the `Dataset Registry` section as a dynamic table. The table supports column-sort and search functions. In addition, the section allows users to perform two data management actions:
 
 - `Refresh` rebuilds the local dataset snapshot cache and persists the result to game-level local storage.
 - `Clear Missing` removes stale cache entries that no longer resolve to usable local files/cities.
 
-![Settings Menu](img/settings-menu.png)
+![Dataset Registry](img/settings-registry.png)
+
+#### Fetching Datasets In Game
+
+The `Settings Menu` also includes a `Fetch Datasets` section near the bottom of the overlay from which you can download datasets within the game.
+
+![Fetch Datasets Initial State](img/settings-fetch-initial-state.png)
+
+**Workflow**
+
+To fetch boundary data using this UI, follow this workflow:
+
+- Select a city using the dropdown under `City`.
+- Confirm the `Country` value.
+  - :information_source: For many cities, the mod auto-resolves country and locks the field.
+  - :warning: If country is unresolved, choose it manually. If a country is not listed, dynamic fetch is not currently supported for it.
+- Select one or more datasets to download.
+  - :warning: At least one dataset must be selected before command generation is enabled.
+- Click `Copy Command` to copy the generated script command to your clipboard.
+- Click `Open Mods Folder` to open your mods directory in the system file explorer.
+- Open a terminal from that directory and run the copied command.
+- Wait for the fetch scripts to finish downloading and writing city data.
+- Click `Validate Datasets` to verify outputs and add the resulting `dynamic` entries to your dataset registry.
+
+![Fetch Datasets Final State](img/settings-fetch-final-state.png)
 
 ### Toggling Map Layers
 
@@ -482,15 +528,18 @@ The following are developer commands available within the repository, grouped by
 
 #### Quality Checks
 
-- `npm run lint`: Runs ESLint checks for `src/` and `scripts/`.
+- `npm run lint`: Runs ESLint checks for `src/`, `scripts/`, and `test/`.
 - `npm run lint:fix`: Applies auto-fixable ESLint changes (import ordering, etc.).
 - `npm run format`: Applies Prettier formatting for repository files.
 - `npm run format:check`: Verifies Prettier formatting without modifying files.
-- `npx tsc --noEmit`: Runs TypeScript checks.
+- `npm run typecheck`: Runs TypeScript checks.
+- `npm test`: Runs the `node:test` suite under `test/**/*.test.ts`.
+- `npm run test:watch`: Runs tests in watch mode.
 
 #### Build / Run
 
 - `npm run build`: Builds and packages `src/` into `dist/index.js`.
+- `npm run build:main`: Builds only the mod bundle (`dist/index.js`) via Vite.
 - `npm run build:dev`: Builds `dist/index.js` then launches the game.
 - `npm run dev`: Launches SubwayBuilder with debug mode enabled.
 - `npm run link`: Creates/updates symlinks in the configured mod directory for `index.js`, `manifest.json`, `fetch.ps1`, `fetch.sh`, and `tools/fetch-cli.cjs` (requires `config.yaml` with `baseModsDir` and `modDirName`).

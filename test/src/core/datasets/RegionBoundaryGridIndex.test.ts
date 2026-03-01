@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import { RegionBoundaryGridIndex } from '@/core/datasets/RegionBoundaryGridIndex';
+import type { BoundaryParams } from '@/core/geometry/arc-length';
+
+function buildBoundaryParams(
+  bbox: [number, number, number, number],
+): BoundaryParams {
+  return {
+    bbox,
+    polyBBoxes: [bbox],
+    projectedPolygons: [],
+    baseLatitude: 0,
+  };
+}
+
+describe('core/datasets/RegionBoundaryGridIndex', () => {
+  it('fromBoundaryParamsMap_shouldReturnNull_whenMapIsEmpty', () => {
+    const index = RegionBoundaryGridIndex.fromBoundaryParamsMap(
+      'test-dataset',
+      new Map(),
+      2,
+      2,
+    );
+
+    assert.equal(index, null);
+  });
+
+  it('queryByPoint_shouldReturnCandidateIds_whenPointFallsInsideIndexedCell', () => {
+    const index = RegionBoundaryGridIndex.fromBoundaryParamsMap(
+      'test-dataset',
+      new Map([
+        ['a', buildBoundaryParams([0, 0, 5, 5])],
+        ['b', buildBoundaryParams([5, 5, 10, 10])],
+      ]),
+      2,
+      2,
+    );
+
+    assert.ok(index);
+    const candidates = index.queryByPoint(1, 1);
+    assert.equal(candidates.has('a'), true);
+  });
+
+  it('queryByBBox_shouldReturnUnionAcrossIntersectedCells_whenBBoxSpansMultipleCells', () => {
+    const index = RegionBoundaryGridIndex.fromBoundaryParamsMap(
+      'test-dataset',
+      new Map([
+        ['a', buildBoundaryParams([0, 0, 4, 4])],
+        ['b', buildBoundaryParams([6, 6, 10, 10])],
+      ]),
+      2,
+      2,
+    );
+
+    assert.ok(index);
+    const candidates = index.queryByBBox([0, 0, 10, 10]);
+    assert.deepEqual(new Set(candidates), new Set(['a', 'b']));
+  });
+});

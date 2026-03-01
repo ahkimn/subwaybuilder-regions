@@ -1,5 +1,7 @@
 import type { createElement, ReactNode } from 'react';
 
+import { REGIONS_ID_ATTR } from '@/core/constants';
+
 import type { IconDefinition, IconRenderOptions } from './utils/Icons';
 import { createReactIconElement } from './utils/Icons';
 
@@ -20,6 +22,7 @@ export type ButtonOptions = {
   wrapperClassName?: string;
   buttonClassName?: string;
   labelClassName?: string;
+  dataRegionsId?: string;
 };
 
 const DEFAULT_WRAPPER_CLASS_NAME = 'flex items-center h-full w-fit';
@@ -55,6 +58,7 @@ export function Button(
     wrapperClassName = DEFAULT_WRAPPER_CLASS_NAME,
     buttonClassName,
     labelClassName = DEFAULT_LABEL_CLASS_NAME,
+    dataRegionsId,
   } = options;
 
   const resolvedButtonClassName = buttonClassName
@@ -70,14 +74,8 @@ export function Button(
       })
     : null;
 
-  const children: ReactNode[] = [];
-  if (iconPlacement === 'start') {
-    iconElement && children.push(iconElement);
-    children.push(labelElement);
-  } else {
-    children.push(labelElement);
-    iconElement && children.push(iconElement);
-  }
+  const leadingChild = iconPlacement === 'start' ? iconElement : labelElement;
+  const trailingChild = iconPlacement === 'start' ? labelElement : iconElement;
 
   return h(
     'div',
@@ -91,8 +89,10 @@ export function Button(
         title: tooltipText,
         disabled,
         onClick,
+        ...(dataRegionsId ? { [REGIONS_ID_ATTR]: dataRegionsId } : {}),
       },
-      children,
+      leadingChild,
+      trailingChild,
     ),
   );
 }

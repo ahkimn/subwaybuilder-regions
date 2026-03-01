@@ -102,9 +102,10 @@ async function extractCABoundariesByLayer(
   bbox: BoundaryBox,
   layerId: number,
   outFields: string,
+  featureType: string,
 ): Promise<{ geoJson: GeoJSON.FeatureCollection }> {
   const query = buildCAStatCanArcGISQuery(bbox, layerId, outFields);
-  const geoJson = await fetchGeoJSONFromArcGIS(query);
+  const geoJson = await fetchGeoJSONFromArcGIS(query, { featureType });
   return { geoJson };
 }
 
@@ -124,6 +125,7 @@ export async function extractCABoundaries(
           expandBBox(bbox, 0.01),
           handler.layerId!,
           args.preview ? PREVIEW_OUT_FIELDS : handler.outFields!,
+          handler.dataConfig.displayName.toLowerCase(),
         )
       ).geoJson;
 

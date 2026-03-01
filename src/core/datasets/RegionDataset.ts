@@ -53,6 +53,7 @@ export class RegionDataset {
   readonly unitLabelPlural: string;
   readonly metadataSource: string;
   readonly expectedSize: number;
+  readonly fileSizeMB?: number;
 
   // Static data store properties (boundaries / labels)
   boundaryData: GeoJSON.FeatureCollection | null = null;
@@ -88,6 +89,11 @@ export class RegionDataset {
     this.unitLabelPlural = indexEntry.unitPlural || DEFAULT_UNIT_LABELS.plural;
     this.metadataSource = indexEntry.source || 'Unknown';
     this.expectedSize = Number.isFinite(indexEntry.size) ? indexEntry.size : 0;
+    this.fileSizeMB =
+      indexEntry.fileSizeMB !== undefined &&
+      Number.isFinite(indexEntry.fileSizeMB)
+        ? indexEntry.fileSizeMB
+        : undefined;
   }
 
   get isWritable(): boolean {

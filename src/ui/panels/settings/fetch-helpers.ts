@@ -1,3 +1,4 @@
+import type { RegistryCacheEntry } from '@shared/dataset-index';
 import {
   isStaticCountryCode,
   type StaticCountryCode,
@@ -21,11 +22,34 @@ export type FetchParameters = {
   bbox: FetchBBox | null;
 };
 
+export type LastCopiedFetchRequest = {
+  cityCode: string;
+  countryCode: FetchCountryCode;
+  datasetIds: string[];
+  bbox: FetchBBox;
+  copiedAt: number;
+};
+
+export type FetchValidationResult = {
+  cityCode: string;
+  foundIds: string[];
+  missingIds: string[];
+  updatedEntries: RegistryCacheEntry[];
+  validatedAt: number;
+};
+
 export type FetchCommandContext = {
   platform: string;
   params: FetchParameters;
   relativeModPath: string;
   outPath?: string;
+};
+
+type FetchActionAvailabilityArgs = {
+  command: string;
+  request: FetchParameters;
+  lastCopiedRequest: LastCopiedFetchRequest | null;
+  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
 };
 
 export function resolveCityCountryCode(
@@ -74,7 +98,7 @@ export function formatFetchCommand({
       : './fetch.sh';
   const scriptInvocation = isWindowsPlatform(platform)
     ? `& "${scriptPath}"`
-    : scriptPath;
+    : `sh "${scriptPath}"`;
   const resolvedOutPath = outPath.length
     ? outPath
     : isWindowsPlatform(platform)
@@ -99,6 +123,73 @@ export function formatFetchCommand({
   ].join(' ');
 }
 
+export function isFetchRequestSnapshotCurrent(
+  snapshot: LastCopiedFetchRequest | null,
+  request: FetchParameters,
+): boolean {
+  if (!snapshot) {
+    return false;
+  }
+  const bbox = request.bbox;
+  if (!bbox) {
+    return false;
+  }
+
+  if (snapshot.cityCode !== request.cityCode) {
+    return false;
+  }
+  if (snapshot.countryCode !== request.countryCode) {
+    return false;
+  }
+  if (snapshot.datasetIds.length !== request.datasetIds.length) {
+    return false;
+  }
+  for (let index = 0; index < snapshot.datasetIds.length; index += 1) {
+    if (snapshot.datasetIds[index] !== request.datasetIds[index]) {
+      return false;
+    }
+  }
+  if (snapshot.bbox.west !== bbox.west) {
+    return false;
+  }
+  if (snapshot.bbox.south !== bbox.south) {
+    return false;
+  }
+  if (snapshot.bbox.east !== bbox.east) {
+    return false;
+  }
+  if (snapshot.bbox.north !== bbox.north) {
+    return false;
+  }
+
+  return true;
+}
+
+export function deriveFetchActionAvailability({
+  command,
+  request,
+  lastCopiedRequest,
+  lastOpenedModsFolderRequest,
+}: FetchActionAvailabilityArgs): {
+  canCopyCommand: boolean;
+  canOpenModsFolder: boolean;
+  canValidateDatasets: boolean;
+} {
+  const canCopyCommand = command.length > 0;
+  const canOpenModsFolder =
+    canCopyCommand && isFetchRequestSnapshotCurrent(lastCopiedRequest, request);
+  const canValidateDatasets =
+    canOpenModsFolder &&
+    isFetchRequestSnapshotCurrent(lastOpenedModsFolderRequest, request);
+
+  return {
+    canCopyCommand,
+    canOpenModsFolder,
+    canValidateDatasets,
+  };
+}
+
+// Errors displayed when generating fetch command when required parameters are missing
 export function buildFetchErrors(args: {
   hasCity: boolean;
   hasCountry: boolean;
@@ -138,6 +229,43 @@ export function buildDefaultFetchOutPath(
   return normalizedRelativeModPath
     ? `./${normalizedRelativeModPath}/data`
     : './data';
+}
+
+export async function copyTextWithFallback(text: string): Promise<boolean> {
+  const clipboardApi = window.navigator?.clipboard;
+  if (clipboardApi?.writeText) {
+    try {
+      await clipboardApi.writeText(text);
+      return true;
+    } catch {
+      console.warn(
+        'Failed to copy using navigator.clipboard API, falling back to execCommand method',
+      );
+    }
+  }
+
+  const doc = window.document;
+  const textarea = doc.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '-9999px';
+  textarea.style.left = '-9999px';
+  textarea.style.opacity = '0';
+
+  try {
+    doc.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const copied = doc.execCommand('copy');
+    return copied;
+  } catch {
+    return false;
+  } finally {
+    if (textarea.parentNode) {
+      textarea.parentNode.removeChild(textarea);
+    }
+  }
 }
 
 function normalizeRelativePath(pathValue: string): string {

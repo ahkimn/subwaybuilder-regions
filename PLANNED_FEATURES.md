@@ -7,11 +7,10 @@ Those with :construction: are currently under implementation.
 
 ## Major Features
 
-- **Better Data Imports**
-  - Mod expects GeoJSONs with features that have specific properties.
-    - A conversion script is possible, but this is a brittle contract for any user-imported data
-  - Allow users to import preset regions directly from the game
-- **Settings**
+- **Better Data Imports** (Added in 0.4.0)
+  - The Regions mod now enables users to download GeoJSON files directly from the Settings menu
+  - The process involves the user copying a set command into terminal to download using a script included in the release package
+- :construction: **Settings**
   - Mod-level settings should be added in the main menu. This could include:
     - Metric/Imperial conversion
     - Hotkey modification,

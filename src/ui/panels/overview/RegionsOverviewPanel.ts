@@ -14,11 +14,11 @@ import { ViewHeader } from '../../elements/ViewHeader';
 import { getNextSortState } from '../shared/sort';
 import type { InputFieldProperties, SortState } from '../types';
 import { DEFAULT_SORT_STATE } from '../types';
-import { renderLayerSelectorRow, renderOverviewTabs } from './render';
-import { renderHistoricalTabContent } from './render-historical';
-import type { OverviewSortMetrics } from './render-overview';
-import { renderOverviewTabContent, resolveSortConfig } from './render-overview';
-import { renderRidershipTabContent } from './render-ridership';
+import { renderLayerSelectorRow, renderOverviewTabs } from './render-tabs';
+import { renderHistoricalTabContent } from './tabs/historical-data';
+import type { OverviewSortMetrics } from './tabs/overview';
+import { renderOverviewTabContent, resolveSortConfig } from './tabs/overview';
+import { renderRidershipTabContent } from './tabs/ridership';
 import type { RegionsOverviewPanelState, RegionsOverviewTab } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
 

@@ -10,6 +10,17 @@ import type {
 } from 'react';
 
 import type { ModdingAPI } from '@/types/api';
+import type {
+  InputFieldProperties,
+  LabelProperties,
+  SwitchProperties,
+} from '@/ui/panels/types';
+
+type GameUiComponentBindings = {
+  Input: React.ComponentType<InputFieldProperties>;
+  Switch: React.ComponentType<SwitchProperties>;
+  Label: React.ComponentType<LabelProperties>;
+};
 
 export type GameReactBindings = {
   h: typeof createElement;
@@ -20,10 +31,12 @@ export type GameReactBindings = {
   useMemoHook: typeof useMemo;
   useCallbackHook: typeof useCallback;
   useRefHook: typeof useRef;
+  components: GameUiComponentBindings;
 };
 
 export function getGameReact(api: ModdingAPI): GameReactBindings {
   const gameReact = api.utils.React;
+  const gameComponents = api.utils.components;
 
   return {
     h: gameReact.createElement as typeof createElement,
@@ -34,5 +47,10 @@ export function getGameReact(api: ModdingAPI): GameReactBindings {
     useMemoHook: gameReact.useMemo as typeof useMemo,
     useCallbackHook: gameReact.useCallback as typeof useCallback,
     useRefHook: gameReact.useRef as typeof useRef,
+    components: {
+      Input: gameComponents.Input as React.ComponentType<InputFieldProperties>,
+      Switch: gameComponents.Switch as React.ComponentType<SwitchProperties>,
+      Label: gameComponents.Label as React.ComponentType<LabelProperties>,
+    },
   };
 }
