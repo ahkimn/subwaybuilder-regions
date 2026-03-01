@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { afterEach, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 
 import {
   buildLocalDatasetCandidatePaths,
@@ -9,13 +9,12 @@ import {
   tryDatasetPath,
   tryLocalDatasetPaths,
 } from '../../../src/core/storage/helpers';
+import {
+  withMockedFetchAsync,
+  withMockedWindowUserAgent,
+} from '../../helpers/runtime-test-harness';
 
 describe('core/storage/helpers', () => {
-  const originalFetch = globalThis.fetch;
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
 
   const pathCases: Array<{
     name: string;
@@ -58,48 +57,57 @@ describe('core/storage/helpers', () => {
   });
 
   it('tryDatasetPath_shouldReturnPresentTrue_whenFetchOk', async () => {
-    globalThis.fetch = (async () =>
-      new Response('x'.repeat(2048), {
-        status: 200,
-        headers: { 'content-length': '2048' },
-      })) as typeof fetch;
-
-    const result = await tryDatasetPath('file:///data/test.geojson.gz');
-    assert.equal(result.isPresent, true);
-    assert.equal(result.compressed, true);
-    assert.equal(typeof result.fileSizeMB, 'number');
+    await withMockedFetchAsync(
+      (async () =>
+        new Response('x'.repeat(2048), {
+          status: 200,
+          headers: { 'content-length': '2048' },
+        })) as typeof fetch,
+      async () => {
+        const result = await tryDatasetPath('file:///data/test.geojson.gz');
+        assert.equal(result.isPresent, true);
+        assert.equal(result.compressed, true);
+        assert.equal(typeof result.fileSizeMB, 'number');
+      },
+    );
   });
 
   it('tryLocalDatasetPaths_shouldReturnFirstPresentPath_whenAnyPathExists', async () => {
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const path = String(input);
-      if (path.endsWith('.geojson.gz')) {
-        return new Response('', { status: 404 });
-      }
-      return new Response('ok', { status: 200 });
-    }) as typeof fetch;
+    await withMockedFetchAsync(
+      (async (input: RequestInfo | URL) => {
+        const path = String(input);
+        if (path.endsWith('.geojson.gz')) {
+          return new Response('', { status: 404 });
+        }
+        return new Response('ok', { status: 200 });
+      }) as typeof fetch,
+      async () => {
+        const result = await tryLocalDatasetPaths([
+          'file:///data/test.geojson.gz',
+          'file:///data/test.geojson',
+        ]);
 
-    const result = await tryLocalDatasetPaths([
-      'file:///data/test.geojson.gz',
-      'file:///data/test.geojson',
-    ]);
-
-    assert.equal(result.isPresent, true);
-    assert.equal(result.dataPath.endsWith('.geojson'), true);
+        assert.equal(result.isPresent, true);
+        assert.equal(result.dataPath.endsWith('.geojson'), true);
+      },
+    );
   });
 
   it('getFeatureCountForLocalDataset_shouldReturnFeatureCount_whenGeoJsonIsValid', async () => {
-    globalThis.fetch = (async () =>
-      new Response(
-        JSON.stringify({
-          type: 'FeatureCollection',
-          features: [{ type: 'Feature', geometry: null, properties: {} }],
-        }),
-        { status: 200 },
-      )) as typeof fetch;
-
-    const count = await getFeatureCountForLocalDataset('file:///data/test.geojson');
-    assert.equal(count, 1);
+    await withMockedFetchAsync(
+      (async () =>
+        new Response(
+          JSON.stringify({
+            type: 'FeatureCollection',
+            features: [{ type: 'Feature', geometry: null, properties: {} }],
+          }),
+          { status: 200 },
+        )) as typeof fetch,
+      async () => {
+        const count = await getFeatureCountForLocalDataset('file:///data/test.geojson');
+        assert.equal(count, 1);
+      },
+    );
   });
 
   it('resolveRuntimePlatform_shouldReturnExplicitPlatform_whenProvided', () => {
@@ -115,23 +123,8 @@ describe('core/storage/helpers', () => {
   });
 
   it('resolveRuntimePlatform_shouldInferPlatformFromUserAgent_whenPerformanceInfoIsNull', () => {
-    const originalWindow = globalThis.window;
-    Object.defineProperty(globalThis, 'window', {
-      value: {
-        navigator: { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' },
-      },
-      configurable: true,
-      writable: true,
-    });
-
-    try {
+    withMockedWindowUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X)', () => {
       assert.equal(resolveRuntimePlatform(null), 'darwin');
-    } finally {
-      Object.defineProperty(globalThis, 'window', {
-        value: originalWindow,
-        configurable: true,
-        writable: true,
-      });
-    }
+    });
   });
 });

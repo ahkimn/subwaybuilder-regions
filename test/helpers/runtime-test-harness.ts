@@ -22,7 +22,9 @@ export function withMockedProcessExit<T>(run: () => T): T {
   }
 }
 
-export async function withMockedProcessExitAsync<T>(run: () => Promise<T>): Promise<T> {
+export async function withMockedProcessExitAsync<T>(
+  run: () => Promise<T>,
+): Promise<T> {
   const originalExit = process.exit;
 
   const mockedExit = ((code?: number) => {
@@ -34,6 +36,51 @@ export async function withMockedProcessExitAsync<T>(run: () => Promise<T>): Prom
     return await run();
   } finally {
     process.exit = originalExit;
+  }
+}
+
+export function withMockedFetch<T>(mockedFetch: typeof fetch, run: () => T): T {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = mockedFetch;
+
+  try {
+    return run();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+export async function withMockedFetchAsync<T>(
+  mockedFetch: typeof fetch,
+  run: () => Promise<T>,
+): Promise<T> {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = mockedFetch;
+
+  try {
+    return await run();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+export function withMockedWindowUserAgent<T>(userAgent: string, run: () => T): T {
+  const originalWindow = globalThis.window;
+
+  Object.defineProperty(globalThis, 'window', {
+    value: { navigator: { userAgent } },
+    configurable: true,
+    writable: true,
+  });
+
+  try {
+    return run();
+  } finally {
+    Object.defineProperty(globalThis, 'window', {
+      value: originalWindow,
+      configurable: true,
+      writable: true,
+    });
   }
 }
 
@@ -73,7 +120,10 @@ export function captureConsole(): {
   };
 }
 
-export function assertProcessExitCode(error: unknown, expectedCode: number): void {
+export function assertProcessExitCode(
+  error: unknown,
+  expectedCode: number,
+): void {
   assert.ok(error instanceof ProcessExitInterceptedError);
   assert.equal(error.code, expectedCode);
 }
