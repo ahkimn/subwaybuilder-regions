@@ -103,7 +103,12 @@ _Latest Changelog Entry:_ [v0.4.0](CHANGELOG.md#v040---2026-02-28)
 
     Un-zip the file and copy the `index.js` and `manifest.json` directly into the `mods/regions/` directory
 
-3.  Visit the shared [Google Drive](https://drive.google.com/drive/folders/1TPlqNRh-zqJTIoTs-KUNdZHVVTS0QCzd?usp=drive_link) and download the `.zip` files of the cities you intend to play with.
+3.  Open the game, navigate to `Mod Manager` within the `Settings` menu and enable the `Regions` mod.
+4.  Obtain boundaries files. The `Regions Mod` provides two options:
+
+**Option 1: Premade Boundaries**
+
+Visit the shared [Google Drive](https://drive.google.com/drive/folders/1TPlqNRh-zqJTIoTs-KUNdZHVVTS0QCzd?usp=drive_link) and download the `.zip` files of the cities you intend to play with.
 
     Un-zip each city's files into its own `mods/regions/data/{CITY_CODE}/` directory.
     For example, if you download the `ATL` .zip for Atlanta files your directory should look like
@@ -122,7 +127,12 @@ _Latest Changelog Entry:_ [v0.4.0](CHANGELOG.md#v040---2026-02-28)
             ...
     ```
 
-4.  Open the game, navigate to `Mod Manager` within the `Settings` menu and enable the `Regions` mod.
+**Option 2: Download From the Settings Menu**
+
+From the Main Menu, click on the `Regions` button to open the `Settings Menu`. Then follow the steps given in [Fetching Datasets In Game](#fetching-datasets-in-game).
+
+    :warning: This option requires Node.js and access to the Terminal!
+
 5.  Restart the game to ensure that the mod load properly.
 6.  Load a city for which you have downloaded region-level data and enjoy!
 
@@ -363,7 +373,7 @@ The current set of available datasets are displayed in the `Dataset Registry` se
 
 ![Dataset Registry](img/settings-registry.png)
 
-#### Fetching Datasets In-Game
+#### Fetching Datasets In Game
 
 The `Settings Menu` also includes a `Fetch Datasets` section near the bottom of the overlay from which you can download datasets within the game.
 
