@@ -50,6 +50,8 @@
     "serve": "tsx scripts/serve-data.ts",
     "extract:map-features": "tsx scripts/extract-map-features.ts",
     "fetch:city": "tsx scripts/fetch-city-datasets.ts",
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "test:watch": "node --import tsx --test --watch \"test/**/*.test.ts\"",
     "build:fetch-cli": "tsx scripts/build/build-fetch-cli.ts",
     "export": "tsx scripts/export-data-archives.ts",
     "release:version": "tsx scripts/build/resolve-release-version.ts",
