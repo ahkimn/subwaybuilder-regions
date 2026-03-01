@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { RingCoordinate } from '../../../../src/core/geometry/helpers';
+import type { RingCoordinate } from '@/core/geometry/helpers';
 import {
   bboxIntersects,
   isCoordinateOutsideBBox,
   pointInMultiPolygon,
   projectCoordinate,
   segmentLength,
-} from '../../../../src/core/geometry/helpers';
+} from '@/core/geometry/helpers';
 
 describe('core/geometry/helpers', () => {
   it('bboxIntersects_shouldReturnTrue_whenBBoxesTouchAtEdge', () => {

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { validateFetchRequest } from '../../../scripts/fetch/validate-fetch-request';
-import type { FetchDatasetArgs } from '../../../scripts/fetch/parse-fetch-args';
+import type { FetchDatasetArgs } from '@scripts/fetch/parse-fetch-args';
+import { validateFetchRequest } from '@scripts/fetch/validate-fetch-request';
 
 type FetchRequestFixture = Pick<FetchDatasetArgs, 'countryCode' | 'datasets'>;
 

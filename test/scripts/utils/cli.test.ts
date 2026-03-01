@@ -8,11 +8,11 @@ import {
   parseNumber,
   requireNumber,
   requireString,
-} from '../../../scripts/utils/cli';
+} from '@scripts/utils/cli';
 import {
   createScriptTestHarness,
   expectExitCode,
-} from '../../helpers/script-test-harness';
+} from '@test/helpers/script-test-harness';
 
 describe('scripts/utils/cli utilities', () => {
   const harness = createScriptTestHarness();

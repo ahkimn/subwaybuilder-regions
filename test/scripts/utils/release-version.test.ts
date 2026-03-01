@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { getLatestReleaseVersionFromChangelog } from '../../../scripts/utils/release-version';
+import { getLatestReleaseVersionFromChangelog } from '@scripts/utils/release-version';
 
 const fixturesDir = join(process.cwd(), 'test/scripts/utils/fixtures');
 

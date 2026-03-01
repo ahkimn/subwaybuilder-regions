@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { resolveCountryDatasets } from '../../../../../shared/datasets/catalog';
+import { resolveCountryDatasets } from '@shared/datasets/catalog';
+
 import {
   buildFetchErrors,
   deriveFetchActionAvailability,
@@ -10,15 +11,15 @@ import {
   type FetchParameters,
   formatFetchCommand,
   type LastCopiedFetchRequest,
-} from '../../../../../src/ui/panels/settings/fetch-helpers';
+} from '@/ui/panels/settings/fetch-helpers';
 import {
   type FetchState,
   INITIAL_FETCH_STATE,
   type RegionsSettingsAction,
-  type RegionsSettingsState,
   regionsSettingsReducer,
-} from '../../../../../src/ui/panels/settings/RegionsSettingsState';
-import { SortDirection } from '../../../../../src/ui/panels/types';
+  type RegionsSettingsState,
+} from '@/ui/panels/settings/RegionsSettingsState';
+import { SortDirection } from '@/ui/panels/types';
 
 type DerivedFetchUi = {
   errors: string[];

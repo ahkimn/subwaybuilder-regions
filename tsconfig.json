@@ -12,7 +12,9 @@
       "@/core/constants": ["src/core/constants/index.ts"],
       "@/core/constants/*": ["src/core/constants/*"],
       "@/*": ["src/*"],
-      "@shared/*": ["shared/*"]
+      "@shared/*": ["shared/*"],
+      "@scripts/*": ["scripts/*"],
+      "@test/*": ["test/*"]
     },
 
     // JSX Support

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { fetchJsonWithRetry } from '../../../scripts/utils/http';
+import { fetchJsonWithRetry } from '@scripts/utils/http';
 
 describe('scripts/utils/http fetchJsonWithRetry', () => {
   const originalFetch = global.fetch;

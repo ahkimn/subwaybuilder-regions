@@ -4,36 +4,35 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 import {
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasets,
-} from '../../../../../shared/datasets/catalog';
-import React, { useMemo, useState } from 'react';
-import { cleanup, render } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
-import * as SettingsUI from '../../../../../src/core/constants/ui/settings';
-import type {
-  FetchBBox,
-  FetchParameters,
-  FetchValidationResult,
-  LastCopiedFetchRequest,
-} from '../../../../../src/ui/panels/settings/fetch-helpers';
-import {
-  buildFetchErrors,
-  deriveFetchActionAvailability,
-  formatFetchCommand,
-  resolveCityCountryCode,
-} from '../../../../../src/ui/panels/settings/fetch-helpers';
-import { renderFetchDatasetsSection } from '../../../../../src/ui/panels/settings/sections/fetch-datasets';
-import type { SettingsFetchSectionParams } from '../../../../../src/ui/panels/settings/types';
-import type { City } from '../../../../../src/types/cities';
-
+} from '@shared/datasets/catalog';
+import { installDomEnvironment } from '@test/helpers/dom-environment';
 import {
   assertButtonDisabled,
   assertButtonEnabled,
   assertText,
   byRegionsId,
   existsWarning,
-} from '../../../../helpers/fetch-ui-assertions';
-import { installDomEnvironment } from '../../../../helpers/dom-environment';
+} from '@test/helpers/fetch-ui-assertions';
+import { cleanup, render } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import React, { useMemo, useState } from 'react';
+
+import * as SettingsUI from '@/core/constants/ui/settings';
+import type { City } from '@/types/cities';
+import type {
+  FetchBBox,
+  FetchParameters,
+  FetchValidationResult,
+  LastCopiedFetchRequest,
+} from '@/ui/panels/settings/fetch-helpers';
+import {
+  buildFetchErrors,
+  deriveFetchActionAvailability,
+  formatFetchCommand,
+  resolveCityCountryCode,
+} from '@/ui/panels/settings/fetch-helpers';
+import { renderFetchDatasetsSection } from '@/ui/panels/settings/sections/fetch-datasets';
+import type { SettingsFetchSectionParams } from '@/ui/panels/settings/types';
 
 const BOS_BBOX: FetchBBox = {
   west: '-71.6694',
@@ -130,11 +129,11 @@ function FetchDatasetsHarness(): React.ReactNode {
     errors.length > 0
       ? ''
       : formatFetchCommand({
-          platform: 'win32',
-          params: state.request,
-          relativeModPath: 'regions',
-          outPath: '.\\regions\\data',
-        });
+        platform: 'win32',
+        params: state.request,
+        relativeModPath: 'regions',
+        outPath: '.\\regions\\data',
+      });
 
   const datasets = resolveCountryDatasets(state.request.countryCode, {
     onlineOnly: true,

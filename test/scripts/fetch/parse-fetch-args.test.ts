@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { parseFetchArgs } from '../../../scripts/fetch/parse-fetch-args';
+import { parseFetchArgs } from '@scripts/fetch/parse-fetch-args';
 import {
   createScriptTestHarness,
   expectExitCode,
-} from '../../helpers/script-test-harness';
+} from '@test/helpers/script-test-harness';
 
 describe('scripts/fetch/parse-fetch-args script behavior', () => {
   const harness = createScriptTestHarness();

@@ -6,7 +6,7 @@ import {
   formatPercentOrDefault,
   isObjectRecord,
   processInChunks,
-} from '../../../src/core/utils';
+} from '@/core/utils';
 
 describe('core/utils', () => {
   it('isObjectRecord_shouldReturnTrue_whenValueIsPlainObject', () => {

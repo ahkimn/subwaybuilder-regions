@@ -5,7 +5,7 @@ import {
   buildLocalDatasetCandidatePaths,
   buildLocalDatasetPath,
   resolveRuntimePlatform,
-} from '../../../../src/core/storage/helpers';
+} from '@/core/storage/helpers';
 
 describe('core/storage/helpers', () => {
   it('buildLocalDatasetPath_shouldBuildGeoJsonPath_whenExtensionDefaults', () => {
