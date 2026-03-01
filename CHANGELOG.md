@@ -2,6 +2,23 @@
 
 [Back to README](README.md)
 
+## v0.4.0 - 2026-03-01
+
+_Game version_ v1.1.0
+
+- Added support for French regions
+  - Available regions: 'departments', 'arrondissements', 'cantons', 'epci', 'communes'
+  - All regions have real population data based on underlying communes
+- [TODO] Add support for Australian regions
+
+### Other Updates
+
+- Added additional default layer colors to support countries with more than five potential region layers
+
+### Bugfixes
+
+- Fixed non-deterministic dataset ordering/coloring in map layers for cached (`static`/`dynamic`) datasets by adding country metadata to each registry cache entry
+
 ## v0.4.0 - 2026-02-28
 
 _Game version_ v1.1.0

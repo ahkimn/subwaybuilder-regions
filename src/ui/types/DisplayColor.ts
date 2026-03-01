@@ -19,9 +19,12 @@ export type RGB = {
 export const PRIMARY_FILL_COLORS: MapDisplayColor[] = [
   { hex: '#264653', name: 'Deep Teal', hover: '#2F5F6E' },
   { hex: '#2A9D8F', name: 'Sea Green', hover: '#3CB3A2' },
+  { hex: '#59A14F', name: 'Leaf Green', hover: '#6FB867' },
   { hex: '#E9C46A', name: 'Sand Yellow', hover: '#F2D27C' },
   { hex: '#F4A261', name: 'Soft Orange', hover: '#F7B27C' },
   { hex: '#E76F51', name: 'Coral', hover: '#ED8369' },
+  { hex: '#B279A2', name: 'Muted Violet', hover: '#C892B5' },
+  { hex: '#4C78A8', name: 'Slate Blue', hover: '#5F8EC0' },
 ];
 
 export const DEFAULT_CHART_COLOR: ChartDisplayColor = {
