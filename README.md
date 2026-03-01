@@ -508,6 +508,8 @@ Issues and Pull Requests are welcome. Please include:
 - Platform
 - Other Relevant Details
 
+Testing standards are documented in [test/TESTING_GUIDELINES.md](test/TESTING_GUIDELINES.md).
+
 ### Developer Commands
 
 The following are developer commands available within the repository, grouped by purpose:

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { afterEach, describe, it } from 'node:test';
 
 import {
   getBBoxFromArgs,
@@ -12,20 +12,15 @@ import {
   toPositiveInteger,
 } from '@scripts/utils/cli';
 import {
-  createScriptTestHarness,
   expectExitCode,
 } from '@test/helpers/script-test-harness';
+import { withScriptHarness } from '@test/helpers/script-test-suite';
 
 describe('scripts/utils/cli utilities', () => {
-  const harness = createScriptTestHarness();
+  const harness = withScriptHarness();
   const originalArgv = process.argv;
 
-  beforeEach(() => {
-    harness.install();
-  });
-
   afterEach(() => {
-    harness.restore();
     process.argv = originalArgv;
   });
 
