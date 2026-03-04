@@ -52,8 +52,22 @@ _Latest Changelog Entry:_ [v0.4.1](docs/CHANGELOG.md#v041---2026-03-01)
     - Forward Sortation Areas
   - **GB** (United Kingdom)
     - Local Authority Districts
+    - Westminster Parliamentary Constituencies
     - Built-up Areas
     - Electoral Wards
+  - **FR** (France)
+    - Départements
+    - Arrondissements
+    - Cantons
+    - EPCI
+    - Communes
+  - **AU** (Australia)
+    - Statistical Areas Level 3
+    - Statistical Areas Level 2
+    - Commonwealth Electoral Divisions
+    - State Electoral Divisions
+    - Local Government Areas
+    - Postal Areas
   - **US** (United States)
     - Counties
     - County Subdivisions (including towns/cities/CDPs)
@@ -536,7 +550,7 @@ The following are developer commands available within the repository, grouped by
 #### Data Extraction / Serving
 
 - `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview]`: Extracts boundary GeoJSONs for a single city/dataset.
-- `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
+- `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA|FR|AU> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
 - `npm run export -- --city-code=<CITY[,CITY...]>|--all [--include-osm-data] [--output-dir=<DIR>]`: Packages `data/{CITY}` into `export/{CITY}.gz`.
 - `npm run serve -- [--port=<PORT>] [--dir=<RELATIVE_DATA_DIR>]`: Launches a local HTTP server for data files (defaults to project `data/`).
 

@@ -17,6 +17,7 @@ import {
   getBUAONSQuery,
   getDistrictONSQuery,
   getWardONSQuery,
+  getWPCONSQuery,
 } from '../utils/queries';
 import { createDataConfigFromCatalog } from './data-config';
 import type { BoundaryDataHandler, DataConfig } from './handler-types';
@@ -45,6 +46,15 @@ const BUA_CODE_PROPERTY = 'BUA22CD';
 const BUA_NAME_PROPERTY = 'BUA22NM';
 const BUA_WELSH_NAME_PROPERTY = 'BUA22NMW';
 const BUA_GAELIC_NAME_PROPERTY = 'BUA22NMG';
+
+/* --- Westminster Parliamentary Constituencies (WPC) ---
+  Source: https://geoportal.statistics.gov.uk/datasets/ons::westminster-parliamentary-constituencies-july-2024-boundaries-uk-bgc/about
+  Resolution: Generalized clipped boundaries
+*/
+const GB_WPC_BOUNDARIES = 'gb_wpc_boundaries.geojson.gz';
+const WPC_CODE_PROPERTY = 'PCON24CD';
+const WPC_NAME_PROPERTY = 'PCON24NM';
+const WPC_WELSH_NAME_PROPERTY = 'PCON24NMW';
 
 /* --- Wards (Electoral Divisions) ---
   Source: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2025-boundaries-uk-bfc-v2-1/about
@@ -77,6 +87,11 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
     ],
     populationProperty: 'Population',
   }),
+  wpcs: createDataConfigFromCatalog('wpcs', {
+    idProperty: WPC_CODE_PROPERTY,
+    nameProperty: WPC_NAME_PROPERTY,
+    applicableNameProperties: [WPC_WELSH_NAME_PROPERTY, WPC_NAME_PROPERTY],
+  }),
   wards: createDataConfigFromCatalog('wards', {
     idProperty: WARD_CODE_PROPERTY,
     nameProperty: WARD_NAME_PROPERTY,
@@ -95,6 +110,11 @@ const GB_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
     dataConfig: GB_DATA_CONFIGS['bua'],
     extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
       extractBUABoundaries(bbox, useLocalData),
+  },
+  wpcs: {
+    dataConfig: GB_DATA_CONFIGS['wpcs'],
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
+      extractWPCBoundaries(bbox, useLocalData),
   },
   wards: {
     dataConfig: GB_DATA_CONFIGS['wards'],
@@ -154,7 +174,6 @@ async function extractWardBoundaries(
     : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox), {
         featureType: 'electoral wards',
       });
-  console.log(boundaries.features[0]);
   const populationCharacteristics: Row[] = useLocal
     ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS))
     : [];
@@ -164,6 +183,19 @@ async function extractWardBoundaries(
     'Population',
   );
   return { geoJson: boundaries, populationMap: populationIndex };
+}
+
+async function extractWPCBoundaries(
+  bbox: BoundaryBox,
+  useLocal: boolean = false,
+) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal
+    ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_WPC_BOUNDARIES))
+    : await fetchGeoJSONFromArcGIS(getWPCONSQuery(bbox), {
+        featureType: 'westminster parliamentary constituencies',
+      });
+
+  return { geoJson: boundaries, populationMap: new Map<string, string>() };
 }
 
 export async function extractGBBoundaries(

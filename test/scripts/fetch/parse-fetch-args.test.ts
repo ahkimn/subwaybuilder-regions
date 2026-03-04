@@ -2,9 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { parseFetchArgs } from '@scripts/fetch/parse-fetch-args';
-import {
-  expectExitCode,
-} from '@test/helpers/script-test-harness';
+import { expectExitCode } from '@test/helpers/script-test-harness';
 import { withScriptHarness } from '@test/helpers/script-test-suite';
 
 describe('scripts/fetch/parse-fetch-args script behavior', () => {

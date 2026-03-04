@@ -8,6 +8,27 @@ import {
   resolveCountryDatasets,
 } from '@shared/datasets/catalog';
 
+describe('shared/datasets/catalog GB metadata', () => {
+  it('resolves GB dataset order with wpcs in hierarchy', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('GB'), [
+      'districts',
+      'wpcs',
+      'bua',
+      'wards',
+    ]);
+  });
+
+  it('marks GB wpcs as online-source eligible', () => {
+    assert.equal(DATASET_METADATA_CATALOG['wpcs']?.existsOnlineSource, true);
+  });
+});
+
+describe('shared/datasets/catalog CA metadata', () => {
+  it('marks CA peds as online-source eligible', () => {
+    assert.equal(DATASET_METADATA_CATALOG['peds']?.existsOnlineSource, true);
+  });
+});
+
 describe('shared/datasets/catalog FR metadata', () => {
   it('includes FR in static countries', () => {
     assert.ok(CATALOG_STATIC_COUNTRIES.includes('FR'));

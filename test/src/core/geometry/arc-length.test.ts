@@ -85,7 +85,11 @@ describe('core/geometry/arc-length', () => {
     it('shouldReturnZero_whenArcHasFewerThanTwoPoints', () => {
       const boundaryParams = prepareBoundaryParams(squarePolygon);
 
-      const length = planarArcLengthInsideBoundary([[0.2, 0.2]], undefined, boundaryParams);
+      const length = planarArcLengthInsideBoundary(
+        [[0.2, 0.2]],
+        undefined,
+        boundaryParams,
+      );
 
       assert.equal(length, 0);
     });
@@ -180,7 +184,9 @@ describe('core/geometry/arc-length', () => {
         [0, 0, 1, 1],
         undefined,
       );
-      const fullKm = turf.length(turf.lineString(arcCoords), { units: 'kilometers' });
+      const fullKm = turf.length(turf.lineString(arcCoords), {
+        units: 'kilometers',
+      });
 
       assert.equal(partialKm > 0, true);
       assert.equal(partialKm < fullKm, true);

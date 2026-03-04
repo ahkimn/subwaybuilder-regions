@@ -23,6 +23,9 @@ _Game version_ v1.1.0
     - Postal Areas
   - All regions have real population data
   - Source: AU ABS (ASGS 2021)
+- Added GB `wpcs` support for Westminster Parliamentary Constituencies (ONS July 2024 boundaries).
+- Added online fetch support for CA `peds` via hosted `.geojson.gz` source (no longer local-only in runtime fetch flows).
+- Added shared remote compressed GeoJSON loader utility for script pipelines so hosted binary `.geojson.gz` sources can be reused across datasets/countries.
 
 ### Other Updates
 

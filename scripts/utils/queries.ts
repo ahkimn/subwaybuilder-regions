@@ -704,6 +704,14 @@ export function getBUAONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
   );
 }
 
+export function getWPCONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
+  return buildONSArcGISQuery(
+    `${ONS_API_BASE_URL}/Westminster_Parliamentary_Constituencies_July_2024_Boundaries_UK_BGC/FeatureServer`,
+    0,
+    queryBBox,
+  );
+}
+
 export function getWardONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
   return buildONSArcGISQuery(
     `${ONS_API_BASE_URL}/WD_MAY_2025_UK_BFC_V2/FeatureServer`,

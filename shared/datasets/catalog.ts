@@ -48,7 +48,7 @@ export const DATASET_METADATA_CATALOG: Readonly<
     unitSingular: 'Provincial Electoral District',
     unitPlural: 'Provincial Electoral Districts',
     source: 'CA Provincial Electoral Districts',
-    existsOnlineSource: false,
+    existsOnlineSource: true,
   },
   csds: {
     datasetId: 'csds',
@@ -71,6 +71,14 @@ export const DATASET_METADATA_CATALOG: Readonly<
     displayName: 'Districts',
     unitSingular: 'District',
     unitPlural: 'Districts',
+    source: 'UK ONS',
+    existsOnlineSource: true,
+  },
+  wpcs: {
+    datasetId: 'wpcs',
+    displayName: 'Westminster Parliamentary Constituencies',
+    unitSingular: 'Westminster Parliamentary Constituency',
+    unitPlural: 'Westminster Parliamentary Constituencies',
     source: 'UK ONS',
     existsOnlineSource: true,
   },
@@ -185,7 +193,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
 > = Object.freeze({
   US: ['counties', 'county-subdivisions', 'zctas'],
   CA: ['feds', 'peds', 'csds', 'fsas'],
-  GB: ['districts', 'bua', 'wards'],
+  GB: ['districts', 'wpcs', 'bua', 'wards'],
   FR: ['departments', 'arrondissements', 'cantons', 'epci', 'communes'],
   AU: ['sa3s', 'sa2s', 'ceds', 'seds', 'lgas', 'poas'],
 });

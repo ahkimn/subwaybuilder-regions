@@ -7,6 +7,7 @@ import {
   buildAUASGSBoundaryQuery,
   buildAUCensusPopulationQuery,
   buildIgnAdminWfsQuery,
+  getWPCONSQuery,
 } from '@scripts/utils/queries';
 
 describe('scripts/utils/queries WFS helpers', () => {
@@ -84,5 +85,22 @@ describe('scripts/utils/queries WFS helpers', () => {
     assert.equal(request.params.get('outFields'), 'SA3_CODE_2021,Tot_P_P');
     assert.equal(request.params.get('returnGeometry'), 'false');
     assert.equal(request.params.get('f'), 'json');
+  });
+
+  it('builds GB WPC ONS ArcGIS query params', () => {
+    const request = getWPCONSQuery(bbox);
+
+    assert.equal(
+      request.url,
+      'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Westminster_Parliamentary_Constituencies_July_2024_Boundaries_UK_BGC/FeatureServer/0/query',
+    );
+    assert.equal(request.params.get('where'), '1=1');
+    assert.equal(request.params.get('geometryType'), 'esriGeometryEnvelope');
+    assert.equal(request.params.get('spatialRel'), 'esriSpatialRelIntersects');
+    assert.equal(request.params.get('inSR'), '4326');
+    assert.equal(request.params.get('outSR'), '4326');
+    assert.equal(request.params.get('outFields'), '*');
+    assert.equal(request.params.get('returnGeometry'), 'true');
+    assert.equal(request.params.get('f'), 'geojson');
   });
 });

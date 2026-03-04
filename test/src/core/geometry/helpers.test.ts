@@ -1,26 +1,26 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { RingCoordinate } from '@/core/geometry/helpers';
 import {
+  bboxIntersects,
   buildBBoxFitState,
   buildPaddedBBoxForDemandData,
-  bboxIntersects,
   computeDemandDataBBox,
   getArcBBox,
+  interpolatePoint,
   isCoordinateOutsideBBox,
   isValidCoordinate,
-  interpolatePoint,
   multiPolyBBox,
   normalizeBBox,
   padBBoxKm,
   pointInMultiPolygon,
   polygonBBox,
   projectCoordinate,
+  type RingCoordinate,
   segmentBBox,
+  segmentLength,
   segmentMidpoint,
   segmentPolygonIntersections,
-  segmentLength,
 } from '@/core/geometry/helpers';
 
 describe('core/geometry/helpers', () => {
@@ -99,12 +99,26 @@ describe('core/geometry/helpers', () => {
     const cases = [
       {
         name: 'clamps to minimum when coverage is near 1',
-        args: [[0, 0, 1, 1] as [number, number, number, number], 1000, 600, 0.99, 24, 200] as const,
+        args: [
+          [0, 0, 1, 1] as [number, number, number, number],
+          1000,
+          600,
+          0.99,
+          24,
+          200,
+        ] as const,
         expectedPadding: 24,
       },
       {
         name: 'clamps to maximum when base padding exceeds max',
-        args: [[0, 0, 1, 1] as [number, number, number, number], 1200, 800, 0.2, 24, 100] as const,
+        args: [
+          [0, 0, 1, 1] as [number, number, number, number],
+          1200,
+          800,
+          0.2,
+          24,
+          100,
+        ] as const,
         expectedPadding: 100,
       },
     ];
@@ -151,7 +165,11 @@ describe('core/geometry/helpers', () => {
     ];
 
     for (const testCase of arcCases) {
-      assert.deepEqual(getArcBBox(testCase.coords), testCase.expected, testCase.name);
+      assert.deepEqual(
+        getArcBBox(testCase.coords),
+        testCase.expected,
+        testCase.name,
+      );
     }
   });
 
@@ -159,8 +177,18 @@ describe('core/geometry/helpers', () => {
     const cases = [
       { name: 'inclusive minimum bounds', lng: -180, lat: -90, expected: true },
       { name: 'inclusive maximum bounds', lng: 180, lat: 90, expected: true },
-      { name: 'non-finite longitude', lng: Number.NaN, lat: 0, expected: false },
-      { name: 'non-finite latitude', lng: 0, lat: Number.POSITIVE_INFINITY, expected: false },
+      {
+        name: 'non-finite longitude',
+        lng: Number.NaN,
+        lat: 0,
+        expected: false,
+      },
+      {
+        name: 'non-finite latitude',
+        lng: 0,
+        lat: Number.POSITIVE_INFINITY,
+        expected: false,
+      },
       { name: 'out of range longitude', lng: 181, lat: 0, expected: false },
       { name: 'out of range latitude', lng: 0, lat: -91, expected: false },
     ];
@@ -193,7 +221,12 @@ describe('core/geometry/helpers', () => {
     assert.deepEqual(validBBox, [0, 0, 2, 2]);
 
     const invalidPolygonBBox = polygonBBox([]);
-    assert.deepEqual(invalidPolygonBBox, [Infinity, Infinity, -Infinity, -Infinity]);
+    assert.deepEqual(invalidPolygonBBox, [
+      Infinity,
+      Infinity,
+      -Infinity,
+      -Infinity,
+    ]);
 
     assert.deepEqual(multiPolyBBox([validBBox, [5, 5, 6, 6]]), [0, 0, 6, 6]);
     assert.deepEqual(
@@ -230,7 +263,10 @@ describe('core/geometry/helpers', () => {
       pops: [],
     };
 
-    assert.deepEqual(computeDemandDataBBox(mixedDemandData), [-122.5, 37.7, -122.4, 37.8]);
+    assert.deepEqual(
+      computeDemandDataBBox(mixedDemandData),
+      [-122.5, 37.7, -122.4, 37.8],
+    );
 
     const padded = buildPaddedBBoxForDemandData(mixedDemandData, 1);
     assert.equal(padded !== null, true);
@@ -261,7 +297,9 @@ describe('core/geometry/helpers', () => {
     const bbox: [number, number, number, number] = [-10, -10, 10, 10];
     assert.deepEqual(padBBoxKm(bbox, -2), bbox);
 
-    const nearWorldEdge: [number, number, number, number] = [179.9, 89.99, 180, 89.999];
+    const nearWorldEdge: [number, number, number, number] = [
+      179.9, 89.99, 180, 89.999,
+    ];
     const padded = padBBoxKm(nearWorldEdge, 500);
     assert.equal(padded[0] >= -180, true);
     assert.equal(padded[1] >= -89.999, true);
@@ -279,10 +317,15 @@ describe('core/geometry/helpers', () => {
     ];
 
     assert.deepEqual(
-      segmentPolygonIntersections([-1, 1], [3, 1], [square]).sort((a, b) => a - b),
+      segmentPolygonIntersections([-1, 1], [3, 1], [square]).sort(
+        (a, b) => a - b,
+      ),
       [0.25, 0.75],
     );
-    assert.deepEqual(segmentPolygonIntersections([-1, -1], [-2, -2], [square]), []);
+    assert.deepEqual(
+      segmentPolygonIntersections([-1, -1], [-2, -2], [square]),
+      [],
+    );
 
     assert.deepEqual(interpolatePoint([0, 0], [4, 8], 0), [0, 0]);
     assert.deepEqual(interpolatePoint([0, 0], [4, 8], 0.5), [2, 4]);

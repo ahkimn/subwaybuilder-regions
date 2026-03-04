@@ -10,6 +10,7 @@ import {
   buildCAStatCanArcGISQuery,
   fetchGeoJSONFromArcGIS,
 } from '../utils/queries';
+import { loadRemoteGeoJSON } from '../utils/remote-data';
 import { createDataConfigFromCatalog } from './data-config';
 import type { DataConfig } from './handler-types';
 import { processAndSaveBoundaries } from './process';
@@ -24,6 +25,8 @@ const CA_PED_BOUNDARIES = path.resolve(
   SOURCE_DATA_DIR,
   'ca_ped_boundaries.geojson.gz',
 );
+const CA_PED_BOUNDARIES_REMOTE_URL =
+  'https://github.com/Kronifer/ProvincialElectoralBoundaries/releases/download/1.0.0/ca_ped_boundaries.geojson.gz';
 
 const PREVIEW_OUT_FIELDS = '*';
 
@@ -100,7 +103,9 @@ export async function extractCABoundaries(
   }
 
   const geoJson = handler.localFilePath
-    ? loadGeoJSON(handler.localFilePath)
+    ? args.useLocalData
+      ? loadGeoJSON(handler.localFilePath)
+      : await loadRemoteGeoJSON(CA_PED_BOUNDARIES_REMOTE_URL)
     : (
         await extractCABoundariesByLayer(
           expandBBox(bbox, 0.01),
