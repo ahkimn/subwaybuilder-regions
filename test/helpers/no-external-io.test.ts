@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
 import { installNoExternalIoGuards } from './no-external-io';
@@ -29,7 +31,10 @@ describe('installNoExternalIoGuards', () => {
   });
 
   it('restores original fs methods after cleanup', async () => {
-    const testFilePath = `/tmp/no-external-io-restore-${Date.now()}.txt`;
+    const testFilePath = path.join(
+      os.tmpdir(),
+      `no-external-io-restore-${Date.now()}.txt`,
+    );
 
     const guards = installNoExternalIoGuards('restore helper test');
     guards.restore();

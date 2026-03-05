@@ -2,21 +2,18 @@ import path from 'path';
 
 import { SOURCE_DATA_DIR } from '../../shared/constants';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
-import type { Row } from '../utils/files';
-import {
-  buildCSVIndex,
-  loadCSV,
-  loadGeoJSON,
-  loadGeoJSONFromNDJSON,
-} from '../utils/files';
+import { loadGeoJSON, loadGeoJSONFromNDJSON } from '../utils/files';
 import type { BoundaryBox } from '../utils/geometry';
 import { expandBBox } from '../utils/geometry';
 import { renderFeaturePreview } from '../utils/preview';
 import {
+  buildNomisPopulationQuery,
   fetchGeoJSONFromArcGIS,
+  fetchNomisPopulationIndex,
   getBUAONSQuery,
   getDistrictONSQuery,
   getWardONSQuery,
+  getWPCONSQuery,
 } from '../utils/queries';
 import { createDataConfigFromCatalog } from './data-config';
 import type { BoundaryDataHandler, DataConfig } from './handler-types';
@@ -27,7 +24,6 @@ import { processAndSaveBoundaries } from './process';
   Resolution: Full resolution (clipped to coastline)
 */
 const GB_DISTRICT_BOUNDARIES = 'gb_district_boundaries.geojson.gz';
-const GB_DISTRICT_POPULATIONS = 'gb_district_populations.csv';
 
 const DISTRICT_CODE_PROPERTY = 'LAD25CD';
 const DISTRICT_NAME_PROPERTY = 'LAD25NM';
@@ -39,19 +35,26 @@ const DISTRICT_WELSH_NAME_PROPERTY = 'LAD25NMW';
    Resolution: 25m grid squares
 */
 const GB_BUA_BOUNDARIES = 'gb_bua_boundaries.geojson.gz';
-const GB_BUA_POPULATIONS = 'gb_bua_populations.csv';
 
 const BUA_CODE_PROPERTY = 'BUA22CD';
 const BUA_NAME_PROPERTY = 'BUA22NM';
 const BUA_WELSH_NAME_PROPERTY = 'BUA22NMW';
 const BUA_GAELIC_NAME_PROPERTY = 'BUA22NMG';
 
+/* --- Westminster Parliamentary Constituencies (WPC) ---
+  Source: https://geoportal.statistics.gov.uk/datasets/ons::westminster-parliamentary-constituencies-july-2024-boundaries-uk-bgc/about
+  Resolution: Generalized clipped boundaries
+*/
+const GB_WPC_BOUNDARIES = 'gb_wpc_boundaries.geojson.gz';
+const WPC_CODE_PROPERTY = 'PCON24CD';
+const WPC_NAME_PROPERTY = 'PCON24NM';
+const WPC_WELSH_NAME_PROPERTY = 'PCON24NMW';
+
 /* --- Wards (Electoral Divisions) ---
   Source: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2025-boundaries-uk-bfc-v2-1/about
   Resolution: Full resolution (clipped to coastline)
 */
 const GB_WARD_BOUNDARIES = 'gb_ward_boundaries.ndjson.gz';
-const GB_WARD_POPULATIONS = 'gb_ward_populations.csv'; // Out of date; should be updated
 
 const WARD_CODE_PROPERTY = 'WD25CD';
 const WARD_NAME_PROPERTY = 'WD25NM';
@@ -77,6 +80,11 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
     ],
     populationProperty: 'Population',
   }),
+  wpcs: createDataConfigFromCatalog('wpcs', {
+    idProperty: WPC_CODE_PROPERTY,
+    nameProperty: WPC_NAME_PROPERTY,
+    applicableNameProperties: [WPC_WELSH_NAME_PROPERTY, WPC_NAME_PROPERTY],
+  }),
   wards: createDataConfigFromCatalog('wards', {
     idProperty: WARD_CODE_PROPERTY,
     nameProperty: WARD_NAME_PROPERTY,
@@ -85,19 +93,49 @@ const GB_DATA_CONFIGS: Record<string, DataConfig> = {
   }),
 };
 
-const GB_BOUNDARY_DATA_HANDLERS: Record<string, BoundaryDataHandler> = {
+type GBNomisPopulationConfig = {
+  datasetId: 'NM_2002_1' | 'NM_2014_1';
+  geographyTypeCode: number;
+};
+
+type GBBoundaryDataHandler = BoundaryDataHandler & {
+  nomisPopulation: GBNomisPopulationConfig;
+};
+
+const GB_BOUNDARY_DATA_HANDLERS: Record<string, GBBoundaryDataHandler> = {
   districts: {
     dataConfig: GB_DATA_CONFIGS['districts'],
+    nomisPopulation: {
+      datasetId: 'NM_2002_1',
+      geographyTypeCode: 424,
+    },
     extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
       extractDistrictBoundaries(bbox, useLocalData),
   },
   bua: {
     dataConfig: GB_DATA_CONFIGS['bua'],
+    nomisPopulation: {
+      datasetId: 'NM_2014_1',
+      geographyTypeCode: 170,
+    },
     extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
       extractBUABoundaries(bbox, useLocalData),
   },
+  wpcs: {
+    dataConfig: GB_DATA_CONFIGS['wpcs'],
+    nomisPopulation: {
+      datasetId: 'NM_2014_1',
+      geographyTypeCode: 172,
+    },
+    extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
+      extractWPCBoundaries(bbox, useLocalData),
+  },
   wards: {
     dataConfig: GB_DATA_CONFIGS['wards'],
+    nomisPopulation: {
+      datasetId: 'NM_2014_1',
+      geographyTypeCode: 182,
+    },
     extractBoundaries: async (bbox: BoundaryBox, useLocalData?: boolean) =>
       extractWardBoundaries(bbox, useLocalData),
   },
@@ -112,15 +150,7 @@ async function extractDistrictBoundaries(
     : await fetchGeoJSONFromArcGIS(getDistrictONSQuery(bbox), {
         featureType: 'districts',
       });
-  const populationCharacteristics: Row[] = useLocal
-    ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_DISTRICT_POPULATIONS))
-    : [];
-  const populationIndex: Map<string, string> = buildCSVIndex(
-    populationCharacteristics,
-    'Code',
-    'Population',
-  );
-  return { geoJson: boundaries, populationMap: populationIndex };
+  return { geoJson: boundaries };
 }
 
 async function extractBUABoundaries(
@@ -132,15 +162,7 @@ async function extractBUABoundaries(
     : await fetchGeoJSONFromArcGIS(getBUAONSQuery(bbox), {
         featureType: 'built-up areas',
       });
-  const populationCharacteristics: Row[] = useLocal
-    ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_BUA_POPULATIONS))
-    : [];
-  const populationIndex: Map<string, string> = buildCSVIndex(
-    populationCharacteristics,
-    'Code',
-    'Population',
-  );
-  return { geoJson: boundaries, populationMap: populationIndex };
+  return { geoJson: boundaries };
 }
 
 async function extractWardBoundaries(
@@ -154,16 +176,20 @@ async function extractWardBoundaries(
     : await fetchGeoJSONFromArcGIS(getWardONSQuery(bbox), {
         featureType: 'electoral wards',
       });
-  console.log(boundaries.features[0]);
-  const populationCharacteristics: Row[] = useLocal
-    ? loadCSV(path.resolve(SOURCE_DATA_DIR, GB_WARD_POPULATIONS))
-    : [];
-  const populationIndex: Map<string, string> = buildCSVIndex(
-    populationCharacteristics,
-    'Code',
-    'Population',
-  );
-  return { geoJson: boundaries, populationMap: populationIndex };
+  return { geoJson: boundaries };
+}
+
+async function extractWPCBoundaries(
+  bbox: BoundaryBox,
+  useLocal: boolean = false,
+) {
+  const boundaries: GeoJSON.FeatureCollection = useLocal
+    ? loadGeoJSON(path.resolve(SOURCE_DATA_DIR, GB_WPC_BOUNDARIES))
+    : await fetchGeoJSONFromArcGIS(getWPCONSQuery(bbox), {
+        featureType: 'westminster parliamentary constituencies',
+      });
+
+  return { geoJson: boundaries };
 }
 
 export async function extractGBBoundaries(
@@ -174,7 +200,7 @@ export async function extractGBBoundaries(
   if (!handler) {
     throw new Error(`Unsupported data type for GB: ${args.dataType}`);
   }
-  const { geoJson, populationMap } = await handler.extractBoundaries(
+  const { geoJson } = await handler.extractBoundaries(
     expandBBox(bbox, 0.01),
     args.useLocalData,
   );
@@ -182,10 +208,24 @@ export async function extractGBBoundaries(
     renderFeaturePreview(geoJson.features, args.previewCount!);
     return;
   }
+  const populationResult = await fetchNomisPopulationIndex(
+    buildNomisPopulationQuery(
+      handler.nomisPopulation.datasetId,
+      handler.nomisPopulation.geographyTypeCode,
+    ),
+    {
+      featureType: `${handler.dataConfig.displayName.toLowerCase()} populations`,
+    },
+  );
+
+  console.log('[GB] Using NOMIS population date for dataset.', {
+    datasetId: handler.dataConfig.datasetId,
+    date: populationResult.resolvedDateName ?? populationResult.resolvedDate,
+  });
 
   processAndSaveBoundaries(
     geoJson,
-    populationMap,
+    populationResult.populationMap,
     bbox,
     args,
     handler.dataConfig,

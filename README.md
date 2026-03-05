@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.4.1`  
+_Latest Mod Version:_ `v0.4.2`  
 _Latest Tested Game Version:_ `v1.1.0`
-_Latest Changelog Entry:_ [v0.4.1](docs/CHANGELOG.md#v041---2026-03-01)
+_Latest Changelog Entry:_ [v0.4.2](docs/CHANGELOG.md#v042---2026-03-04)
 
 ## Table of Contents
 
@@ -52,8 +52,22 @@ _Latest Changelog Entry:_ [v0.4.1](docs/CHANGELOG.md#v041---2026-03-01)
     - Forward Sortation Areas
   - **GB** (United Kingdom)
     - Local Authority Districts
+    - Westminster Parliamentary Constituencies
     - Built-up Areas
     - Electoral Wards
+  - **FR** (France)
+    - Départements
+    - Arrondissements
+    - Cantons
+    - EPCI
+    - Communes
+  - **AU** (Australia)
+    - Statistical Areas Level 3
+    - Statistical Areas Level 2
+    - Commonwealth Electoral Divisions
+    - State Electoral Divisions
+    - Local Government Areas
+    - Postal Areas
   - **US** (United States)
     - Counties
     - County Subdivisions (including towns/cities/CDPs)
@@ -211,6 +225,8 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
    This CLI has the additional benefit of supporting multiple datasets per city, as shown above
 
    Supported datasets for this runtime CLI are the limited to those having `online` equal to `Yes` in [Preset Dataset Reference](docs/PRESET_DATA_REFERENCE.md).
+
+   :information_source: GB population attachment now uses live NOMIS API responses for all GB datasets (`districts`, `wpcs`, `bua`, `wards`), including when boundaries are loaded from local files (`--use-local-data=true`).
 
    **Rest of the World**
 
@@ -536,7 +552,7 @@ The following are developer commands available within the repository, grouped by
 #### Data Extraction / Serving
 
 - `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview]`: Extracts boundary GeoJSONs for a single city/dataset.
-- `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
+- `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA|FR|AU> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
 - `npm run export -- --city-code=<CITY[,CITY...]>|--all [--include-osm-data] [--output-dir=<DIR>]`: Packages `data/{CITY}` into `export/{CITY}.gz`.
 - `npm run serve -- [--port=<PORT>] [--dir=<RELATIVE_DATA_DIR>]`: Launches a local HTTP server for data files (defaults to project `data/`).
 

@@ -2,9 +2,26 @@
 
 [Back to README](../README.md)
 
+## v0.4.2 - 2026-03-04
+
+_Game version_ v1.1.0
+
+### New Features
+
+- Added GB `wpcs` support for Westminster Parliamentary Constituencies (ONS July 2024 boundaries).
+- Added online fetch support for CA `peds` via hosted `.geojson.gz` source (no longer local-only in runtime fetch flows).
+- Added shared remote compressed GeoJSON loader utility for script pipelines so hosted binary `.geojson.gz` sources can be reused across datasets/countries.
+
+### Other Updates
+
+- GB population attachment is now sourced from NOMIS API for all GB datasets (`districts`, `wpcs`, `bua`, `wards`)
+  - Deprecated local CSV population matching path in GB extraction scripts.
+
 ## v0.4.1 - 2026-03-01
 
 _Game version_ v1.1.0
+
+### New Features
 
 - Added support for French regions
   - Displayed in the `Settings Menu` as `FR`

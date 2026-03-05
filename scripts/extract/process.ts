@@ -39,7 +39,12 @@ export function processAndSaveBoundaries(
   );
 
   if (populationMap && populationMap.size > 0) {
-    attachRegionPopulationData(filteredRegions, populationMap, 'ID');
+    attachRegionPopulationData(
+      filteredRegions,
+      populationMap,
+      'ID',
+      `${countryCode}/${dataConfig.datasetId}`,
+    );
   }
 
   if (!filteredRegions || filteredRegions.length === 0) {
@@ -97,32 +102,45 @@ function attachRegionPopulationData(
   features: Array<Feature<Geometry, GeoJsonProperties>>,
   populationIndex: Map<string, string>,
   idProperty: string,
+  datasetLabel: string,
 ): void {
   const shouldWarnOnMissingPopulation = populationIndex.size > 0;
+  let matchedCount = 0;
+  const missingCodes = new Set<string>();
 
   for (const feature of features) {
     if (feature.properties!.POPULATION != null) {
       continue; // Skip if population already set
     }
 
-    // Name matching is fragile but BUA codes are not consistent between years?
-    const featureCode = feature.properties![idProperty];
+    const featureCodeValue = feature.properties?.[idProperty];
+    const featureCode =
+      typeof featureCodeValue === 'string'
+        ? featureCodeValue
+        : String(featureCodeValue ?? '');
     const featurePopulation = populationIndex.has(featureCode)
       ? parseNumber(populationIndex.get(featureCode)!)
-      : null;
+      : undefined;
 
-    if (featurePopulation !== null) {
+    if (featurePopulation !== undefined) {
       feature.properties = {
         ...feature.properties,
         POPULATION: featurePopulation,
       };
-    } else if (shouldWarnOnMissingPopulation) {
-      console.warn(
-        '  No population data found for feature:',
-        feature.properties!.NAME,
-        ' ID: ',
-        featureCode,
-      );
+      matchedCount += 1;
+    } else if (shouldWarnOnMissingPopulation && featureCode.length > 0) {
+      missingCodes.add(featureCode);
     }
   }
+
+  if (shouldWarnOnMissingPopulation && missingCodes.size > 0) {
+    const missingCodeList = Array.from(missingCodes);
+    console.warn(
+      `[Population] Missing population entries for ${datasetLabel}: ${missingCodeList.length}/${features.length}. Sample IDs: ${missingCodeList.slice(0, 10).join(', ')}`,
+    );
+  }
+
+  console.log(
+    `[Population] Attached population entries for ${datasetLabel}: ${matchedCount}/${features.length}.`,
+  );
 }

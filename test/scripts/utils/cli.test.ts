@@ -11,9 +11,7 @@ import {
   toNonEmptyString,
   toPositiveInteger,
 } from '@scripts/utils/cli';
-import {
-  expectExitCode,
-} from '@test/helpers/script-test-harness';
+import { expectExitCode } from '@test/helpers/script-test-harness';
 import { withScriptHarness } from '@test/helpers/script-test-suite';
 
 describe('scripts/utils/cli utilities', () => {

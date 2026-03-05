@@ -4,9 +4,7 @@ import { describe, it } from 'node:test';
 import { parseFetchArgs } from '../../../scripts/fetch/parse-fetch-args';
 import { validateFetchRequest } from '../../../scripts/fetch/validate-fetch-request';
 import { installNoExternalIoGuards } from '../../helpers/no-external-io';
-import {
-  expectExitCode,
-} from '../../helpers/script-test-harness';
+import { expectExitCode } from '../../helpers/script-test-harness';
 import { withScriptHarness } from '../../helpers/script-test-suite';
 
 describe('scripts/fetch-city-datasets smoke flow (parse + validate)', () => {

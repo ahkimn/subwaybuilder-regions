@@ -1,8 +1,10 @@
 import { arcgisToGeoJSON } from '@terraformer/arcgis';
+import { parse as parseCSV } from 'csv-parse/sync';
 
+import { parseNumber, toNonEmptyString } from './cli';
 import type { BoundaryBox } from './geometry';
 import { bboxToGeometryString, isFeatureCollection } from './geometry';
-import { fetchJsonWithRetry } from './http';
+import { fetchBytesWithRetry, fetchJsonWithRetry } from './http';
 
 const TIGERWEB_API_BASE_URL =
   'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb';
@@ -15,6 +17,7 @@ const AU_ASGS_BASE_URL = 'https://geo.abs.gov.au/arcgis/rest/services/ASGS2021';
 const AU_CENSUS_G01_BASE_URL =
   'https://services1.arcgis.com/v8Kimc579yljmjSP/arcgis/rest/services/ABS_2021_Census_G01_Selected_person_characteristics_by_sex_Beta/FeatureServer';
 const IGN_ADMIN_WFS_BASE_URL = 'https://data.geopf.fr/wfs/wfs';
+const NOMIS_API_BASE_URL = 'https://www.nomisweb.co.uk/api/v01/dataset';
 
 // List of states (by FIPS code) where cities or towns are used as county subdivisions in Census data, rather than minor civil divisions.
 export const STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS = new Set([
@@ -40,22 +43,19 @@ export const STATES_USING_CITIES_AS_COUNTY_SUBDIVISIONS = new Set([
   '55', // Midwest
 ]);
 
-export type ArcGISQueryRequest = {
+export type QueryRequest = {
   url: string;
   params: URLSearchParams;
 };
 
-export type WFSQueryRequest = {
-  url: string;
-  params: URLSearchParams;
-};
-
-export type ArcGISFetchOptions = {
+export type FetchOptions = {
   featureType?: string;
 };
 
-export type WFSFetchOptions = {
-  featureType?: string;
+export type NomisPopulationFetchResult = {
+  populationMap: Map<string, string>;
+  resolvedDate: string | null;
+  resolvedDateName: string | null;
 };
 
 type ArcGISErrorResponse = {
@@ -155,7 +155,7 @@ export function isValidCountySubdivision(
 
 // --- Census Boundary Queries --- //
 
-export function buildCountyUrl(queryBBox: BoundaryBox): ArcGISQueryRequest {
+export function buildCountyUrl(queryBBox: BoundaryBox): QueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/State_County/MapServer/1/query`,
     params: new URLSearchParams({
@@ -186,7 +186,7 @@ export function buildIgnAdminWfsQuery(
     | 'ADMINEXPRESS-COG-CARTO.LATEST:canton'
     | 'ADMINEXPRESS-COG-CARTO.LATEST:epci'
     | 'ADMINEXPRESS-COG-CARTO.LATEST:commune',
-): WFSQueryRequest {
+): QueryRequest {
   return {
     url: IGN_ADMIN_WFS_BASE_URL,
     params: new URLSearchParams({
@@ -203,7 +203,7 @@ export function buildIgnAdminWfsQuery(
 
 export function buildCountySubdivisionUrl(
   queryBBox: BoundaryBox,
-): ArcGISQueryRequest {
+): QueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/1/query`,
     params: new URLSearchParams({
@@ -223,7 +223,7 @@ export function buildCountySubdivisionUrl(
 export function buildPlacesQuery(
   queryBBox: BoundaryBox,
   layerId: number,
-): ArcGISQueryRequest {
+): QueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/Places_CouSub_ConCity_SubMCD/MapServer/${layerId}/query`,
     params: new URLSearchParams({
@@ -240,7 +240,7 @@ export function buildPlacesQuery(
   };
 }
 
-export function buildZctaUrl(queryBBox: BoundaryBox): ArcGISQueryRequest {
+export function buildZctaUrl(queryBBox: BoundaryBox): QueryRequest {
   return {
     url: `${TIGERWEB_API_BASE_URL}/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1/query`,
     params: new URLSearchParams({
@@ -313,8 +313,8 @@ function normalizeArcGISResponse(data: unknown): GeoJSON.GeoJSON {
 }
 
 export async function fetchGeoJSONFromArcGIS(
-  request: ArcGISQueryRequest,
-  options?: ArcGISFetchOptions,
+  request: QueryRequest,
+  options?: FetchOptions,
 ): Promise<GeoJSON.FeatureCollection> {
   const featureType = options?.featureType ?? 'features';
 
@@ -351,8 +351,8 @@ export async function fetchGeoJSONFromArcGIS(
 }
 
 export async function fetchArcGISAttributes(
-  request: ArcGISQueryRequest,
-  options?: ArcGISFetchOptions,
+  request: QueryRequest,
+  options?: FetchOptions,
 ): Promise<Array<Record<string, unknown>>> {
   const featureType = options?.featureType ?? 'features';
 
@@ -389,8 +389,8 @@ export async function fetchArcGISAttributes(
 }
 
 export async function fetchGeoJSONFromWFS(
-  request: WFSQueryRequest,
-  options?: WFSFetchOptions,
+  request: QueryRequest,
+  options?: FetchOptions,
 ): Promise<GeoJSON.FeatureCollection> {
   const featureType = options?.featureType ?? 'features';
   const requestUrl = new URL(request.url);
@@ -415,6 +415,132 @@ export async function fetchGeoJSONFromWFS(
     url: request.url,
   });
   return geoJson;
+}
+
+// --- GB Nomis Population Queries --- //
+
+type NomisDatasetId = 'NM_2002_1' | 'NM_2014_1';
+
+type NomisPopulationRow = {
+  GEOGRAPHY_CODE?: string;
+  OBS_VALUE?: string;
+  DATE?: string;
+  DATE_CODE?: string;
+  DATE_NAME?: string;
+  [key: string]: string | undefined;
+};
+
+function parseNomisPopulationCsvRows(
+  csvText: string,
+  requestUrl: string,
+): NomisPopulationRow[] {
+  let rows: NomisPopulationRow[];
+  try {
+    rows = parseCSV(csvText, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    }) as NomisPopulationRow[];
+  } catch (error) {
+    throw new Error(
+      `[NOMIS] Failed to parse CSV response for ${requestUrl}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+
+  if (rows.length === 0) {
+    const normalizedText = csvText.trim().replace(/^\uFEFF/, '');
+    const csvHeader = normalizedText.split(/\r?\n/, 1)[0] ?? '';
+    const hasExpectedHeaders =
+      csvHeader.includes('GEOGRAPHY_CODE') && csvHeader.includes('OBS_VALUE');
+
+    if (normalizedText.length > 0 && !hasExpectedHeaders) {
+      const snippet = normalizedText.slice(0, 180).replace(/\s+/g, ' ');
+      throw new Error(
+        `[NOMIS] Unexpected CSV response shape for ${requestUrl}. Body starts with: ${snippet}`,
+      );
+    }
+
+    return [];
+  }
+
+  const firstRow = rows[0];
+  if (
+    !Object.prototype.hasOwnProperty.call(firstRow, 'GEOGRAPHY_CODE') ||
+    !Object.prototype.hasOwnProperty.call(firstRow, 'OBS_VALUE')
+  ) {
+    const snippet = csvText.slice(0, 180).replace(/\s+/g, ' ');
+    throw new Error(
+      `[NOMIS] Unexpected CSV response shape for ${requestUrl}. Body starts with: ${snippet}`,
+    );
+  }
+
+  return rows;
+}
+
+export function buildNomisPopulationQuery(
+  datasetId: NomisDatasetId,
+  geographyTypeCode: number,
+): QueryRequest {
+  return {
+    url: `${NOMIS_API_BASE_URL}/${datasetId}.data.csv`,
+    params: new URLSearchParams({
+      geography: `TYPE${geographyTypeCode}`,
+      gender: '0',
+      c_age: '200',
+      measures: '20100',
+      // date=latest currently resolves to DATE=2024 in live NOMIS responses (verified 2026-03-05).
+      date: 'latest',
+    }),
+  };
+}
+
+export async function fetchNomisPopulationIndex(
+  request: QueryRequest,
+  options?: FetchOptions,
+): Promise<NomisPopulationFetchResult> {
+  const featureType = options?.featureType ?? 'populations';
+  const requestUrl = new URL(request.url);
+  requestUrl.search = request.params.toString();
+
+  const responseBytes = await fetchBytesWithRetry(requestUrl, undefined, {
+    label: 'NOMIS',
+  });
+  const csvText = responseBytes.toString('utf8');
+  const rows = parseNomisPopulationCsvRows(csvText, requestUrl.toString());
+  const populationMap = new Map<string, string>();
+  const firstRow = rows[0];
+
+  for (const row of rows) {
+    const geographyCode = toNonEmptyString(row['GEOGRAPHY_CODE']);
+    const populationValue = parseNumber(row['OBS_VALUE']);
+    if (
+      !geographyCode ||
+      populationValue === undefined ||
+      populationValue < 0
+    ) {
+      continue;
+    }
+    populationMap.set(geographyCode, String(populationValue));
+  }
+
+  const resolvedDate =
+    toNonEmptyString(firstRow?.DATE_CODE) ?? toNonEmptyString(firstRow?.DATE);
+  const resolvedDateName = toNonEmptyString(firstRow?.DATE_NAME) ?? null;
+
+  console.log('[NOMIS] Query completed.', {
+    featureType,
+    geographyCount: populationMap.size,
+    resolvedDate: resolvedDateName ?? resolvedDate,
+    url: request.url,
+  });
+
+  return {
+    populationMap,
+    resolvedDate: resolvedDate ?? null,
+    resolvedDateName,
+  };
 }
 
 // --- Census Population Queries --- //
@@ -603,7 +729,7 @@ export function buildONSArcGISQuery(
   baseServiceUrl: string,
   layerId: number,
   queryBBox: BoundaryBox,
-): ArcGISQueryRequest {
+): QueryRequest {
   return {
     url: `${baseServiceUrl}/${layerId}/query`,
     params: new URLSearchParams({
@@ -624,7 +750,7 @@ export function buildCAStatCanArcGISQuery(
   queryBBox: BoundaryBox,
   layerId: number,
   outFields: string = '*',
-): ArcGISQueryRequest {
+): QueryRequest {
   return {
     url: `${CA_STATCAN_BASE_URL}${layerId}/query`,
     params: new URLSearchParams({
@@ -648,7 +774,7 @@ export function buildAUASGSBoundaryQuery(
   boundaryType: AUASGSBoundaryType,
   layerId: number,
   outFields: string,
-): ArcGISQueryRequest {
+): QueryRequest {
   return {
     url: `${AU_ASGS_BASE_URL}/${boundaryType}/MapServer/${layerId}/query`,
     params: new URLSearchParams({
@@ -669,7 +795,7 @@ export function buildAUCensusPopulationQuery(
   queryBBox: BoundaryBox,
   layerId: number,
   outFields: string,
-): ArcGISQueryRequest {
+): QueryRequest {
   return {
     url: `${AU_CENSUS_G01_BASE_URL}/${layerId}/query`,
     params: new URLSearchParams({
@@ -686,9 +812,7 @@ export function buildAUCensusPopulationQuery(
   };
 }
 
-export function getDistrictONSQuery(
-  queryBBox: BoundaryBox,
-): ArcGISQueryRequest {
+export function getDistrictONSQuery(queryBBox: BoundaryBox): QueryRequest {
   return buildONSArcGISQuery(
     `${ONS_API_BASE_URL}/LAD_MAY_2025_UK_BFC_V2/FeatureServer`,
     0,
@@ -696,7 +820,7 @@ export function getDistrictONSQuery(
   );
 }
 
-export function getBUAONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
+export function getBUAONSQuery(queryBBox: BoundaryBox): QueryRequest {
   return buildONSArcGISQuery(
     `${ONS_API_BASE_URL}/BUA_2022_GB/FeatureServer`,
     0,
@@ -704,7 +828,15 @@ export function getBUAONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
   );
 }
 
-export function getWardONSQuery(queryBBox: BoundaryBox): ArcGISQueryRequest {
+export function getWPCONSQuery(queryBBox: BoundaryBox): QueryRequest {
+  return buildONSArcGISQuery(
+    `${ONS_API_BASE_URL}/Westminster_Parliamentary_Constituencies_July_2024_Boundaries_UK_BGC/FeatureServer`,
+    0,
+    queryBBox,
+  );
+}
+
+export function getWardONSQuery(queryBBox: BoundaryBox): QueryRequest {
   return buildONSArcGISQuery(
     `${ONS_API_BASE_URL}/WD_MAY_2025_UK_BFC_V2/FeatureServer`,
     0,
