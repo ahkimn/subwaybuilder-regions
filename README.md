@@ -226,6 +226,8 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    Supported datasets for this runtime CLI are the limited to those having `online` equal to `Yes` in [Preset Dataset Reference](docs/PRESET_DATA_REFERENCE.md).
 
+   :information_source: GB population attachment now uses live NOMIS API responses for all GB datasets (`districts`, `wpcs`, `bua`, `wards`), including when boundaries are loaded from local files (`--use-local-data=true`).
+
    **Rest of the World**
 
    For the rest of the world, the mod supports boundary fetching via OSM by admin level. Valid combinations are set in `source_data/osm-country-admin-levels.json`

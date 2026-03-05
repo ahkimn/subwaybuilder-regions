@@ -6,7 +6,7 @@ This document lists valid preset combinations for `scripts/extract-map-features.
 - `--data-type=<DATASET_ID>`
 
 The `Online` column indicates whether the dataset is currently available through an online source in runtime/dev fetch flows.
-The `Population Data` column indicates whether population dataset can also be fetched Online, or is limited to the dev-flow from local source data
+The `Population Data` column indicates whether population data can be attached from online sources during extraction.
 
 | `country-code` | `data-type`         | Description                              | Source                            | Online | Population Data |
 | -------------- | ------------------- | ---------------------------------------- | --------------------------------- | ------ | --------------- |
@@ -17,10 +17,10 @@ The `Population Data` column indicates whether population dataset can also be fe
 | **CA**         | peds                | Provincial Electoral Districts           | CA Provincial Electoral Districts | Yes    | None            |
 | **CA**         | csds                | Census Subdivisions                      | CA Statistics Canada              | Yes    | None            |
 | **CA**         | fsas                | Forward Sortation Areas                  | CA Statistics Canada              | Yes    | None            |
-| **GB**         | districts           | Districts                                | UK ONS                            | Yes    | Local           |
-| **GB**         | wpcs                | Westminster Parliamentary Constituencies | UK ONS                            | Yes    | None            |
-| **GB**         | bua                 | Built-Up Areas                           | UK ONS                            | Yes    | Local           |
-| **GB**         | wards               | Electoral Wards                          | UK ONS                            | Yes    | Local           |
+| **GB**         | districts           | Districts                                | UK ONS                            | Yes    | Online (NOMIS)  |
+| **GB**         | wpcs                | Westminster Parliamentary Constituencies | UK ONS                            | Yes    | Online (NOMIS)  |
+| **GB**         | bua                 | Built-Up Areas                           | UK ONS                            | Yes    | Online (NOMIS)  |
+| **GB**         | wards               | Electoral Wards                          | UK ONS                            | Yes    | Online (NOMIS)  |
 | **FR**         | departments         | Départements                             | FR IGN GéoPF                      | Yes    | Online          |
 | **FR**         | arrondissements     | Arrondissements                          | FR IGN GéoPF                      | Yes    | Online          |
 | **FR**         | cantons             | Cantons                                  | FR IGN GéoPF                      | Yes    | Online          |
