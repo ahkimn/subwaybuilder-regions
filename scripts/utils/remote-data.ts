@@ -3,15 +3,12 @@ import { gunzipSync } from 'zlib';
 import { isFeatureCollection } from './geometry';
 import { fetchBytesWithRetry } from './http';
 
-function isGzipBuffer(url: string, payload: Buffer): boolean {
-  return (
-    url.toLowerCase().endsWith('.gz') ||
-    (payload.length >= 2 && payload[0] === 0x1f && payload[1] === 0x8b)
-  );
+function isGzipBuffer(payload: Buffer): boolean {
+  return payload.length >= 2 && payload[0] === 0x1f && payload[1] === 0x8b;
 }
 
 function decodeRemotePayload(url: string, payload: Buffer): string {
-  if (!isGzipBuffer(url, payload)) {
+  if (!isGzipBuffer(payload)) {
     return payload.toString('utf8');
   }
 

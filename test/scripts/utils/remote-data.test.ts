@@ -52,6 +52,29 @@ describe('scripts/utils/remote-data', () => {
     }
   });
 
+  it('loads plain JSON payloads even when URL ends with .gz', async () => {
+    const originalFetch = globalThis.fetch;
+
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify(createFeatureCollection()), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+          'content-encoding': 'gzip',
+        },
+      })) as FetchType;
+
+    try {
+      const loaded = await loadRemoteGeoJSON(
+        'https://example.com/test.geojson.gz',
+      );
+      assert.equal(loaded.type, 'FeatureCollection');
+      assert.deepEqual(loaded.features, []);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it('throws when payload is not a feature collection', async () => {
     const originalFetch = globalThis.fetch;
 
@@ -91,7 +114,7 @@ describe('scripts/utils/remote-data', () => {
     }
   });
 
-  it('throws when .gz payload is not actually gzip-compressed', async () => {
+  it('throws parse error when non-JSON payload is served at .gz URL', async () => {
     const originalFetch = globalThis.fetch;
 
     globalThis.fetch = (async () =>
@@ -102,7 +125,7 @@ describe('scripts/utils/remote-data', () => {
     try {
       await assert.rejects(
         () => loadRemoteGeoJSON('https://example.com/not-gzip.geojson.gz'),
-        /Failed to decompress gzip payload/,
+        /Failed to parse JSON payload/,
       );
     } finally {
       globalThis.fetch = originalFetch;
