@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.4.4`  
+_Latest Mod Version:_ `v0.4.5`  
 _Latest Tested Game Version:_ `v1.1.0`
-_Latest Changelog Entry:_ [v0.4.4](docs/CHANGELOG.md#v044---2026-03-04)
+_Latest Changelog Entry:_ [v0.4.5](docs/CHANGELOG.md#v044---2026-03-04)
 
 ## Table of Contents
 
@@ -560,7 +560,7 @@ The following are developer commands available within the repository, grouped by
 
 - `npm run build:fetch-cli`: Bundles runtime fetch CLI for release (`dist/tools/fetch-cli.cjs`).
 - `npm run release:version`: Resolves the latest release version from the top `docs/CHANGELOG.md` entry.
-- `npm run release:package`: Builds the mod + fetch CLI and creates the release zip in `release/`.
+- `npm run release:package`: Builds the mod + fetch CLI and creates release assets in `release/` (`subwaybuilder-regions-vX.Y.Z.zip` + `manifest.json`).
 
 ### Release Process
 

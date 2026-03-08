@@ -64,7 +64,9 @@ jobs:
         with:
           tag_name: ${{ steps.release_version.outputs.value }}
           name: ${{ steps.release_version.outputs.value }}
-          files: release/subwaybuilder-regions-${{ steps.release_version.outputs.value }}.zip
+          files: |
+            release/subwaybuilder-regions-${{ steps.release_version.outputs.value }}.zip
+            release/manifest.json
           body_path: release_notes.md
           generate_release_notes: false
           target_commitish: ${{ github.sha }}

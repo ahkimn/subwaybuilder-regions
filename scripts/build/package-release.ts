@@ -29,6 +29,7 @@ const fetchShellWrapperPath = path.join(rootDir, 'fetch.sh');
 const changelogPath = path.join(rootDir, 'docs', 'CHANGELOG.md');
 const outputDir = path.join(rootDir, 'release');
 const stagingDir = path.join(outputDir, '.staging');
+const releaseManifestPath = path.join(outputDir, 'manifest.json');
 
 function ensurePathExists(filePath: string): void {
   if (!existsSync(filePath)) {
@@ -116,6 +117,8 @@ function main(): void {
   mkdirSync(stagingDir, { recursive: true });
   mkdirSync(outputDir, { recursive: true });
 
+  // Also export manifest as a standalone release asset.
+  copyFileSync(manifestPath, releaseManifestPath);
   copyFileSync(manifestPath, path.join(stagingDir, 'manifest.json'));
   copyFileSync(bundlePath, path.join(stagingDir, 'index.js'));
   copyFileSync(fetchPowershellWrapperPath, path.join(stagingDir, 'fetch.ps1'));
@@ -128,7 +131,7 @@ function main(): void {
   rmSync(stagingDir, { recursive: true, force: true });
 
   console.log(
-    `[Regions] Release package generated: ${zipPath} (version ${releaseVersion.withV})`,
+    `[Regions] Release package generated: ${zipPath} and ${releaseManifestPath} (version ${releaseVersion.withV})`,
   );
 }
 

@@ -4,11 +4,12 @@
 
 This document describes the release flow for publishing a GitHub Release package for end users.
 
-## Release Artifact
+## Release Artifacts
 
-Each release publishes one zip asset:
+Each release publishes:
 
 - `subwaybuilder-regions-vX.Y.Z.zip`
+- `manifest.json`
 
 The zip contains only:
 
@@ -46,6 +47,7 @@ On push of `v*` tag, the release workflow:
 5. Publishes GitHub Release with:
    - tag/name `vX.Y.Z`
    - release zip asset
+   - standalone `manifest.json` asset
    - changelog-derived release notes
 
 ## Notes
