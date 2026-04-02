@@ -13,10 +13,12 @@ import polylabel from 'polylabel';
 import {
   bboxIntersects,
   isFullyWithinBBox,
+  isFullyWithinFeature,
   isPolygonFeature,
 } from '../../src/core/geometry/helpers';
 import type { DataConfig } from '../extract/handler-types';
 import { parseNumber } from './cli';
+import { logProgressHeartbeat } from './progress';
 
 // --- Basic Geometry & Helpers --- //
 export type BoundaryBox = {
@@ -225,7 +227,8 @@ export function filterAndClipRegionsToBoundaryGeometry(
   },
 ): Array<Feature<Geometry, GeoJsonProperties>> {
   return filterAndClipRegionsToMask(shapeJSON, boundaryFeature, dataConfig, {
-    withinBoundaryCheck: isFullyWithinBoundaryGeometry,
+    withinBoundaryCheck: (feature, maskFeature) =>
+      isFullyWithinFeature(feature, maskFeature, 'boundary geometry'),
     progressLabel: options?.progressLabel,
     heartbeatPercentStep: options?.heartbeatPercentStep,
   });
@@ -257,37 +260,6 @@ export function buildRegionsWithoutClipping(
   return results;
 }
 
-function isFullyWithinBoundaryGeometry(
-  feature: Feature<Polygon | MultiPolygon>,
-  boundaryFeature: Feature<Polygon | MultiPolygon>,
-): boolean {
-  if (feature.geometry.type === 'Polygon') {
-    return turf.booleanWithin(feature, boundaryFeature);
-  }
-
-  try {
-    for (const coords of feature.geometry.coordinates) {
-      const polygonFeature: Feature<Polygon> = turf.polygon(coords);
-      if (!turf.booleanWithin(polygonFeature, boundaryFeature)) {
-        return false;
-      }
-    }
-  } catch (err) {
-    console.warn(
-      'Error validating MultiPolygon within boundary geometry for feature:',
-      feature.id,
-      ' Error:',
-      err,
-    );
-    return turf.booleanContains(
-      boundaryFeature,
-      turf.bboxPolygon(turf.bbox(feature)),
-    );
-  }
-
-  return true;
-}
-
 function filterAndClipRegionsToMask(
   shapeJSON: GeoJSON.FeatureCollection,
   boundaryFeature: Feature<Polygon | MultiPolygon>,
@@ -313,37 +285,17 @@ function filterAndClipRegionsToMask(
   const totalFeatures = shapeJSON.features.length;
   let processedFeatures = 0;
 
-  const logHeartbeat = () => {
-    if (!progressLabel || totalFeatures <= 0) {
-      return;
-    }
-
-    if (processedFeatures === totalFeatures) {
-      console.log(
-        `[Geometry] ${progressLabel}: ${processedFeatures}/${totalFeatures} (100%)`,
-      );
-      return;
-    }
-
-    const previousPercent = Math.floor(
-      ((processedFeatures - 1) * 100) / totalFeatures,
-    );
-    const currentPercent = Math.floor((processedFeatures * 100) / totalFeatures);
-
-    if (
-      processedFeatures === 1 ||
-      Math.floor(previousPercent / heartbeatPercentStep) !==
-        Math.floor(currentPercent / heartbeatPercentStep)
-    ) {
-      console.log(
-        `[Geometry] ${progressLabel}: ${processedFeatures}/${totalFeatures} (${currentPercent}%)`,
-      );
-    }
-  };
-
   for (const feature of shapeJSON.features) {
     processedFeatures += 1;
-    logHeartbeat();
+    if (progressLabel) {
+      logProgressHeartbeat(
+        '[Geometry]',
+        progressLabel,
+        processedFeatures,
+        totalFeatures,
+        heartbeatPercentStep,
+      );
+    }
 
     if (!isPolygonFeature(feature)) {
       continue;
@@ -355,7 +307,10 @@ function filterAndClipRegionsToMask(
     }
 
     const fullyWithinBoundary = withinBoundaryCheck(feature, boundaryFeature);
-    if (!fullyWithinBoundary && !turf.booleanIntersects(boundaryFeature, feature)) {
+    if (
+      !fullyWithinBoundary &&
+      !turf.booleanIntersects(boundaryFeature, feature)
+    ) {
       continue;
     }
 
@@ -398,6 +353,8 @@ function filterAndClipRegionsToMask(
   return results;
 }
 
+// Basic properties builder for region features, which also handles label point calculation and population/unit type property resolution if applicable. 
+// The source feature is used as the basis for properties like ID and NAME, while the output (potentially clipped) feature is used for calculating label points and area-based properties.
 function buildRegionProperties(
   sourceFeature: Feature<Polygon | MultiPolygon>,
   outputFeature: Feature<Geometry, GeoJsonProperties>,
@@ -406,7 +363,9 @@ function buildRegionProperties(
   unmappedUnitTypeCodes: Set<string>,
 ): GeoJsonProperties {
   const labelCandidates: LabelCandidate[] = getLabelCandidates(
-    fullyWithinBoundary ? sourceFeature : (outputFeature as Feature<Polygon | MultiPolygon>),
+    fullyWithinBoundary
+      ? sourceFeature
+      : (outputFeature as Feature<Polygon | MultiPolygon>),
   );
   const featureProperties = sourceFeature.properties!;
   const primaryLabel =
@@ -418,7 +377,10 @@ function buildRegionProperties(
     NAME: featureProperties[dataConfig.nameProperty]!,
     DISPLAY_NAME: dataConfig.applicableNameProperties
       ?.map((key) => featureProperties[key])
-      .find((value): value is string => typeof value === 'string' && value.trim().length > 0)!,
+      .find(
+        (value): value is string =>
+          typeof value === 'string' && value.trim().length > 0,
+      )!,
     LAT: primaryLabel.lat,
     LNG: primaryLabel.lng,
     LABEL_POINTS: {

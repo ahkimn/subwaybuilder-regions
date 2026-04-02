@@ -39,36 +39,43 @@ export function isPolygonFeature(
   );
 }
 
-export function isFullyWithinBBox(
+export function isFullyWithinFeature(
   feature: Feature<Polygon | MultiPolygon>,
-  bboxPolygon: Feature<Polygon>,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  errorContext = 'boundary',
 ): boolean {
   if (feature.geometry.type === 'Polygon') {
-    return turf.booleanWithin(feature, bboxPolygon);
+    return turf.booleanWithin(feature, boundaryFeature);
   }
+
   try {
     for (const coords of feature.geometry.coordinates) {
-      const poly: Feature<Polygon> = turf.polygon(coords);
-
-      if (!turf.booleanWithin(poly, bboxPolygon)) {
+      const polygonFeature: Feature<Polygon> = turf.polygon(coords);
+      if (!turf.booleanWithin(polygonFeature, boundaryFeature)) {
         return false;
       }
     }
   } catch (err) {
     console.warn(
-      'Error validating MultiPolygon within bbox for feature:',
+      `Error validating MultiPolygon within ${errorContext} for feature:`,
       feature.id,
       ' Error:',
       err,
     );
-    // Fallback check for complex/malformed MultiPolygon geometries
     return turf.booleanContains(
-      bboxPolygon,
+      boundaryFeature,
       turf.bboxPolygon(turf.bbox(feature)),
     );
   }
 
   return true;
+}
+
+export function isFullyWithinBBox(
+  feature: Feature<Polygon | MultiPolygon>,
+  bboxPolygon: Feature<Polygon>,
+): boolean {
+  return isFullyWithinFeature(feature, bboxPolygon, 'bbox');
 }
 
 export function isCoordinateWithinFeature(

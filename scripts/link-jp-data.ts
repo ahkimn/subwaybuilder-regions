@@ -1,7 +1,6 @@
 import fs from 'fs';
-import path from 'path';
-
 import minimist from 'minimist';
+import path from 'path';
 
 import { SOURCE_DATA_DIR } from '../shared/constants';
 
@@ -130,7 +129,9 @@ function ensureSymlink(
       return;
     }
 
-    console.warn(`Target exists and is not a symlink, skipping: ${target.target}`);
+    console.warn(
+      `Target exists and is not a symlink, skipping: ${target.target}`,
+    );
     return;
   }
 
@@ -168,7 +169,9 @@ function main(): void {
   console.log(`JP data source: ${args.externalRepoRoot}`);
   console.log(`JP mirror root: ${jpMirrorRoot}`);
   if (args.forceFileSymlink) {
-    console.log('File targets will be recreated as symlinks without hard-link fallback.');
+    console.log(
+      'File targets will be recreated as symlinks without hard-link fallback.',
+    );
   }
   if (args.dryRun) {
     console.log('Running in dry-run mode. No filesystem changes will be made.');

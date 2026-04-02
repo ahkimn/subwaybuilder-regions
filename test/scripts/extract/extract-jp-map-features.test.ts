@@ -4,20 +4,20 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
-import AdmZip from 'adm-zip';
-import { DBFFile, type FieldDescriptor } from 'dbffile';
-import fs from 'fs-extra';
-import type { Feature, FeatureCollection, Polygon } from 'geojson';
-
-import { DATA_INDEX_FILE } from '@shared/constants';
 import {
   buildMunicipalityPopulationMap,
+  deriveOoazaName,
   extractJPBoundaries,
   formatBilingualName,
   romanizeJapaneseName,
   selectDominantOazaName,
 } from '@scripts/extract/extract-jp-map-features';
 import type { ExtractMapFeaturesArgs } from '@scripts/utils/cli';
+import { DATA_INDEX_FILE } from '@shared/constants';
+import AdmZip from 'adm-zip';
+import { DBFFile, type FieldDescriptor } from 'dbffile';
+import fs from 'fs-extra';
+import type { Feature, FeatureCollection, Polygon } from 'geojson';
 
 type PolygonFeature = Feature<Polygon>;
 
@@ -125,7 +125,12 @@ async function createJPFixture(): Promise<{
   temporaryDirectories.add(root);
   const sourceRoot = path.join(root, 'jp-data');
   const outputRoot = path.join(root, 'output');
-  const bundleRoot = path.join(sourceRoot, 'bundles', 'hakodate', 'phase_inputs');
+  const bundleRoot = path.join(
+    sourceRoot,
+    'bundles',
+    'hakodate',
+    'phase_inputs',
+  );
 
   await fs.ensureDir(bundleRoot);
   await fs.ensureDir(path.join(sourceRoot, 'neighborhood7_boundaries'));
@@ -141,18 +146,15 @@ async function createJPFixture(): Promise<{
     ],
   });
 
-  await writeGeoJson(
-    path.join(bundleRoot, 'boundary.geojson'),
-    {
-      type: 'FeatureCollection',
-      features: [
-        polygonFeature(boundaryPolygonCoordinates, {
-          municipality_codes: ['01101'],
-          pref_codes: ['01'],
-        }),
-      ],
-    },
-  );
+  await writeGeoJson(path.join(bundleRoot, 'boundary.geojson'), {
+    type: 'FeatureCollection',
+    features: [
+      polygonFeature(boundaryPolygonCoordinates, {
+        municipality_codes: ['01101'],
+        pref_codes: ['01'],
+      }),
+    ],
+  });
 
   await writeGeoJson(
     path.join(bundleRoot, 'chocho_selected.geojson'),
@@ -169,7 +171,7 @@ async function createJPFixture(): Promise<{
         ],
         {
           chocho_key: '011010001001',
-          municipality_code: '101',
+          municipality_code: '01101',
           pref_code: '01',
           pop_total: 40,
           chocho_name: '大通一丁目',
@@ -187,7 +189,7 @@ async function createJPFixture(): Promise<{
         ],
         {
           chocho_key: '011010001002',
-          municipality_code: '101',
+          municipality_code: '01101',
           pref_code: '01',
           pop_total: 60,
           chocho_name: '大通二丁目',
@@ -205,7 +207,7 @@ async function createJPFixture(): Promise<{
         ],
         {
           chocho_key: '011010009999',
-          municipality_code: '101',
+          municipality_code: '01101',
           pref_code: '01',
           pop_total: 25,
           chocho_name: '南町',
@@ -266,6 +268,12 @@ async function createJPFixture(): Promise<{
       S_AREA: '100100',
       S_NAME: '大通二丁目',
     },
+    {
+      KEY_CODE: '011010009999',
+      KCODE1: '9999',
+      S_AREA: '999900',
+      S_NAME: '南町',
+    },
   ]);
 
   process.env.SUBWAYBUILDER_JP_DATA_ROOT = sourceRoot;
@@ -290,15 +298,17 @@ function loadOutputGeoJson(
 ): GeoJSON.FeatureCollection {
   const outputPath = path.join(outputRoot, cityCode, `${datasetId}.geojson.gz`);
   const rawOutput = fs.readFileSync(outputPath);
-  return JSON.parse(gunzipSync(rawOutput).toString('utf8')) as GeoJSON.FeatureCollection;
+  return JSON.parse(
+    gunzipSync(rawOutput).toString('utf8'),
+  ) as GeoJSON.FeatureCollection;
 }
 
 describe('scripts/extract/extract-jp-map-features helpers', () => {
-  it('buildMunicipalityPopulationMap_shouldCollapseToFiveDigitMunicipalityCodes', () => {
+  it('buildMunicipalityPopulationMap_shouldAggregateCanonicalFiveDigitMunicipalityCodes', () => {
     const populationMap = buildMunicipalityPopulationMap(
       featureCollection([
         polygonFeature(boundaryPolygonCoordinates, {
-          municipality_code: '101',
+          municipality_code: '01101',
           pref_code: '01',
           pop_total: 40,
         }),
@@ -352,7 +362,16 @@ describe('scripts/extract/extract-jp-map-features helpers', () => {
     assert.equal(formatBilingualName('東京', ''), '東京');
   });
 
+  it('deriveOoazaName_shouldCollapseAzaAndChomeToOoazaLevel', () => {
+    assert.equal(deriveOoazaName('飯野町明治字西喜平蔵内'), '飯野町明治');
+    assert.equal(deriveOoazaName('大通二丁目'), '大通');
+    assert.equal(deriveOoazaName('南町'), '南町');
+  });
+
   it('romanizeJapaneseName_shouldEmitMacronizedHepburn', async () => {
+    assert.equal(await romanizeJapaneseName('大壇'), 'Ōdan');
+    assert.equal(await romanizeJapaneseName('葛尾村'), 'Katsurao Mura');
+    assert.equal(await romanizeJapaneseName('二本松'), 'Nihonmatsu');
     assert.equal(await romanizeJapaneseName('東京'), 'Tōkyō');
   });
 });
@@ -368,7 +387,9 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
     const dataIndex = await fs.readJson(path.join(outputRoot, DATA_INDEX_FILE));
 
     assert.deepEqual(
-      dataIndex['JPTEST'].map((entry: { datasetId: string }) => entry.datasetId),
+      dataIndex['JPTEST'].map(
+        (entry: { datasetId: string }) => entry.datasetId,
+      ),
       ['shichouson', 'ooaza'],
     );
 
@@ -378,12 +399,15 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
     assert.ok(mergedOoaza);
     assert.equal(mergedOoaza.properties?.POPULATION, 100);
     assert.equal(mergedOoaza.properties?.NAME_JA, '大通');
-    assert.equal(mergedOoaza.properties?.DISPLAY_NAME, mergedOoaza.properties?.NAME);
+    assert.equal(
+      mergedOoaza.properties?.DISPLAY_NAME,
+      mergedOoaza.properties?.NAME,
+    );
     assert.equal(mergedOoaza.properties?.WITHIN_BBOX, false);
     assert.match(String(mergedOoaza.properties?.NAME), /\n.+/);
 
     const fallbackOoaza = ooaza.features.find(
-      (feature) => feature.properties?.ID === 'chocho_011010009999',
+      (feature) => feature.properties?.ID === '011019999',
     );
     assert.ok(fallbackOoaza);
     assert.equal(fallbackOoaza.properties?.POPULATION, 25);

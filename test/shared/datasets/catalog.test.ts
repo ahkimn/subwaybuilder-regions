@@ -108,12 +108,12 @@ describe('shared/datasets/catalog JP metadata', () => {
   });
 
   it('marks JP datasets as local-only', () => {
-    assert.equal(DATASET_METADATA_CATALOG['shichouson']?.existsOnlineSource, false);
-    assert.equal(DATASET_METADATA_CATALOG['ooaza']?.existsOnlineSource, false);
     assert.equal(
-      DATASET_METADATA_CATALOG['ooaza']?.displayName,
-      '大字 (Ōaza)',
+      DATASET_METADATA_CATALOG['shichouson']?.existsOnlineSource,
+      false,
     );
+    assert.equal(DATASET_METADATA_CATALOG['ooaza']?.existsOnlineSource, false);
+    assert.equal(DATASET_METADATA_CATALOG['ooaza']?.displayName, '大字 (Ōaza)');
 
     const onlineDatasets = resolveCountryDatasets('JP', { onlineOnly: true });
     assert.deepEqual(onlineDatasets, []);

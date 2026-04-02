@@ -50,7 +50,13 @@ describe('core/registry/static JP release city mapping', () => {
   });
 
   it('prefers the explicit city country when it is already recognized', () => {
-    assert.equal(resolveStaticTemplateCountry({ code: 'HKD', country: 'JP' }), 'JP');
-    assert.equal(resolveStaticTemplateCountry({ code: 'BOS', country: 'US' }), 'US');
+    assert.equal(
+      resolveStaticTemplateCountry({ code: 'HKD', country: 'JP' }),
+      'JP',
+    );
+    assert.equal(
+      resolveStaticTemplateCountry({ code: 'BOS', country: 'US' }),
+      'US',
+    );
   });
 });

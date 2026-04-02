@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.4.5`  
+_Latest Mod Version:_ `v0.4.6`  
 _Latest Tested Game Version:_ `v1.1.0`
-_Latest Changelog Entry:_ [v0.4.5](docs/CHANGELOG.md#v044---2026-03-04)
+_Latest Changelog Entry:_ [v0.4.6](docs/CHANGELOG.md#v046---2026-04-02)
 
 ## Table of Contents
 
@@ -72,6 +72,9 @@ _Latest Changelog Entry:_ [v0.4.5](docs/CHANGELOG.md#v044---2026-03-04)
     - Counties
     - County Subdivisions (including towns/cities/CDPs)
     - ZIP Code Tabulation Areas
+  - **JP** (Japan)
+    - Municipalities (`shichouson`)
+    - Ooaza (`ooaza`)
 
 ## Specifications
 
@@ -205,6 +208,28 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    :warning: If adding boundaries for a custom city, `city-code` must be in `boundaries.csv`
 
+   **Japan (unsupported externally)**
+
+   JP region generation is a local developer workflow only. The JP extraction scripts depend on the private/local `subwaybuilder-jp-data` repository structure and linked source files under `source_data/jp-data/`.
+
+   Before running JP extraction, link the local JP source mirror:
+
+   ```
+   npm run link:jp-data
+   ```
+
+   Then run extraction with a bundle id and city code:
+
+   ```
+   npx tsx scripts/extract-map-features.ts \
+     --country-code=JP \
+     --data-type=all \
+     --bundle=hakodate \
+     --city-code=HKD
+   ```
+
+   :warning: JP extraction is not supported for external users. It is not available through the runtime fetch CLI, `fetch.ps1`, or `fetch.sh`.
+
    **Runtime Fetch CLI (single city, explicit bbox)**
 
    To replicate release/runtime-compatible generation, use the dedicated fetch CLI with explicit bbox and dataset list:
@@ -283,6 +308,8 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
    ```
    npx tsx scripts/export-data-archives.ts --city-code=TOR
    ```
+
+   These exports are `tar.gz` archives rather than `.zip` files. The contained dataset files are typically still stored as `.geojson.gz`, which the mod can read directly after extraction.
 
    Due to varying data quality, boundary data from OSM is excluded by default. To include OSM-sourced datasets in the archive, run:
 

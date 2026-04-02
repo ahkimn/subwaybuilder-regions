@@ -32,6 +32,7 @@ const BOUNDARIES_INDEX_FILE = path.resolve(
   - Custom boundaries provided via fully specified bbox arguments (west, south, east, north)
  */
 async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
+  // Special handling for Japan since the extraction process is completely synced to the local jp-data repository and cannot be executed by any external user
   if (args.countryCode === 'JP') {
     await extractJPBoundaries(args);
     return;
