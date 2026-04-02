@@ -6,6 +6,7 @@ import { extractAUBoundaries } from './extract/extract-au-map-features';
 import { extractCABoundaries } from './extract/extract-ca-map-features';
 import { extractFRBoundaries } from './extract/extract-fr-map-features';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
+import { extractJPBoundaries } from './extract/extract-jp-map-features';
 import { extractWorldMapFeatures } from './extract/extract-row-map-features';
 import { extractUSBoundaries } from './extract/extract-us-map-features';
 import {
@@ -31,6 +32,11 @@ const BOUNDARIES_INDEX_FILE = path.resolve(
   - Custom boundaries provided via fully specified bbox arguments (west, south, east, north)
  */
 async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
+  if (args.countryCode === 'JP') {
+    await extractJPBoundaries(args);
+    return;
+  }
+
   // Default map boundaries for all cities, loaded from CSV
   const cityMapBoundaries = loadBoundariesFromCSV(BOUNDARIES_INDEX_FILE);
   const osmCountryConfig = findOsmCountryConfig(args.countryCode);

@@ -11,6 +11,7 @@ import type {
 import polylabel from 'polylabel';
 
 import {
+  bboxIntersects,
   isFullyWithinBBox,
   isPolygonFeature,
 } from '../../src/core/geometry/helpers';
@@ -194,6 +195,10 @@ export function filterAndClipRegionsToBoundary(
   shapeJSON: GeoJSON.FeatureCollection,
   bbox: BoundaryBox,
   dataConfig: DataConfig,
+  options?: {
+    progressLabel?: string;
+    heartbeatPercentStep?: number;
+  },
 ): Array<Feature<Geometry, GeoJsonProperties>> {
   const bboxPolygon = turf.bboxPolygon([
     bbox.west,
@@ -202,6 +207,34 @@ export function filterAndClipRegionsToBoundary(
     bbox.north,
   ]);
 
+  return filterAndClipRegionsToMask(shapeJSON, bboxPolygon, dataConfig, {
+    withinBoundaryCheck: (feature, boundaryFeature) =>
+      isFullyWithinBBox(feature, boundaryFeature as Feature<Polygon>),
+    progressLabel: options?.progressLabel,
+    heartbeatPercentStep: options?.heartbeatPercentStep,
+  });
+}
+
+export function filterAndClipRegionsToBoundaryGeometry(
+  shapeJSON: GeoJSON.FeatureCollection,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  dataConfig: DataConfig,
+  options?: {
+    progressLabel?: string;
+    heartbeatPercentStep?: number;
+  },
+): Array<Feature<Geometry, GeoJsonProperties>> {
+  return filterAndClipRegionsToMask(shapeJSON, boundaryFeature, dataConfig, {
+    withinBoundaryCheck: isFullyWithinBoundaryGeometry,
+    progressLabel: options?.progressLabel,
+    heartbeatPercentStep: options?.heartbeatPercentStep,
+  });
+}
+
+export function buildRegionsWithoutClipping(
+  shapeJSON: GeoJSON.FeatureCollection,
+  dataConfig: DataConfig,
+): Array<Feature<Geometry, GeoJsonProperties>> {
   const results = new Array<Feature<Geometry, GeoJsonProperties>>();
   const unmappedUnitTypeCodes = new Set<string>();
 
@@ -209,85 +242,216 @@ export function filterAndClipRegionsToBoundary(
     if (!isPolygonFeature(feature)) {
       continue;
     }
-    if (!turf.booleanIntersects(bboxPolygon, feature)) {
-      continue;
-    }
 
-    const intersection = turf.intersect(
-      turf.featureCollection([feature, bboxPolygon]),
-    );
-    const cleanedIntersection = cleanCoords(intersection);
-
-    if (
-      !cleanedIntersection ||
-      cleanedIntersection.geometry.coordinates.length === 0
-    ) {
-      // Handle edge case of touching/malformed geometry
-      console.warn('No valid intersection geometry for feature:', feature.id);
-      continue;
-    }
-
-    const fullyWithinBoundary = isFullyWithinBBox(feature, bboxPolygon);
-    const clippedRegion = fullyWithinBoundary ? feature : cleanedIntersection;
-
-    // Try label with the original (unclipped) geometry if it is fully within the boundary
-    const labelCandidates: LabelCandidate[] = getLabelCandidates(
-      fullyWithinBoundary ? feature : clippedRegion,
-    );
-
-    // Input GeoJSON should include properties; assert this
-    const featureProperties = feature.properties!;
-
-    // Find first label candidate that is within the polygon, otherwise default to the first candidate
-    const primaryLabel =
-      labelCandidates.find((c) => c.withinPolygon) || labelCandidates[0];
-
-    let regionProperties: GeoJsonProperties = {
-      ID: featureProperties[dataConfig.idProperty]!,
-      NAME: featureProperties[dataConfig.nameProperty]!,
-      DISPLAY_NAME: dataConfig.applicableNameProperties
-        ?.map((key) => featureProperties[key])
-        .find(
-          (v): v is string => typeof v === 'string' && v.trim().length > 0,
-        )!,
-      LAT: primaryLabel.lat,
-      LNG: primaryLabel.lng,
-      LABEL_POINTS: {
-        primary: { lat: primaryLabel.lat, lng: primaryLabel.lng },
-        candidates: labelCandidates,
-      },
-      WITHIN_BBOX: fullyWithinBoundary,
-      AREA_WITHIN_BBOX: turf.area(clippedRegion) / 1_000_000,
-      TOTAL_AREA: turf.area(feature) / 1_000_000,
-    };
-
-    if (
-      dataConfig.populationProperty &&
-      featureProperties[dataConfig.populationProperty]
-    ) {
-      const populationValue = featureProperties[dataConfig.populationProperty]!;
-      regionProperties = {
-        ...regionProperties,
-        POPULATION: parseNumber(populationValue),
-      };
-    }
-
-    const unitTypeProperties = resolveUnitTypeProperties(
-      featureProperties,
+    feature.properties = buildRegionProperties(
+      feature,
+      feature,
       dataConfig,
+      true,
       unmappedUnitTypeCodes,
     );
-    if (unitTypeProperties) {
-      regionProperties = {
-        ...regionProperties,
-        ...unitTypeProperties,
-      };
+    feature.id = feature.id;
+    results.push(feature);
+  }
+
+  return results;
+}
+
+function isFullyWithinBoundaryGeometry(
+  feature: Feature<Polygon | MultiPolygon>,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): boolean {
+  if (feature.geometry.type === 'Polygon') {
+    return turf.booleanWithin(feature, boundaryFeature);
+  }
+
+  try {
+    for (const coords of feature.geometry.coordinates) {
+      const polygonFeature: Feature<Polygon> = turf.polygon(coords);
+      if (!turf.booleanWithin(polygonFeature, boundaryFeature)) {
+        return false;
+      }
+    }
+  } catch (err) {
+    console.warn(
+      'Error validating MultiPolygon within boundary geometry for feature:',
+      feature.id,
+      ' Error:',
+      err,
+    );
+    return turf.booleanContains(
+      boundaryFeature,
+      turf.bboxPolygon(turf.bbox(feature)),
+    );
+  }
+
+  return true;
+}
+
+function filterAndClipRegionsToMask(
+  shapeJSON: GeoJSON.FeatureCollection,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  dataConfig: DataConfig,
+  options: {
+    withinBoundaryCheck: (
+      feature: Feature<Polygon | MultiPolygon>,
+      boundaryFeature: Feature<Polygon | MultiPolygon>,
+    ) => boolean;
+    progressLabel?: string;
+    heartbeatPercentStep?: number;
+  },
+): Array<Feature<Geometry, GeoJsonProperties>> {
+  const {
+    withinBoundaryCheck,
+    progressLabel,
+    heartbeatPercentStep = 10,
+  } = options;
+
+  const results = new Array<Feature<Geometry, GeoJsonProperties>>();
+  const unmappedUnitTypeCodes = new Set<string>();
+  const boundaryBBox = turf.bbox(boundaryFeature);
+  const totalFeatures = shapeJSON.features.length;
+  let processedFeatures = 0;
+
+  const logHeartbeat = () => {
+    if (!progressLabel || totalFeatures <= 0) {
+      return;
     }
 
-    clippedRegion.properties = regionProperties;
+    if (processedFeatures === totalFeatures) {
+      console.log(
+        `[Geometry] ${progressLabel}: ${processedFeatures}/${totalFeatures} (100%)`,
+      );
+      return;
+    }
+
+    const previousPercent = Math.floor(
+      ((processedFeatures - 1) * 100) / totalFeatures,
+    );
+    const currentPercent = Math.floor((processedFeatures * 100) / totalFeatures);
+
+    if (
+      processedFeatures === 1 ||
+      Math.floor(previousPercent / heartbeatPercentStep) !==
+        Math.floor(currentPercent / heartbeatPercentStep)
+    ) {
+      console.log(
+        `[Geometry] ${progressLabel}: ${processedFeatures}/${totalFeatures} (${currentPercent}%)`,
+      );
+    }
+  };
+
+  for (const feature of shapeJSON.features) {
+    processedFeatures += 1;
+    logHeartbeat();
+
+    if (!isPolygonFeature(feature)) {
+      continue;
+    }
+
+    const featureBBox = turf.bbox(feature);
+    if (!bboxIntersects(boundaryBBox, featureBBox)) {
+      continue;
+    }
+
+    const fullyWithinBoundary = withinBoundaryCheck(feature, boundaryFeature);
+    if (!fullyWithinBoundary && !turf.booleanIntersects(boundaryFeature, feature)) {
+      continue;
+    }
+
+    let clippedRegion: Feature<Geometry, GeoJsonProperties>;
+    if (fullyWithinBoundary) {
+      clippedRegion = feature;
+    } else {
+      const intersection = turf.intersect(
+        turf.featureCollection([feature, boundaryFeature]),
+      );
+      if (!intersection) {
+        console.warn('No valid intersection geometry for feature:', feature.id);
+        continue;
+      }
+
+      const cleanedIntersection = cleanCoords(intersection);
+      if (
+        !cleanedIntersection ||
+        cleanedIntersection.geometry.coordinates.length === 0
+      ) {
+        // Handle edge case of touching/malformed geometry
+        console.warn('No valid intersection geometry for feature:', feature.id);
+        continue;
+      }
+
+      clippedRegion = cleanedIntersection;
+    }
+
+    clippedRegion.properties = buildRegionProperties(
+      feature,
+      clippedRegion,
+      dataConfig,
+      fullyWithinBoundary,
+      unmappedUnitTypeCodes,
+    );
     clippedRegion.id = feature.id;
 
     results.push(clippedRegion);
   }
   return results;
+}
+
+function buildRegionProperties(
+  sourceFeature: Feature<Polygon | MultiPolygon>,
+  outputFeature: Feature<Geometry, GeoJsonProperties>,
+  dataConfig: DataConfig,
+  fullyWithinBoundary: boolean,
+  unmappedUnitTypeCodes: Set<string>,
+): GeoJsonProperties {
+  const labelCandidates: LabelCandidate[] = getLabelCandidates(
+    fullyWithinBoundary ? sourceFeature : (outputFeature as Feature<Polygon | MultiPolygon>),
+  );
+  const featureProperties = sourceFeature.properties!;
+  const primaryLabel =
+    labelCandidates.find((candidate) => candidate.withinPolygon) ||
+    labelCandidates[0];
+
+  let regionProperties: GeoJsonProperties = {
+    ID: featureProperties[dataConfig.idProperty]!,
+    NAME: featureProperties[dataConfig.nameProperty]!,
+    DISPLAY_NAME: dataConfig.applicableNameProperties
+      ?.map((key) => featureProperties[key])
+      .find((value): value is string => typeof value === 'string' && value.trim().length > 0)!,
+    LAT: primaryLabel.lat,
+    LNG: primaryLabel.lng,
+    LABEL_POINTS: {
+      primary: { lat: primaryLabel.lat, lng: primaryLabel.lng },
+      candidates: labelCandidates,
+    },
+    WITHIN_BBOX: fullyWithinBoundary,
+    AREA_WITHIN_BBOX: turf.area(outputFeature) / 1_000_000,
+    TOTAL_AREA: turf.area(sourceFeature) / 1_000_000,
+  };
+
+  if (
+    dataConfig.populationProperty &&
+    featureProperties[dataConfig.populationProperty] != null
+  ) {
+    const populationValue = featureProperties[dataConfig.populationProperty]!;
+    regionProperties = {
+      ...regionProperties,
+      POPULATION: parseNumber(populationValue),
+    };
+  }
+
+  const unitTypeProperties = resolveUnitTypeProperties(
+    featureProperties,
+    dataConfig,
+    unmappedUnitTypeCodes,
+  );
+  if (unitTypeProperties) {
+    regionProperties = {
+      ...regionProperties,
+      ...unitTypeProperties,
+    };
+  }
+
+  return regionProperties;
 }

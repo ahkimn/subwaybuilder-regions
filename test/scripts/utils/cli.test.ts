@@ -5,6 +5,7 @@ import {
   getBBoxFromArgs,
   hasExplicitBBox,
   parseExportArgs,
+  parseExtractArgs,
   parseNumber,
   requireNumber,
   requireString,
@@ -165,5 +166,51 @@ describe('scripts/utils/cli utilities', () => {
       outputDir: 'archives',
     });
     assert.equal(harness.calls.error.length, 0);
+  });
+
+  it('parseExtractArgs_shouldParseJPBundleAndAllDataType_whenValid', () => {
+    const args = parseExtractArgs([
+      '--data-type',
+      'all',
+      '--city-code',
+      'hak',
+      '--country-code',
+      'JP',
+      '--bundle',
+      'hakodate',
+    ]);
+
+    assert.deepEqual(args, {
+      dataType: 'all',
+      cityCode: 'hak',
+      countryCode: 'JP',
+      bundle: 'hakodate',
+      south: undefined,
+      west: undefined,
+      north: undefined,
+      east: undefined,
+      useLocalData: false,
+      compress: true,
+      preview: false,
+      previewCount: 5,
+    });
+    assert.equal(harness.calls.error.length, 0);
+  });
+
+  it('parseExtractArgs_shouldExitWithCode1_whenJPBundleIsMissing', async () => {
+    await expectExitCode(
+      () =>
+        parseExtractArgs([
+          '--data-type',
+          'all',
+          '--city-code',
+          'hak',
+          '--country-code',
+          'JP',
+        ]),
+      1,
+      'Missing or invalid argument: --bundle',
+      harness.calls.error,
+    );
   });
 });

@@ -97,3 +97,25 @@ describe('shared/datasets/catalog AU metadata', () => {
     }
   });
 });
+
+describe('shared/datasets/catalog JP metadata', () => {
+  it('includes JP in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('JP'));
+  });
+
+  it('resolves JP dataset order', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('JP'), ['shichouson', 'ooaza']);
+  });
+
+  it('marks JP datasets as local-only', () => {
+    assert.equal(DATASET_METADATA_CATALOG['shichouson']?.existsOnlineSource, false);
+    assert.equal(DATASET_METADATA_CATALOG['ooaza']?.existsOnlineSource, false);
+    assert.equal(
+      DATASET_METADATA_CATALOG['ooaza']?.displayName,
+      '大字 (Ōaza)',
+    );
+
+    const onlineDatasets = resolveCountryDatasets('JP', { onlineOnly: true });
+    assert.deepEqual(onlineDatasets, []);
+  });
+});

@@ -5,7 +5,7 @@ import minimist from 'minimist';
 import type { BoundaryBox } from './geometry';
 import { getSupportedCountryCodes } from './osm-country-config';
 
-const BUILT_IN_COUNTRY_CODES = ['AU', 'CA', 'FR', 'GB', 'US'];
+const BUILT_IN_COUNTRY_CODES = ['AU', 'CA', 'FR', 'GB', 'JP', 'US'];
 
 function getAvailableCountryCodes(): Set<string> {
   return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);
@@ -15,6 +15,7 @@ export type ExtractMapFeaturesArgs = {
   dataType: string;
   cityCode: string;
   countryCode: string;
+  bundle?: string;
   south?: number;
   west?: number;
   north?: number;
@@ -122,9 +123,9 @@ export function getBBoxFromArgs<T extends CoordinateBoxArgs>(
 
 // --- Argument Parsing for Boundary Extraction --- //
 
-export function parseArgs(): ExtractMapFeaturesArgs {
-  let argv = minimist(process.argv.slice(2), {
-    string: ['data-type', 'city-code', 'country-code'],
+export function parseExtractArgs(argvInput: string[]): ExtractMapFeaturesArgs {
+  const argv = minimist(argvInput, {
+    string: ['data-type', 'city-code', 'country-code', 'bundle'],
     boolean: ['compress', 'use-local-data', 'preview'],
     default: {
       compress: true,
@@ -152,12 +153,18 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     argv.countryCode ?? argv['country-code'],
     'country-code',
   );
+  const bundle = toNonEmptyString(argv.bundle);
   const availableCountryCodes = getAvailableCountryCodes();
 
   if (!availableCountryCodes.has(countryCode)) {
     console.error(
       `Unsupported country code: ${countryCode}, supported codes are: ${Array.from(availableCountryCodes).join(', ')}`,
     );
+    process.exit(1);
+  }
+
+  if (countryCode === 'JP' && !bundle) {
+    console.error('Missing or invalid argument: --bundle');
     process.exit(1);
   }
 
@@ -177,6 +184,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     dataType: dataType,
     countryCode: countryCode,
     cityCode: cityCode,
+    bundle: bundle,
     south: south,
     west: west,
     north: north,
@@ -190,6 +198,7 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     dataType: dataType!,
     cityCode: cityCode!,
     countryCode: countryCode!,
+    bundle: bundle,
     south: south,
     west: west,
     north: north,
@@ -199,6 +208,10 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     preview: preview,
     previewCount: DEFAULT_PREVIEW_COUNT,
   };
+}
+
+export function parseArgs(): ExtractMapFeaturesArgs {
+  return parseExtractArgs(process.argv.slice(2));
 }
 
 // --- Argument Parsing for Exporting Archives --- //

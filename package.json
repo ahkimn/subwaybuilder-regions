@@ -1,9 +1,9 @@
 {
   "devDependencies": {
+    "@terraformer/arcgis": "^2.1.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@terraformer/arcgis": "^2.1.2",
     "@types/fs-extra": "^11.0.4",
     "@types/minimist": "^1.2.5",
     "@types/node": "^25.0.10",
@@ -26,8 +26,12 @@
   },
   "dependencies": {
     "@turf/turf": "^7.3.3",
+    "adm-zip": "^0.5.17",
     "csv-parse": "^6.1.0",
+    "dbffile": "^1.12.0",
     "fs-extra": "^11.3.3",
+    "kuroshiro": "^1.2.0",
+    "kuroshiro-analyzer-kuromoji": "^1.1.0",
     "maplibre-gl": "^5.16.0",
     "minimist": "^1.2.8",
     "path": "^0.12.7",
@@ -50,6 +54,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "link": "tsx scripts/link.ts",
+    "link:jp-data": "tsx scripts/link-jp-data.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\" \"test/**/*.{ts,tsx}\" --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",

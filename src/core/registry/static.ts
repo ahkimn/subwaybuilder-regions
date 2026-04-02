@@ -12,6 +12,36 @@ export type StaticDatasetTemplate = Omit<
   'size' | 'fileSizeMB'
 >;
 
+const JP_RELEASE_CITY_CODES = [
+  'AKJ',
+  'AOJ',
+  'FKS',
+  'FUK',
+  'GAJ',
+  'HKD',
+  'HIJ',
+  'ITM',
+  'IZO',
+  'UKB',
+  'KCZ',
+  'KIJ',
+  'KKJ',
+  'KMQ',
+  'KOJ',
+  'MYJ',
+  'NGO',
+  'NGS',
+  'OKA',
+  'OKJ',
+  'QUT',
+  'SDJ',
+  'FSZ',
+  'SPK',
+  'TAK',
+  'TOY',
+  'UKY',
+] as const;
+
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   Record<string, string>
 > = Object.freeze({
@@ -23,6 +53,9 @@ export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   EDM: 'CA',
   WPG: 'CA',
   QC: 'CA',
+  ...Object.fromEntries(
+    JP_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'JP']),
+  ),
 });
 
 export const STATIC_TEMPLATES: Map<string, readonly StaticDatasetTemplate[]> =
@@ -40,6 +73,14 @@ function normalizeTemplateCountryCode(countryCode: string): string {
   return countryCode;
 }
 
+function normalizeTemplateCityCode(cityCode: string): string {
+  const normalizedCode = cityCode.trim().toUpperCase();
+  if (/^[A-Z]{3}X$/.test(normalizedCode)) {
+    return normalizedCode.slice(0, 3);
+  }
+  return normalizedCode;
+}
+
 export function resolveStaticTemplateCountry(
   city: Pick<City, 'code' | 'country'>,
 ): string | null {
@@ -50,7 +91,8 @@ export function resolveStaticTemplateCountry(
     }
   }
 
-  const mappedCountry = STATIC_CUSTOM_CITY_COUNTRY_MAPPING[city.code];
+  const mappedCountry =
+    STATIC_CUSTOM_CITY_COUNTRY_MAPPING[normalizeTemplateCityCode(city.code)];
   if (!mappedCountry) {
     return null;
   }
