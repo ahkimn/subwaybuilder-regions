@@ -25,7 +25,6 @@ export type FetchState = {
   isOpeningModsFolder: boolean;
   isCountryAutoResolved: boolean;
   lastCopiedRequest: LastCopiedFetchRequest | null;
-  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
   lastValidationResult: FetchValidationResult | null;
 };
 
@@ -66,10 +65,6 @@ export type RegionsSettingsAction =
   | { type: 'set_is_opening_mods_folder'; value: boolean }
   | {
       type: 'set_last_copied_fetch_request';
-      request: LastCopiedFetchRequest | null;
-    }
-  | {
-      type: 'set_last_opened_mods_folder_request';
       request: LastCopiedFetchRequest | null;
     }
   | {
@@ -123,7 +118,6 @@ export function regionsSettingsReducer(
             ...action.params,
           },
           lastCopiedRequest: null,
-          lastOpenedModsFolderRequest: null,
           lastValidationResult: null,
         },
       };
@@ -142,7 +136,6 @@ export function regionsSettingsReducer(
           isCountryAutoResolved:
             action.isAutoResolved ?? state.fetch.isCountryAutoResolved,
           lastCopiedRequest: null,
-          lastOpenedModsFolderRequest: null,
           lastValidationResult: null,
         },
       };
@@ -163,7 +156,6 @@ export function regionsSettingsReducer(
             datasetIds: nextDatasetIds,
           },
           lastCopiedRequest: null,
-          lastOpenedModsFolderRequest: null,
           lastValidationResult: null,
         },
       };
@@ -182,14 +174,6 @@ export function regionsSettingsReducer(
         fetch: {
           ...state.fetch,
           lastCopiedRequest: action.request,
-        },
-      };
-    case 'set_last_opened_mods_folder_request':
-      return {
-        ...state,
-        fetch: {
-          ...state.fetch,
-          lastOpenedModsFolderRequest: action.request,
         },
       };
     case 'set_last_fetch_validation_result':
@@ -217,7 +201,6 @@ export const INITIAL_FETCH_STATE: FetchState = {
   isOpeningModsFolder: false,
   isCountryAutoResolved: false,
   lastCopiedRequest: null,
-  lastOpenedModsFolderRequest: null,
   lastValidationResult: null,
 };
 

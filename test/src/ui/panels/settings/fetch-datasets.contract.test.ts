@@ -10,7 +10,9 @@ import {
   type FetchCountryCode,
   type FetchParameters,
   formatFetchCommand,
+  hasFetchableDatasetsForCity,
   type LastCopiedFetchRequest,
+  resolveCityCountryCode,
 } from '@/ui/panels/settings/fetch-helpers';
 import {
   type FetchState,
@@ -19,6 +21,7 @@ import {
   regionsSettingsReducer,
   type RegionsSettingsState,
 } from '@/ui/panels/settings/RegionsSettingsState';
+import type { City } from '@/types/cities';
 import { SortDirection } from '@/ui/panels/types';
 
 type DerivedFetchUi = {
@@ -35,6 +38,37 @@ const DEFAULT_BOS_BBOX: FetchBBox = {
   east: '-71.1263',
   north: '42.0151',
 };
+
+const FETCH_CITY_FIXTURES: City[] = [
+  {
+    code: 'BOS',
+    name: 'Boston',
+    country: 'US',
+    description: 'Fixture city',
+    mapImageUrl: '',
+    population: 1000,
+    initialViewState: {
+      zoom: 11,
+      latitude: 42.36,
+      longitude: -71.05,
+      bearing: 0,
+    },
+  },
+  {
+    code: 'HKD',
+    name: 'Hakodate',
+    country: 'JP',
+    description: 'JP fixture city',
+    mapImageUrl: '',
+    population: 1000,
+    initialViewState: {
+      zoom: 11,
+      latitude: 41.77,
+      longitude: 140.73,
+      bearing: 0,
+    },
+  },
+];
 
 function createFetchSnapshot(
   request: FetchParameters,
@@ -73,7 +107,6 @@ function createHappyFetchState(
     isOpeningModsFolder: false,
     isCountryAutoResolved: true,
     lastCopiedRequest: null,
-    lastOpenedModsFolderRequest: null,
     lastValidationResult: null,
     ...overrides,
   };
@@ -101,7 +134,6 @@ function deriveFetchUi(fetchState: FetchState): DerivedFetchUi {
     command,
     request: fetchState.params,
     lastCopiedRequest: fetchState.lastCopiedRequest,
-    lastOpenedModsFolderRequest: fetchState.lastOpenedModsFolderRequest,
   });
 
   return {
@@ -142,7 +174,30 @@ function reduceFetchState(
 }
 
 describe('settings fetch datasets action gating (state/contract)', () => {
-  it('gates actions in order: copy -> open mods folder -> validate', () => {
+  it('filters fetch city options to countries with online datasets and scanned city data', () => {
+    assert.equal(resolveCityCountryCode(FETCH_CITY_FIXTURES[0]), 'US');
+    assert.equal(resolveCityCountryCode(FETCH_CITY_FIXTURES[1]), 'JP');
+    assert.equal(hasFetchableDatasetsForCity(FETCH_CITY_FIXTURES[0]), true);
+    assert.equal(hasFetchableDatasetsForCity(FETCH_CITY_FIXTURES[1]), false);
+
+    const availableCityCodes = new Set(['BOS', 'HKD']);
+    const filtered = FETCH_CITY_FIXTURES.filter((city) => {
+      return (
+        hasFetchableDatasetsForCity(city) && availableCityCodes.has(city.code)
+      );
+    });
+    assert.deepEqual(
+      filtered.map((city) => city.code),
+      ['BOS'],
+    );
+
+    const filteredWithoutScannedData = FETCH_CITY_FIXTURES.filter((city) => {
+      return hasFetchableDatasetsForCity(city) && city.code === 'HKD';
+    });
+    assert.deepEqual(filteredWithoutScannedData, []);
+  });
+
+  it('gates actions in order: copy -> validate while keeping open mods folder optional', () => {
     let fetchState = createHappyFetchState();
 
     const initial = deriveFetchUi(fetchState);
@@ -160,17 +215,7 @@ describe('settings fetch datasets action gating (state/contract)', () => {
     const afterCopy = deriveFetchUi(fetchState);
     assert.equal(afterCopy.canCopyCommand, true);
     assert.equal(afterCopy.canOpenModsFolder, true);
-    assert.equal(afterCopy.canValidateDatasets, false);
-
-    fetchState = {
-      ...fetchState,
-      lastOpenedModsFolderRequest: createFetchSnapshot(fetchState.params),
-    };
-
-    const afterOpenModsFolder = deriveFetchUi(fetchState);
-    assert.equal(afterOpenModsFolder.canCopyCommand, true);
-    assert.equal(afterOpenModsFolder.canOpenModsFolder, true);
-    assert.equal(afterOpenModsFolder.canValidateDatasets, true);
+    assert.equal(afterCopy.canValidateDatasets, true);
 
     fetchState = {
       ...fetchState,
@@ -205,7 +250,6 @@ describe('settings fetch datasets action gating (state/contract)', () => {
     const progressedState: FetchState = {
       ...baseState,
       lastCopiedRequest: createFetchSnapshot(baseState.params, 1),
-      lastOpenedModsFolderRequest: createFetchSnapshot(baseState.params, 2),
       lastValidationResult: {
         cityCode: 'PVD',
         foundIds: [...baseState.params.datasetIds],
@@ -266,11 +310,6 @@ describe('settings fetch datasets action gating (state/contract)', () => {
         `Expected copied snapshot reset after ${mutation.name} mutation`,
       );
       assert.equal(
-        mutated.lastOpenedModsFolderRequest,
-        null,
-        `Expected open-folder snapshot reset after ${mutation.name} mutation`,
-      );
-      assert.equal(
         mutated.lastValidationResult,
         null,
         `Expected validation result reset after ${mutation.name} mutation`,
@@ -299,10 +338,6 @@ describe('settings fetch datasets action gating (state/contract)', () => {
       isOpeningModsFolder: true,
       isCountryAutoResolved: true,
       lastCopiedRequest: createFetchSnapshot(createHappyFetchState().params, 1),
-      lastOpenedModsFolderRequest: createFetchSnapshot(
-        createHappyFetchState().params,
-        2,
-      ),
       lastValidationResult: {
         cityCode: 'BOS',
         foundIds: ['counties'],

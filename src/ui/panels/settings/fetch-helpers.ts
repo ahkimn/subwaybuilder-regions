@@ -1,6 +1,7 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
 import {
   isStaticCountryCode,
+  resolveCountryDatasets,
   type StaticCountryCode,
 } from '@shared/datasets/catalog';
 
@@ -49,7 +50,6 @@ type FetchActionAvailabilityArgs = {
   command: string;
   request: FetchParameters;
   lastCopiedRequest: LastCopiedFetchRequest | null;
-  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
 };
 
 export function resolveCityCountryCode(
@@ -72,6 +72,11 @@ export function resolveCityCountryCode(
   }
 
   return null;
+}
+
+export function hasFetchableDatasetsForCity(city: City | undefined): boolean {
+  const countryCode = resolveCityCountryCode(city);
+  return resolveCountryDatasets(countryCode, { onlineOnly: true }).length > 0;
 }
 
 export function isWindowsPlatform(platform: string): boolean {
@@ -169,7 +174,6 @@ export function deriveFetchActionAvailability({
   command,
   request,
   lastCopiedRequest,
-  lastOpenedModsFolderRequest,
 }: FetchActionAvailabilityArgs): {
   canCopyCommand: boolean;
   canOpenModsFolder: boolean;
@@ -178,9 +182,7 @@ export function deriveFetchActionAvailability({
   const canCopyCommand = command.length > 0;
   const canOpenModsFolder =
     canCopyCommand && isFetchRequestSnapshotCurrent(lastCopiedRequest, request);
-  const canValidateDatasets =
-    canOpenModsFolder &&
-    isFetchRequestSnapshotCurrent(lastOpenedModsFolderRequest, request);
+  const canValidateDatasets = canOpenModsFolder;
 
   return {
     canCopyCommand,

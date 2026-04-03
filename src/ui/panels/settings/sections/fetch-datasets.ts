@@ -459,7 +459,7 @@ function renderValidationStatus(
     return validationTextWrapper(
       h,
       'info',
-      'Open mods folder to enable dataset validation.',
+      'Copy a command to enable dataset validation.',
     );
   }
 

@@ -311,6 +311,19 @@ export class RegionsStorage {
     return buildPaddedBBoxForDemandData(demandData, paddingKm);
   }
 
+  async hasScannedCityData(cityCode: string): Promise<boolean> {
+    try {
+      const result = await this.electronApi.scanCityDataFiles(cityCode);
+      return Boolean(result?.success);
+    } catch (error) {
+      console.warn(
+        `[Regions] Failed to scan city data files for ${cityCode}.`,
+        error,
+      );
+      return false;
+    }
+  }
+
   async openModsFolder(): Promise<void> {
     if (!this.electronApi.openModsFolder) {
       throw new Error('[Regions] electron.openModsFolder is unavailable');
