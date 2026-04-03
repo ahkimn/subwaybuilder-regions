@@ -161,11 +161,11 @@ export function RegionsSettingsPanel({
       fetchErrors.length > 0
         ? ''
         : formatFetchCommand({
-            platform: runtimePlatform,
-            params: state.fetch.params,
-            relativeModPath,
-            outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
-          });
+          platform: runtimePlatform,
+          params: state.fetch.params,
+          relativeModPath,
+          outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
+        });
     const fetchActionAvailability = deriveFetchActionAvailability({
       command: fetchCommand,
       request: state.fetch.params,
@@ -350,12 +350,14 @@ export function RegionsSettingsPanel({
       };
     }, [state.fetch.params.cityCode]);
 
+    // When the settings menu is opened, check which cities have fetchable datasets available and update the city options accordingly
     useEffectHook(() => {
       if (!state.isOpen) {
         return;
       }
 
       let cancelled = false;
+      // Filter known cities to those that have fetchable datasets (based on country, since some datasets are country-specific, and some countries may not have any fetchable datasets at all)
       const candidateCities = knownCities.filter(hasFetchableDatasetsForCity);
 
       void Promise.all(
@@ -389,31 +391,6 @@ export function RegionsSettingsPanel({
         cancelled = true;
       };
     }, [state.isOpen]);
-
-    const fetchableCityCodeKey = fetchableCities
-      .map((city) => city.code)
-      .sort()
-      .join(',');
-    const fetchableCityCodes = new Set(fetchableCities.map((city) => city.code));
-
-    useEffectHook(() => {
-      if (!state.fetch.params.cityCode) {
-        return;
-      }
-      if (fetchableCityCodes.has(state.fetch.params.cityCode)) {
-        return;
-      }
-
-      dispatch({
-        type: 'set_fetch_params',
-        params: {
-          cityCode: '',
-          countryCode: null,
-          datasetIds: [],
-          bbox: null,
-        },
-      });
-    }, [fetchableCityCodeKey, state.fetch.params.cityCode]);
 
     const onFetchCityCodeChange = (cityCode: string) => {
       const nextCity = knownCitiesByCode.get(cityCode);
@@ -482,10 +459,6 @@ export function RegionsSettingsPanel({
           dispatch({
             type: 'set_last_copied_fetch_request',
             request: requestSnapshot,
-          });
-          dispatch({
-            type: 'set_last_opened_mods_folder_request',
-            request: null,
           });
           dispatch({
             type: 'set_last_fetch_validation_result',
@@ -566,36 +539,16 @@ export function RegionsSettingsPanel({
         return;
       }
       dispatch({ type: 'set_is_opening_mods_folder', value: true });
-      const countryCode = state.fetch.params.countryCode;
-      const bbox = state.fetch.params.bbox;
-      const cityCode = state.fetch.params.cityCode;
-      const datasetIds = [...state.fetch.params.datasetIds];
       const openModsFolderTask = storage.openModsFolder();
 
+      // From either the openModsFolder promise success or the timeout, we proceed with assuming the mods folder was opened successfully (since openModsFolder may not resolve if the OS-level opener is launched successfully but does not report back to the game (as appears to be the case for Linux), and we don't want to leave the user waiting indefinitely in that case)
       void Promise.race([
-        openModsFolderTask.then(() => 'opened' as const).catch((error) => {
-          throw error;
-        }),
+        openModsFolderTask.then(() => 'opened' as const),
         new Promise<'timeout'>((resolve) => {
           window.setTimeout(() => resolve('timeout'), OPEN_MODS_FOLDER_TIMEOUT_MS);
         }),
       ])
         .then((result) => {
-          if (!countryCode || !bbox) {
-            return;
-          }
-
-          dispatch({
-            type: 'set_last_opened_mods_folder_request',
-            request: {
-              cityCode,
-              countryCode,
-              datasetIds,
-              bbox: { ...bbox },
-              copiedAt: Date.now(),
-            },
-          });
-
           if (result === 'timeout') {
             console.warn(
               `[Regions] openModsFolder did not resolve within ${OPEN_MODS_FOLDER_TIMEOUT_MS}ms; assuming the OS opener was launched successfully.`,
@@ -618,68 +571,68 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
         ? renderSettingsOverlay(h, {
-            onClose: () => dispatch({ type: 'close_overlay' }),
-            globalParams: {
-              Switch,
-              Label,
-              settings: state.settings,
-              isUpdating: state.pending.updating,
-              onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-                updateSettings({ showUnpopulatedRegions: nextValue });
-              },
+          onClose: () => dispatch({ type: 'close_overlay' }),
+          globalParams: {
+            Switch,
+            Label,
+            settings: state.settings,
+            isUpdating: state.pending.updating,
+            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+              updateSettings({ showUnpopulatedRegions: nextValue });
             },
-            registryParams: {
-              useStateHook,
-              Input,
-              rows: sortedRows,
-              searchTerm: state.searchTerm,
-              sortState: state.sortState,
-              onSearchTermChange: (searchTerm: string) =>
-                dispatch({ type: 'set_search_term', searchTerm }),
-              onSortChange: (columnIndex: number) => {
-                const nextSortState = getNextSortState<SettingsDatasetRow>(
-                  state.sortState,
-                  columnIndex,
-                  resolveRegistrySortConfig,
-                );
-                dispatch({ type: 'set_sort_state', sortState: nextSortState });
-              },
-              onRefreshRegistry: refreshRegistry,
-              isRefreshingRegistry: state.pending.refreshingRegistry,
-              onClearMissing: clearMissingEntries,
-              isClearingMissing: state.pending.clearingMissing,
+          },
+          registryParams: {
+            useStateHook,
+            Input,
+            rows: sortedRows,
+            searchTerm: state.searchTerm,
+            sortState: state.sortState,
+            onSearchTermChange: (searchTerm: string) =>
+              dispatch({ type: 'set_search_term', searchTerm }),
+            onSortChange: (columnIndex: number) => {
+              const nextSortState = getNextSortState<SettingsDatasetRow>(
+                state.sortState,
+                columnIndex,
+                resolveRegistrySortConfig,
+              );
+              dispatch({ type: 'set_sort_state', sortState: nextSortState });
             },
-            fetchParams: {
-              request: state.fetch.params,
-              errors: fetchErrors,
-              command: fetchCommand,
-              canCopyCommand: fetchActionAvailability.canCopyCommand,
-              canOpenModsFolder: fetchActionAvailability.canOpenModsFolder,
-              canValidateDatasets: fetchActionAvailability.canValidateDatasets,
-              isValidatingDatasets: state.pending.validatingFetchDatasets,
-              isOpeningModsFolder: state.fetch.isOpeningModsFolder,
-              isCountryAutoResolved: state.fetch.isCountryAutoResolved,
-              lastCopiedRequest: state.fetch.lastCopiedRequest,
-              lastValidationResult: state.fetch.lastValidationResult,
-              cityOptions: fetchableCities.map((city) => ({
-                code: city.code,
-                name: city.name,
-              })),
-              countryOptions,
-              datasets: fetchableDatasets,
-              relativeModPath,
-              onCityCodeChange: onFetchCityCodeChange,
-              onCountryCodeChange: onFetchCountryCodeChange,
-              onToggleDataset: (datasetId: string) =>
-                dispatch({ type: 'toggle_fetch_dataset', datasetId }),
-              onCopyCommand: onCopyFetchCommand,
-              onOpenModsFolder,
-              onValidateDatasets,
-            },
-            footerParams: {
-              systemPerformanceInfo: state.systemPerformanceInfo,
-            },
-          })
+            onRefreshRegistry: refreshRegistry,
+            isRefreshingRegistry: state.pending.refreshingRegistry,
+            onClearMissing: clearMissingEntries,
+            isClearingMissing: state.pending.clearingMissing,
+          },
+          fetchParams: {
+            request: state.fetch.params,
+            errors: fetchErrors,
+            command: fetchCommand,
+            canCopyCommand: fetchActionAvailability.canCopyCommand,
+            canOpenModsFolder: fetchActionAvailability.canOpenModsFolder,
+            canValidateDatasets: fetchActionAvailability.canValidateDatasets,
+            isValidatingDatasets: state.pending.validatingFetchDatasets,
+            isOpeningModsFolder: state.fetch.isOpeningModsFolder,
+            isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+            lastCopiedRequest: state.fetch.lastCopiedRequest,
+            lastValidationResult: state.fetch.lastValidationResult,
+            cityOptions: fetchableCities.map((city) => ({
+              code: city.code,
+              name: city.name,
+            })),
+            countryOptions,
+            datasets: fetchableDatasets,
+            relativeModPath,
+            onCityCodeChange: onFetchCityCodeChange,
+            onCountryCodeChange: onFetchCountryCodeChange,
+            onToggleDataset: (datasetId: string) =>
+              dispatch({ type: 'toggle_fetch_dataset', datasetId }),
+            onCopyCommand: onCopyFetchCommand,
+            onOpenModsFolder,
+            onValidateDatasets,
+          },
+          footerParams: {
+            systemPerformanceInfo: state.systemPerformanceInfo,
+          },
+        })
         : null,
     ]);
   };

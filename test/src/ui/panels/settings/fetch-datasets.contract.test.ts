@@ -107,7 +107,6 @@ function createHappyFetchState(
     isOpeningModsFolder: false,
     isCountryAutoResolved: true,
     lastCopiedRequest: null,
-    lastOpenedModsFolderRequest: null,
     lastValidationResult: null,
     ...overrides,
   };
@@ -251,7 +250,6 @@ describe('settings fetch datasets action gating (state/contract)', () => {
     const progressedState: FetchState = {
       ...baseState,
       lastCopiedRequest: createFetchSnapshot(baseState.params, 1),
-      lastOpenedModsFolderRequest: createFetchSnapshot(baseState.params, 2),
       lastValidationResult: {
         cityCode: 'PVD',
         foundIds: [...baseState.params.datasetIds],
@@ -312,11 +310,6 @@ describe('settings fetch datasets action gating (state/contract)', () => {
         `Expected copied snapshot reset after ${mutation.name} mutation`,
       );
       assert.equal(
-        mutated.lastOpenedModsFolderRequest,
-        null,
-        `Expected open-folder snapshot reset after ${mutation.name} mutation`,
-      );
-      assert.equal(
         mutated.lastValidationResult,
         null,
         `Expected validation result reset after ${mutation.name} mutation`,
@@ -345,10 +338,6 @@ describe('settings fetch datasets action gating (state/contract)', () => {
       isOpeningModsFolder: true,
       isCountryAutoResolved: true,
       lastCopiedRequest: createFetchSnapshot(createHappyFetchState().params, 1),
-      lastOpenedModsFolderRequest: createFetchSnapshot(
-        createHappyFetchState().params,
-        2,
-      ),
       lastValidationResult: {
         cityCode: 'BOS',
         foundIds: ['counties'],

@@ -92,7 +92,6 @@ type FetchHarnessState = {
   request: FetchParameters;
   isCountryAutoResolved: boolean;
   lastCopiedRequest: LastCopiedFetchRequest | null;
-  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
   lastValidationResult: FetchValidationResult | null;
   isValidatingDatasets: boolean;
 };
@@ -107,7 +106,6 @@ function FetchDatasetsHarness(): React.ReactNode {
     },
     isCountryAutoResolved: false,
     lastCopiedRequest: null,
-    lastOpenedModsFolderRequest: null,
     lastValidationResult: null,
     isValidatingDatasets: false,
   });
@@ -216,21 +214,13 @@ function FetchDatasetsHarness(): React.ReactNode {
           bbox: { ...bbox },
           copiedAt: Date.now(),
         },
-        lastOpenedModsFolderRequest: null,
         lastValidationResult: null,
       }));
     },
     onOpenModsFolder: () => {
-      if (!actionAvailability.canOpenModsFolder || !state.lastCopiedRequest) {
+      if (!actionAvailability.canOpenModsFolder) {
         return;
       }
-      setState((prev) => ({
-        ...prev,
-        lastOpenedModsFolderRequest: {
-          ...prev.lastCopiedRequest!,
-          copiedAt: Date.now(),
-        },
-      }));
     },
     onValidateDatasets: () => {
       if (!state.lastCopiedRequest || !actionAvailability.canValidateDatasets) {
