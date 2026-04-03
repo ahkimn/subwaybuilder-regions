@@ -70,7 +70,6 @@ function createArchiveForCity(
   }
 
   const tarArgs = ['-czf', archivePath, '-C', DATA_DIR, cityCode];
-  // Conditionally exclude OSM-derived boundary data based on input arguments
   if (!includeOSMData) {
     const osmDatasetIds = resolveOsmDatasetIdsForCity(cityCode, datasetIndex);
     for (const datasetId of osmDatasetIds) {

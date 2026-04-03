@@ -100,10 +100,10 @@ export const DATASET_METADATA_CATALOG: Readonly<
   },
   departments: {
     datasetId: 'departments',
-    displayName: 'D\u00E9partements',
-    unitSingular: 'D\u00E9partement',
-    unitPlural: 'D\u00E9partements',
-    source: 'FR IGN G\u00E9oPF',
+    displayName: 'Départements',
+    unitSingular: 'Département',
+    unitPlural: 'Départements',
+    source: 'FR IGN GéoPF',
     existsOnlineSource: true,
   },
   arrondissements: {
@@ -111,7 +111,7 @@ export const DATASET_METADATA_CATALOG: Readonly<
     displayName: 'Arrondissements',
     unitSingular: 'Arrondissement',
     unitPlural: 'Arrondissements',
-    source: 'FR IGN G\u00E9oPF',
+    source: 'FR IGN GéoPF',
     existsOnlineSource: true,
   },
   cantons: {
@@ -119,7 +119,7 @@ export const DATASET_METADATA_CATALOG: Readonly<
     displayName: 'Cantons',
     unitSingular: 'Canton',
     unitPlural: 'Cantons',
-    source: 'FR IGN G\u00E9oPF',
+    source: 'FR IGN GéoPF',
     existsOnlineSource: true,
   },
   epci: {
@@ -127,7 +127,7 @@ export const DATASET_METADATA_CATALOG: Readonly<
     displayName: 'EPCI',
     unitSingular: 'EPCI',
     unitPlural: 'EPCI',
-    source: 'FR IGN G\u00E9oPF',
+    source: 'FR IGN GéoPF',
     existsOnlineSource: true,
   },
   communes: {
@@ -135,7 +135,7 @@ export const DATASET_METADATA_CATALOG: Readonly<
     displayName: 'Communes',
     unitSingular: 'Commune',
     unitPlural: 'Communes',
-    source: 'FR IGN G\u00E9oPF',
+    source: 'FR IGN GéoPF',
     existsOnlineSource: true,
   },
   sa3s: {
@@ -186,6 +186,22 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'AU ABS (ASGS 2021)',
     existsOnlineSource: true,
   },
+  shichouson: {
+    datasetId: 'shichouson',
+    displayName: '市町村 (Municipalities)',
+    unitSingular: 'Municipality',
+    unitPlural: 'Municipalities',
+    source: '統計局・令和2年国勢調査 / 国土数値情報',
+    existsOnlineSource: false,
+  },
+  ooaza: {
+    datasetId: 'ooaza',
+    displayName: '大字 (Ōaza)',
+    unitSingular: 'Ōaza',
+    unitPlural: 'Ōaza',
+    source: '統計局・令和2年国勢調査 / neighborhood7 boundaries',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -196,9 +212,17 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   GB: ['districts', 'wpcs', 'bua', 'wards'],
   FR: ['departments', 'arrondissements', 'cantons', 'epci', 'communes'],
   AU: ['sa3s', 'sa2s', 'ceds', 'seds', 'lgas', 'poas'],
+  JP: ['shichouson', 'ooaza'],
 });
 
-export const CATALOG_STATIC_COUNTRIES = ['US', 'CA', 'GB', 'FR', 'AU'] as const;
+export const CATALOG_STATIC_COUNTRIES = [
+  'US',
+  'CA',
+  'GB',
+  'FR',
+  'AU',
+  'JP',
+] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 
 export function isStaticCountryCode(value: string): value is StaticCountryCode {

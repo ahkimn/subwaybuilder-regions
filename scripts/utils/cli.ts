@@ -5,7 +5,7 @@ import minimist from 'minimist';
 import type { BoundaryBox } from './geometry';
 import { getSupportedCountryCodes } from './osm-country-config';
 
-const BUILT_IN_COUNTRY_CODES = ['AU', 'CA', 'FR', 'GB', 'US'];
+const BUILT_IN_COUNTRY_CODES = ['AU', 'CA', 'FR', 'GB', 'JP', 'US'];
 
 function getAvailableCountryCodes(): Set<string> {
   return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);
@@ -15,6 +15,8 @@ export type ExtractMapFeaturesArgs = {
   dataType: string;
   cityCode: string;
   countryCode: string;
+  bundle?: string;
+  includeLabelPointCandidates?: boolean;
   south?: number;
   west?: number;
   north?: number;
@@ -122,17 +124,24 @@ export function getBBoxFromArgs<T extends CoordinateBoxArgs>(
 
 // --- Argument Parsing for Boundary Extraction --- //
 
-export function parseArgs(): ExtractMapFeaturesArgs {
-  let argv = minimist(process.argv.slice(2), {
-    string: ['data-type', 'city-code', 'country-code'],
-    boolean: ['compress', 'use-local-data', 'preview'],
+export function parseExtractArgs(argvInput: string[]): ExtractMapFeaturesArgs {
+  const argv = minimist(argvInput, {
+    string: ['data-type', 'city-code', 'country-code', 'bundle'],
+    boolean: [
+      'compress',
+      'use-local-data',
+      'preview',
+      'include-label-point-candidates',
+    ],
     default: {
       compress: true,
+      'include-label-point-candidates': false,
     },
     alias: {
       'data-type': 'dataType',
       'city-code': 'cityCode',
       'country-code': 'countryCode',
+      'include-label-point-candidates': 'includeLabelPointCandidates',
       compress: 'compress',
       'use-local-data': 'useLocalData',
     },
@@ -152,12 +161,18 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     argv.countryCode ?? argv['country-code'],
     'country-code',
   );
+  const bundle = toNonEmptyString(argv.bundle);
   const availableCountryCodes = getAvailableCountryCodes();
 
   if (!availableCountryCodes.has(countryCode)) {
     console.error(
       `Unsupported country code: ${countryCode}, supported codes are: ${Array.from(availableCountryCodes).join(', ')}`,
     );
+    process.exit(1);
+  }
+
+  if (countryCode === 'JP' && !bundle) {
+    console.error('Missing or invalid argument: --bundle');
     process.exit(1);
   }
 
@@ -169,6 +184,8 @@ export function parseArgs(): ExtractMapFeaturesArgs {
   const useLocalData = (argv.useLocalData ?? argv['use-local-data']) as
     | boolean
     | undefined;
+  const includeLabelPointCandidates = (argv.includeLabelPointCandidates ??
+    argv['include-label-point-candidates']) as boolean | undefined;
 
   const preview = (argv.preview ?? argv['preview']) as boolean | undefined;
   const compress = (argv.compress ?? argv['compress']) as boolean | undefined;
@@ -177,6 +194,8 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     dataType: dataType,
     countryCode: countryCode,
     cityCode: cityCode,
+    bundle: bundle,
+    includeLabelPointCandidates: includeLabelPointCandidates,
     south: south,
     west: west,
     north: north,
@@ -190,6 +209,8 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     dataType: dataType!,
     cityCode: cityCode!,
     countryCode: countryCode!,
+    bundle: bundle,
+    includeLabelPointCandidates: includeLabelPointCandidates,
     south: south,
     west: west,
     north: north,
@@ -199,6 +220,10 @@ export function parseArgs(): ExtractMapFeaturesArgs {
     preview: preview,
     previewCount: DEFAULT_PREVIEW_COUNT,
   };
+}
+
+export function parseArgs(): ExtractMapFeaturesArgs {
+  return parseExtractArgs(process.argv.slice(2));
 }
 
 // --- Argument Parsing for Exporting Archives --- //

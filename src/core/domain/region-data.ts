@@ -34,12 +34,6 @@ export type RegionInfraData = {
   routeDisplayParams: Map<string, RouteDisplayParams>; // Map of route IDs to display parameters for the route
 
   metadata?: RegionGameMetadata; // metadata
-
-  // Potential future data fields:
-  /*
-    odStationRidership: number; // Total O/D ridership for all stations in the region
-    totalStationRidership: number; // Total ridership for all stations in the region, including transfers
-  */
 };
 
 export type RegionGameMetadata = {

@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.4.5`  
+_Latest Mod Version:_ `v0.4.6`  
 _Latest Tested Game Version:_ `v1.1.0`
-_Latest Changelog Entry:_ [v0.4.5](docs/CHANGELOG.md#v044---2026-03-04)
+_Latest Changelog Entry:_ [v0.4.6](docs/CHANGELOG.md#v046---2026-04-02)
 
 ## Table of Contents
 
@@ -72,6 +72,9 @@ _Latest Changelog Entry:_ [v0.4.5](docs/CHANGELOG.md#v044---2026-03-04)
     - Counties
     - County Subdivisions (including towns/cities/CDPs)
     - ZIP Code Tabulation Areas
+  - **JP** (Japan)
+    - Municipalities (`shichouson`)
+    - Ōaza (`ooaza`)
 
 ## Specifications
 
@@ -199,11 +202,35 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    This command generates clipped GeoJSON files under `data/`, which are later served to the game via the local data server.
 
+   :information_source: Full `LABEL_POINTS.candidates` generation is disabled by default to reduce extraction time. To re-enable the full candidate payload for debugging or inspection, add `--include-label-point-candidates` to the extraction command.
+
    **Preset Parameters**
 
    The current valid combinations of `country-code` and `data-type` for preset extraction are documented in [Preset Dataset Reference](docs/PRESET_DATA_REFERENCE.md).
 
    :warning: If adding boundaries for a custom city, `city-code` must be in `boundaries.csv`
+
+   **Japan (unsupported externally)**
+
+   JP region generation is a local developer workflow only. The JP extraction scripts depend on the private/local `subwaybuilder-jp-data` repository structure and linked source files under `source_data/jp-data/`.
+
+   Before running JP extraction, link the local JP source mirror:
+
+   ```
+   npm run link:jp-data
+   ```
+
+   Then run extraction with a bundle id and city code:
+
+   ```
+   npx tsx scripts/extract-map-features.ts \
+     --country-code=JP \
+     --data-type=all \
+     --bundle=hakodate \
+     --city-code=HKD
+   ```
+
+   :warning: JP extraction is not supported for external users. It is not available through the runtime fetch CLI, `fetch.ps1`, or `fetch.sh`.
 
    **Runtime Fetch CLI (single city, explicit bbox)**
 
@@ -283,6 +310,8 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
    ```
    npx tsx scripts/export-data-archives.ts --city-code=TOR
    ```
+
+   These exports are `tar.gz` archives rather than `.zip` files. The contained dataset files are typically still stored as `.geojson.gz`, which the mod can read directly after extraction.
 
    Due to varying data quality, boundary data from OSM is excluded by default. To include OSM-sourced datasets in the archive, run:
 
@@ -551,7 +580,8 @@ The following are developer commands available within the repository, grouped by
 
 #### Data Extraction / Serving
 
-- `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview]`: Extracts boundary GeoJSONs for a single city/dataset.
+- `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview] [--include-label-point-candidates]`: Extracts boundary GeoJSONs for a single city/dataset.
+  - Full `LABEL_POINTS.candidates` generation is disabled by default for faster extraction. Pass `--include-label-point-candidates` to restore the previous full candidate output.
 - `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA|FR|AU> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
 - `npm run export -- --city-code=<CITY[,CITY...]>|--all [--include-osm-data] [--output-dir=<DIR>]`: Packages `data/{CITY}` into `export/{CITY}.gz`.
 - `npm run serve -- [--port=<PORT>] [--dir=<RELATIVE_DATA_DIR>]`: Launches a local HTTP server for data files (defaults to project `data/`).

@@ -514,6 +514,24 @@ export class RegionDataBuilder {
     return { stationNames, stationNodes };
   }
 
+  // private getStationsRidership(stationIds: Set<string>): {
+  //   odStationRidership: Map<string, number>;
+  //   totalStationRidership: Map<string, number>;
+  // } {
+  //   const odStationRidership = new Map<string, number>();
+  //   const totalStationRidership = new Map<string, number>();
+  //   for (const stationId of stationIds) {
+  //     const stationData = this.api.gameState.getStationRidership(stationId);
+
+  //     odStationRidership.set(
+  //       stationId,
+  //       stationData.total - (stationData.transfers ?? 0),
+  //     );
+  //     totalStationRidership.set(stationId, stationData.total);
+  //   }
+  //   return { odStationRidership, totalStationRidership };
+  // }
+
   private getDatasetStations(
     dataset: RegionDataset,
     featureContexts: Map<string | number, InfraDataFeatureContext>,
