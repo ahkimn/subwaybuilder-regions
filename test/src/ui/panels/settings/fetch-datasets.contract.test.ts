@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import { resolveCountryDatasets } from '@shared/datasets/catalog';
 
+import type { City } from '@/types/cities';
 import {
   buildFetchErrors,
   deriveFetchActionAvailability,
@@ -21,7 +22,6 @@ import {
   regionsSettingsReducer,
   type RegionsSettingsState,
 } from '@/ui/panels/settings/RegionsSettingsState';
-import type { City } from '@/types/cities';
 import { SortDirection } from '@/ui/panels/types';
 
 type DerivedFetchUi = {

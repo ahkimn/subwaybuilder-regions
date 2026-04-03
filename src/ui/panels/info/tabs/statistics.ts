@@ -79,6 +79,13 @@ export function renderStatisticsView(
     ),
     ReactDetailRow(
       h,
+      'Station O/D Ridership',
+      existsInfraData
+        ? formatNumberOrDefault(infraData!.stationRidership.odSum)
+        : LOADING_VALUE_DISPLAY,
+    ),
+    ReactDetailRow(
+      h,
       'Total Track Length',
       existsInfraData
         ? `${formatNumberOrDefault(

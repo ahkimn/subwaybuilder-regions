@@ -46,6 +46,7 @@ export type OverviewSortMetrics = {
   drivingShare: number;
   walkingShare: number;
   stationCount: number;
+  stationOdRidership: number;
   trackLengthTotal: number;
   routeCount: number;
 };
@@ -112,10 +113,16 @@ const SORT_CONFIGS: ReadonlyArray<SortConfig<OverviewSortMetrics>> = [
     index: 10,
     defaultDirection: SortDirection.Desc,
     compare: (aMetrics, bMetrics) =>
-      aMetrics.trackLengthTotal - bMetrics.trackLengthTotal,
+      aMetrics.stationOdRidership - bMetrics.stationOdRidership,
   },
   {
     index: 11,
+    defaultDirection: SortDirection.Desc,
+    compare: (aMetrics, bMetrics) =>
+      aMetrics.trackLengthTotal - bMetrics.trackLengthTotal,
+  },
+  {
+    index: 12,
     defaultDirection: SortDirection.Desc,
     compare: (aMetrics, bMetrics) => aMetrics.routeCount - bMetrics.routeCount,
   },
@@ -333,6 +340,9 @@ function renderOverviewTable(
             ? formatNumberOrDefault(infraData.stations.size)
             : LOADING_VALUE_DISPLAY,
           infraData
+            ? formatNumberOrDefault(infraData.stationRidership.odSum)
+            : LOADING_VALUE_DISPLAY,
+          infraData
             ? formatNumberOrDefault(totalTrackLength, 2)
             : LOADING_VALUE_DISPLAY,
           infraData
@@ -409,7 +419,7 @@ function filterRows(
   );
 }
 
-function sortRows(
+export function sortRows(
   rows: RegionsOverviewRow[],
   sortState: SortState,
 ): RegionsOverviewRow[] {
@@ -470,6 +480,7 @@ function buildOverviewSortMetrics(
         drivingShare: ModeShare.share(combinedModeShare, 'driving'),
         walkingShare: ModeShare.share(combinedModeShare, 'walking'),
         stationCount: row.gameData.infraData?.stations.size ?? 0,
+        stationOdRidership: row.gameData.infraData?.stationRidership.odSum ?? 0,
         trackLengthTotal,
         routeCount: row.gameData.infraData?.routes.size ?? 0,
       };

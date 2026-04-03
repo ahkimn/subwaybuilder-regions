@@ -13,6 +13,7 @@ export const OVERVIEW_HEADER_LABELS = [
   'Driving (%)',
   'Walking (%)',
   'Stations',
+  'Station O/D',
   'Tracks (km)',
   'Routes',
 ] as const;

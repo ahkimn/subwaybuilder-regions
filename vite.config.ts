@@ -9,6 +9,7 @@ export default {
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@shared': resolve(__dirname, 'shared'),

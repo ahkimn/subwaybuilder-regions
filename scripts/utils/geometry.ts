@@ -468,7 +468,7 @@ function buildRegionProperties(
       .find(
         (value): value is string =>
           typeof value === 'string' && value.trim().length > 0,
-    )!,
+      )!,
     LAT: primaryLabel.lat,
     LNG: primaryLabel.lng,
     WITHIN_BBOX: fullyWithinBoundary,
