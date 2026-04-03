@@ -161,11 +161,11 @@ export function RegionsSettingsPanel({
       fetchErrors.length > 0
         ? ''
         : formatFetchCommand({
-          platform: runtimePlatform,
-          params: state.fetch.params,
-          relativeModPath,
-          outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
-        });
+            platform: runtimePlatform,
+            params: state.fetch.params,
+            relativeModPath,
+            outPath: buildDefaultFetchOutPath(runtimePlatform, relativeModPath),
+          });
     const fetchActionAvailability = deriveFetchActionAvailability({
       command: fetchCommand,
       request: state.fetch.params,
@@ -545,7 +545,10 @@ export function RegionsSettingsPanel({
       void Promise.race([
         openModsFolderTask.then(() => 'opened' as const),
         new Promise<'timeout'>((resolve) => {
-          window.setTimeout(() => resolve('timeout'), OPEN_MODS_FOLDER_TIMEOUT_MS);
+          window.setTimeout(
+            () => resolve('timeout'),
+            OPEN_MODS_FOLDER_TIMEOUT_MS,
+          );
         }),
       ])
         .then((result) => {
@@ -571,68 +574,68 @@ export function RegionsSettingsPanel({
       renderSettingsEntry(h, () => dispatch({ type: 'open_overlay' })),
       state.isOpen
         ? renderSettingsOverlay(h, {
-          onClose: () => dispatch({ type: 'close_overlay' }),
-          globalParams: {
-            Switch,
-            Label,
-            settings: state.settings,
-            isUpdating: state.pending.updating,
-            onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
-              updateSettings({ showUnpopulatedRegions: nextValue });
+            onClose: () => dispatch({ type: 'close_overlay' }),
+            globalParams: {
+              Switch,
+              Label,
+              settings: state.settings,
+              isUpdating: state.pending.updating,
+              onToggleShowUnpopulatedRegions: (nextValue: boolean) => {
+                updateSettings({ showUnpopulatedRegions: nextValue });
+              },
             },
-          },
-          registryParams: {
-            useStateHook,
-            Input,
-            rows: sortedRows,
-            searchTerm: state.searchTerm,
-            sortState: state.sortState,
-            onSearchTermChange: (searchTerm: string) =>
-              dispatch({ type: 'set_search_term', searchTerm }),
-            onSortChange: (columnIndex: number) => {
-              const nextSortState = getNextSortState<SettingsDatasetRow>(
-                state.sortState,
-                columnIndex,
-                resolveRegistrySortConfig,
-              );
-              dispatch({ type: 'set_sort_state', sortState: nextSortState });
+            registryParams: {
+              useStateHook,
+              Input,
+              rows: sortedRows,
+              searchTerm: state.searchTerm,
+              sortState: state.sortState,
+              onSearchTermChange: (searchTerm: string) =>
+                dispatch({ type: 'set_search_term', searchTerm }),
+              onSortChange: (columnIndex: number) => {
+                const nextSortState = getNextSortState<SettingsDatasetRow>(
+                  state.sortState,
+                  columnIndex,
+                  resolveRegistrySortConfig,
+                );
+                dispatch({ type: 'set_sort_state', sortState: nextSortState });
+              },
+              onRefreshRegistry: refreshRegistry,
+              isRefreshingRegistry: state.pending.refreshingRegistry,
+              onClearMissing: clearMissingEntries,
+              isClearingMissing: state.pending.clearingMissing,
             },
-            onRefreshRegistry: refreshRegistry,
-            isRefreshingRegistry: state.pending.refreshingRegistry,
-            onClearMissing: clearMissingEntries,
-            isClearingMissing: state.pending.clearingMissing,
-          },
-          fetchParams: {
-            request: state.fetch.params,
-            errors: fetchErrors,
-            command: fetchCommand,
-            canCopyCommand: fetchActionAvailability.canCopyCommand,
-            canOpenModsFolder: fetchActionAvailability.canOpenModsFolder,
-            canValidateDatasets: fetchActionAvailability.canValidateDatasets,
-            isValidatingDatasets: state.pending.validatingFetchDatasets,
-            isOpeningModsFolder: state.fetch.isOpeningModsFolder,
-            isCountryAutoResolved: state.fetch.isCountryAutoResolved,
-            lastCopiedRequest: state.fetch.lastCopiedRequest,
-            lastValidationResult: state.fetch.lastValidationResult,
-            cityOptions: fetchableCities.map((city) => ({
-              code: city.code,
-              name: city.name,
-            })),
-            countryOptions,
-            datasets: fetchableDatasets,
-            relativeModPath,
-            onCityCodeChange: onFetchCityCodeChange,
-            onCountryCodeChange: onFetchCountryCodeChange,
-            onToggleDataset: (datasetId: string) =>
-              dispatch({ type: 'toggle_fetch_dataset', datasetId }),
-            onCopyCommand: onCopyFetchCommand,
-            onOpenModsFolder,
-            onValidateDatasets,
-          },
-          footerParams: {
-            systemPerformanceInfo: state.systemPerformanceInfo,
-          },
-        })
+            fetchParams: {
+              request: state.fetch.params,
+              errors: fetchErrors,
+              command: fetchCommand,
+              canCopyCommand: fetchActionAvailability.canCopyCommand,
+              canOpenModsFolder: fetchActionAvailability.canOpenModsFolder,
+              canValidateDatasets: fetchActionAvailability.canValidateDatasets,
+              isValidatingDatasets: state.pending.validatingFetchDatasets,
+              isOpeningModsFolder: state.fetch.isOpeningModsFolder,
+              isCountryAutoResolved: state.fetch.isCountryAutoResolved,
+              lastCopiedRequest: state.fetch.lastCopiedRequest,
+              lastValidationResult: state.fetch.lastValidationResult,
+              cityOptions: fetchableCities.map((city) => ({
+                code: city.code,
+                name: city.name,
+              })),
+              countryOptions,
+              datasets: fetchableDatasets,
+              relativeModPath,
+              onCityCodeChange: onFetchCityCodeChange,
+              onCountryCodeChange: onFetchCountryCodeChange,
+              onToggleDataset: (datasetId: string) =>
+                dispatch({ type: 'toggle_fetch_dataset', datasetId }),
+              onCopyCommand: onCopyFetchCommand,
+              onOpenModsFolder,
+              onValidateDatasets,
+            },
+            footerParams: {
+              systemPerformanceInfo: state.systemPerformanceInfo,
+            },
+          })
         : null,
     ]);
   };

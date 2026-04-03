@@ -26,8 +26,17 @@ export type RegionCommuterDetailsData = {
   metadata: RegionGameMetadata; // metadata
 };
 
+export type RegionStationRidershipData = {
+  odById: Map<string, number>; // Map of station IDs to origin/destination ridership within region
+  totalById: Map<string, number>; // Map of station IDs to total station ridership within region (raw totals; summing may double-count transfers)
+  odSum: number; // Sum of origin/destination ridership for all stations within region
+  totalSum: number | null; // Estimated total station ridership for region using half-transfer allocation
+  transferEstimateSum?: number | null; // Estimated transfer contribution for region (0.5 * local station transfers)
+};
+
 export type RegionInfraData = {
   stations: Map<string, string>; // Map of station IDs to station names within region
+  stationRidership: RegionStationRidershipData; // Aggregated ridership metrics for stations within the region
   tracks: Map<string, number>; // Map of trackIDs to their lengths within the region (in kilometers)
   trackLengths: Map<string, number>; // Length of track segments per type within the region (in kilometers)
   routes: Set<string>; // Set of routeIDs that have at least one station within the region

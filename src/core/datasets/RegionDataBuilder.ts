@@ -7,6 +7,7 @@ import type {
   RegionCommuterDetailsData,
   RegionCommuterSummaryData,
   RegionInfraData,
+  RegionStationRidershipData,
   RouteBulletType,
   RouteDisplayParams,
 } from '../domain';
@@ -42,6 +43,7 @@ type InfraDataFeatureContext = {
 type InfraDataAccumulator = {
   stationNames: Map<string, string>;
   stationNodes: Set<string>;
+  stationRidership: RegionStationRidershipData;
   trackIds: Map<string, number>;
   trackLengths: Map<string, number>;
   routes: Set<string>;
@@ -370,6 +372,7 @@ export class RegionDataBuilder {
       boundaryParams.bbox,
       allStations,
     );
+    const stationRidership = this.getStationsRidership(stationNames.keys());
     const stationDurationMs = getCurrentMillis() - stationStart;
 
     const trackStart = getCurrentMillis();
@@ -398,6 +401,7 @@ export class RegionDataBuilder {
 
     return {
       stations: stationNames,
+      stationRidership,
       tracks: trackIds,
       trackLengths: trackLengths,
       routes: routes,
@@ -453,6 +457,12 @@ export class RegionDataBuilder {
       stationNodeToRegionMap,
       allStations,
     );
+    accumulators.forEach((accumulator) => {
+      applyStationRidershipToAccumulator(
+        accumulator,
+        this.getStationsRidership(accumulator.stationNames.keys()),
+      );
+    });
     const stationDurationMs = getCurrentMillis() - stationStart;
 
     const trackStart = getCurrentMillis();
@@ -514,23 +524,36 @@ export class RegionDataBuilder {
     return { stationNames, stationNodes };
   }
 
-  // private getStationsRidership(stationIds: Set<string>): {
-  //   odStationRidership: Map<string, number>;
-  //   totalStationRidership: Map<string, number>;
-  // } {
-  //   const odStationRidership = new Map<string, number>();
-  //   const totalStationRidership = new Map<string, number>();
-  //   for (const stationId of stationIds) {
-  //     const stationData = this.api.gameState.getStationRidership(stationId);
+  private getStationsRidership(
+    stationIds: Iterable<string>,
+  ): RegionStationRidershipData {
+    const odById = new Map<string, number>();
+    const totalById = new Map<string, number>();
+    let odSum = 0;
+    let transferEstimateSum = 0;
 
-  //     odStationRidership.set(
-  //       stationId,
-  //       stationData.total - (stationData.transfers ?? 0),
-  //     );
-  //     totalStationRidership.set(stationId, stationData.total);
-  //   }
-  //   return { odStationRidership, totalStationRidership };
-  // }
+    for (const stationId of stationIds) {
+      const stationData = this.api.gameState.getStationRidership(stationId);
+      const totalRidership = stationData.total;
+      const transfers = stationData.transfers ?? 0;
+      const odRidership = totalRidership - transfers;
+      // Estimate transfer ridership as 50% of total transfers, as transfers are counted both at the origin and destination station of the transfer (and could be across regional boundaries)
+      const transferEstimate = transfers * 0.5;
+
+      odById.set(stationId, odRidership);
+      totalById.set(stationId, totalRidership);
+      odSum += odRidership;
+      transferEstimateSum += transferEstimate;
+    }
+
+    return {
+      odById,
+      totalById,
+      odSum,
+      totalSum: odSum + transferEstimateSum,
+      transferEstimateSum,
+    };
+  }
 
   private getDatasetStations(
     dataset: RegionDataset,
@@ -705,6 +728,13 @@ function initializeInfraAccumulator(): InfraDataAccumulator {
   return {
     stationNames: new Map<string, string>(),
     stationNodes: new Set<string>(),
+    stationRidership: {
+      odById: new Map<string, number>(),
+      totalById: new Map<string, number>(),
+      odSum: 0,
+      totalSum: null,
+      transferEstimateSum: null,
+    },
     trackIds: new Map<string, number>(),
     trackLengths: new Map<string, number>(),
     routes: new Set<string>(),
@@ -800,6 +830,7 @@ function resolveAccumulator(
 ): RegionInfraData {
   return {
     stations: accumulator.stationNames,
+    stationRidership: accumulator.stationRidership,
     tracks: accumulator.trackIds,
     trackLengths: accumulator.trackLengths,
     routes: accumulator.routes,
@@ -820,6 +851,13 @@ function addTrackLength(
     trackType,
     (trackLengths.get(trackType) ?? 0) + additionalLength,
   );
+}
+
+function applyStationRidershipToAccumulator(
+  accumulator: InfraDataAccumulator,
+  stationRidership: RegionStationRidershipData,
+): void {
+  accumulator.stationRidership = stationRidership;
 }
 
 function computeTrackLengthInBoundary(
