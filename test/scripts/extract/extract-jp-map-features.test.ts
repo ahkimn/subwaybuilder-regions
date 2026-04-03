@@ -424,7 +424,7 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
     assert.ok(
       Math.abs(
         Number(municipality.properties?.AREA_WITHIN_BBOX) -
-          Number(municipality.properties?.TOTAL_AREA),
+        Number(municipality.properties?.TOTAL_AREA),
       ) < 1e-9,
     );
   });

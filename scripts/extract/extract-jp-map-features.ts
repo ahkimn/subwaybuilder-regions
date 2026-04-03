@@ -44,17 +44,6 @@ const JP_DATA_CONFIGS: Record<JPDatasetId, DataConfig> = {
   }),
 };
 
-const JP_SOURCE_COLLECTION_BUILDERS: Record<
-  JPDatasetId,
-  (context: JPBundleContext) => Promise<{
-    sourceCollection: FeatureCollection<Polygon | MultiPolygon>;
-    namesById: Map<string, { ja: string; en: string }>;
-  }>
-> = {
-  shichouson: buildShichousonSourceCollection,
-  ooaza: buildOoazaSourceCollection,
-};
-
 export { buildMunicipalityPopulationMap } from './jp/context';
 export {
   deriveOoazaName,
@@ -70,7 +59,9 @@ async function buildSourceCollectionForDataset(
   sourceCollection: FeatureCollection<Polygon | MultiPolygon>;
   namesById: Map<string, { ja: string; en: string }>;
 }> {
-  return JP_SOURCE_COLLECTION_BUILDERS[datasetId](context);
+  return datasetId === 'ooaza'
+    ? buildOoazaSourceCollection(context)
+    : buildShichousonSourceCollection(context);
 }
 
 async function extractSingleJPDataset(
@@ -92,12 +83,15 @@ async function extractSingleJPDataset(
   // For 市町村 boundaries, we can skip the clipping step since the source data is already perfectly aligned to the boundary geometry.
   const filteredRegions =
     datasetId === 'shichouson'
-      ? buildRegionsWithoutClipping(sourceCollection, dataConfig)
+      ? buildRegionsWithoutClipping(sourceCollection, dataConfig, {
+          includeLabelPointCandidates: args.includeLabelPointCandidates,
+        })
       : filterAndClipRegionsToBoundaryGeometry(
           sourceCollection,
           context.boundaryFeature,
           dataConfig,
           {
+            includeLabelPointCandidates: args.includeLabelPointCandidates,
             progressLabel: `JP ${datasetId} boundary filter`,
           },
         );

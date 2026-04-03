@@ -185,6 +185,7 @@ describe('scripts/utils/cli utilities', () => {
       cityCode: 'hak',
       countryCode: 'JP',
       bundle: 'hakodate',
+      includeLabelPointCandidates: false,
       south: undefined,
       west: undefined,
       north: undefined,
@@ -195,6 +196,20 @@ describe('scripts/utils/cli utilities', () => {
       previewCount: 5,
     });
     assert.equal(harness.calls.error.length, 0);
+  });
+
+  it('parseExtractArgs_shouldParseIncludeLabelPointCandidatesFlag_whenEnabled', () => {
+    const args = parseExtractArgs([
+      '--data-type',
+      'wards',
+      '--city-code',
+      'lon',
+      '--country-code',
+      'GB',
+      '--include-label-point-candidates',
+    ]);
+
+    assert.equal(args.includeLabelPointCandidates, true);
   });
 
   it('parseExtractArgs_shouldExitWithCode1_whenJPBundleIsMissing', async () => {

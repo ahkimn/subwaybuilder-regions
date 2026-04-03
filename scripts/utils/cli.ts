@@ -16,6 +16,7 @@ export type ExtractMapFeaturesArgs = {
   cityCode: string;
   countryCode: string;
   bundle?: string;
+  includeLabelPointCandidates?: boolean;
   south?: number;
   west?: number;
   north?: number;
@@ -126,14 +127,21 @@ export function getBBoxFromArgs<T extends CoordinateBoxArgs>(
 export function parseExtractArgs(argvInput: string[]): ExtractMapFeaturesArgs {
   const argv = minimist(argvInput, {
     string: ['data-type', 'city-code', 'country-code', 'bundle'],
-    boolean: ['compress', 'use-local-data', 'preview'],
+    boolean: [
+      'compress',
+      'use-local-data',
+      'preview',
+      'include-label-point-candidates',
+    ],
     default: {
       compress: true,
+      'include-label-point-candidates': false,
     },
     alias: {
       'data-type': 'dataType',
       'city-code': 'cityCode',
       'country-code': 'countryCode',
+      'include-label-point-candidates': 'includeLabelPointCandidates',
       compress: 'compress',
       'use-local-data': 'useLocalData',
     },
@@ -176,6 +184,8 @@ export function parseExtractArgs(argvInput: string[]): ExtractMapFeaturesArgs {
   const useLocalData = (argv.useLocalData ?? argv['use-local-data']) as
     | boolean
     | undefined;
+  const includeLabelPointCandidates = (argv.includeLabelPointCandidates ??
+    argv['include-label-point-candidates']) as boolean | undefined;
 
   const preview = (argv.preview ?? argv['preview']) as boolean | undefined;
   const compress = (argv.compress ?? argv['compress']) as boolean | undefined;
@@ -185,6 +195,7 @@ export function parseExtractArgs(argvInput: string[]): ExtractMapFeaturesArgs {
     countryCode: countryCode,
     cityCode: cityCode,
     bundle: bundle,
+    includeLabelPointCandidates: includeLabelPointCandidates,
     south: south,
     west: west,
     north: north,
@@ -199,6 +210,7 @@ export function parseExtractArgs(argvInput: string[]): ExtractMapFeaturesArgs {
     cityCode: cityCode!,
     countryCode: countryCode!,
     bundle: bundle,
+    includeLabelPointCandidates: includeLabelPointCandidates,
     south: south,
     west: west,
     north: north,

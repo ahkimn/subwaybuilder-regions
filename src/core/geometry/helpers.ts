@@ -250,6 +250,18 @@ export function multiPolyBBox(bboxes: BBox[]): BBox {
   return [minLng, minLat, maxLng, maxLat];
 }
 
+export function featureBBox(feature: Feature<Polygon | MultiPolygon>): BBox {
+  if (feature.geometry.type === 'Polygon') {
+    return polygonBBox(toPolyCoordinates(feature.geometry.coordinates));
+  }
+
+  return multiPolyBBox(
+    feature.geometry.coordinates.map((polygon) =>
+      polygonBBox(toPolyCoordinates(polygon)),
+    ),
+  );
+}
+
 export function computeDemandDataBBox(demandData: DemandDataFile): BBox | null {
   const coordinates: Coordinate[] = demandData.points
     .map((point) => [point.location[0], point.location[1]] as Coordinate)

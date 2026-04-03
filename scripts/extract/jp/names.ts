@@ -53,7 +53,7 @@ function findAzaSeparatorIndex(value: string): number {
     }
 
     // Skip the "字" in "大字"; if there is another later "字", that later one is
-    // the aza separator we want to strip when collapsing to the ooaza label.
+    // the aza separator we want to strip when collapsing to the ōaza label.
     if (separatorIndex > 0 && value[separatorIndex - 1] === '大') {
       searchStart = separatorIndex + 1;
       continue;
@@ -151,9 +151,7 @@ export async function romanizeJapaneseName(nameJa: string): Promise<string> {
         romajiSystem: 'hepburn',
       });
       const collapsed = converted.replace(/\s+/g, ' ').trim().toLowerCase();
-      return titleCaseRomaji(
-        applyDiacritics(deAssimilateSyllabicN(collapsed)),
-      );
+      return titleCaseRomaji(applyDiacritics(deAssimilateSyllabicN(collapsed)));
     } catch (error) {
       console.warn(
         `[JP] Failed to romanize name "${normalizedName}". Falling back to Japanese.`,

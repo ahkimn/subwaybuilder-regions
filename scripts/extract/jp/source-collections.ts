@@ -1,5 +1,5 @@
-import * as turf from '@turf/turf';
 import { cleanCoords } from '@turf/clean-coords';
+import * as turf from '@turf/turf';
 import AdmZip from 'adm-zip';
 import { DBFFile } from 'dbffile';
 import fs from 'fs-extra';
@@ -49,6 +49,7 @@ import type {
   RegionNameParts,
 } from './types';
 
+// Utility to merge multiple polygon features into a single feature with the specified properties. This is used for dissolving the N03 municipality boundaries and the chocho-level features into ōaza-level groupings.
 function mergePolygonFeatures(
   features: readonly GeoBoundaryFeature[],
   properties: GeoJSON.GeoJsonProperties,
@@ -77,10 +78,7 @@ function mergePolygonFeatures(
       error,
     );
 
-    // Some JP groups trigger polyclip numerical robustness issues during union even
-    // though the grouped polygons are otherwise valid. Retrying with cleaned geometry
-    // and slightly reduced coordinate precision has proven sufficient for cases such
-    // as tsugaru/022050460 without materially changing the output shape.
+    // Some JP groups trigger polyclip numerical robustness issues during union even though the grouped polygons are otherwise valid. Retrying with cleaned geometry and slightly reduced coordinate precision is sufficient to resolve this without materially changing the output shape.
     const normalizedFeatures = features.map((feature) =>
       turf.truncate(cleanCoords(feature), {
         precision: 7,
@@ -100,6 +98,7 @@ function mergePolygonFeatures(
   return merged;
 }
 
+// Collection builder for municipality-level boundaries based on the N03 dataset. This is used for the shichouson dataset and also as a fallback source collection for ooaza when the chocho grouping fails to produce a valid geometry for a given municipality.
 export async function buildShichousonSourceCollection(
   context: JPBundleContext,
 ): Promise<{
@@ -194,7 +193,7 @@ async function extractZipEntryToTempFile(
   }
 }
 
-// Loads and builds a lookup of 大字 boundaries for the specified prefecture codes, which are used for building the ooaza source collection. 
+// Loads and builds a lookup of 大字 boundaries for the specified prefecture codes, which are used for building the ōaza source collection.
 async function loadOazaBoundaryRowsForPrefecture(
   sourceRoot: string,
   prefCode: string,
@@ -227,23 +226,19 @@ async function loadOazaBoundaryRowsForPrefecture(
       // It matches the chocho-level code from phase_inputs/chocho_selected.geojson.
       const chochoKey = normalizeChochoKey(row.KEY_CODE);
 
-      // KCODE1 carries the ooaza-level parent code corresponding to the KEY_CODE
-      // hierarchy. We keep it so we can validate the first 9 digits of KEY_CODE
-      // against the DBF's explicit ooaza code instead of trusting either field alone.
+      // KCODE1 carries the ōaza-level parent code corresponding to the KEY_CODE hierarchy. We keep it so we can validate the first 9 digits of KEY_CODE against the DBF's explicit ōaza code instead of trusting either field alone.
       const kcode1Base = normalizeKcode1Base(row.KCODE1);
 
-      // S_AREA is a second area-code field carried by the DBF. We normalize it to the same 4-digit base and require it to match KCODE1 so we only keep rows where the parent-area code and the area label are aligned at the same ooaza-level unit.
+      // S_AREA is a second area-code field carried by the DBF. We normalize it to the same 4-digit base and require it to match KCODE1 so we only keep rows where the parent-area code and the area label are aligned at the same ōaza-level unit.
       // This filters out rows that point at a more specific sub-area variant.
       const sAreaBase = normalizeSAreaBase(row.S_AREA);
       const oazaName = cleanLabelName(row.S_NAME);
 
-      // Some neighborhood7 rows have a valid KEY_CODE/KCODE1/S_AREA mapping but a blank
-      // S_NAME. We still keep those rows so the chocho can be grouped correctly, and we
-      // fall back to chocho_name (or ultimately the group key) later when choosing labels.
+      // Some neighborhood7 rows have a valid KEY_CODE/KCODE1/S_AREA mapping but a blank S_NAME. We still keep those rows so the chocho can be grouped correctly, and we fall back to chocho_name (or ultimately the group key) later when choosing labels.
       if (!chochoKey || !kcode1Base || !sAreaBase) {
         continue;
       }
-      // Keep only rows whose grouping code and area code agree on the same base ooaza.
+      // Keep only rows whose grouping code and area code agree on the same base ōaza.
       if (kcode1Base !== sAreaBase) {
         continue;
       }
@@ -282,7 +277,7 @@ async function loadOazaBoundaryLookup(
   return lookup;
 }
 
-// Main source collection builders for each dataset. Each function takes the full JP bundle context as input and returns the raw source collection and a mapping of source IDs to Japanese/English name parts that can be used for labeling and post-processing. 
+// Main source collection builders for each dataset. Each function takes the full JP bundle context as input and returns the raw source collection and a mapping of source IDs to Japanese/English name parts that can be used for labeling and post-processing.
 export async function buildOoazaSourceCollection(
   context: JPBundleContext,
 ): Promise<{
@@ -338,9 +333,7 @@ export async function buildOoazaSourceCollection(
       );
     }
 
-    // Census KEY_CODE already encodes the ooaza hierarchy as
-    // PREF(2) + CITY(3) + OAZA(4) + AZA(remaining digits), so dissolving on the
-    // first 9 digits gives the canonical ooaza region id directly.
+    // Census KEY_CODE already encodes the ōaza hierarchy as PREF(2) + CITY(3) + OAZA(4) + AZA(remaining digits), so dissolving on the first 9 digits gives the canonical ōaza region id directly.
     const groupKey = chochoKey.slice(0, 9);
     const expectedGroupKey = `${municipalityCode}${oazaRow.kcode1Base}`;
     if (groupKey !== expectedGroupKey) {

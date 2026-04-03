@@ -32,6 +32,9 @@ export function processAndSaveBoundaries(
     geoJson as GeoJSON.FeatureCollection,
     bbox,
     dataConfig,
+    {
+      includeLabelPointCandidates: args.includeLabelPointCandidates,
+    },
   );
 
   console.log(

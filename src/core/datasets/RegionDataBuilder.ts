@@ -56,7 +56,7 @@ type CommuterDetailsAccumulator = {
 
 // Helper class to build region data layers (commute / infra data) on demand when a region is selected by the user
 export class RegionDataBuilder {
-  constructor(private api: ModdingAPI) { }
+  constructor(private api: ModdingAPI) {}
 
   async updateDatasetCommuteData(
     dataset: RegionDataset,

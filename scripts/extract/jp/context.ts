@@ -166,8 +166,8 @@ function loadBoundaryMetadata(bundleDir: string): JPBoundaryMetadata {
 
   const municipalityCodes = Array.isArray(properties.municipality_codes)
     ? properties.municipality_codes
-      .map((value) => normalizeMunicipalityCode(value))
-      .filter(Boolean)
+        .map((value) => normalizeMunicipalityCode(value))
+        .filter(Boolean)
     : [];
   if (municipalityCodes.length === 0) {
     throw new Error(
@@ -177,8 +177,8 @@ function loadBoundaryMetadata(bundleDir: string): JPBoundaryMetadata {
 
   const prefCodes = Array.isArray(properties.pref_codes)
     ? properties.pref_codes
-      .map((value) => normalizePrefCode(value))
-      .filter(Boolean)
+        .map((value) => normalizePrefCode(value))
+        .filter(Boolean)
     : [];
   if (prefCodes.length === 0) {
     throw new Error(
@@ -211,7 +211,7 @@ export function buildMunicipalityPopulationMap(
     populationMap.set(
       municipalityCode,
       (populationMap.get(municipalityCode) || 0) +
-      resolveChochoPopulation(feature.properties ?? {}),
+        resolveChochoPopulation(feature.properties ?? {}),
     );
   }
 
