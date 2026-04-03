@@ -22,6 +22,7 @@ _Game version_ v1.2.0
 ### Bugfixes
 
 - Stopped unresolved folder open actions from preventing validation (esp. on Linux) by timing out the block after a set period of time
+- Removed undownloaded city codes (as well as city codes from countries with no available datasets) from being shown on the Settings Menu
 
 ## v0.4.5 - 2026-03-04
 

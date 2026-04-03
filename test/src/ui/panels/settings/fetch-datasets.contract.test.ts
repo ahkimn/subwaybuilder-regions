@@ -10,7 +10,9 @@ import {
   type FetchCountryCode,
   type FetchParameters,
   formatFetchCommand,
+  hasFetchableDatasetsForCity,
   type LastCopiedFetchRequest,
+  resolveCityCountryCode,
 } from '@/ui/panels/settings/fetch-helpers';
 import {
   type FetchState,
@@ -19,6 +21,7 @@ import {
   regionsSettingsReducer,
   type RegionsSettingsState,
 } from '@/ui/panels/settings/RegionsSettingsState';
+import type { City } from '@/types/cities';
 import { SortDirection } from '@/ui/panels/types';
 
 type DerivedFetchUi = {
@@ -35,6 +38,37 @@ const DEFAULT_BOS_BBOX: FetchBBox = {
   east: '-71.1263',
   north: '42.0151',
 };
+
+const FETCH_CITY_FIXTURES: City[] = [
+  {
+    code: 'BOS',
+    name: 'Boston',
+    country: 'US',
+    description: 'Fixture city',
+    mapImageUrl: '',
+    population: 1000,
+    initialViewState: {
+      zoom: 11,
+      latitude: 42.36,
+      longitude: -71.05,
+      bearing: 0,
+    },
+  },
+  {
+    code: 'HKD',
+    name: 'Hakodate',
+    country: 'JP',
+    description: 'JP fixture city',
+    mapImageUrl: '',
+    population: 1000,
+    initialViewState: {
+      zoom: 11,
+      latitude: 41.77,
+      longitude: 140.73,
+      bearing: 0,
+    },
+  },
+];
 
 function createFetchSnapshot(
   request: FetchParameters,
@@ -141,6 +175,29 @@ function reduceFetchState(
 }
 
 describe('settings fetch datasets action gating (state/contract)', () => {
+  it('filters fetch city options to countries with online datasets and scanned city data', () => {
+    assert.equal(resolveCityCountryCode(FETCH_CITY_FIXTURES[0]), 'US');
+    assert.equal(resolveCityCountryCode(FETCH_CITY_FIXTURES[1]), 'JP');
+    assert.equal(hasFetchableDatasetsForCity(FETCH_CITY_FIXTURES[0]), true);
+    assert.equal(hasFetchableDatasetsForCity(FETCH_CITY_FIXTURES[1]), false);
+
+    const availableCityCodes = new Set(['BOS', 'HKD']);
+    const filtered = FETCH_CITY_FIXTURES.filter((city) => {
+      return (
+        hasFetchableDatasetsForCity(city) && availableCityCodes.has(city.code)
+      );
+    });
+    assert.deepEqual(
+      filtered.map((city) => city.code),
+      ['BOS'],
+    );
+
+    const filteredWithoutScannedData = FETCH_CITY_FIXTURES.filter((city) => {
+      return hasFetchableDatasetsForCity(city) && city.code === 'HKD';
+    });
+    assert.deepEqual(filteredWithoutScannedData, []);
+  });
+
   it('gates actions in order: copy -> validate while keeping open mods folder optional', () => {
     let fetchState = createHappyFetchState();
 

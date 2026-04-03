@@ -19,6 +19,7 @@ import {
   deriveFetchActionAvailability,
   type FetchCountryCode,
   formatFetchCommand,
+  hasFetchableDatasetsForCity,
   resolveCityCountryCode,
 } from './fetch-helpers';
 import {
@@ -60,6 +61,7 @@ export function RegionsSettingsPanel({
       storage,
       createInitialSettingsState,
     );
+    const [fetchableCities, setFetchableCities] = useStateHook<City[]>([]);
     const runtimePlatform = resolveRuntimePlatform(state.systemPerformanceInfo);
     const relativeModPath = storage.getResolvedRelativeModPath();
 
@@ -130,8 +132,9 @@ export function RegionsSettingsPanel({
       };
     }, [state.isOpen]);
 
+    const knownCities = api.utils.getCities();
     const knownCitiesByCode = new Map<string, City>(
-      api.utils.getCities().map((city) => [city.code, city]),
+      knownCities.map((city) => [city.code, city]),
     );
     const knownCityCodes = new Set(knownCitiesByCode.keys());
     const datasetRows = buildSettingsDatasetRows(
@@ -346,6 +349,71 @@ export function RegionsSettingsPanel({
         cancelled = true;
       };
     }, [state.fetch.params.cityCode]);
+
+    useEffectHook(() => {
+      if (!state.isOpen) {
+        return;
+      }
+
+      let cancelled = false;
+      const candidateCities = knownCities.filter(hasFetchableDatasetsForCity);
+
+      void Promise.all(
+        candidateCities.map(async (city) => ({
+          city,
+          isAvailable: await storage.hasScannedCityData(city.code),
+        })),
+      )
+        .then((results) => {
+          if (cancelled) {
+            return;
+          }
+
+          setFetchableCities(
+            results
+              .filter((result) => result.isAvailable)
+              .map((result) => result.city),
+          );
+        })
+        .catch((error) => {
+          console.warn(
+            '[Regions] Failed to resolve fetchable city availability.',
+            error,
+          );
+          if (!cancelled) {
+            setFetchableCities([]);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [state.isOpen]);
+
+    const fetchableCityCodeKey = fetchableCities
+      .map((city) => city.code)
+      .sort()
+      .join(',');
+    const fetchableCityCodes = new Set(fetchableCities.map((city) => city.code));
+
+    useEffectHook(() => {
+      if (!state.fetch.params.cityCode) {
+        return;
+      }
+      if (fetchableCityCodes.has(state.fetch.params.cityCode)) {
+        return;
+      }
+
+      dispatch({
+        type: 'set_fetch_params',
+        params: {
+          cityCode: '',
+          countryCode: null,
+          datasetIds: [],
+          bbox: null,
+        },
+      });
+    }, [fetchableCityCodeKey, state.fetch.params.cityCode]);
 
     const onFetchCityCodeChange = (cityCode: string) => {
       const nextCity = knownCitiesByCode.get(cityCode);
@@ -593,12 +661,10 @@ export function RegionsSettingsPanel({
               isCountryAutoResolved: state.fetch.isCountryAutoResolved,
               lastCopiedRequest: state.fetch.lastCopiedRequest,
               lastValidationResult: state.fetch.lastValidationResult,
-              cityOptions: Array.from(knownCitiesByCode.values()).map(
-                (city) => ({
-                  code: city.code,
-                  name: city.name,
-                }),
-              ),
+              cityOptions: fetchableCities.map((city) => ({
+                code: city.code,
+                name: city.name,
+              })),
               countryOptions,
               datasets: fetchableDatasets,
               relativeModPath,
