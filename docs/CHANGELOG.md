@@ -19,6 +19,10 @@ _Game version_ v1.2.0
 - Added local static recognition for downloaded JP city datasets so release/distributed JP data can be discovered by the mod even though JP is not supported by the runtime fetch wrappers.
 - Added `npm run link:jp-data` helper flow for maintaining the local JP source mirror used by the developer-only extraction scripts.
 
+### Bugfixes
+
+- Stopped unresolved folder open actions from preventing validation (esp. on Linux) by timing out the block after a set period of time
+
 ## v0.4.5 - 2026-03-04
 
 _Game version_ v1.1.0

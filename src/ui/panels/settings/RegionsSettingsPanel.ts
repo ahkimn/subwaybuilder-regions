@@ -37,6 +37,7 @@ import {
 import { type SettingsMenuComponentParams } from './types';
 
 const DEFAULT_FETCH_PADDING_KM = 10;
+const OPEN_MODS_FOLDER_TIMEOUT_MS = 1500;
 
 export function RegionsSettingsPanel({
   api,
@@ -166,7 +167,6 @@ export function RegionsSettingsPanel({
       command: fetchCommand,
       request: state.fetch.params,
       lastCopiedRequest: state.fetch.lastCopiedRequest,
-      lastOpenedModsFolderRequest: state.fetch.lastOpenedModsFolderRequest,
     });
 
     type RunAsyncOperationParams = {
@@ -502,12 +502,21 @@ export function RegionsSettingsPanel({
       const bbox = state.fetch.params.bbox;
       const cityCode = state.fetch.params.cityCode;
       const datasetIds = [...state.fetch.params.datasetIds];
-      void storage
-        .openModsFolder()
-        .then(() => {
+      const openModsFolderTask = storage.openModsFolder();
+
+      void Promise.race([
+        openModsFolderTask.then(() => 'opened' as const).catch((error) => {
+          throw error;
+        }),
+        new Promise<'timeout'>((resolve) => {
+          window.setTimeout(() => resolve('timeout'), OPEN_MODS_FOLDER_TIMEOUT_MS);
+        }),
+      ])
+        .then((result) => {
           if (!countryCode || !bbox) {
             return;
           }
+
           dispatch({
             type: 'set_last_opened_mods_folder_request',
             request: {
@@ -518,6 +527,12 @@ export function RegionsSettingsPanel({
               copiedAt: Date.now(),
             },
           });
+
+          if (result === 'timeout') {
+            console.warn(
+              `[Regions] openModsFolder did not resolve within ${OPEN_MODS_FOLDER_TIMEOUT_MS}ms; assuming the OS opener was launched successfully.`,
+            );
+          }
         })
         .catch((error) => {
           console.error('[Regions] Failed to open mods folder.', error);

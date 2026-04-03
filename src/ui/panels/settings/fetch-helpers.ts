@@ -49,7 +49,6 @@ type FetchActionAvailabilityArgs = {
   command: string;
   request: FetchParameters;
   lastCopiedRequest: LastCopiedFetchRequest | null;
-  lastOpenedModsFolderRequest: LastCopiedFetchRequest | null;
 };
 
 export function resolveCityCountryCode(
@@ -169,7 +168,6 @@ export function deriveFetchActionAvailability({
   command,
   request,
   lastCopiedRequest,
-  lastOpenedModsFolderRequest,
 }: FetchActionAvailabilityArgs): {
   canCopyCommand: boolean;
   canOpenModsFolder: boolean;
@@ -178,9 +176,7 @@ export function deriveFetchActionAvailability({
   const canCopyCommand = command.length > 0;
   const canOpenModsFolder =
     canCopyCommand && isFetchRequestSnapshotCurrent(lastCopiedRequest, request);
-  const canValidateDatasets =
-    canOpenModsFolder &&
-    isFetchRequestSnapshotCurrent(lastOpenedModsFolderRequest, request);
+  const canValidateDatasets = canOpenModsFolder;
 
   return {
     canCopyCommand,

@@ -142,7 +142,6 @@ function FetchDatasetsHarness(): React.ReactNode {
     command,
     request: state.request,
     lastCopiedRequest: state.lastCopiedRequest,
-    lastOpenedModsFolderRequest: state.lastOpenedModsFolderRequest,
   });
 
   const fetchParams: SettingsFetchSectionParams = {
@@ -388,13 +387,13 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
       SettingsUI.REGIONS_SETTINGS_FETCH_OPEN_MOD_FOLDER_BUTTON_ID,
       container,
     );
-    assertButtonDisabled(
+    assertButtonEnabled(
       SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
       container,
     );
     assertText(
       SettingsUI.REGIONS_SETTINGS_FETCH_STATUS_ID,
-      /Open mods folder to enable dataset validation./,
+      /Ready to validate BOS:/,
       container,
     );
 
@@ -406,11 +405,6 @@ describe('settings fetch datasets happy path (DOM interaction)', () => {
 
     assertButtonEnabled(
       SettingsUI.REGIONS_SETTINGS_FETCH_VALIDATE_BUTTON_ID,
-      container,
-    );
-    assertText(
-      SettingsUI.REGIONS_SETTINGS_FETCH_STATUS_ID,
-      /Ready to validate BOS:/,
       container,
     );
 

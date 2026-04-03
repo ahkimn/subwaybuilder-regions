@@ -101,7 +101,6 @@ function deriveFetchUi(fetchState: FetchState): DerivedFetchUi {
     command,
     request: fetchState.params,
     lastCopiedRequest: fetchState.lastCopiedRequest,
-    lastOpenedModsFolderRequest: fetchState.lastOpenedModsFolderRequest,
   });
 
   return {
@@ -142,7 +141,7 @@ function reduceFetchState(
 }
 
 describe('settings fetch datasets action gating (state/contract)', () => {
-  it('gates actions in order: copy -> open mods folder -> validate', () => {
+  it('gates actions in order: copy -> validate while keeping open mods folder optional', () => {
     let fetchState = createHappyFetchState();
 
     const initial = deriveFetchUi(fetchState);
@@ -160,17 +159,7 @@ describe('settings fetch datasets action gating (state/contract)', () => {
     const afterCopy = deriveFetchUi(fetchState);
     assert.equal(afterCopy.canCopyCommand, true);
     assert.equal(afterCopy.canOpenModsFolder, true);
-    assert.equal(afterCopy.canValidateDatasets, false);
-
-    fetchState = {
-      ...fetchState,
-      lastOpenedModsFolderRequest: createFetchSnapshot(fetchState.params),
-    };
-
-    const afterOpenModsFolder = deriveFetchUi(fetchState);
-    assert.equal(afterOpenModsFolder.canCopyCommand, true);
-    assert.equal(afterOpenModsFolder.canOpenModsFolder, true);
-    assert.equal(afterOpenModsFolder.canValidateDatasets, true);
+    assert.equal(afterCopy.canValidateDatasets, true);
 
     fetchState = {
       ...fetchState,
