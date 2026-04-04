@@ -6,18 +6,23 @@ import type { GeoBoundaryFeature } from './types';
 const JAPANESE_TEXT_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/;
 const CHOME_SUFFIX_RE =
   /(?:[0-9\uFF10-\uFF19]+|[\u4E00\u4E8C\u4E09\u56DB\u4E94\u516D\u4E03\u516B\u4E5D\u5341\u767E\u3007\u96F6]+)\u4E01\u76EE$/;
+const OAZA_PREFIX_RE = /^(?:\u5927\u5b57|\u5b57)+/;
 const ROMAJI_INITIAL_RE = /^[a-z\u0101\u0113\u012b\u014d\u016b]/i;
 const DIACRITIC_MAP: ReadonlyArray<readonly [string, string]> = [
-  ['ou', 'ō'],
-  ['oo', 'ō'],
-  ['aa', 'ā'],
-  ['ii', 'ī'],
-  ['uu', 'ū'],
-  ['ee', 'ē'],
+  ['ou', '\u014d'],
+  ['oo', '\u014d'],
+  ['aa', '\u0101'],
+  ['ii', '\u012b'],
+  ['uu', '\u016b'],
+  ['ee', '\u0113'],
 ];
 const ROMAJI_OVERRIDES = new Map<string, string>([
-  ['葛尾', 'Katsurao'],
-  ['葛尾村', 'Katsurao Mura'],
+  ['\u845b\u5c3e', 'Katsurao'],
+  ['\u845b\u5c3e\u6751', 'Katsurao Mura'],
+  ['\u5317\u4e2d\u592e', 'Kita Ch\u016b\u014d'],
+  ['\u6771\u4e2d\u592e', 'Higashi Ch\u016b\u014d'],
+  ['\u897f\u4e2d\u592e', 'Nishi Ch\u016b\u014d'],
+  ['\u5357\u4e2d\u592e', 'Minami Ch\u016b\u014d'],
 ]);
 
 let kuroshiroInitPromise: Promise<Kuroshiro> | null = null;
@@ -34,7 +39,9 @@ export function cleanLabelName(value: unknown): string {
 // For oaza/koaza names, we often have redundant suffixes like "丁目" that do
 // not add much value to the higher-level display label.
 export function collapseOazaName(value: unknown): string {
-  const text = cleanLabelName(value).replace(/\s+/g, '');
+  const text = cleanLabelName(value)
+    .replace(/\s+/g, '')
+    .replace(OAZA_PREFIX_RE, '');
   if (!text) {
     return '';
   }
@@ -47,14 +54,14 @@ function findAzaSeparatorIndex(value: string): number {
   let searchStart = 0;
 
   while (searchStart < value.length) {
-    const separatorIndex = value.indexOf('字', searchStart);
+    const separatorIndex = value.indexOf('\u5b57', searchStart);
     if (separatorIndex < 0) {
       return -1;
     }
 
     // Skip the "字" in "大字"; if there is another later "字", that later one is
-    // the aza separator we want to strip when collapsing to the ōaza label.
-    if (separatorIndex > 0 && value[separatorIndex - 1] === '大') {
+    // the aza separator we want to strip when collapsing to the Ōaza label.
+    if (separatorIndex > 0 && value[separatorIndex - 1] === '\u5927') {
       searchStart = separatorIndex + 1;
       continue;
     }
@@ -66,7 +73,9 @@ function findAzaSeparatorIndex(value: string): number {
 }
 
 export function deriveOoazaName(value: unknown): string {
-  const text = cleanLabelName(value).replace(/\s+/g, '');
+  const text = cleanLabelName(value)
+    .replace(/\s+/g, '')
+    .replace(OAZA_PREFIX_RE, '');
   if (!text) {
     return '';
   }

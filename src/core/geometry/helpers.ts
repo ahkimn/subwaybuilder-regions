@@ -44,6 +44,11 @@ export function isFullyWithinFeature(
   boundaryFeature: Feature<Polygon | MultiPolygon>,
   errorContext = 'boundary',
 ): boolean {
+  const featureBBoxPolygon = turf.bboxPolygon(featureBBox(feature));
+  if (!turf.booleanContains(boundaryFeature, featureBBoxPolygon)) {
+    return false;
+  }
+
   if (feature.geometry.type === 'Polygon') {
     return turf.booleanWithin(feature, boundaryFeature);
   }

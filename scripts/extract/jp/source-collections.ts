@@ -4,6 +4,7 @@ import AdmZip from 'adm-zip';
 import { DBFFile } from 'dbffile';
 import fs from 'fs-extra';
 import type {
+  BBox,
   Feature,
   FeatureCollection,
   MultiPolygon,
@@ -12,7 +13,9 @@ import type {
 import os from 'os';
 import path from 'path';
 
+import { bboxIntersects, featureBBox } from '../../../src/core/geometry/helpers';
 import { loadGeoJSON } from '../../utils/files';
+import { resolvePrimaryLabelPoint } from '../../utils/geometry';
 import { logProgressHeartbeat } from '../../utils/progress';
 import {
   BILINGUAL_NAME_PROPERTY,
@@ -48,6 +51,15 @@ import type {
   OazaBoundaryRow,
   RegionNameParts,
 } from './types';
+
+type PreliminaryOoazaRegion = {
+  sourceId: string;
+  municipalityCode: string;
+  nameJa: string;
+  population: number;
+  feature: GeoBoundaryFeature;
+  bbox: BBox;
+};
 
 // Utility to merge multiple polygon features into a single feature with the specified properties. This is used for dissolving the N03 municipality boundaries and the chocho-level features into ōaza-level groupings.
 function mergePolygonFeatures(
@@ -277,6 +289,116 @@ async function loadOazaBoundaryLookup(
   return lookup;
 }
 
+function buildPreliminaryOoazaRegion(
+  sourceId: string,
+  nameJa: string,
+  population: number,
+  features: readonly GeoBoundaryFeature[],
+): PreliminaryOoazaRegion {
+  const feature = mergePolygonFeatures(features, {
+    [SOURCE_ID_PROPERTY]: sourceId,
+    [POPULATION_PROPERTY]: population,
+  });
+
+  return {
+    sourceId,
+    municipalityCode: sourceId.slice(0, 5),
+    nameJa,
+    population,
+    bbox: featureBBox(feature),
+    feature,
+  };
+}
+
+function mergeAdjacentNamedOoazaRegions(
+  regions: readonly PreliminaryOoazaRegion[],
+): PreliminaryOoazaRegion[] {
+  const groupedByMunicipalityAndName = new Map<string, PreliminaryOoazaRegion[]>();
+
+  for (const region of regions) {
+    const key = `${region.municipalityCode}|${region.nameJa}`;
+    const existing = groupedByMunicipalityAndName.get(key);
+    if (existing) {
+      existing.push(region);
+    } else {
+      groupedByMunicipalityAndName.set(key, [region]);
+    }
+  }
+
+  const mergedRegions: PreliminaryOoazaRegion[] = [];
+
+  for (const regionsWithSameName of groupedByMunicipalityAndName.values()) {
+    if (regionsWithSameName.length === 1) {
+      mergedRegions.push(regionsWithSameName[0]);
+      continue;
+    }
+
+    const visited = new Set<number>();
+
+    for (let index = 0; index < regionsWithSameName.length; index += 1) {
+      if (visited.has(index)) {
+        continue;
+      }
+
+      const component: PreliminaryOoazaRegion[] = [];
+      const queue = [index];
+      visited.add(index);
+
+      while (queue.length > 0) {
+        const currentIndex = queue.pop()!;
+        const current = regionsWithSameName[currentIndex];
+        component.push(current);
+
+        for (
+          let candidateIndex = 0;
+          candidateIndex < regionsWithSameName.length;
+          candidateIndex += 1
+        ) {
+          if (visited.has(candidateIndex)) {
+            continue;
+          }
+
+          const candidate = regionsWithSameName[candidateIndex];
+          if (!bboxIntersects(current.bbox, candidate.bbox)) {
+            continue;
+          }
+          if (!turf.booleanIntersects(current.feature, candidate.feature)) {
+            continue;
+          }
+
+          visited.add(candidateIndex);
+          queue.push(candidateIndex);
+        }
+      }
+
+      if (component.length === 1) {
+        mergedRegions.push(component[0]);
+        continue;
+      }
+
+      const sourceId = component
+        .map((region) => region.sourceId)
+        .sort()[0];
+      const population = component.reduce(
+        (sum, region) => sum + region.population,
+        0,
+      );
+      mergedRegions.push(
+        buildPreliminaryOoazaRegion(
+          sourceId,
+          component[0].nameJa,
+          population,
+          component.map((region) => region.feature),
+        ),
+      );
+    }
+  }
+
+  return mergedRegions.sort((left, right) =>
+    left.sourceId.localeCompare(right.sourceId),
+  );
+}
+
 // Main source collection builders for each dataset. Each function takes the full JP bundle context as input and returns the raw source collection and a mapping of source IDs to Japanese/English name parts that can be used for labeling and post-processing.
 export async function buildOoazaSourceCollection(
   context: JPBundleContext,
@@ -365,32 +487,62 @@ export async function buildOoazaSourceCollection(
   }
 
   const namesById = new Map<string, RegionNameParts>();
-  const sourceFeatures: GeoBoundaryFeature[] = [];
   const groupedEntries = Array.from(groupedFeatures.entries()).sort();
-  const totalOutputFeatures = groupedEntries.length;
-  let builtOutputFeatures = 0;
+  const totalGroupedEntries = groupedEntries.length;
+  let builtGroupedEntries = 0;
+  const preliminaryRegions: PreliminaryOoazaRegion[] = [];
 
   for (const [groupKey, group] of groupedEntries) {
-    builtOutputFeatures += 1;
+    builtGroupedEntries += 1;
     logProgressHeartbeat(
       '[JP]',
       'Ooaza feature build',
-      builtOutputFeatures,
-      totalOutputFeatures,
+      builtGroupedEntries,
+      totalGroupedEntries,
     );
 
     const nameJa = selectDominantOazaName(group.nameWeights) || groupKey;
-    const nameEn = await romanizeJapaneseName(nameJa);
-    const mergedFeature = mergePolygonFeatures(group.features, {
-      [SOURCE_ID_PROPERTY]: groupKey,
-      [JAPANESE_NAME_PROPERTY]: nameJa,
-      [ENGLISH_NAME_PROPERTY]: nameEn,
-      [BILINGUAL_NAME_PROPERTY]: formatBilingualName(nameJa, nameEn),
-      [POPULATION_PROPERTY]: group.population,
-    });
+    preliminaryRegions.push(
+      buildPreliminaryOoazaRegion(
+        groupKey,
+        nameJa,
+        group.population,
+        group.features,
+      ),
+    );
+  }
 
-    sourceFeatures.push(mergedFeature);
-    namesById.set(groupKey, { ja: nameJa, en: nameEn });
+  const sourceFeatures: GeoBoundaryFeature[] = [];
+  const mergedRegions = mergeAdjacentNamedOoazaRegions(preliminaryRegions);
+  const totalMergedRegions = mergedRegions.length;
+  let finalizedRegions = 0;
+
+  for (const region of mergedRegions) {
+    finalizedRegions += 1;
+    logProgressHeartbeat(
+      '[JP]',
+      'Ooaza label finalize',
+      finalizedRegions,
+      totalMergedRegions,
+    );
+
+    const nameEn = await romanizeJapaneseName(region.nameJa);
+    const primaryLabel = resolvePrimaryLabelPoint(region.feature);
+    const totalAreaKm2 = turf.area(region.feature) / 1_000_000;
+    region.feature.properties = {
+      ...(region.feature.properties ?? {}),
+      [SOURCE_ID_PROPERTY]: region.sourceId,
+      [JAPANESE_NAME_PROPERTY]: region.nameJa,
+      [ENGLISH_NAME_PROPERTY]: nameEn,
+      [BILINGUAL_NAME_PROPERTY]: formatBilingualName(region.nameJa, nameEn),
+      [POPULATION_PROPERTY]: region.population,
+      LAT: primaryLabel.lat,
+      LNG: primaryLabel.lng,
+      TOTAL_AREA: totalAreaKm2,
+    };
+
+    sourceFeatures.push(region.feature);
+    namesById.set(region.sourceId, { ja: region.nameJa, en: nameEn });
   }
 
   return {
