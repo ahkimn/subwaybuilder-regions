@@ -252,11 +252,7 @@ function tryGetLabelCandidatePoint(
         return null;
     }
   } catch (err) {
-    console.warn(
-      `\tFailed to compute ${method} for feature:`,
-      feature.id,
-      err,
-    );
+    console.warn(`\tFailed to compute ${method} for feature:`, feature.id, err);
     return null;
   }
 }
@@ -312,9 +308,9 @@ function resolveLabelPointResult(
 
   return includeCandidates
     ? {
-      primary,
-      candidates,
-    }
+        primary,
+        candidates,
+      }
     : { primary };
 }
 
@@ -716,7 +712,12 @@ function filterAndClipRegionsToMask(
 
   if (progressLabel) {
     console.log(
-      formatGeometryFilterSummary(progressLabel, totalFeatures, results.length, stats),
+      formatGeometryFilterSummary(
+        progressLabel,
+        totalFeatures,
+        results.length,
+        stats,
+      ),
     );
   }
   return results;
@@ -741,10 +742,14 @@ async function clipCandidatesWithWorkers(
     );
   }
 
-  const batches = Array.from({ length: resolvedWorkerCount }, () => [] as Array<{
-    index: number;
-    feature: Feature<Polygon | MultiPolygon>;
-  }>);
+  const batches = Array.from(
+    { length: resolvedWorkerCount },
+    () =>
+      [] as Array<{
+        index: number;
+        feature: Feature<Polygon | MultiPolygon>;
+      }>,
+  );
   clipCandidates.forEach((candidate, index) => {
     batches[index % resolvedWorkerCount].push({
       index,
@@ -759,9 +764,10 @@ async function clipCandidatesWithWorkers(
         .map((batch) => runClipWorkerBatch(batch, boundaryFeature)),
     );
 
-    const clippedRegions = new Array<Feature<Geometry, GeoJsonProperties> | null>(
-      clipCandidates.length,
-    ).fill(null);
+    const clippedRegions = new Array<Feature<
+      Geometry,
+      GeoJsonProperties
+    > | null>(clipCandidates.length).fill(null);
     for (const batchResults of workerResults) {
       for (const result of batchResults) {
         clippedRegions[result.index] = result.clippedRegion;
@@ -853,10 +859,7 @@ function buildRegionProperties(
     );
   const labelPointResult = precomputedLabel
     ? { primary: precomputedLabel }
-    : resolveLabelPointResult(
-      targetLabelFeature,
-      includeLabelPointCandidates,
-    );
+    : resolveLabelPointResult(targetLabelFeature, includeLabelPointCandidates);
   const featureProperties = sourceFeature.properties!;
   const primaryLabel = labelPointResult.primary;
   const outputAreaKm2 = turf.area(outputFeature) / 1_000_000;

@@ -422,7 +422,10 @@ describe('scripts/extract/extract-jp-map-features helpers', () => {
     );
     assert.equal(deriveOoazaName('\u5b57\u5c71\u5d0e'), '\u5c71\u5d0e');
     assert.equal(deriveOoazaName('\u5927\u5b57\u677e\u539f'), '\u677e\u539f');
-    assert.equal(deriveOoazaName('\u5927\u901a\u4e8c\u4e01\u76ee'), '\u5927\u901a');
+    assert.equal(
+      deriveOoazaName('\u5927\u901a\u4e8c\u4e01\u76ee'),
+      '\u5927\u901a',
+    );
     assert.equal(deriveOoazaName('\u5357\u753a'), '\u5357\u753a');
   });
 
@@ -503,7 +506,10 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
       municipality.properties?.NAME_JA,
       '\u672d\u5e4c\u5e02\u4e2d\u592e\u533a',
     );
-    assert.match(String(municipality.properties?.NAME_EN), /[\u0101\u0113\u012b\u014d\u016b]/);
+    assert.match(
+      String(municipality.properties?.NAME_EN),
+      /[\u0101\u0113\u012b\u014d\u016b]/,
+    );
     assert.equal(municipality.properties?.WITHIN_BBOX, true);
     assert.ok(
       Math.abs(

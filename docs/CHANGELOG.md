@@ -11,14 +11,12 @@ _Game version_ v1.2.0
 - Added JP region support for:
   - Municipalities (`shichouson` | 市町村)
   - Ooaza (`ooaza` | 大字)
-- Added a JP-specific local extraction pipeline driven by linked `subwaybuilder-jp-data` bundle inputs instead of `boundaries.csv` demand-derived bbox generation.
 - Added bilingual JP region labels in `Japanese\nEnglish` format with romaji generation for output names.
 - Station O/D Ridership added to both the `Info Panel` and the `Overview Panel`
 
 ### Other Updates
 
 - Added local static recognition for downloaded JP city datasets so release/distributed JP data can be discovered by the mod even though JP is not supported by the runtime fetch wrappers.
-- Added `npm run link:jp-data` helper flow for maintaining the local JP source mirror used by the developer-only extraction scripts.
 
 ### Bugfixes
 

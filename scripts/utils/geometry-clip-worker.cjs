@@ -41,7 +41,10 @@ function main() {
   const { boundaryFeature, batch } = workerData;
   const results = batch.map(({ index, feature }) => {
     const clippingStart = performance.now();
-    const clippedRegion = intersectFeatureWithBoundary(feature, boundaryFeature);
+    const clippedRegion = intersectFeatureWithBoundary(
+      feature,
+      boundaryFeature,
+    );
 
     return {
       index,

@@ -163,7 +163,10 @@ export function shouldUsePreparedBoundaryContainment(
   return preparedBoundary.polygonCount === 1 && !preparedBoundary.hasHoles;
 }
 
-function isFeatureBBoxWithinBBox(featureBBoxValue: BBox, boundaryBBox: BBox): boolean {
+function isFeatureBBoxWithinBBox(
+  featureBBoxValue: BBox,
+  boundaryBBox: BBox,
+): boolean {
   return (
     featureBBoxValue[0] >= boundaryBBox[0] &&
     featureBBoxValue[1] >= boundaryBBox[1] &&

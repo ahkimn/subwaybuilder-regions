@@ -13,7 +13,10 @@ import type {
 import os from 'os';
 import path from 'path';
 
-import { bboxIntersects, featureBBox } from '../../../src/core/geometry/helpers';
+import {
+  bboxIntersects,
+  featureBBox,
+} from '../../../src/core/geometry/helpers';
 import { loadGeoJSON } from '../../utils/files';
 import { resolvePrimaryLabelPoint } from '../../utils/geometry';
 import { logProgressHeartbeat } from '../../utils/progress';
@@ -313,7 +316,10 @@ function buildPreliminaryOoazaRegion(
 function mergeAdjacentNamedOoazaRegions(
   regions: readonly PreliminaryOoazaRegion[],
 ): PreliminaryOoazaRegion[] {
-  const groupedByMunicipalityAndName = new Map<string, PreliminaryOoazaRegion[]>();
+  const groupedByMunicipalityAndName = new Map<
+    string,
+    PreliminaryOoazaRegion[]
+  >();
 
   for (const region of regions) {
     const key = `${region.municipalityCode}|${region.nameJa}`;
@@ -376,9 +382,7 @@ function mergeAdjacentNamedOoazaRegions(
         continue;
       }
 
-      const sourceId = component
-        .map((region) => region.sourceId)
-        .sort()[0];
+      const sourceId = component.map((region) => region.sourceId).sort()[0];
       const population = component.reduce(
         (sum, region) => sum + region.population,
         0,
