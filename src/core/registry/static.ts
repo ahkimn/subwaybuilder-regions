@@ -14,9 +14,9 @@ export type StaticDatasetTemplate = Omit<
 
 const JP_RELEASE_CITY_CODES = [
   'AKJ', // Asahikawa
-  'AOJ', // Tsugaru
+  'AOJ', // Aomori / Hirosaki
   'FKJ', // Fukui
-  'FKS', // Nakadōri
+  'FKS', // Fukushima / Kōriyama
   'FSZ', // Shizuoka / Hamamatsu
   'FUK', // Fukuoka
   'GAJ', // Yamagata
