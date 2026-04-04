@@ -148,11 +148,19 @@ function buildLabelCandidate(
   };
 }
 
-function getLabelCandidatePointSources(
-  feature: Feature<Polygon | MultiPolygon>,
-): Array<{ method: string; point: Feature<Point> }> {
-  const candidates: Array<{ method: string; point: Feature<Point> }> = [];
+const LABEL_POINT_METHODS = [
+  'polylabel',
+  'pointOnFeature',
+  'centerOfMass',
+  'centroid',
+] as const;
 
+type LabelPointMethod = (typeof LABEL_POINT_METHODS)[number];
+
+function tryGetLabelCandidatePoint(
+  feature: Feature<Polygon | MultiPolygon>,
+  method: LabelPointMethod,
+): Feature<Point> | null {
   const coords =
     feature.geometry.type === 'Polygon'
       ? feature.geometry.coordinates
@@ -163,68 +171,46 @@ function getLabelCandidatePointSources(
   }
 
   try {
-    candidates.push({
-      method: 'polylabel',
-      point: turf.point(polylabel(coords, 1e-6)),
-    });
-  } catch (err) {
-    console.warn('\tFailed to compute polylabel for feature:', feature.id, err);
-  }
-
-  try {
-    candidates.push({
-      method: 'pointOnFeature',
-      point: turf.pointOnFeature(feature),
-    });
+    switch (method) {
+      case 'polylabel':
+        return turf.point(polylabel(coords, 1e-6));
+      case 'pointOnFeature':
+        return turf.pointOnFeature(feature);
+      case 'centerOfMass':
+        return turf.centerOfMass(feature);
+      case 'centroid':
+        return turf.centroid(feature);
+      default:
+        return null;
+    }
   } catch (err) {
     console.warn(
-      '\tFailed to compute pointOnFeature for feature:',
+      `\tFailed to compute ${method} for feature:`,
       feature.id,
       err,
     );
+    return null;
   }
+}
 
-  try {
-    candidates.push({
-      method: 'centerOfMass',
-      point: turf.centerOfMass(feature),
-    });
-  } catch (err) {
-    console.warn(
-      '\tFailed to compute centerOfMass for feature:',
-      feature.id,
-      err,
-    );
-  }
-
-  try {
-    candidates.push({
-      method: 'centroid',
-      point: turf.centroid(feature),
-    });
-  } catch (err) {
-    console.warn('\tFailed to compute centroid for feature:', feature.id, err);
-  }
-
-  if (candidates.length === 0) {
-    throw new Error(
-      'Unable to determine label point for feature: ' + feature.id,
-    );
-  }
-
-  return candidates;
+export function resolvePrimaryLabelPoint(
+  feature: Feature<Polygon | MultiPolygon>,
+): { lat: number; lng: number } {
+  return resolveLabelPointResult(feature, false).primary;
 }
 
 function resolveLabelPointResult(
   feature: Feature<Polygon | MultiPolygon>,
   includeCandidates: boolean,
 ): LabelPointResult {
-  const pointSources = getLabelCandidatePointSources(feature);
-
   if (!includeCandidates) {
     let fallbackCandidate: LabelCandidate | null = null;
 
-    for (const { method, point } of pointSources) {
+    for (const method of LABEL_POINT_METHODS) {
+      const point = tryGetLabelCandidatePoint(feature, method);
+      if (!point) {
+        continue;
+      }
       const candidate = buildLabelCandidate(feature, method, point);
       if (!fallbackCandidate) {
         fallbackCandidate = candidate;
@@ -243,9 +229,16 @@ function resolveLabelPointResult(
     return { primary: fallbackCandidate };
   }
 
-  const candidates = pointSources.map(({ method, point }) =>
-    buildLabelCandidate(feature, method, point),
-  );
+  const candidates = LABEL_POINT_METHODS.map((method) => {
+    const point = tryGetLabelCandidatePoint(feature, method);
+    return point ? buildLabelCandidate(feature, method, point) : null;
+  }).filter((candidate): candidate is LabelCandidate => candidate !== null);
+
+  if (candidates.length === 0) {
+    throw new Error(
+      'Unable to determine label point for feature: ' + feature.id,
+    );
+  }
   const primary =
     candidates.find((candidate) => candidate.withinPolygon) || candidates[0];
 
@@ -447,18 +440,31 @@ function buildRegionProperties(
   unmappedUnitTypeCodes: Set<string>,
   includeLabelPointCandidates: boolean,
 ): GeoJsonProperties {
-  const labelPointResult = resolveLabelPointResult(
-    fullyWithinBoundary
-      ? sourceFeature
-      : (outputFeature as Feature<Polygon | MultiPolygon>),
-    includeLabelPointCandidates,
-  );
+  const targetLabelFeature = fullyWithinBoundary
+    ? sourceFeature
+    : (outputFeature as Feature<Polygon | MultiPolygon>);
+  const precomputedLabel =
+    !includeLabelPointCandidates &&
+    tryResolveReusablePrecomputedPrimaryLabel(
+      sourceFeature.properties,
+      targetLabelFeature,
+      fullyWithinBoundary,
+    );
+  const labelPointResult = precomputedLabel
+    ? { primary: precomputedLabel }
+    : resolveLabelPointResult(
+        targetLabelFeature,
+        includeLabelPointCandidates,
+      );
   const featureProperties = sourceFeature.properties!;
   const primaryLabel = labelPointResult.primary;
   const outputAreaKm2 = turf.area(outputFeature) / 1_000_000;
+  const precomputedTotalAreaKm2 = parseNumber(featureProperties.TOTAL_AREA);
   const totalAreaKm2 = fullyWithinBoundary
     ? outputAreaKm2
-    : turf.area(sourceFeature) / 1_000_000;
+    : typeof precomputedTotalAreaKm2 === 'number'
+      ? precomputedTotalAreaKm2
+      : turf.area(sourceFeature) / 1_000_000;
 
   let regionProperties: GeoJsonProperties = {
     ID: featureProperties[dataConfig.idProperty]!,
@@ -510,4 +516,38 @@ function buildRegionProperties(
   }
 
   return regionProperties;
+}
+
+function resolvePrecomputedPrimaryLabel(
+  properties: GeoJsonProperties | null | undefined,
+): LabelCandidate | null {
+  const lat = parseNumber(properties?.LAT);
+  const lng = parseNumber(properties?.LNG);
+  if (typeof lat !== 'number' || typeof lng !== 'number') {
+    return null;
+  }
+
+  return {
+    lat,
+    lng,
+    method: 'precomputed',
+    withinPolygon: true,
+  };
+}
+
+function tryResolveReusablePrecomputedPrimaryLabel(
+  properties: GeoJsonProperties | null | undefined,
+  targetFeature: Feature<Polygon | MultiPolygon>,
+  fullyWithinBoundary: boolean,
+): LabelCandidate | null {
+  const precomputed = resolvePrecomputedPrimaryLabel(properties);
+  if (!precomputed) {
+    return null;
+  }
+  if (fullyWithinBoundary) {
+    return precomputed;
+  }
+
+  const point = turf.point([precomputed.lng, precomputed.lat]);
+  return turf.booleanPointInPolygon(point, targetFeature) ? precomputed : null;
 }

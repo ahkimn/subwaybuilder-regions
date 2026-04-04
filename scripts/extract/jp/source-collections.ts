@@ -15,6 +15,7 @@ import path from 'path';
 
 import { bboxIntersects, featureBBox } from '../../../src/core/geometry/helpers';
 import { loadGeoJSON } from '../../utils/files';
+import { resolvePrimaryLabelPoint } from '../../utils/geometry';
 import { logProgressHeartbeat } from '../../utils/progress';
 import {
   BILINGUAL_NAME_PROPERTY,
@@ -526,6 +527,8 @@ export async function buildOoazaSourceCollection(
     );
 
     const nameEn = await romanizeJapaneseName(region.nameJa);
+    const primaryLabel = resolvePrimaryLabelPoint(region.feature);
+    const totalAreaKm2 = turf.area(region.feature) / 1_000_000;
     region.feature.properties = {
       ...(region.feature.properties ?? {}),
       [SOURCE_ID_PROPERTY]: region.sourceId,
@@ -533,6 +536,9 @@ export async function buildOoazaSourceCollection(
       [ENGLISH_NAME_PROPERTY]: nameEn,
       [BILINGUAL_NAME_PROPERTY]: formatBilingualName(region.nameJa, nameEn),
       [POPULATION_PROPERTY]: region.population,
+      LAT: primaryLabel.lat,
+      LNG: primaryLabel.lng,
+      TOTAL_AREA: totalAreaKm2,
     };
 
     sourceFeatures.push(region.feature);
