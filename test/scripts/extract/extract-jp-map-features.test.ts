@@ -141,7 +141,7 @@ async function createJPFixture(): Promise<{
         bundle_id: 'hakodate',
         city_code: 'HKD',
         city_name_en: 'Hakodate',
-        city_name_ja: '函館市',
+        city_name_ja: '\u51fd\u9928\u5e02',
       },
     ],
   });
@@ -170,11 +170,11 @@ async function createJPFixture(): Promise<{
           ],
         ],
         {
-          chocho_key: '011010001001',
+          chocho_key: '01101100101',
           municipality_code: '01101',
           pref_code: '01',
           pop_total: 40,
-          chocho_name: '大通一丁目',
+          chocho_name: '\u5927\u901a\u4e00\u4e01\u76ee',
         },
       ),
       polygonFeature(
@@ -188,11 +188,11 @@ async function createJPFixture(): Promise<{
           ],
         ],
         {
-          chocho_key: '011010001002',
+          chocho_key: '01101100102',
           municipality_code: '01101',
           pref_code: '01',
           pop_total: 60,
-          chocho_name: '大通二丁目',
+          chocho_name: '\u5927\u901a\u4e8c\u4e01\u76ee',
         },
       ),
       polygonFeature(
@@ -206,11 +206,47 @@ async function createJPFixture(): Promise<{
           ],
         ],
         {
-          chocho_key: '011010009999',
+          chocho_key: '01101999999',
           municipality_code: '01101',
           pref_code: '01',
           pop_total: 25,
-          chocho_name: '南町',
+          chocho_name: '\u5357\u753a',
+        },
+      ),
+      polygonFeature(
+        [
+          [
+            [1, 1],
+            [1.5, 1],
+            [1.5, 1.5],
+            [1, 1.5],
+            [1, 1],
+          ],
+        ],
+        {
+          chocho_key: '01101000201',
+          municipality_code: '01101',
+          pref_code: '01',
+          pop_total: 10,
+          chocho_name: '\u5927\u5b57\u672c\u5bae\u5b57\u6771',
+        },
+      ),
+      polygonFeature(
+        [
+          [
+            [1.5, 1],
+            [2, 1],
+            [2, 1.5],
+            [1.5, 1.5],
+            [1.5, 1],
+          ],
+        ],
+        {
+          chocho_key: '01101000301',
+          municipality_code: '01101',
+          pref_code: '01',
+          pop_total: 15,
+          chocho_name: '\u5b57\u672c\u5bae\u5b57\u897f',
         },
       ),
     ]),
@@ -230,8 +266,8 @@ async function createJPFixture(): Promise<{
           ],
         ],
         {
-          N03_004: '札幌市',
-          N03_005: '中央区',
+          N03_004: '\u672d\u5e4c\u5e02',
+          N03_005: '\u4e2d\u592e\u533a',
           N03_007: '01101',
         },
       ),
@@ -246,8 +282,8 @@ async function createJPFixture(): Promise<{
           ],
         ],
         {
-          N03_004: '札幌市',
-          N03_005: '北区',
+          N03_004: '\u672d\u5e4c\u5e02',
+          N03_005: '\u5317\u533a',
           N03_007: '01102',
         },
       ),
@@ -257,22 +293,34 @@ async function createJPFixture(): Promise<{
 
   await createNeighborhoodBoundaryZip(sourceRoot, '01', [
     {
-      KEY_CODE: '011010001001',
+      KEY_CODE: '01101100101',
       KCODE1: '1001',
       S_AREA: '100100',
-      S_NAME: '大通一丁目',
+      S_NAME: '\u5927\u901a\u4e00\u4e01\u76ee',
     },
     {
-      KEY_CODE: '011010001002',
+      KEY_CODE: '01101100102',
       KCODE1: '1001',
       S_AREA: '100100',
-      S_NAME: '大通二丁目',
+      S_NAME: '\u5927\u901a\u4e8c\u4e01\u76ee',
     },
     {
-      KEY_CODE: '011010009999',
+      KEY_CODE: '01101999999',
       KCODE1: '9999',
       S_AREA: '999900',
-      S_NAME: '南町',
+      S_NAME: '\u5357\u753a',
+    },
+    {
+      KEY_CODE: '01101000201',
+      KCODE1: '0002',
+      S_AREA: '000200',
+      S_NAME: '\u5927\u5b57\u672c\u5bae\u5b57\u6771',
+    },
+    {
+      KEY_CODE: '01101000301',
+      KCODE1: '0003',
+      S_AREA: '000300',
+      S_NAME: '\u5b57\u672c\u5bae\u5b57\u897f',
     },
   ]);
 
@@ -349,30 +397,50 @@ describe('scripts/extract/extract-jp-map-features helpers', () => {
   it('selectDominantOazaName_shouldPreferLargestPopulationWeight', () => {
     const winner = selectDominantOazaName(
       new Map([
-        ['大通', 120],
-        ['南町', 20],
+        ['\u5927\u901a', 120],
+        ['\u5357\u753a', 20],
       ]),
     );
 
-    assert.equal(winner, '大通');
+    assert.equal(winner, '\u5927\u901a');
   });
 
   it('formatBilingualName_shouldComposeJapaneseAndEnglishLabels', () => {
-    assert.equal(formatBilingualName('東京', 'Tōkyō'), '東京\nTōkyō');
-    assert.equal(formatBilingualName('東京', ''), '東京');
+    assert.equal(
+      formatBilingualName('\u6771\u4eac', 'T\u014dky\u014d'),
+      '\u6771\u4eac\nT\u014dky\u014d',
+    );
+    assert.equal(formatBilingualName('\u6771\u4eac', ''), '\u6771\u4eac');
   });
 
   it('deriveOoazaName_shouldCollapseAzaAndChomeToOoazaLevel', () => {
-    assert.equal(deriveOoazaName('飯野町明治字西喜平蔵内'), '飯野町明治');
-    assert.equal(deriveOoazaName('大通二丁目'), '大通');
-    assert.equal(deriveOoazaName('南町'), '南町');
+    assert.equal(
+      deriveOoazaName(
+        '\u98ef\u91ce\u753a\u660e\u6cbb\u5b57\u897f\u559c\u5e73\u8535\u5185',
+      ),
+      '\u98ef\u91ce\u753a\u660e\u6cbb',
+    );
+    assert.equal(deriveOoazaName('\u5b57\u5c71\u5d0e'), '\u5c71\u5d0e');
+    assert.equal(deriveOoazaName('\u5927\u5b57\u677e\u539f'), '\u677e\u539f');
+    assert.equal(deriveOoazaName('\u5927\u901a\u4e8c\u4e01\u76ee'), '\u5927\u901a');
+    assert.equal(deriveOoazaName('\u5357\u753a'), '\u5357\u753a');
   });
 
   it('romanizeJapaneseName_shouldEmitMacronizedHepburn', async () => {
-    assert.equal(await romanizeJapaneseName('大壇'), 'Ōdan');
-    assert.equal(await romanizeJapaneseName('葛尾村'), 'Katsurao Mura');
-    assert.equal(await romanizeJapaneseName('二本松'), 'Nihonmatsu');
-    assert.equal(await romanizeJapaneseName('東京'), 'Tōkyō');
+    assert.equal(await romanizeJapaneseName('\u5927\u58c7'), '\u014cdan');
+    assert.equal(
+      await romanizeJapaneseName('\u845b\u5c3e\u6751'),
+      'Katsurao Mura',
+    );
+    assert.equal(
+      await romanizeJapaneseName('\u4e8c\u672c\u677e'),
+      'Nihonmatsu',
+    );
+    assert.equal(
+      await romanizeJapaneseName('\u897f\u4e2d\u592e'),
+      'Nishi Ch\u016b\u014d',
+    );
+    assert.equal(await romanizeJapaneseName('\u6771\u4eac'), 'T\u014dky\u014d');
   });
 });
 
@@ -398,7 +466,7 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
     );
     assert.ok(mergedOoaza);
     assert.equal(mergedOoaza.properties?.POPULATION, 100);
-    assert.equal(mergedOoaza.properties?.NAME_JA, '大通');
+    assert.equal(mergedOoaza.properties?.NAME_JA, '\u5927\u901a');
     assert.equal(
       mergedOoaza.properties?.DISPLAY_NAME,
       mergedOoaza.properties?.NAME,
@@ -411,15 +479,31 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
     );
     assert.ok(fallbackOoaza);
     assert.equal(fallbackOoaza.properties?.POPULATION, 25);
-    assert.equal(fallbackOoaza.properties?.NAME_JA, '南町');
+    assert.equal(fallbackOoaza.properties?.NAME_JA, '\u5357\u753a');
+
+    const mergedSameNameOoaza = ooaza.features.find(
+      (feature) => feature.properties?.ID === '011010002',
+    );
+    assert.ok(mergedSameNameOoaza);
+    assert.equal(mergedSameNameOoaza.properties?.POPULATION, 25);
+    assert.equal(mergedSameNameOoaza.properties?.NAME_JA, '\u672c\u5bae');
+    assert.equal(
+      ooaza.features.filter(
+        (feature) => feature.properties?.NAME_JA === '\u672c\u5bae',
+      ).length,
+      1,
+    );
 
     const municipality = shichouson.features.find(
       (feature) => feature.properties?.ID === '01101',
     );
     assert.ok(municipality);
-    assert.equal(municipality.properties?.POPULATION, 125);
-    assert.equal(municipality.properties?.NAME_JA, '札幌市中央区');
-    assert.match(String(municipality.properties?.NAME_EN), /[āīūēō]/);
+    assert.equal(municipality.properties?.POPULATION, 150);
+    assert.equal(
+      municipality.properties?.NAME_JA,
+      '\u672d\u5e4c\u5e02\u4e2d\u592e\u533a',
+    );
+    assert.match(String(municipality.properties?.NAME_EN), /[\u0101\u0113\u012b\u014d\u016b]/);
     assert.equal(municipality.properties?.WITHIN_BBOX, true);
     assert.ok(
       Math.abs(
