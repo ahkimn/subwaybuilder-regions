@@ -13,33 +13,46 @@ export type StaticDatasetTemplate = Omit<
 >;
 
 const JP_RELEASE_CITY_CODES = [
-  'AKJ',
-  'AOJ',
-  'FKS',
-  'FUK',
-  'GAJ',
-  'HKD',
-  'HIJ',
-  'ITM',
-  'IZO',
-  'UKB',
-  'KCZ',
-  'KIJ',
-  'KKJ',
-  'KMQ',
-  'KOJ',
-  'MYJ',
-  'NGO',
-  'NGS',
-  'OKA',
-  'OKJ',
-  'QUT',
-  'SDJ',
-  'FSZ',
-  'SPK',
-  'TAK',
-  'TOY',
-  'UKY',
+  'AKJ', // Asahikawa
+  'AOJ', // Tsugaru
+  'FKJ', // Fukui
+  'FKS', // Nakadōri
+  'FSZ', // Shizuoka / Hamamatsu
+  'FUK', // Fukuoka
+  'GAJ', // Yamagata
+  'HIJ', // Hiroshima
+  'HKD', // Hakodate
+  'HNA', // Hanamaki / Morioka
+  'HSG', // Saga
+  'ITM', // Ōsaka
+  'IZO', // Nakaumi
+  'KCZ', // Kōchi
+  'KIJ', // Niigata
+  'KMI', // Miyazaki
+  'KKJ', // Kitakyūshū
+  'KMJ', // Kumamoto
+  'KMQ', // Kanazawa
+  'KOJ', // Kagoshima
+  'MYJ', // Matsuyama
+  'NGN', // Nagano
+  'NGO', // Nagoya
+  'NGS', // Nagasaki
+  'OIT', // Ōita
+  'OKA', // Okinawa
+  'OKJ', // Okayama
+  'QEB', // Maebashi
+  'QIS', // Mito
+  'QUT', // Utsunomiya
+  'SDJ', // Sendai
+  'SKK', // Shikoku
+  'SPK', // Sapporo
+  'TAK', // Takamatsu
+  'TKS', // Tokushima
+  'TOY', // Toyama
+  'TTJ', // Tottori
+  'UKB', // Kōbe
+  'UKY', // Kyōto
+  'WKY', // Wakayama
 ] as const;
 
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
