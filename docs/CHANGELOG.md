@@ -13,6 +13,7 @@ _Game version_ v1.2.0
   - Ooaza (`ooaza` | 大字)
 - Added a JP-specific local extraction pipeline driven by linked `subwaybuilder-jp-data` bundle inputs instead of `boundaries.csv` demand-derived bbox generation.
 - Added bilingual JP region labels in `Japanese\nEnglish` format with romaji generation for output names.
+- Station O/D Ridership added to both the `Info Panel` and the `Overview Panel`
 
 ### Other Updates
 
