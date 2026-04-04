@@ -6,6 +6,15 @@ import type { DemandDataFile } from '../../types/schemas';
 export type Coordinate = [number, number]; // [lng, lat]
 export type RingCoordinate = Coordinate[]; // Closed loop of coordinates
 export type PolygonCoordinates = RingCoordinate[]; // First ring is outer boundary, subsequent rings are holes
+export type MultiPolygonCoordinates = PolygonCoordinates[];
+export type PreparedBoundaryContainment = {
+  bbox: BBox;
+  polygons: MultiPolygonCoordinates;
+  boundaryRings: RingCoordinate[];
+  holeTestPoints: Coordinate[];
+  polygonCount: number;
+  hasHoles: boolean;
+};
 
 export type BBoxPadding = {
   top: number;
@@ -43,8 +52,11 @@ export function isFullyWithinFeature(
   feature: Feature<Polygon | MultiPolygon>,
   boundaryFeature: Feature<Polygon | MultiPolygon>,
   errorContext = 'boundary',
+  precomputedFeatureBBox?: BBox,
 ): boolean {
-  const featureBBoxPolygon = turf.bboxPolygon(featureBBox(feature));
+  const featureBBoxPolygon = turf.bboxPolygon(
+    precomputedFeatureBBox ?? featureBBox(feature),
+  );
   if (!turf.booleanContains(boundaryFeature, featureBBoxPolygon)) {
     return false;
   }
@@ -79,8 +91,140 @@ export function isFullyWithinFeature(
 export function isFullyWithinBBox(
   feature: Feature<Polygon | MultiPolygon>,
   bboxPolygon: Feature<Polygon>,
+  precomputedFeatureBBox?: BBox,
 ): boolean {
-  return isFullyWithinFeature(feature, bboxPolygon, 'bbox');
+  return isFullyWithinFeature(
+    feature,
+    bboxPolygon,
+    'bbox',
+    precomputedFeatureBBox,
+  );
+}
+
+function polygonHoleTestPoint(ring: RingCoordinate): Coordinate | null {
+  try {
+    const point = turf.pointOnFeature(
+      turf.polygon([ring.map(([lng, lat]) => [lng, lat])]),
+    );
+    return [point.geometry.coordinates[0], point.geometry.coordinates[1]];
+  } catch {
+    return ring[0] ?? null;
+  }
+}
+
+function featureToPreparedPolygons(
+  feature: Feature<Polygon | MultiPolygon>,
+): MultiPolygonCoordinates {
+  if (feature.geometry.type === 'Polygon') {
+    return [toPolyCoordinates(feature.geometry.coordinates)];
+  }
+
+  return feature.geometry.coordinates.map((polygon) =>
+    toPolyCoordinates(polygon),
+  );
+}
+
+export function prepareBoundaryContainment(
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): PreparedBoundaryContainment {
+  const polygons = featureToPreparedPolygons(boundaryFeature);
+  const boundaryRings: RingCoordinate[] = [];
+  const holeTestPoints: Coordinate[] = [];
+
+  for (const polygon of polygons) {
+    for (let ringIndex = 0; ringIndex < polygon.length; ringIndex += 1) {
+      const ring = polygon[ringIndex];
+      boundaryRings.push(ring);
+      if (ringIndex > 0) {
+        const holePoint = polygonHoleTestPoint(ring);
+        if (holePoint) {
+          holeTestPoints.push(holePoint);
+        }
+      }
+    }
+  }
+
+  return {
+    bbox: featureBBox(boundaryFeature),
+    polygons,
+    boundaryRings,
+    holeTestPoints,
+    polygonCount: polygons.length,
+    hasHoles: holeTestPoints.length > 0,
+  };
+}
+
+export function shouldUsePreparedBoundaryContainment(
+  preparedBoundary: PreparedBoundaryContainment,
+): boolean {
+  // The custom containment path is only worthwhile for simple outer boundaries.
+  // For multi-part boundaries or boundaries with holes, Turf's optimized topology
+  // checks have proven faster in practice on large JP bundles.
+  return preparedBoundary.polygonCount === 1 && !preparedBoundary.hasHoles;
+}
+
+function isFeatureBBoxWithinBBox(featureBBoxValue: BBox, boundaryBBox: BBox): boolean {
+  return (
+    featureBBoxValue[0] >= boundaryBBox[0] &&
+    featureBBoxValue[1] >= boundaryBBox[1] &&
+    featureBBoxValue[2] <= boundaryBBox[2] &&
+    featureBBoxValue[3] <= boundaryBBox[3]
+  );
+}
+
+function iterFeaturePolygons(
+  feature: Feature<Polygon | MultiPolygon>,
+): PolygonCoordinates[] {
+  return feature.geometry.type === 'Polygon'
+    ? [toPolyCoordinates(feature.geometry.coordinates)]
+    : feature.geometry.coordinates.map((polygon) => toPolyCoordinates(polygon));
+}
+
+export function isFullyWithinPreparedBoundary(
+  feature: Feature<Polygon | MultiPolygon>,
+  preparedBoundary: PreparedBoundaryContainment,
+  precomputedFeatureBBox?: BBox,
+): boolean {
+  const currentFeatureBBox = precomputedFeatureBBox ?? featureBBox(feature);
+  if (!isFeatureBBoxWithinBBox(currentFeatureBBox, preparedBoundary.bbox)) {
+    return false;
+  }
+
+  const polygons = iterFeaturePolygons(feature);
+  for (const polygon of polygons) {
+    for (const ring of polygon) {
+      for (const coordinate of ring) {
+        if (!pointInMultiPolygon(coordinate, preparedBoundary.polygons)) {
+          return false;
+        }
+      }
+
+      for (let index = 0; index < ring.length - 1; index += 1) {
+        const intersections = segmentPolygonIntersections(
+          ring[index],
+          ring[index + 1],
+          preparedBoundary.boundaryRings,
+        );
+        if (intersections.some((t) => t > 1e-9 && t < 1 - 1e-9)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  if (preparedBoundary.holeTestPoints.length === 0) {
+    return true;
+  }
+
+  for (const holePoint of preparedBoundary.holeTestPoints) {
+    for (const polygon of polygons) {
+      if (pointInPolygon(holePoint, polygon)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 export function isCoordinateWithinFeature(

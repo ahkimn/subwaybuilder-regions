@@ -3,7 +3,7 @@ import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import {
   buildRegionsWithoutClipping,
-  filterAndClipRegionsToBoundaryGeometry,
+  filterAndClipRegionsToBoundaryGeometryAsync,
 } from '../utils/geometry';
 import { renderFeaturePreview } from '../utils/preview';
 import { createDataConfigFromCatalog } from './data-config';
@@ -86,7 +86,7 @@ async function extractSingleJPDataset(
       ? buildRegionsWithoutClipping(sourceCollection, dataConfig, {
           includeLabelPointCandidates: args.includeLabelPointCandidates,
         })
-      : filterAndClipRegionsToBoundaryGeometry(
+      : await filterAndClipRegionsToBoundaryGeometryAsync(
           sourceCollection,
           context.boundaryFeature,
           dataConfig,

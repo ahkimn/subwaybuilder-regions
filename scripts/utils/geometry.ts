@@ -1,6 +1,9 @@
+import { Worker } from 'node:worker_threads';
+
 import { cleanCoords } from '@turf/clean-coords';
 import * as turf from '@turf/turf';
 import type {
+  BBox,
   Feature,
   GeoJsonProperties,
   Geometry,
@@ -15,7 +18,10 @@ import {
   featureBBox,
   isFullyWithinBBox,
   isFullyWithinFeature,
+  isFullyWithinPreparedBoundary,
   isPolygonFeature,
+  prepareBoundaryContainment,
+  shouldUsePreparedBoundaryContainment,
 } from '../../src/core/geometry/helpers';
 import type { DataConfig } from '../extract/handler-types';
 import { parseNumber } from './cli';
@@ -27,6 +33,19 @@ export type BoundaryBox = {
   south: number;
   east: number;
   north: number;
+};
+
+const DEFAULT_CLIP_WORKER_COUNT = 4;
+
+type ClipCandidate = {
+  sourceFeature: Feature<Polygon | MultiPolygon>;
+  featureBBox: BBox;
+};
+
+type ClipWorkerResult = {
+  index: number;
+  clippedRegion: Feature<Geometry, GeoJsonProperties> | null;
+  clippingDurationMs: number;
 };
 
 export function isFeatureCollection(
@@ -65,10 +84,59 @@ type LabelPointResult = {
   candidates?: LabelCandidate[];
 };
 
+type GeometryFilterStats = {
+  processedFeatures?: number;
+  polygonFeatures?: number;
+  bboxPrefilterPassed?: number;
+  fullyWithinCount?: number;
+  clippedCount?: number;
+  rejectedNoIntersectionCount?: number;
+  withinCheckMs?: number;
+  intersectsCheckMs?: number;
+  clippingMs?: number;
+  propertiesMs?: number;
+};
+
 type UnitTypeProperties = {
   UNIT_TYPE: string;
   UNIT_TYPE_CODE: string;
 };
+
+function incrementGeometryFilterStat(
+  stats: GeometryFilterStats,
+  key: keyof Pick<
+    GeometryFilterStats,
+    | 'processedFeatures'
+    | 'polygonFeatures'
+    | 'bboxPrefilterPassed'
+    | 'fullyWithinCount'
+    | 'clippedCount'
+    | 'rejectedNoIntersectionCount'
+  >,
+  amount = 1,
+): void {
+  stats[key] = (stats[key] ?? 0) + amount;
+}
+
+function addGeometryFilterTiming(
+  stats: GeometryFilterStats,
+  key: keyof Pick<
+    GeometryFilterStats,
+    'withinCheckMs' | 'intersectsCheckMs' | 'clippingMs' | 'propertiesMs'
+  >,
+  durationMs: number,
+): void {
+  stats[key] = (stats[key] ?? 0) + durationMs;
+}
+
+function formatGeometryFilterSummary(
+  progressLabel: string,
+  totalFeatures: number,
+  outputCount: number,
+  stats: GeometryFilterStats,
+): string {
+  return `[Geometry] ${progressLabel} summary | total: ${totalFeatures}, polygon: ${stats.polygonFeatures ?? 0}, bbox-pass: ${stats.bboxPrefilterPassed ?? 0}, fully-within: ${stats.fullyWithinCount ?? 0}, clipped: ${stats.clippedCount ?? 0}, no-intersection: ${stats.rejectedNoIntersectionCount ?? 0}, output: ${outputCount} | timings ms within: ${(stats.withinCheckMs ?? 0).toFixed(2)}, intersects: ${(stats.intersectsCheckMs ?? 0).toFixed(2)}, clip: ${(stats.clippingMs ?? 0).toFixed(2)}, props: ${(stats.propertiesMs ?? 0).toFixed(2)}`;
+}
 
 function hasNonEmptyPolygonCoordinates(
   feature: Feature<Polygon | MultiPolygon>,
@@ -244,9 +312,9 @@ function resolveLabelPointResult(
 
   return includeCandidates
     ? {
-        primary,
-        candidates,
-      }
+      primary,
+      candidates,
+    }
     : { primary };
 }
 
@@ -270,8 +338,12 @@ export function filterAndClipRegionsToBoundary(
   ]);
 
   return filterAndClipRegionsToMask(shapeJSON, bboxPolygon, dataConfig, {
-    withinBoundaryCheck: (feature, boundaryFeature) =>
-      isFullyWithinBBox(feature, boundaryFeature as Feature<Polygon>),
+    withinBoundaryCheck: (feature, boundaryFeature, currentFeatureBBox) =>
+      isFullyWithinBBox(
+        feature,
+        boundaryFeature as Feature<Polygon>,
+        currentFeatureBBox,
+      ),
     includeLabelPointCandidates: options?.includeLabelPointCandidates,
     progressLabel: options?.progressLabel,
     heartbeatPercentStep: options?.heartbeatPercentStep,
@@ -288,13 +360,188 @@ export function filterAndClipRegionsToBoundaryGeometry(
     heartbeatPercentStep?: number;
   },
 ): Array<Feature<Geometry, GeoJsonProperties>> {
+  const preparedBoundary = prepareBoundaryContainment(boundaryFeature);
+  const usePreparedContainment =
+    shouldUsePreparedBoundaryContainment(preparedBoundary);
   return filterAndClipRegionsToMask(shapeJSON, boundaryFeature, dataConfig, {
-    withinBoundaryCheck: (feature, maskFeature) =>
-      isFullyWithinFeature(feature, maskFeature, 'boundary geometry'),
+    withinBoundaryCheck: (feature, _maskFeature, currentFeatureBBox) =>
+      usePreparedContainment
+        ? isFullyWithinPreparedBoundary(
+            feature,
+            preparedBoundary,
+            currentFeatureBBox,
+          )
+        : isFullyWithinFeature(
+            feature,
+            boundaryFeature,
+            'boundary',
+            currentFeatureBBox,
+          ),
     includeLabelPointCandidates: options?.includeLabelPointCandidates,
     progressLabel: options?.progressLabel,
     heartbeatPercentStep: options?.heartbeatPercentStep,
   });
+}
+
+export async function filterAndClipRegionsToBoundaryGeometryAsync(
+  shapeJSON: GeoJSON.FeatureCollection,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  dataConfig: DataConfig,
+  options?: {
+    includeLabelPointCandidates?: boolean;
+    progressLabel?: string;
+    heartbeatPercentStep?: number;
+    workerCount?: number;
+  },
+): Promise<Array<Feature<Geometry, GeoJsonProperties>>> {
+  const includeLabelPointCandidates =
+    options?.includeLabelPointCandidates ?? false;
+  const progressLabel = options?.progressLabel;
+  const heartbeatPercentStep = options?.heartbeatPercentStep ?? 10;
+  const results = new Array<Feature<Geometry, GeoJsonProperties>>();
+  const unmappedUnitTypeCodes = new Set<string>();
+  const preparedBoundary = prepareBoundaryContainment(boundaryFeature);
+  const usePreparedContainment =
+    shouldUsePreparedBoundaryContainment(preparedBoundary);
+  const totalFeatures = shapeJSON.features.length;
+  const stats: GeometryFilterStats = {};
+  const clipCandidates: ClipCandidate[] = [];
+
+  for (const feature of shapeJSON.features) {
+    incrementGeometryFilterStat(stats, 'processedFeatures');
+    if (progressLabel) {
+      logProgressHeartbeat(
+        '[Geometry]',
+        progressLabel,
+        stats.processedFeatures ?? 0,
+        totalFeatures,
+        heartbeatPercentStep,
+      );
+    }
+
+    if (!isPolygonFeature(feature)) {
+      continue;
+    }
+    incrementGeometryFilterStat(stats, 'polygonFeatures');
+
+    const currentFeatureBBox = featureBBox(feature);
+    if (!bboxIntersects(preparedBoundary.bbox, currentFeatureBBox)) {
+      continue;
+    }
+    incrementGeometryFilterStat(stats, 'bboxPrefilterPassed');
+
+    const withinCheckStart = performance.now();
+    const fullyWithinBoundary = usePreparedContainment
+      ? isFullyWithinPreparedBoundary(
+          feature,
+          preparedBoundary,
+          currentFeatureBBox,
+        )
+      : isFullyWithinFeature(
+          feature,
+          boundaryFeature,
+          'boundary',
+          currentFeatureBBox,
+        );
+    addGeometryFilterTiming(
+      stats,
+      'withinCheckMs',
+      performance.now() - withinCheckStart,
+    );
+
+    if (
+      !fullyWithinBoundary &&
+      (() => {
+        const intersectsCheckStart = performance.now();
+        const intersects = turf.booleanIntersects(boundaryFeature, feature);
+        addGeometryFilterTiming(
+          stats,
+          'intersectsCheckMs',
+          performance.now() - intersectsCheckStart,
+        );
+        return !intersects;
+      })()
+    ) {
+      incrementGeometryFilterStat(stats, 'rejectedNoIntersectionCount');
+      continue;
+    }
+
+    if (fullyWithinBoundary) {
+      incrementGeometryFilterStat(stats, 'fullyWithinCount');
+      const propertiesStart = performance.now();
+      feature.properties = buildRegionProperties(
+        feature,
+        feature,
+        dataConfig,
+        true,
+        unmappedUnitTypeCodes,
+        includeLabelPointCandidates,
+      );
+      addGeometryFilterTiming(
+        stats,
+        'propertiesMs',
+        performance.now() - propertiesStart,
+      );
+      feature.id = feature.id;
+      results.push(feature);
+      continue;
+    }
+
+    clipCandidates.push({
+      sourceFeature: feature,
+      featureBBox: currentFeatureBBox,
+    });
+  }
+
+  const clippingStart = performance.now();
+  const clippedRegions = await clipCandidatesWithWorkers(
+    clipCandidates,
+    boundaryFeature,
+    options?.workerCount ?? DEFAULT_CLIP_WORKER_COUNT,
+  );
+  addGeometryFilterTiming(
+    stats,
+    'clippingMs',
+    performance.now() - clippingStart,
+  );
+
+  for (let index = 0; index < clipCandidates.length; index += 1) {
+    const candidate = clipCandidates[index];
+    const clippedRegion = clippedRegions[index];
+    if (!clippedRegion || !isPolygonFeature(clippedRegion)) {
+      console.warn(
+        'No valid intersection geometry for feature:',
+        candidate.sourceFeature.id,
+      );
+      continue;
+    }
+
+    incrementGeometryFilterStat(stats, 'clippedCount');
+    const propertiesStart = performance.now();
+    clippedRegion.properties = buildRegionProperties(
+      candidate.sourceFeature,
+      clippedRegion,
+      dataConfig,
+      false,
+      unmappedUnitTypeCodes,
+      includeLabelPointCandidates,
+    );
+    addGeometryFilterTiming(
+      stats,
+      'propertiesMs',
+      performance.now() - propertiesStart,
+    );
+    clippedRegion.id = candidate.sourceFeature.id;
+    results.push(clippedRegion);
+  }
+
+  if (progressLabel) {
+    console.log(
+      `${formatGeometryFilterSummary(progressLabel, totalFeatures, results.length, stats)} | within-mode: ${usePreparedContainment ? 'prepared' : 'turf'}, workers: ${Math.min(options?.workerCount ?? DEFAULT_CLIP_WORKER_COUNT, Math.max(clipCandidates.length, 1))}, clip-candidates: ${clipCandidates.length}`,
+    );
+  }
+
+  return results;
 }
 
 export function buildRegionsWithoutClipping(
@@ -335,6 +582,7 @@ function filterAndClipRegionsToMask(
     withinBoundaryCheck: (
       feature: Feature<Polygon | MultiPolygon>,
       boundaryFeature: Feature<Polygon | MultiPolygon>,
+      featureBBox: BBox,
     ) => boolean;
     includeLabelPointCandidates?: boolean;
     progressLabel?: string;
@@ -352,15 +600,15 @@ function filterAndClipRegionsToMask(
   const unmappedUnitTypeCodes = new Set<string>();
   const boundaryBBox = featureBBox(boundaryFeature);
   const totalFeatures = shapeJSON.features.length;
-  let processedFeatures = 0;
+  const stats: GeometryFilterStats = {};
 
   for (const feature of shapeJSON.features) {
-    processedFeatures += 1;
+    incrementGeometryFilterStat(stats, 'processedFeatures');
     if (progressLabel) {
       logProgressHeartbeat(
         '[Geometry]',
         progressLabel,
-        processedFeatures,
+        stats.processedFeatures ?? 0,
         totalFeatures,
         heartbeatPercentStep,
       );
@@ -369,26 +617,57 @@ function filterAndClipRegionsToMask(
     if (!isPolygonFeature(feature)) {
       continue;
     }
+    incrementGeometryFilterStat(stats, 'polygonFeatures');
 
     const currentFeatureBBox = featureBBox(feature);
     if (!bboxIntersects(boundaryBBox, currentFeatureBBox)) {
       continue;
     }
+    incrementGeometryFilterStat(stats, 'bboxPrefilterPassed');
 
-    const fullyWithinBoundary = withinBoundaryCheck(feature, boundaryFeature);
+    const withinCheckStart = performance.now();
+    const fullyWithinBoundary = withinBoundaryCheck(
+      feature,
+      boundaryFeature,
+      currentFeatureBBox,
+    );
+    addGeometryFilterTiming(
+      stats,
+      'withinCheckMs',
+      performance.now() - withinCheckStart,
+    );
     if (
       !fullyWithinBoundary &&
-      !turf.booleanIntersects(boundaryFeature, feature)
+      (() => {
+        const intersectsCheckStart = performance.now();
+        const intersects = turf.booleanIntersects(boundaryFeature, feature);
+        addGeometryFilterTiming(
+          stats,
+          'intersectsCheckMs',
+          performance.now() - intersectsCheckStart,
+        );
+        return !intersects;
+      })()
     ) {
+      incrementGeometryFilterStat(stats, 'rejectedNoIntersectionCount');
       continue;
+    }
+    if (fullyWithinBoundary) {
+      incrementGeometryFilterStat(stats, 'fullyWithinCount');
     }
 
     let clippedRegion: Feature<Geometry, GeoJsonProperties>;
     if (fullyWithinBoundary) {
       clippedRegion = feature;
     } else {
+      const clippingStart = performance.now();
       const intersection = turf.intersect(
         turf.featureCollection([feature, boundaryFeature]),
+      );
+      addGeometryFilterTiming(
+        stats,
+        'clippingMs',
+        performance.now() - clippingStart,
       );
       if (!intersection || !isPolygonFeature(intersection)) {
         console.warn('No valid intersection geometry for feature:', feature.id);
@@ -413,8 +692,10 @@ function filterAndClipRegionsToMask(
 
         clippedRegion = cleanedIntersection;
       }
+      incrementGeometryFilterStat(stats, 'clippedCount');
     }
 
+    const propertiesStart = performance.now();
     clippedRegion.properties = buildRegionProperties(
       feature,
       clippedRegion,
@@ -423,11 +704,131 @@ function filterAndClipRegionsToMask(
       unmappedUnitTypeCodes,
       includeLabelPointCandidates,
     );
+    addGeometryFilterTiming(
+      stats,
+      'propertiesMs',
+      performance.now() - propertiesStart,
+    );
     clippedRegion.id = feature.id;
 
     results.push(clippedRegion);
   }
+
+  if (progressLabel) {
+    console.log(
+      formatGeometryFilterSummary(progressLabel, totalFeatures, results.length, stats),
+    );
+  }
   return results;
+}
+
+async function clipCandidatesWithWorkers(
+  clipCandidates: readonly ClipCandidate[],
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  workerCount: number,
+): Promise<Array<Feature<Geometry, GeoJsonProperties> | null>> {
+  if (clipCandidates.length === 0) {
+    return [];
+  }
+
+  const resolvedWorkerCount = Math.min(
+    Math.max(1, workerCount),
+    clipCandidates.length,
+  );
+  if (resolvedWorkerCount === 1) {
+    return clipCandidates.map(({ sourceFeature }) =>
+      intersectFeatureWithBoundary(sourceFeature, boundaryFeature),
+    );
+  }
+
+  const batches = Array.from({ length: resolvedWorkerCount }, () => [] as Array<{
+    index: number;
+    feature: Feature<Polygon | MultiPolygon>;
+  }>);
+  clipCandidates.forEach((candidate, index) => {
+    batches[index % resolvedWorkerCount].push({
+      index,
+      feature: candidate.sourceFeature,
+    });
+  });
+
+  try {
+    const workerResults = await Promise.all(
+      batches
+        .filter((batch) => batch.length > 0)
+        .map((batch) => runClipWorkerBatch(batch, boundaryFeature)),
+    );
+
+    const clippedRegions = new Array<Feature<Geometry, GeoJsonProperties> | null>(
+      clipCandidates.length,
+    ).fill(null);
+    for (const batchResults of workerResults) {
+      for (const result of batchResults) {
+        clippedRegions[result.index] = result.clippedRegion;
+      }
+    }
+    return clippedRegions;
+  } catch (error) {
+    console.warn(
+      '[Geometry] Parallel clipping failed; falling back to single-threaded clipping.',
+      error,
+    );
+    return clipCandidates.map(({ sourceFeature }) =>
+      intersectFeatureWithBoundary(sourceFeature, boundaryFeature),
+    );
+  }
+}
+
+function runClipWorkerBatch(
+  batch: Array<{ index: number; feature: Feature<Polygon | MultiPolygon> }>,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): Promise<ClipWorkerResult[]> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      new URL('./geometry-clip-worker.cjs', import.meta.url),
+      {
+        workerData: {
+          boundaryFeature,
+          batch,
+        },
+      },
+    );
+
+    worker.once('message', (message: ClipWorkerResult[]) => {
+      resolve(message);
+    });
+    worker.once('error', reject);
+    worker.once('exit', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Clip worker exited with code ${code}`));
+      }
+    });
+  });
+}
+
+function intersectFeatureWithBoundary(
+  feature: Feature<Polygon | MultiPolygon>,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): Feature<Geometry, GeoJsonProperties> | null {
+  const intersection = turf.intersect(
+    turf.featureCollection([feature, boundaryFeature]),
+  );
+  if (!intersection || !isPolygonFeature(intersection)) {
+    return null;
+  }
+  if (hasNonEmptyPolygonCoordinates(intersection)) {
+    return intersection;
+  }
+
+  const cleanedIntersection = cleanCoords(intersection);
+  if (
+    !isPolygonFeature(cleanedIntersection) ||
+    !hasNonEmptyPolygonCoordinates(cleanedIntersection)
+  ) {
+    return null;
+  }
+
+  return cleanedIntersection;
 }
 
 // Basic properties builder for region features, which also handles label point calculation and population/unit type property resolution if applicable.
@@ -453,9 +854,9 @@ function buildRegionProperties(
   const labelPointResult = precomputedLabel
     ? { primary: precomputedLabel }
     : resolveLabelPointResult(
-        targetLabelFeature,
-        includeLabelPointCandidates,
-      );
+      targetLabelFeature,
+      includeLabelPointCandidates,
+    );
   const featureProperties = sourceFeature.properties!;
   const primaryLabel = labelPointResult.primary;
   const outputAreaKm2 = turf.area(outputFeature) / 1_000_000;
