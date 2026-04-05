@@ -61,6 +61,7 @@ export function resolveKnownCityCountryCode(
     return null;
   }
 
+  // Try obtaining country code from city.country (which is usually only present for vanilla, unmodded cities)
   const explicitCountryCode = city.country
     ? normalizeDatasetCountryCode(city.country.trim())
     : '';
@@ -68,6 +69,8 @@ export function resolveKnownCityCountryCode(
     return explicitCountryCode;
   }
 
+  // TODO: Once US/GB country code tabbing is fixed. Remove fallback to unknown
+  // Next infer country code from city tabs (which exists for most modded cities, but unfortunately does not exist for US/GB)
   const tabCountryCode = cityTabs?.find((tab) =>
     tab.cityCodes.includes(city.code),
   )?.id;

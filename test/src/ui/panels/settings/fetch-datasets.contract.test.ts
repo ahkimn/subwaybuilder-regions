@@ -16,8 +16,8 @@ import {
   formatFetchCommand,
   hasFetchableDatasetsForCity,
   type LastCopiedFetchRequest,
-  resolveKnownCityCountryCode,
   resolveCityCountryCode,
+  resolveKnownCityCountryCode,
 } from '@/ui/panels/settings/fetch-helpers';
 import {
   type FetchState,

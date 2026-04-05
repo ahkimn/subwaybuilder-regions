@@ -20,8 +20,8 @@ import {
   type FetchCountryCode,
   formatFetchCommand,
   hasFetchableDatasetsForCity,
-  resolveKnownCityCountryCode,
   resolveCityCountryCode,
+  resolveKnownCityCountryCode,
 } from './fetch-helpers';
 import {
   createInitialSettingsState,
@@ -367,10 +367,7 @@ export function RegionsSettingsPanel({
         const knownCountryCode = resolveKnownCityCountryCode(city, cityTabs);
         const resolvedCountryCode = resolveCityCountryCode(city, cityTabs);
 
-        // If we cannot infer a supported fetch country yet, still allow the
-        // city to be chosen and let the user pick a non-JP fetch country
-        // manually. Cities that resolve to a known country with no online
-        // datasets remain hidden.
+        // If we cannot infer a supported fetch country yet, still allow the city to be chosen and let the user pick a fetch country (that has fetchable datasets) manually. Cities that resolve to a known country with no online datasets remain hidden.
         return resolvedCountryCode
           ? hasFetchableDatasetsForCity(city, cityTabs)
           : knownCountryCode === null;
