@@ -23,6 +23,25 @@ import type {
 const JP_SOURCE_DATA_ROOT_ENV = 'SUBWAYBUILDER_JP_DATA_ROOT';
 const DEFAULT_JP_SOURCE_DATA_ROOT = path.resolve(SOURCE_DATA_DIR, 'jp-data');
 const BUNDLE_INDEX_PATH = path.join('bundles', 'index.json');
+const OD_2020_MUNICIPALITY_COMPAT_MAP: Readonly<Record<string, readonly string[]>> =
+  Object.freeze({
+    // Hamamatsu wards were reorganized in 2024. Several 2020-vintage source
+    // files, including chocho_selected and neighborhood7 KEY_CODEs, still use
+    // the legacy ward code split.
+    '22138': ['22131', '22132', '22133', '22134'], // Chūō-ku
+    '22139': ['22135', '22136'], // Hamana-ku
+    '22140': ['22137'], // Tenryū-ku
+  });
+const OD_2020_MUNICIPALITY_REVERSE_COMPAT_MAP: Readonly<
+  Record<string, string>
+> = Object.freeze(
+  Object.fromEntries(
+    Object.entries(OD_2020_MUNICIPALITY_COMPAT_MAP).flatMap(
+      ([currentCode, legacyCodes]) =>
+        legacyCodes.map((legacyCode) => [legacyCode, currentCode] as const),
+    ),
+  ),
+);
 
 export function resolveJPSourceDataRoot(): string {
   return path.resolve(
@@ -67,6 +86,37 @@ export function normalizeMunicipalityCode(value: unknown): string {
   return /^\d{5}$/.test(digits) ? digits : '';
 }
 
+export function expandOd2020MunicipalityFamily(value: unknown): string[] {
+  const normalized = normalizeMunicipalityCode(value);
+  if (!normalized) {
+    return [];
+  }
+
+  const expanded = new Set<string>([normalized]);
+  const mapped = OD_2020_MUNICIPALITY_COMPAT_MAP[normalized];
+  if (mapped) {
+    for (const legacyCode of mapped) {
+      expanded.add(legacyCode);
+    }
+  }
+
+  const currentCode = OD_2020_MUNICIPALITY_REVERSE_COMPAT_MAP[normalized];
+  if (currentCode) {
+    expanded.add(currentCode);
+  }
+
+  return Array.from(expanded).sort();
+}
+
+export function resolveOd2020CurrentMunicipalityCode(value: unknown): string {
+  const normalized = normalizeMunicipalityCode(value);
+  if (!normalized) {
+    return '';
+  }
+
+  return OD_2020_MUNICIPALITY_REVERSE_COMPAT_MAP[normalized] ?? normalized;
+}
+
 export function normalizeChochoKey(value: unknown): string {
   const digits = normalizeDigits(value);
   return /^\d{9}$|^\d{11}$/.test(digits) ? digits : '';
@@ -93,7 +143,7 @@ export function normalizeSAreaBase(value: unknown): string {
 export function normalizeBoundaryMunicipalityCode(
   municipalityValue: unknown,
 ): string {
-  return normalizeMunicipalityCode(municipalityValue);
+  return resolveOd2020CurrentMunicipalityCode(municipalityValue);
 }
 
 function resolveNumericValue(value: unknown): number {
@@ -229,13 +279,37 @@ function loadChochoSelected(
     'phase_inputs',
     'chocho_selected.geojson',
   );
+  const compatibleMunicipalityCodes = new Set<string>();
+  for (const municipalityCode of municipalityCodes) {
+    for (const compatibleCode of expandOd2020MunicipalityFamily(
+      municipalityCode,
+    )) {
+      compatibleMunicipalityCodes.add(compatibleCode);
+    }
+  }
+
   const chochoGeoJson = loadGeoJSON(chochoPath);
-  const chochoFeatures = toFeatureCollection(chochoGeoJson).features.filter(
+  const chochoFeatures = toFeatureCollection(chochoGeoJson).features.flatMap(
     (feature) => {
-      const municipalityCode = normalizeBoundaryMunicipalityCode(
+      const rawMunicipalityCode = normalizeMunicipalityCode(
         feature.properties?.municipality_code,
       );
-      return municipalityCodes.has(municipalityCode);
+      if (!compatibleMunicipalityCodes.has(rawMunicipalityCode)) {
+        return [];
+      }
+
+      const municipalityCode =
+        resolveOd2020CurrentMunicipalityCode(rawMunicipalityCode);
+
+      return [
+        {
+          ...feature,
+          properties: {
+            ...(feature.properties ?? {}),
+            municipality_code: municipalityCode,
+          },
+        },
+      ];
     },
   );
 

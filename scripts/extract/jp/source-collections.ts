@@ -459,8 +459,11 @@ export async function buildOoazaSourceCollection(
       );
     }
 
-    // Census KEY_CODE already encodes the ōaza hierarchy as PREF(2) + CITY(3) + OAZA(4) + AZA(remaining digits), so dissolving on the first 9 digits gives the canonical ōaza region id directly.
-    const groupKey = chochoKey.slice(0, 9);
+    // Census KEY_CODE encodes PREF(2) + CITY(3) + OAZA(4) + AZA(...). Rebuild
+    // the ōaza key from the normalized municipality code plus the 4-digit
+    // OAZA segment so Hamamatsu's legacy 2020 ward codes still pool to the
+    // current 2024 ward codes.
+    const groupKey = `${municipalityCode}${chochoKey.slice(5, 9)}`;
     const expectedGroupKey = `${municipalityCode}${oazaRow.kcode1Base}`;
     if (groupKey !== expectedGroupKey) {
       throw new Error(

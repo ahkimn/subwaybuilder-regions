@@ -339,6 +339,129 @@ async function createJPFixture(): Promise<{
   };
 }
 
+async function createHamamatsuCompatFixture(): Promise<{
+  args: ExtractMapFeaturesArgs;
+  outputRoot: string;
+}> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'regions-jp-hamamatsu-'));
+  temporaryDirectories.add(root);
+  const sourceRoot = path.join(root, 'jp-data');
+  const outputRoot = path.join(root, 'output');
+  const bundleRoot = path.join(
+    sourceRoot,
+    'bundles',
+    'shizuoka_hamamatsu',
+    'phase_inputs',
+  );
+
+  await fs.ensureDir(bundleRoot);
+  await fs.ensureDir(path.join(sourceRoot, 'neighborhood7_boundaries'));
+
+  await fs.writeJson(path.join(sourceRoot, 'bundles', 'index.json'), {
+    bundles: [
+      {
+        bundle_id: 'shizuoka_hamamatsu',
+        city_code: 'FSZ',
+        city_name_en: 'Shizuoka / Hamamatsu',
+        city_name_ja: '\u9759\u5ca1\u30fb\u6d5c\u677e',
+      },
+    ],
+  });
+
+  await writeGeoJson(path.join(bundleRoot, 'boundary.geojson'), {
+    type: 'FeatureCollection',
+    features: [
+      polygonFeature(boundaryPolygonCoordinates, {
+        municipality_codes: ['22138'],
+        pref_codes: ['22'],
+      }),
+    ],
+  });
+
+  await writeGeoJson(
+    path.join(bundleRoot, 'chocho_selected.geojson'),
+    featureCollection([
+      polygonFeature(
+        [
+          [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0],
+          ],
+        ],
+        {
+          chocho_key: '22131000101',
+          municipality_code: '22131',
+          pref_code: '22',
+          pop_total: 40,
+          chocho_name: '\u5143\u57ce\u753a',
+        },
+      ),
+      polygonFeature(
+        [
+          [
+            [1, 0],
+            [2, 0],
+            [2, 1],
+            [1, 1],
+            [1, 0],
+          ],
+        ],
+        {
+          chocho_key: '22132000102',
+          municipality_code: '22132',
+          pref_code: '22',
+          pop_total: 60,
+          chocho_name: '\u5143\u57ce\u753a\u4e8c\u4e01\u76ee',
+        },
+      ),
+    ]),
+  );
+
+  await writeGeoJson(
+    path.join(sourceRoot, 'N03-20240101.geojson.gz'),
+    featureCollection([
+      polygonFeature(boundaryPolygonCoordinates, {
+        N03_004: '\u6d5c\u677e\u5e02',
+        N03_005: '\u4e2d\u592e\u533a',
+        N03_007: '22138',
+      }),
+    ]),
+    { compress: true },
+  );
+
+  await createNeighborhoodBoundaryZip(sourceRoot, '22', [
+    {
+      KEY_CODE: '22131000101',
+      KCODE1: '0001',
+      S_AREA: '000100',
+      S_NAME: '\u5143\u57ce\u753a',
+    },
+    {
+      KEY_CODE: '22132000102',
+      KCODE1: '0001',
+      S_AREA: '000100',
+      S_NAME: '\u5143\u57ce\u753a\u4e8c\u4e01\u76ee',
+    },
+  ]);
+
+  process.env.SUBWAYBUILDER_JP_DATA_ROOT = sourceRoot;
+
+  return {
+    outputRoot,
+    args: {
+      dataType: 'all',
+      cityCode: 'FSZTEST',
+      countryCode: 'JP',
+      bundle: 'shizuoka_hamamatsu',
+      compress: true,
+      outputRoot,
+    },
+  };
+}
+
 function loadOutputGeoJson(
   outputRoot: string,
   cityCode: string,
@@ -392,6 +515,31 @@ describe('scripts/extract/extract-jp-map-features helpers', () => {
     );
 
     assert.equal(populationMap.get('01101'), 40);
+  });
+
+  it('buildMunicipalityPopulationMap_shouldMapLegacyHamamatsuWardCodesToCurrentCodes', () => {
+    const populationMap = buildMunicipalityPopulationMap(
+      featureCollection([
+        polygonFeature(boundaryPolygonCoordinates, {
+          municipality_code: '22131',
+          pref_code: '22',
+          pop_total: 40,
+        }),
+        polygonFeature(boundaryPolygonCoordinates, {
+          municipality_code: '22132',
+          pref_code: '22',
+          pop_total: 60,
+        }),
+        polygonFeature(boundaryPolygonCoordinates, {
+          municipality_code: '22135',
+          pref_code: '22',
+          pop_total: 15,
+        }),
+      ]),
+    );
+
+    assert.equal(populationMap.get('22138'), 100);
+    assert.equal(populationMap.get('22139'), 15);
   });
 
   it('selectDominantOazaName_shouldPreferLargestPopulationWeight', () => {
@@ -517,5 +665,26 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
           Number(municipality.properties?.TOTAL_AREA),
       ) < 1e-9,
     );
+  });
+
+  it('extractJPBoundaries_shouldKeepHamamatsuOoazaWhenBoundaryUsesCurrentWardCodes', async () => {
+    const { args, outputRoot } = await createHamamatsuCompatFixture();
+
+    await extractJPBoundaries(args);
+
+    const ooaza = loadOutputGeoJson(outputRoot, 'FSZTEST', 'ooaza');
+    const shichouson = loadOutputGeoJson(outputRoot, 'FSZTEST', 'shichouson');
+
+    const ooazaFeature = ooaza.features.find(
+      (feature) => feature.properties?.ID === '221380001',
+    );
+    assert.ok(ooazaFeature);
+    assert.equal(ooazaFeature.properties?.POPULATION, 100);
+
+    const municipality = shichouson.features.find(
+      (feature) => feature.properties?.ID === '22138',
+    );
+    assert.ok(municipality);
+    assert.equal(municipality.properties?.POPULATION, 100);
   });
 });
