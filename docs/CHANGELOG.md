@@ -2,7 +2,7 @@
 
 [Back to README](../README.md)
 
-## v0.4.6 - 2026-04-05
+## v0.4.7 - 2026-04-05
 
 _Game version_ v1.2.0
 
