@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { resolveCountryDatasets } from '@shared/datasets/catalog';
+import {
+  CATALOG_STATIC_COUNTRIES,
+  resolveCountryDatasets,
+} from '@shared/datasets/catalog';
 
-import type { City } from '@/types/cities';
+import type { City, CityTab } from '@/types/cities';
 import {
   buildFetchErrors,
   deriveFetchActionAvailability,
@@ -13,6 +16,7 @@ import {
   formatFetchCommand,
   hasFetchableDatasetsForCity,
   type LastCopiedFetchRequest,
+  resolveKnownCityCountryCode,
   resolveCityCountryCode,
 } from '@/ui/panels/settings/fetch-helpers';
 import {
@@ -67,6 +71,61 @@ const FETCH_CITY_FIXTURES: City[] = [
       longitude: 140.73,
       bearing: 0,
     },
+  },
+  {
+    code: 'KNOX',
+    name: 'Knoxville',
+    country: undefined,
+    description: 'Modded US fixture city',
+    mapImageUrl: '',
+    population: 1000,
+    initialViewState: {
+      zoom: 11,
+      latitude: 35.96,
+      longitude: -83.92,
+      bearing: 0,
+    },
+  },
+  {
+    code: 'GLED',
+    name: 'Greater Leeds',
+    country: undefined,
+    description: 'Unresolved modded GB fixture city',
+    mapImageUrl: '',
+    population: 1000,
+    initialViewState: {
+      zoom: 11,
+      latitude: 53.8,
+      longitude: -1.55,
+      bearing: 0,
+    },
+  },
+  {
+    code: 'BKK',
+    name: 'Bangkok',
+    country: 'TH',
+    description: 'Known unsupported fixture city',
+    mapImageUrl: '',
+    population: 1000,
+    initialViewState: {
+      zoom: 11,
+      latitude: 13.75,
+      longitude: 100.5,
+      bearing: 0,
+    },
+  },
+];
+
+const FETCH_CITY_TABS: CityTab[] = [
+  {
+    id: 'US',
+    label: 'United States',
+    cityCodes: ['BOS', 'KNOX'],
+  },
+  {
+    id: 'JP',
+    label: 'Japan',
+    cityCodes: ['HKD'],
   },
 ];
 
@@ -177,24 +236,57 @@ describe('settings fetch datasets action gating (state/contract)', () => {
   it('filters fetch city options to countries with online datasets and scanned city data', () => {
     assert.equal(resolveCityCountryCode(FETCH_CITY_FIXTURES[0]), 'US');
     assert.equal(resolveCityCountryCode(FETCH_CITY_FIXTURES[1]), 'JP');
+    assert.equal(
+      resolveCityCountryCode(FETCH_CITY_FIXTURES[2], FETCH_CITY_TABS),
+      'US',
+    );
+    assert.equal(resolveKnownCityCountryCode(FETCH_CITY_FIXTURES[4]), 'TH');
+    assert.equal(resolveCityCountryCode(FETCH_CITY_FIXTURES[4]), null);
     assert.equal(hasFetchableDatasetsForCity(FETCH_CITY_FIXTURES[0]), true);
     assert.equal(hasFetchableDatasetsForCity(FETCH_CITY_FIXTURES[1]), false);
+    assert.equal(
+      hasFetchableDatasetsForCity(FETCH_CITY_FIXTURES[2], FETCH_CITY_TABS),
+      true,
+    );
 
-    const availableCityCodes = new Set(['BOS', 'HKD']);
+    assert.equal(
+      resolveCityCountryCode(FETCH_CITY_FIXTURES[3], FETCH_CITY_TABS),
+      null,
+    );
+
+    const availableCityCodes = new Set(['BOS', 'HKD', 'KNOX', 'GLED', 'BKK']);
     const filtered = FETCH_CITY_FIXTURES.filter((city) => {
+      const knownCountryCode = resolveKnownCityCountryCode(
+        city,
+        FETCH_CITY_TABS,
+      );
+      const resolvedCountryCode = resolveCityCountryCode(city, FETCH_CITY_TABS);
       return (
-        hasFetchableDatasetsForCity(city) && availableCityCodes.has(city.code)
+        (resolvedCountryCode
+          ? hasFetchableDatasetsForCity(city, FETCH_CITY_TABS)
+          : knownCountryCode === null) && availableCityCodes.has(city.code)
       );
     });
     assert.deepEqual(
       filtered.map((city) => city.code),
-      ['BOS'],
+      ['BOS', 'KNOX', 'GLED'],
     );
 
     const filteredWithoutScannedData = FETCH_CITY_FIXTURES.filter((city) => {
       return hasFetchableDatasetsForCity(city) && city.code === 'HKD';
     });
     assert.deepEqual(filteredWithoutScannedData, []);
+  });
+
+  it('limits manual country selection to countries with online datasets', () => {
+    const countryOptions = CATALOG_STATIC_COUNTRIES.filter(
+      (countryCode) =>
+        resolveCountryDatasets(countryCode, { onlineOnly: true }).length > 0,
+    );
+
+    assert.ok(countryOptions.includes('US'));
+    assert.ok(countryOptions.includes('GB'));
+    assert.equal(countryOptions.includes('JP'), false);
   });
 
   it('gates actions in order: copy -> validate while keeping open mods folder optional', () => {

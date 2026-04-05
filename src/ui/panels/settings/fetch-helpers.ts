@@ -1,12 +1,13 @@
 import type { RegistryCacheEntry } from '@shared/dataset-index';
 import {
   isStaticCountryCode,
+  normalizeDatasetCountryCode,
   resolveCountryDatasets,
   type StaticCountryCode,
 } from '@shared/datasets/catalog';
 
 import { resolveStaticTemplateCountry } from '@/core/registry/static';
-import type { City } from '@/types/cities';
+import type { City, CityTab } from '@/types/cities';
 
 export type FetchCountryCode = StaticCountryCode;
 export type FetchBBox = {
@@ -52,8 +53,33 @@ type FetchActionAvailabilityArgs = {
   lastCopiedRequest: LastCopiedFetchRequest | null;
 };
 
+export function resolveKnownCityCountryCode(
+  city: City | undefined,
+  cityTabs?: readonly CityTab[],
+): string | null {
+  if (!city) {
+    return null;
+  }
+
+  const explicitCountryCode = city.country
+    ? normalizeDatasetCountryCode(city.country.trim())
+    : '';
+  if (explicitCountryCode) {
+    return explicitCountryCode;
+  }
+
+  const tabCountryCode = cityTabs?.find((tab) =>
+    tab.cityCodes.includes(city.code),
+  )?.id;
+  const normalizedTabCountryCode = tabCountryCode
+    ? normalizeDatasetCountryCode(tabCountryCode.trim())
+    : '';
+  return normalizedTabCountryCode || null;
+}
+
 export function resolveCityCountryCode(
   city: City | undefined,
+  cityTabs?: readonly CityTab[],
 ): FetchCountryCode | null {
   if (!city) {
     return null;
@@ -63,19 +89,23 @@ export function resolveCityCountryCode(
     code: city.code,
     country: city.country,
   });
-  if (!resolvedCountry) {
-    return null;
+  if (resolvedCountry && isStaticCountryCode(resolvedCountry)) {
+    return resolvedCountry;
   }
 
-  if (isStaticCountryCode(resolvedCountry)) {
-    return resolvedCountry;
+  const knownCountryCode = resolveKnownCityCountryCode(city, cityTabs);
+  if (knownCountryCode && isStaticCountryCode(knownCountryCode)) {
+    return knownCountryCode;
   }
 
   return null;
 }
 
-export function hasFetchableDatasetsForCity(city: City | undefined): boolean {
-  const countryCode = resolveCityCountryCode(city);
+export function hasFetchableDatasetsForCity(
+  city: City | undefined,
+  cityTabs?: readonly CityTab[],
+): boolean {
+  const countryCode = resolveCityCountryCode(city, cityTabs);
   return resolveCountryDatasets(countryCode, { onlineOnly: true }).length > 0;
 }
 
