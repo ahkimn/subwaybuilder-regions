@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.4.6`  
+_Latest Mod Version:_ `v0.4.7`  
 _Latest Tested Game Version:_ `v1.2.0`
-_Latest Changelog Entry:_ [v0.4.6](docs/CHANGELOG.md#v046---2026-04-02)
+_Latest Changelog Entry:_ [v0.4.7](docs/CHANGELOG.md#v047---2026-04-05)
 
 ## Table of Contents
 
@@ -423,6 +423,8 @@ To fetch boundary data using this UI, follow this workflow:
 - Click `Copy Command` to copy the generated script command to your clipboard.
 - Click `Open Mods Folder` to open your mods directory in the system file explorer.
 - Open a terminal from that directory and run the copied command.
+  - :warning: On Windows, please make sure this is done in Powershell, not Command Prompt
+  - If you see an error that says "running scripts is disabled on this system", please run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` in the Powershell window to enable scripts and retry
 - Wait for the fetch scripts to finish downloading and writing city data.
 - Click `Validate Datasets` to verify outputs and add the resulting `dynamic` entries to your dataset registry.
 

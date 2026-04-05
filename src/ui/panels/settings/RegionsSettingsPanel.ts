@@ -21,6 +21,7 @@ import {
   formatFetchCommand,
   hasFetchableDatasetsForCity,
   resolveCityCountryCode,
+  resolveKnownCityCountryCode,
 } from './fetch-helpers';
 import {
   createInitialSettingsState,
@@ -133,6 +134,7 @@ export function RegionsSettingsPanel({
     }, [state.isOpen]);
 
     const knownCities = api.utils.getCities();
+    const cityTabs = api.cities.getTabs();
     const knownCitiesByCode = new Map<string, City>(
       knownCities.map((city) => [city.code, city]),
     );
@@ -149,7 +151,10 @@ export function RegionsSettingsPanel({
       state.fetch.params.countryCode,
       { onlineOnly: true },
     );
-    const countryOptions = [...CATALOG_STATIC_COUNTRIES];
+    const countryOptions = CATALOG_STATIC_COUNTRIES.filter(
+      (countryCode) =>
+        resolveCountryDatasets(countryCode, { onlineOnly: true }).length > 0,
+    );
 
     const fetchErrors = buildFetchErrors({
       hasCity: Boolean(state.fetch.params.cityCode),
@@ -358,7 +363,15 @@ export function RegionsSettingsPanel({
 
       let cancelled = false;
       // Filter known cities to those that have fetchable datasets (based on country, since some datasets are country-specific, and some countries may not have any fetchable datasets at all)
-      const candidateCities = knownCities.filter(hasFetchableDatasetsForCity);
+      const candidateCities = knownCities.filter((city) => {
+        const knownCountryCode = resolveKnownCityCountryCode(city, cityTabs);
+        const resolvedCountryCode = resolveCityCountryCode(city, cityTabs);
+
+        // If we cannot infer a supported fetch country yet, still allow the city to be chosen and let the user pick a fetch country (that has fetchable datasets) manually. Cities that resolve to a known country with no online datasets remain hidden.
+        return resolvedCountryCode
+          ? hasFetchableDatasetsForCity(city, cityTabs)
+          : knownCountryCode === null;
+      });
 
       void Promise.all(
         candidateCities.map(async (city) => ({
@@ -394,7 +407,7 @@ export function RegionsSettingsPanel({
 
     const onFetchCityCodeChange = (cityCode: string) => {
       const nextCity = knownCitiesByCode.get(cityCode);
-      const countryCode = resolveCityCountryCode(nextCity);
+      const countryCode = resolveCityCountryCode(nextCity, cityTabs);
       const allowedDatasetIds = resolveCountryDatasets(countryCode, {
         onlineOnly: true,
       }).map((dataset) => dataset.datasetId);

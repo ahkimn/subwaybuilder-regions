@@ -23,15 +23,16 @@ import type {
 const JP_SOURCE_DATA_ROOT_ENV = 'SUBWAYBUILDER_JP_DATA_ROOT';
 const DEFAULT_JP_SOURCE_DATA_ROOT = path.resolve(SOURCE_DATA_DIR, 'jp-data');
 const BUNDLE_INDEX_PATH = path.join('bundles', 'index.json');
-const OD_2020_MUNICIPALITY_COMPAT_MAP: Readonly<Record<string, readonly string[]>> =
-  Object.freeze({
-    // Hamamatsu wards were reorganized in 2024. Several 2020-vintage source
-    // files, including chocho_selected and neighborhood7 KEY_CODEs, still use
-    // the legacy ward code split.
-    '22138': ['22131', '22132', '22133', '22134'], // Chūō-ku
-    '22139': ['22135', '22136'], // Hamana-ku
-    '22140': ['22137'], // Tenryū-ku
-  });
+const OD_2020_MUNICIPALITY_COMPAT_MAP: Readonly<
+  Record<string, readonly string[]>
+> = Object.freeze({
+  // Hamamatsu wards were reorganized in 2024. Several 2020-vintage source
+  // files, including chocho_selected and neighborhood7 KEY_CODEs, still use
+  // the legacy ward code split.
+  '22138': ['22131', '22132', '22133', '22134'], // Chūō-ku
+  '22139': ['22135', '22136'], // Hamana-ku
+  '22140': ['22137'], // Tenryū-ku
+});
 const OD_2020_MUNICIPALITY_REVERSE_COMPAT_MAP: Readonly<
   Record<string, string>
 > = Object.freeze(

@@ -343,7 +343,9 @@ async function createHamamatsuCompatFixture(): Promise<{
   args: ExtractMapFeaturesArgs;
   outputRoot: string;
 }> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'regions-jp-hamamatsu-'));
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'regions-jp-hamamatsu-'),
+  );
   temporaryDirectories.add(root);
   const sourceRoot = path.join(root, 'jp-data');
   const outputRoot = path.join(root, 'output');
