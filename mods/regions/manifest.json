@@ -1,0 +1,24 @@
+{
+  "id": "com.ahkimn.regions",
+  "name": "Regions",
+  "description": "Add support for displaying/analyzing regional data within SubwayBuilder",
+  "dependencies": {
+    "subway-builder": ">=1.0.0"
+  },
+  "icon": "Pin",
+  "version": "0.4.7",
+  "author": {
+    "name": "ahkimn",
+    "url": "https://github.com/ahkimn"
+  },
+  "maxGameVersion": "1.2.0",
+  "minGameVersion": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahkimn/subwaybuilder-regions"
+  },
+  "keywords": ["subway-builder", "mod", "regions", "boundaries", "geospatial"],
+  "subwayBuilderVersion": ">=1.0.0"
+}

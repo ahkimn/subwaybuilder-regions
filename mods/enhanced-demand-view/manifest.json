@@ -1,0 +1,13 @@
+{
+  "id": "com.ahkimn.enhanced-demand-view",
+  "name": "Enhanced Demand View",
+  "description": "Enhanced visualization and editing of demand data",
+  "version": "0.1.0",
+  "main": "index.js",
+  "minGameVersion": "1.0.0",
+  "maxGameVersion": "1.2.0",
+  "dependencies": {
+    "subway-builder": ">=1.0.0"
+  },
+  "icon": "Eye"
+}

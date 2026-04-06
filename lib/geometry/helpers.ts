@@ -1,0 +1,581 @@
+import * as turf from '@turf/turf';
+import type { BBox, Feature, MultiPolygon, Polygon, Position } from 'geojson';
+
+import type { DemandDataFile } from '@lib/types/schemas';
+
+export type Coordinate = [number, number]; // [lng, lat]
+export type RingCoordinate = Coordinate[]; // Closed loop of coordinates
+export type PolygonCoordinates = RingCoordinate[]; // First ring is outer boundary, subsequent rings are holes
+export type MultiPolygonCoordinates = PolygonCoordinates[];
+export type PreparedBoundaryContainment = {
+  bbox: BBox;
+  polygons: MultiPolygonCoordinates;
+  boundaryRings: RingCoordinate[];
+  holeTestPoints: Coordinate[];
+  polygonCount: number;
+  hasHoles: boolean;
+};
+
+export type BBoxPadding = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
+export type BBoxFit = {
+  bbox: BBox;
+  padding: BBoxPadding;
+};
+
+const R_E = 6371008.8; // Earth's radius in meters
+const DEG = Math.PI / 180; // Convert geographic degrees to radians
+
+function toCoordinate(p: Position): Coordinate {
+  return [p[0], p[1]];
+}
+
+export function toPolyCoordinates(p: Position[][]): PolygonCoordinates {
+  return p.map((ring) => ring.map(toCoordinate));
+}
+
+export function isPolygonFeature(
+  feature: Feature,
+): feature is Feature<Polygon | MultiPolygon> {
+  return (
+    feature.geometry.type === 'Polygon' ||
+    feature.geometry.type === 'MultiPolygon'
+  );
+}
+
+export function isFullyWithinFeature(
+  feature: Feature<Polygon | MultiPolygon>,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  errorContext = 'boundary',
+  precomputedFeatureBBox?: BBox,
+): boolean {
+  const featureBBoxPolygon = turf.bboxPolygon(
+    precomputedFeatureBBox ?? featureBBox(feature),
+  );
+  if (!turf.booleanContains(boundaryFeature, featureBBoxPolygon)) {
+    return false;
+  }
+
+  if (feature.geometry.type === 'Polygon') {
+    return turf.booleanWithin(feature, boundaryFeature);
+  }
+
+  try {
+    for (const coords of feature.geometry.coordinates) {
+      const polygonFeature: Feature<Polygon> = turf.polygon(coords);
+      if (!turf.booleanWithin(polygonFeature, boundaryFeature)) {
+        return false;
+      }
+    }
+  } catch (err) {
+    console.warn(
+      `Error validating MultiPolygon within ${errorContext} for feature:`,
+      feature.id,
+      ' Error:',
+      err,
+    );
+    return turf.booleanContains(
+      boundaryFeature,
+      turf.bboxPolygon(turf.bbox(feature)),
+    );
+  }
+
+  return true;
+}
+
+export function isFullyWithinBBox(
+  feature: Feature<Polygon | MultiPolygon>,
+  bboxPolygon: Feature<Polygon>,
+  precomputedFeatureBBox?: BBox,
+): boolean {
+  return isFullyWithinFeature(
+    feature,
+    bboxPolygon,
+    'bbox',
+    precomputedFeatureBBox,
+  );
+}
+
+function polygonHoleTestPoint(ring: RingCoordinate): Coordinate | null {
+  try {
+    const point = turf.pointOnFeature(
+      turf.polygon([ring.map(([lng, lat]) => [lng, lat])]),
+    );
+    return [point.geometry.coordinates[0], point.geometry.coordinates[1]];
+  } catch {
+    return ring[0] ?? null;
+  }
+}
+
+function featureToPreparedPolygons(
+  feature: Feature<Polygon | MultiPolygon>,
+): MultiPolygonCoordinates {
+  if (feature.geometry.type === 'Polygon') {
+    return [toPolyCoordinates(feature.geometry.coordinates)];
+  }
+
+  return feature.geometry.coordinates.map((polygon) =>
+    toPolyCoordinates(polygon),
+  );
+}
+
+export function prepareBoundaryContainment(
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): PreparedBoundaryContainment {
+  const polygons = featureToPreparedPolygons(boundaryFeature);
+  const boundaryRings: RingCoordinate[] = [];
+  const holeTestPoints: Coordinate[] = [];
+
+  for (const polygon of polygons) {
+    for (let ringIndex = 0; ringIndex < polygon.length; ringIndex += 1) {
+      const ring = polygon[ringIndex];
+      boundaryRings.push(ring);
+      if (ringIndex > 0) {
+        const holePoint = polygonHoleTestPoint(ring);
+        if (holePoint) {
+          holeTestPoints.push(holePoint);
+        }
+      }
+    }
+  }
+
+  return {
+    bbox: featureBBox(boundaryFeature),
+    polygons,
+    boundaryRings,
+    holeTestPoints,
+    polygonCount: polygons.length,
+    hasHoles: holeTestPoints.length > 0,
+  };
+}
+
+export function shouldUsePreparedBoundaryContainment(
+  preparedBoundary: PreparedBoundaryContainment,
+): boolean {
+  // The custom containment path is only worthwhile for simple outer boundaries.
+  // For multi-part boundaries or boundaries with holes, Turf's optimized topology
+  // checks have proven faster in practice on large JP bundles.
+  return preparedBoundary.polygonCount === 1 && !preparedBoundary.hasHoles;
+}
+
+function isFeatureBBoxWithinBBox(
+  featureBBoxValue: BBox,
+  boundaryBBox: BBox,
+): boolean {
+  return (
+    featureBBoxValue[0] >= boundaryBBox[0] &&
+    featureBBoxValue[1] >= boundaryBBox[1] &&
+    featureBBoxValue[2] <= boundaryBBox[2] &&
+    featureBBoxValue[3] <= boundaryBBox[3]
+  );
+}
+
+function iterFeaturePolygons(
+  feature: Feature<Polygon | MultiPolygon>,
+): PolygonCoordinates[] {
+  return feature.geometry.type === 'Polygon'
+    ? [toPolyCoordinates(feature.geometry.coordinates)]
+    : feature.geometry.coordinates.map((polygon) => toPolyCoordinates(polygon));
+}
+
+export function isFullyWithinPreparedBoundary(
+  feature: Feature<Polygon | MultiPolygon>,
+  preparedBoundary: PreparedBoundaryContainment,
+  precomputedFeatureBBox?: BBox,
+): boolean {
+  const currentFeatureBBox = precomputedFeatureBBox ?? featureBBox(feature);
+  if (!isFeatureBBoxWithinBBox(currentFeatureBBox, preparedBoundary.bbox)) {
+    return false;
+  }
+
+  const polygons = iterFeaturePolygons(feature);
+  for (const polygon of polygons) {
+    for (const ring of polygon) {
+      for (const coordinate of ring) {
+        if (!pointInMultiPolygon(coordinate, preparedBoundary.polygons)) {
+          return false;
+        }
+      }
+
+      for (let index = 0; index < ring.length - 1; index += 1) {
+        const intersections = segmentPolygonIntersections(
+          ring[index],
+          ring[index + 1],
+          preparedBoundary.boundaryRings,
+        );
+        if (intersections.some((t) => t > 1e-9 && t < 1 - 1e-9)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  if (preparedBoundary.holeTestPoints.length === 0) {
+    return true;
+  }
+
+  for (const holePoint of preparedBoundary.holeTestPoints) {
+    for (const polygon of polygons) {
+      if (pointInPolygon(holePoint, polygon)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+export function isCoordinateWithinFeature(
+  lat: number,
+  lng: number,
+  feature: Feature<Polygon | MultiPolygon>,
+  bbox?: BBox,
+) {
+  if (bbox && isCoordinateOutsideBBox(lng, lat, bbox)) {
+    return false;
+  }
+
+  const point = turf.point([lng, lat]);
+  return turf.booleanPointInPolygon(point, feature, { ignoreBoundary: false });
+}
+
+export function isCoordinateOutsideBBox(
+  lng: number,
+  lat: number,
+  bbox: BBox,
+): boolean {
+  return lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3];
+}
+
+// BBox is [west, south, east, north] => [minLng, minLat, maxLng, maxLat]
+export function bboxIntersects(a: BBox, b: BBox): boolean {
+  return !(
+    a[2] < b[0] || // a.maxX < b.minX
+    a[0] > b[2] || // a.minX > b.maxX
+    a[3] < b[1] || // a.maxY < b.minY
+    a[1] > b[3] // a.minY > b.maxY
+  );
+}
+
+export function normalizeBBox(
+  bbox: BBox,
+  // Minimum width in degrees of normalized bbox
+  minLngSpan: number,
+  // Minimum height in degrees of normalized bbox
+  minLatSpan: number,
+): BBox {
+  const [minLng, minLat, maxLng, maxLat] = bbox;
+
+  // Calculate additional padding needed in each dimension to meet minimum view span requirement
+  const lngPadding = Math.max(minLngSpan - (maxLng - minLng), 0) / 2;
+  const latPadding = Math.max(minLatSpan - (maxLat - minLat), 0) / 2;
+
+  return [
+    minLng - lngPadding,
+    minLat - latPadding,
+    maxLng + lngPadding,
+    maxLat + latPadding,
+  ];
+}
+
+export function buildBBoxFitState(
+  bbox: BBox, // Normalized bbox to fit
+  viewportWidth: number,
+  viewportHeight: number,
+  targetCoverage: number, // Desired dimensional percentage of viewport to fill with the bbox (0.01-1)
+  minPaddingPx: number, // Min padding in pixels around bbox to ensure it's not too close to viewport edges
+  maxPaddingPx: number, // Max padding in pixels around bbox to ensure it fills enough of the viewport
+): BBoxFit {
+  const perSidePaddingRatio = (1 - targetCoverage) / 2;
+  const basePaddingPx =
+    Math.min(viewportWidth, viewportHeight) * perSidePaddingRatio;
+  const clampedPaddingPx = clamp(basePaddingPx, minPaddingPx, maxPaddingPx);
+
+  return {
+    bbox: bbox,
+    padding: {
+      top: clampedPaddingPx,
+      right: clampedPaddingPx,
+      bottom: clampedPaddingPx,
+      left: clampedPaddingPx,
+    },
+  };
+}
+
+// Get bounding box for a line segment defined by two coordinates
+export function segmentBBox(a: Coordinate, b: Coordinate): BBox {
+  return [
+    Math.min(a[0], b[0]),
+    Math.min(a[1], b[1]),
+    Math.max(a[0], b[0]),
+    Math.max(a[1], b[1]),
+  ];
+}
+
+export function getArcBBox(coords: Coordinate[]): BBox {
+  const [firstLng = 0, firstLat = 0] = coords[0] ?? [];
+  let minLng = firstLng;
+  let minLat = firstLat;
+  let maxLng = firstLng;
+  let maxLat = firstLat;
+
+  for (let i = 1; i < coords.length; i++) {
+    const [lng, lat] = coords[i];
+    minLng = Math.min(minLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLng = Math.max(maxLng, lng);
+    maxLat = Math.max(maxLat, lat);
+  }
+
+  return [minLng, minLat, maxLng, maxLat];
+}
+
+export function isValidCoordinate(lng: number, lat: number): boolean {
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+    return false;
+  }
+  return lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90;
+}
+
+function updateBBoxFromCoordinates(
+  coordinates: Iterable<Coordinate>,
+  includeInvalidCoordinates = true,
+): BBox | null {
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+
+  for (const [lng, lat] of coordinates) {
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+      continue;
+    }
+    if (!includeInvalidCoordinates && !isValidCoordinate(lng, lat)) {
+      continue;
+    }
+
+    minLng = Math.min(minLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLng = Math.max(maxLng, lng);
+    maxLat = Math.max(maxLat, lat);
+  }
+
+  if (!Number.isFinite(minLng)) {
+    return null;
+  }
+
+  return [minLng, minLat, maxLng, maxLat];
+}
+
+export function polygonBBox(polygon: PolygonCoordinates): BBox {
+  // Avoid using .flat() to reduce allocation overhead while remaining compatible with shared bbox calculation logic
+  const coordinates = (function* (): Iterable<Coordinate> {
+    for (const ring of polygon) {
+      for (const coordinate of ring) {
+        yield coordinate;
+      }
+    }
+  })();
+  const bbox = updateBBoxFromCoordinates(coordinates, true);
+  if (!bbox) {
+    return [Infinity, Infinity, -Infinity, -Infinity];
+  }
+  return bbox;
+}
+
+export function multiPolyBBox(bboxes: BBox[]): BBox {
+  let minLng = Infinity,
+    minLat = Infinity,
+    maxLng = -Infinity,
+    maxLat = -Infinity;
+  for (const bbox of bboxes) {
+    minLng = Math.min(minLng, bbox[0]);
+    minLat = Math.min(minLat, bbox[1]);
+    maxLng = Math.max(maxLng, bbox[2]);
+    maxLat = Math.max(maxLat, bbox[3]);
+  }
+  return [minLng, minLat, maxLng, maxLat];
+}
+
+export function featureBBox(feature: Feature<Polygon | MultiPolygon>): BBox {
+  if (feature.geometry.type === 'Polygon') {
+    return polygonBBox(toPolyCoordinates(feature.geometry.coordinates));
+  }
+
+  return multiPolyBBox(
+    feature.geometry.coordinates.map((polygon) =>
+      polygonBBox(toPolyCoordinates(polygon)),
+    ),
+  );
+}
+
+export function computeDemandDataBBox(demandData: DemandDataFile): BBox | null {
+  const coordinates: Coordinate[] = demandData.points
+    .map((point) => [point.location[0], point.location[1]] as Coordinate)
+    .filter(([lng, lat]) => isValidCoordinate(lng, lat));
+  const bbox = polygonBBox([coordinates]);
+  if (!Number.isFinite(bbox[0])) {
+    return null;
+  }
+  return bbox;
+}
+
+export function padBBoxKm(bbox: BBox, paddingKm: number): BBox {
+  const paddingMeters = Math.max(0, paddingKm) * 1000;
+  const [west, south, east, north] = bbox;
+  const midLat = (south + north) * 0.5;
+  const cosMidLat = Math.max(Math.abs(Math.cos(midLat * DEG)), 0.01);
+
+  const latOffsetDegrees = paddingMeters / R_E / DEG;
+  const lngOffsetDegrees = paddingMeters / (R_E * cosMidLat) / DEG;
+
+  return [
+    clamp(west - lngOffsetDegrees, -180, 180),
+    clamp(south - latOffsetDegrees, -89.999, 89.999),
+    clamp(east + lngOffsetDegrees, -180, 180),
+    clamp(north + latOffsetDegrees, -89.999, 89.999),
+  ];
+}
+
+export function buildPaddedBBoxForDemandData(
+  demandData: DemandDataFile,
+  paddingKm: number,
+): BBox | null {
+  const bbox = computeDemandDataBBox(demandData);
+  if (!bbox) {
+    return null;
+  }
+  return padBBoxKm(bbox, paddingKm);
+}
+
+// Project geographic coordinate to meter-based coordinate using a base latitude for scaling (equirectangular approximation)
+export function projectCoordinate(
+  [lng, lat]: Coordinate,
+  baseLatitude: number, // Latitude at which to project
+): Coordinate {
+  return [R_E * lng * DEG * Math.cos(baseLatitude * DEG), R_E * lat * DEG];
+}
+
+export function projectPolygon(
+  polygon: PolygonCoordinates,
+  baseLatitude: number,
+): PolygonCoordinates {
+  return polygon.map((ring) =>
+    ring.map((coord) => projectCoordinate(coord, baseLatitude)),
+  );
+}
+
+function pointInRing(point: Coordinate, ring: RingCoordinate): boolean {
+  let insidePolygon = false;
+  const [x, y] = point;
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0],
+      yi = ring[i][1];
+    const xj = ring[j][0],
+      yj = ring[j][1];
+
+    const intersect =
+      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+
+    if (intersect) insidePolygon = !insidePolygon;
+  }
+
+  return insidePolygon;
+}
+
+function pointInPolygon(point: Coordinate, rings: RingCoordinate[]): boolean {
+  // In GeoJSON, the first ring is the outer boundary of the polygon
+  if (!pointInRing(point, rings[0])) return false;
+
+  // Any subsequent rings are holes, so we must verify that the point is not within any of them
+  for (let i = 1; i < rings.length; i++) {
+    if (pointInRing(point, rings[i])) return false;
+  }
+
+  return true;
+}
+
+export function pointInMultiPolygon(
+  point: Coordinate,
+  polygons: RingCoordinate[][],
+): boolean {
+  for (const polygon of polygons) {
+    if (pointInPolygon(point, polygon)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function segmentIntersectionT(
+  a: Coordinate,
+  b: Coordinate,
+  c: Coordinate,
+  d: Coordinate,
+): number | null {
+  const r = [b[0] - a[0], b[1] - a[1]]; // Direction vector of segment AB
+  const s = [d[0] - c[0], d[1] - c[1]]; // Direction vector of segment CD
+
+  const denom = r[0] * s[1] - r[1] * s[0]; // Cross product of r and s
+  if (denom === 0) return null; // parallel
+
+  const u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / denom; // Relative position on CD
+  const t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / denom; // Relative position on AB
+
+  // Validate interersection is within both segments
+  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    return t;
+  }
+
+  return null;
+}
+
+export function segmentPolygonIntersections(
+  a: Coordinate,
+  b: Coordinate,
+  polygons: RingCoordinate[],
+): number[] {
+  const ts: number[] = [];
+
+  for (const polygon of polygons) {
+    for (let i = 0; i < polygon.length - 1; i++) {
+      const t = segmentIntersectionT(a, b, polygon[i], polygon[i + 1]);
+      if (t !== null) ts.push(t);
+    }
+  }
+
+  return ts;
+}
+
+export function segmentLength(a: Coordinate, b: Coordinate): number {
+  return Math.hypot(b[0] - a[0], b[1] - a[1]);
+}
+
+// Linear interpolation between two coordinates
+export function interpolatePoint(
+  a: Coordinate,
+  b: Coordinate,
+  t: number,
+): Coordinate {
+  return [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
+}
+
+export function segmentMidpoint(
+  a: Coordinate,
+  b: Coordinate,
+  t0: number,
+  t1: number,
+): Coordinate {
+  const t = (t0 + t1) * 0.5;
+  return interpolatePoint(a, b, t);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
