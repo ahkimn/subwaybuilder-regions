@@ -8,7 +8,7 @@ _Game version_ v1.2.0
 
 ### Bugfixes
 
-- Fixed modded cities incorrectly being excluded from filtering on download
+- Fixed modded cities incorrectly being excluded from filtering in settings menu
 
 ## v0.4.6 - 2026-04-02
 
