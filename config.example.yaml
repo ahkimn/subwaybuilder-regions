@@ -27,5 +27,9 @@ gamePath: null
 # baseModsDir: "/home/<USER>/.config/metro-maker4/mods/"
 baseModsDir: null
 
-# Default: regions
-modDirName: 'regions'
+# Per-mod target directory names within baseModsDir.
+# Each key is a mod ID matching a folder under mods/, the value is the
+# directory name that will be created/linked inside baseModsDir.
+mods:
+  regions: 'regions'
+  enhanced-demand-view: 'enhanced-demand-view'

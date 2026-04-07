@@ -2,8 +2,8 @@ import fs from 'fs-extra';
 import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 import path from 'path';
 
-import { SOURCE_DATA_DIR } from '../../../shared/constants';
-import { isPolygonFeature } from '../../../src/core/geometry/helpers';
+import { SOURCE_DATA_DIR } from '../../../mods/regions/constants';
+import { isPolygonFeature } from '../../../lib/geometry/helpers';
 import { parseNumber } from '../../utils/cli';
 import { loadGeoJSON } from '../../utils/files';
 import { cleanLabelName } from './names';

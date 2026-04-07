@@ -2,7 +2,7 @@ import fs from 'fs';
 import minimist from 'minimist';
 import path from 'path';
 
-import { SOURCE_DATA_DIR } from '../shared/constants';
+import { SOURCE_DATA_DIR } from '../mods/regions/constants';
 
 const projectRoot = path.resolve(__dirname, '..');
 const defaultExternalRepoRoot = path.resolve(

@@ -1,0 +1,92 @@
+name: Release Enhanced Demand View
+
+on:
+  push:
+    tags:
+      - 'enhanced-demand-view-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Resolve Version from Tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/enhanced-demand-view-v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Sync Manifest from Changelog
+        run: npm run release:enhanced-demand-view:sync
+
+      - name: Validate Synced Manifest Version Matches Tag
+        env:
+          EXPECTED: ${{ steps.version.outputs.version }}
+        run: |
+          MANIFEST_VER=$(node -p "require('./mods/enhanced-demand-view/manifest.json').version")
+          if [ "$MANIFEST_VER" != "$EXPECTED" ]; then
+            echo "::error::Tag version ($EXPECTED) != changelog/manifest version ($MANIFEST_VER). Update docs/enhanced-demand-view/CHANGELOG.md first."
+            exit 1
+          fi
+
+      - name: Build
+        run: npm run build:enhanced-demand-view
+
+      - name: Checkout Sister Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ahkimn/subwaybuilder-enhanced-demand-view
+          token: ${{ secrets.SISTER_REPO_TOKEN }}
+          path: _sister
+
+      - name: Copy Artifacts to Sister Repo
+        run: |
+          cp dist/enhanced-demand-view/index.js _sister/
+          cp mods/enhanced-demand-view/manifest.json _sister/
+
+      - name: Commit, Tag, and Push to Sister Repo
+        working-directory: _sister
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Release v${{ steps.version.outputs.version }}"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin main --tags
+
+      - name: Build Release Notes from Changelog
+        id: notes
+        env:
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          awk -v v="$TAG" '
+            $0 ~ "^## " v "([[:space:]]|$)" { in_section=1 }
+            in_section && $0 ~ "^## v[0-9]+\\.[0-9]+\\.[0-9]+" && $0 !~ "^## " v "([[:space:]]|$)" { exit }
+            in_section { print }
+          ' docs/enhanced-demand-view/CHANGELOG.md > release_notes.md || true
+
+      - name: Create Release on Sister Repo
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ahkimn/subwaybuilder-enhanced-demand-view
+          token: ${{ secrets.SISTER_REPO_TOKEN }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body_path: release_notes.md

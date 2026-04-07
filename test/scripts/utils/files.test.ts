@@ -13,7 +13,7 @@ import {
   saveGeoJSON,
   updateIndexJson,
 } from '@scripts/utils/files';
-import type { DatasetIndex, DatasetMetadata } from '@shared/dataset-index';
+import type { DatasetIndex, DatasetMetadata } from '@regions/dataset-index';
 
 function loadFixture(relativeFixturePath: string): string {
   return fs.readFileSync(

@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { SOURCE_DATA_DIR } from '../../shared/constants';
+import { SOURCE_DATA_DIR } from '../../mods/regions/constants';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import { loadGeoJSON, loadGeoJSONFromNDJSON } from '../utils/files';
 import type { BoundaryBox } from '../utils/geometry';

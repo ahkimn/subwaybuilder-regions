@@ -29,12 +29,12 @@ function launchGame(gamePath: string) {
 }
 
 const config = loadDevConfig();
-const { gamePath, baseModsDir, modDirName } = config;
+const { gamePath, baseModsDir, mods } = config;
 
 console.log('Platform:', process.platform);
 console.log('Game path:', gamePath);
 console.log('Base mods dir:', baseModsDir);
-console.log('Mod dir name:', modDirName);
+console.log('Configured mods:', Object.keys(mods).join(', '));
 
 closeRunningGame();
 launchGame(gamePath);

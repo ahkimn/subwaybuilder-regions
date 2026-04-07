@@ -9,10 +9,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/core/constants": ["src/core/constants/index.ts"],
-      "@/core/constants/*": ["src/core/constants/*"],
-      "@/*": ["src/*"],
-      "@shared/*": ["shared/*"],
+      "@lib/*": ["lib/*"],
+      "@regions/*": ["mods/regions/*"],
       "@scripts/*": ["scripts/*"],
       "@test/*": ["test/*"]
     },
@@ -41,6 +39,6 @@
 
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "shared/**/*", "scripts/**/*"],
+  "include": ["lib/**/*", "mods/**/*", "scripts/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,0 +1,88 @@
+name: Release Regions
+
+on:
+  push:
+    tags:
+      - 'regions-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Resolve Version from Tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/regions-v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Sync Manifest from Changelog
+        run: npm run release:regions:sync
+
+      - name: Validate Synced Manifest Version Matches Tag
+        env:
+          EXPECTED: ${{ steps.version.outputs.version }}
+        run: |
+          MANIFEST_VER=$(node -p "require('./mods/regions/manifest.json').version")
+          if [ "$MANIFEST_VER" != "$EXPECTED" ]; then
+            echo "::error::Tag version ($EXPECTED) != changelog/manifest version ($MANIFEST_VER). Update docs/regions/CHANGELOG.md first."
+            exit 1
+          fi
+
+      - name: Build and Package Release
+        run: npm run release:regions:package
+
+      - name: Build Release Notes from Changelog
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          awk -v v="$TAG" '
+            $0 ~ "^## " v "([[:space:]]|$)" { in_section=1 }
+            in_section && $0 ~ "^## v[0-9]+\\.[0-9]+\\.[0-9]+" && $0 !~ "^## " v "([[:space:]]|$)" { exit }
+            in_section { print }
+          ' docs/regions/CHANGELOG.md > release_notes.md
+
+          if [ ! -s release_notes.md ]; then
+            echo "Failed to extract release notes for $TAG from docs/regions/CHANGELOG.md"
+            exit 1
+          fi
+
+      # Emit a plain semver tag (vX.Y.Z) on this repo for downstream consumers
+      # that expect standard vX.Y.Z tags on the regions repository.
+      - name: Create semver tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${VERSION}" "$GITHUB_SHA"
+          git push origin "v${VERSION}"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Regions v${{ steps.version.outputs.version }}
+          files: |
+            release/subwaybuilder-regions-regions-v${{ steps.version.outputs.version }}.zip
+            release/manifest.json
+          body_path: release_notes.md
+          generate_release_notes: false
+          target_commitish: ${{ github.sha }}

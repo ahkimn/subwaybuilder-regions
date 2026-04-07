@@ -9,6 +9,8 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
+import minimist from 'minimist';
+
 import { getLatestReleaseVersionFromChangelog } from '../utils/release-version';
 
 type PackageJson = {
@@ -21,15 +23,58 @@ type ManifestJson = {
 };
 
 const rootDir = process.cwd();
-const manifestPath = path.join(rootDir, 'manifest.json');
-const bundlePath = path.join(rootDir, 'dist', 'index.js');
-const fetchCliPath = path.join(rootDir, 'dist', 'tools', 'fetch-cli.cjs');
-const fetchPowershellWrapperPath = path.join(rootDir, 'fetch.ps1');
-const fetchShellWrapperPath = path.join(rootDir, 'fetch.sh');
-const changelogPath = path.join(rootDir, 'docs', 'CHANGELOG.md');
-const outputDir = path.join(rootDir, 'release');
-const stagingDir = path.join(outputDir, '.staging');
-const releaseManifestPath = path.join(outputDir, 'manifest.json');
+
+const MOD_CONFIGS: Record<
+  string,
+  {
+    manifestPath: string;
+    changelogPath: string;
+    bundlePath: string;
+    /** Extra files to include in the release zip (relative to staging dir). */
+    extraFiles: { source: string; relativeTargetPath: string }[];
+  }
+> = {
+  regions: {
+    manifestPath: path.join(rootDir, 'mods', 'regions', 'manifest.json'),
+    changelogPath: path.join(rootDir, 'docs', 'regions', 'CHANGELOG.md'),
+    bundlePath: path.join(rootDir, 'dist', 'regions', 'index.js'),
+    extraFiles: [
+      {
+        source: path.join(rootDir, 'mods', 'regions', 'fetch.ps1'),
+        relativeTargetPath: 'fetch.ps1',
+      },
+      {
+        source: path.join(rootDir, 'mods', 'regions', 'fetch.sh'),
+        relativeTargetPath: 'fetch.sh',
+      },
+      {
+        source: path.join(rootDir, 'dist', 'tools', 'fetch-cli.cjs'),
+        relativeTargetPath: path.join('tools', 'fetch-cli.cjs'),
+      },
+    ],
+  },
+  'enhanced-demand-view': {
+    manifestPath: path.join(
+      rootDir,
+      'mods',
+      'enhanced-demand-view',
+      'manifest.json',
+    ),
+    changelogPath: path.join(
+      rootDir,
+      'docs',
+      'enhanced-demand-view',
+      'CHANGELOG.md',
+    ),
+    bundlePath: path.join(
+      rootDir,
+      'dist',
+      'enhanced-demand-view',
+      'index.js',
+    ),
+    extraFiles: [],
+  },
+};
 
 function ensurePathExists(filePath: string): void {
   if (!existsSync(filePath)) {
@@ -96,42 +141,72 @@ function escapePowerShellStringLiteral(value: string): string {
 }
 
 function main(): void {
+  const argv = minimist(process.argv.slice(2), {
+    string: ['mod'],
+  });
+
+  const modId: string | undefined = argv.mod;
+  if (!modId || !MOD_CONFIGS[modId]) {
+    const available = Object.keys(MOD_CONFIGS).join(', ');
+    throw new Error(
+      `Usage: tsx scripts/build/package-release.ts --mod=<${available}>`,
+    );
+  }
+
+  const modConfig = MOD_CONFIGS[modId];
   const packageJsonPath = path.join(rootDir, 'package.json');
   const packageJson = JSON.parse(
     readFileSync(packageJsonPath, 'utf8'),
   ) as PackageJson;
 
-  const releaseVersion = getLatestReleaseVersionFromChangelog(changelogPath);
-  syncManifestVersion(manifestPath, releaseVersion.bare);
+  const releaseVersion = getLatestReleaseVersionFromChangelog(
+    modConfig.changelogPath,
+  );
+  syncManifestVersion(modConfig.manifestPath, releaseVersion.bare);
 
-  const zipName = `${packageJson.name}-${releaseVersion.withV}.zip`;
+  const outputDir = path.join(rootDir, 'release');
+  const stagingDir = path.join(outputDir, '.staging');
+  const releaseManifestPath = path.join(outputDir, 'manifest.json');
+  const zipName = `${packageJson.name}-${modId}-${releaseVersion.withV}.zip`;
   const zipPath = path.join(outputDir, zipName);
 
-  ensurePathExists(manifestPath);
-  ensurePathExists(bundlePath);
-  ensurePathExists(fetchCliPath);
-  ensurePathExists(fetchPowershellWrapperPath);
-  ensurePathExists(fetchShellWrapperPath);
+  ensurePathExists(modConfig.manifestPath);
+  ensurePathExists(modConfig.bundlePath);
+  for (const extra of modConfig.extraFiles) {
+    ensurePathExists(extra.source);
+  }
 
   rmSync(stagingDir, { recursive: true, force: true });
   mkdirSync(stagingDir, { recursive: true });
   mkdirSync(outputDir, { recursive: true });
 
   // Also export manifest as a standalone release asset.
-  copyFileSync(manifestPath, releaseManifestPath);
-  copyFileSync(manifestPath, path.join(stagingDir, 'manifest.json'));
-  copyFileSync(bundlePath, path.join(stagingDir, 'index.js'));
-  copyFileSync(fetchPowershellWrapperPath, path.join(stagingDir, 'fetch.ps1'));
-  copyAsLfLineEndings(fetchShellWrapperPath, path.join(stagingDir, 'fetch.sh'));
-  mkdirSync(path.join(stagingDir, 'tools'), { recursive: true });
-  copyFileSync(fetchCliPath, path.join(stagingDir, 'tools', 'fetch-cli.cjs'));
+  copyFileSync(modConfig.manifestPath, releaseManifestPath);
+  copyFileSync(
+    modConfig.manifestPath,
+    path.join(stagingDir, 'manifest.json'),
+  );
+  copyFileSync(modConfig.bundlePath, path.join(stagingDir, 'index.js'));
+
+  for (const extra of modConfig.extraFiles) {
+    const targetPath = path.join(stagingDir, extra.relativeTargetPath);
+    const parentDir = path.dirname(targetPath);
+    if (!existsSync(parentDir)) {
+      mkdirSync(parentDir, { recursive: true });
+    }
+    if (extra.source.endsWith('.sh')) {
+      copyAsLfLineEndings(extra.source, targetPath);
+    } else {
+      copyFileSync(extra.source, targetPath);
+    }
+  }
 
   rmSync(zipPath, { force: true });
   createZipFromStaging(stagingDir, zipPath);
   rmSync(stagingDir, { recursive: true, force: true });
 
   console.log(
-    `[Regions] Release package generated: ${zipPath} and ${releaseManifestPath} (version ${releaseVersion.withV})`,
+    `[${modId}] Release package generated: ${zipPath} and ${releaseManifestPath} (version ${releaseVersion.withV})`,
   );
 }
 
