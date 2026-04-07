@@ -1,6 +1,15 @@
 # Changelog
 
-[Back to README](../README.md)
+[Back to README](../../README.md)
+
+## v0.4.8 - 2026-04-05
+
+_Game version_ v1.2.0
+
+### Other Updates
+
+- Refactor to mono repoformat with other mods.
+- Test release to validate breaking changes
 
 ## v0.4.7 - 2026-04-05
 
@@ -372,6 +381,4 @@ _Game version_ v1.0.0
 ### New Features
 
 - Added visualization for preset region boundaries + labels
-- Added information panel when a user selects a region within the game
-  - Panel contains region summary statistics as well as commuter / infrastructure data
-- Added initial dev scripts to fetch/process data for preset cities
+- Added information panel when a user selects a region within the ga

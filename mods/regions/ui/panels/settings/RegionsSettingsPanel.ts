@@ -1,8 +1,8 @@
-import type { RegistryCacheEntry } from '@shared/dataset-index';
+import type { RegistryCacheEntry } from '@regions/dataset-index';
 import {
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasets,
-} from '@shared/datasets/catalog';
+} from '@regions/datasets/catalog';
 import type React from 'react';
 
 import { REGIONS_DESELECT_KEY } from '@regions/core/constants';

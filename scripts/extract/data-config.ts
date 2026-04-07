@@ -1,4 +1,4 @@
-import { DATASET_METADATA_CATALOG } from '../../shared/datasets/catalog';
+import { DATASET_METADATA_CATALOG } from '../../mods/regions/datasets/catalog';
 import type { DataConfig } from './handler-types';
 
 type DataConfigOverrides = Omit<

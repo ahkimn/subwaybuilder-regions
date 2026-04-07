@@ -1,7 +1,7 @@
 import {
   DATASET_METADATA_CATALOG,
   resolveCountryDatasetOrder,
-} from '../../shared/datasets/catalog';
+} from '../../mods/regions/datasets/catalog';
 import type { CountryCode, FetchDatasetArgs } from './parse-fetch-args';
 
 function resolveFetchEligibleDatasets(countryCode: CountryCode): string[] {

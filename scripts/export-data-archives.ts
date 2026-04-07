@@ -8,8 +8,8 @@ import {
   DATA_DIR,
   DATA_INDEX_FILE,
   SOURCE_DATA_DIR,
-} from '../shared/constants';
-import type { DatasetIndex } from '../shared/dataset-index';
+} from '../mods/regions/constants';
+import type { DatasetIndex } from '../mods/regions/dataset-index';
 import { parseExportArgs } from './utils/cli';
 import { loadBoundariesFromCSV } from './utils/files';
 

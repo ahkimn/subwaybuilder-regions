@@ -16,7 +16,7 @@ import path from 'path';
 import {
   bboxIntersects,
   featureBBox,
-} from '../../../src/core/geometry/helpers';
+} from '../../../lib/geometry/helpers';
 import { loadGeoJSON } from '../../utils/files';
 import { resolvePrimaryLabelPoint } from '../../utils/geometry';
 import { logProgressHeartbeat } from '../../utils/progress';

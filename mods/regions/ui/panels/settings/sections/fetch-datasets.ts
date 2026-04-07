@@ -4,7 +4,7 @@ import { type createElement } from 'react';
 import { ERROR_HEX, REGIONS_ID_ATTR, SUCCESS_HEX } from '@regions/core/constants';
 import * as SettingsUI from '@regions/core/constants/ui/settings';
 
-import type { DatasetTemplateMetadata } from '@shared/datasets/catalog';
+import type { DatasetTemplateMetadata } from '@regions/datasets/catalog';
 import type { ButtonOptions } from '@lib/ui/elements/Button';
 import { Button } from '@lib/ui/elements/Button';
 import type {

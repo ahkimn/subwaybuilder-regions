@@ -1,4 +1,4 @@
-import { bytesToMB } from '@shared/utils/size';
+import { bytesToMB } from '@lib/utils/size';
 import type { SystemPerformanceInfo } from '@lib/types';
 
 export type LocalDatasetProps = {

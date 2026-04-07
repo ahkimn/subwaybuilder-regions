@@ -1,7 +1,7 @@
 import {
   type RegionsRegistryCache as RegistryCache,
   StaticRegistryCacheEntrySchema,
-} from '@shared/dataset-index';
+} from '@regions/dataset-index';
 import type { BBox } from 'geojson';
 import { z } from 'zod';
 

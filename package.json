@@ -45,12 +45,12 @@
     "zod": "^4.3.6"
   },
   "name": "subwaybuilder-regions",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Monorepo for SubwayBuilder mods with shared core library.",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build:regions",
-    "build:regions": "vite build -c mods/regions/vite.config.ts",
+    "build": "npm run build:regions && npm run build:enhanced-demand-view",
+    "build:regions": "vite build -c mods/regions/vite.config.ts  && npm run build:fetch-cli",
     "build:enhanced-demand-view": "vite build -c mods/enhanced-demand-view/vite.config.ts",
     "build:fetch-cli": "tsx scripts/build/build-fetch-cli.ts",
     "build:dev": "npm run build:regions && npm run link:regions && npm run dev",
@@ -58,9 +58,9 @@
     "dev": "tsx scripts/dev.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "link": "tsx scripts/link.ts --mod=all",
-    "link:regions": "tsx scripts/link.ts --mod=regions",
-    "link:enhanced-demand-view": "tsx scripts/link.ts --mod=enhanced-demand-view",
+    "symlink": "tsx scripts/link.ts --mod=all",
+    "symlink:regions": "tsx scripts/link.ts --mod=regions",
+    "symlink:enhanced-demand-view": "tsx scripts/link.ts --mod=enhanced-demand-view",
     "link:jp-data": "tsx scripts/link-jp-data.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"lib/**/*.{ts,tsx}\" \"mods/**/*.{ts,tsx}\" \"scripts/**/*.ts\" \"test/**/*.{ts,tsx}\" --max-warnings=0",
@@ -72,9 +72,9 @@
     "test": "node --import tsx --test \"test/**/*.test.ts\"",
     "test:watch": "node --import tsx --test --watch \"test/**/*.test.ts\"",
     "export": "tsx scripts/export-data-archives.ts",
-    "release:regions:version": "tsx scripts/build/resolve-release-version.ts --changelog=docs/CHANGELOG.md",
+    "release:regions:version": "tsx scripts/build/resolve-release-version.ts --changelog=docs/regions/CHANGELOG.md",
     "release:regions:package": "npm run build:regions && npm run build:fetch-cli && tsx scripts/build/package-release.ts --mod=regions",
-    "release:enhanced-demand-view:version": "tsx scripts/build/resolve-release-version.ts --changelog=docs/CHANGELOG-enhanced-demand-view.md",
+    "release:enhanced-demand-view:version": "tsx scripts/build/resolve-release-version.ts --changelog=docs/enhanced-demand-view/CHANGELOG.md",
     "release:enhanced-demand-view:package": "npm run build:enhanced-demand-view && tsx scripts/build/package-release.ts --mod=enhanced-demand-view"
   },
   "repository": {
@@ -87,6 +87,5 @@
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/ahkimn/subwaybuilder-regions/issues"
-  },
-  "homepage": "https://github.com/ahkimn/subwaybuilder-regions#readme"
+  }
 }

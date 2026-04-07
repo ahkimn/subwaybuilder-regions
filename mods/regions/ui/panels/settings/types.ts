@@ -1,4 +1,4 @@
-import type { DatasetTemplateMetadata } from '@shared/datasets/catalog';
+import type { DatasetTemplateMetadata } from '@regions/datasets/catalog';
 import type React from 'react';
 import type { useState } from 'react';
 

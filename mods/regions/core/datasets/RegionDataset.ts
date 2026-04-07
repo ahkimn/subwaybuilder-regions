@@ -1,4 +1,4 @@
-import type { DatasetMetadata } from '@shared/dataset-index';
+import type { DatasetMetadata } from '@regions/dataset-index';
 import * as turf from '@turf/turf';
 import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 

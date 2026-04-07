@@ -1,8 +1,8 @@
 import type { Feature, GeoJsonProperties, Geometry } from 'geojson';
 import path from 'path';
 
-import { DATA_INDEX_FILE } from '../../shared/constants';
-import type { DatasetMetadata } from '../../shared/dataset-index';
+import { DATA_INDEX_FILE } from '../../mods/regions/constants';
+import type { DatasetMetadata } from '../../mods/regions/dataset-index';
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
 import { parseNumber } from '../utils/cli';
 import { saveGeoJSON, updateIndexJson } from '../utils/files';

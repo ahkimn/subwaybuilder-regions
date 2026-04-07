@@ -1,9 +1,9 @@
-import type { DatasetMetadata } from '@shared/dataset-index';
+import type { DatasetMetadata } from '@regions/dataset-index';
 import {
   buildDatasetTemplatesFromOrder,
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasetOrder,
-} from '@shared/datasets/catalog';
+} from '@regions/datasets/catalog';
 
 import type { City } from '@lib/types/cities';
 

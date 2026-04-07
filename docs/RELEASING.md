@@ -29,7 +29,7 @@ The zip contains: `manifest.json`, `index.js`, `fetch.ps1`, `fetch.sh`, `tools/f
 
 ### Per-Release Steps
 
-1. Update `docs/CHANGELOG.md` with a new top entry using:
+1. Update `docs/regions/CHANGELOG.md` with a new top entry using:
    - `## vX.Y.Z - YYYY-MM-DD`
 2. Update `mods/regions/manifest.json` version to match.
 3. Merge release-ready changes to `main`.
@@ -50,7 +50,7 @@ On push of `regions-v*` tag, `.github/workflows/release-regions.yml`:
 
 1. Validates that the tag version matches `mods/regions/manifest.json` version.
 2. Builds the regions mod and runs `npm run release:regions:package`.
-3. Extracts release notes from `docs/CHANGELOG.md`.
+3. Extracts release notes from `docs/regions/CHANGELOG.md`.
 4. Publishes GitHub Release on this repository with tag `regions-vX.Y.Z`.
 
 ---
@@ -66,7 +66,7 @@ Each Enhanced Demand View release pushes artifacts to the **sister repository** 
 
 ### Per-Release Steps
 
-1. Update `docs/CHANGELOG-enhanced-demand-view.md` with a new top entry using:
+1. Update `docs/enhanced-demand-view/CHANGELOG.md` with a new top entry using:
    - `## vX.Y.Z - YYYY-MM-DD`
 2. Update `mods/enhanced-demand-view/manifest.json` version to match.
 3. Merge release-ready changes to `main`.

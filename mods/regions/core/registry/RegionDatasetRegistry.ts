@@ -2,8 +2,8 @@ import type {
   DatasetIndex,
   DatasetMetadata,
   RegistryCacheEntry,
-} from '@shared/dataset-index';
-import { DATASET_METADATA_CATALOG } from '@shared/datasets/catalog';
+} from '@regions/dataset-index';
+import { DATASET_METADATA_CATALOG } from '@regions/datasets/catalog';
 
 import type { ModdingAPI } from '@lib/types/api';
 import { RegionDataset } from '../datasets/RegionDataset';

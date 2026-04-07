@@ -1,4 +1,4 @@
-import type { RegistryCacheEntry } from '@shared/dataset-index';
+import type { RegistryCacheEntry } from '@regions/dataset-index';
 
 import type { RegionsStorage } from '@regions/core/storage/RegionsStorage';
 import type { SystemPerformanceInfo } from '@lib/types';

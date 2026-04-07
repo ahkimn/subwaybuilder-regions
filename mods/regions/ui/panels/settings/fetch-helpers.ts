@@ -1,10 +1,10 @@
-import type { RegistryCacheEntry } from '@shared/dataset-index';
+import type { RegistryCacheEntry } from '@regions/dataset-index';
 import {
   isStaticCountryCode,
   normalizeDatasetCountryCode,
   resolveCountryDatasets,
   type StaticCountryCode,
-} from '@shared/datasets/catalog';
+} from '@regions/datasets/catalog';
 
 import { resolveStaticTemplateCountry } from '@regions/core/registry/static';
 import type { City, CityTab } from '@lib/types/cities';

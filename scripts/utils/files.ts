@@ -5,13 +5,13 @@ import readline from 'readline';
 import { parse as parseYaml } from 'yaml';
 import { createGunzip, gunzipSync, gzipSync } from 'zlib';
 
-import { DATA_INDEX_FILE } from '../../shared/constants';
-import type { DatasetIndex, DatasetMetadata } from '../../shared/dataset-index';
+import { DATA_INDEX_FILE } from '../../mods/regions/constants';
+import type { DatasetIndex, DatasetMetadata } from '../../mods/regions/dataset-index';
 import {
   COUNTRY_DATASET_ORDER,
   resolveCountryDatasetOrder,
-} from '../../shared/datasets/catalog';
-import { bytesToMB } from '../../shared/utils/size';
+} from '../../mods/regions/datasets/catalog';
+import { bytesToMB } from '../../lib/utils/size';
 import type { BoundaryBox } from './geometry';
 import { findOsmCountryConfig } from './osm-country-config';
 

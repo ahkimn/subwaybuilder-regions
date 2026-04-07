@@ -1,4 +1,4 @@
-import type { AllPrimitives, Primitive } from '@shared/types';
+import type { AllPrimitives, Primitive } from '@lib/types/primitives';
 import type { createElement, ReactNode } from 'react';
 
 export type InlineToggleOption<T> = {

@@ -6,7 +6,7 @@ import {
   DATASET_METADATA_CATALOG,
   resolveCountryDatasetOrder,
   resolveCountryDatasets,
-} from '@shared/datasets/catalog';
+} from '@regions/datasets/catalog';
 
 describe('shared/datasets/catalog GB metadata', () => {
   it('resolves GB dataset order with wpcs in hierarchy', () => {

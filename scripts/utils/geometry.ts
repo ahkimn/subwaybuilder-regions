@@ -22,7 +22,7 @@ import {
   isPolygonFeature,
   prepareBoundaryContainment,
   shouldUsePreparedBoundaryContainment,
-} from '../../src/core/geometry/helpers';
+} from '../../lib/geometry/helpers';
 import type { DataConfig } from '../extract/handler-types';
 import { parseNumber } from './cli';
 import { logProgressHeartbeat } from './progress';

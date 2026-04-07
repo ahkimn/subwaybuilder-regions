@@ -10,7 +10,6 @@
     "baseUrl": ".",
     "paths": {
       "@lib/*": ["lib/*"],
-      "@shared/*": ["shared/*"],
       "@regions/*": ["mods/regions/*"],
       "@scripts/*": ["scripts/*"],
       "@test/*": ["test/*"]
@@ -40,6 +39,6 @@
 
     "skipLibCheck": true
   },
-  "include": ["lib/**/*", "mods/**/*", "shared/**/*", "scripts/**/*", "test/**/*"],
+  "include": ["lib/**/*", "mods/**/*", "scripts/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }

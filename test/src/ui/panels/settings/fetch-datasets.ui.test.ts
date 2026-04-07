@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import {
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasets,
-} from '@shared/datasets/catalog';
+} from '@regions/datasets/catalog';
 import {
   assertButtonDisabled,
   assertButtonEnabled,

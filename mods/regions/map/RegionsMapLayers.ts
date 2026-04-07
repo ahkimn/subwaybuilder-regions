@@ -1,4 +1,4 @@
-import { resolveCountryDatasetOrder } from '@shared/datasets/catalog';
+import { resolveCountryDatasetOrder } from '@regions/datasets/catalog';
 
 import {
   OVERVIEW_REGION_FOCUS_DURATION_MS,

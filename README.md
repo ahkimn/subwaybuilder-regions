@@ -10,7 +10,7 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 
 _Latest Mod Version:_ `v0.4.7`  
 _Latest Tested Game Version:_ `v1.2.0`
-_Latest Changelog Entry:_ [v0.4.7](docs/CHANGELOG.md#v047---2026-04-05)
+_Latest Changelog Entry:_ [v0.4.7](docs/regions/CHANGELOG.md#v047---2026-04-05)
 
 ## Table of Contents
 
@@ -21,8 +21,8 @@ _Latest Changelog Entry:_ [v0.4.7](docs/CHANGELOG.md#v047---2026-04-05)
   - [Dev Installation](#dev-installation)
 - [Usage](#usage)
 - [Planned Features](docs/PLANNED_FEATURES.md#planned-features)
-- [Known Issues](docs/KNOWN_ISSUES.md#known-issues)
-- [Changelog](docs/CHANGELOG.md#changelog)
+- [Known Issues](docs/regions/KNOWN_ISSUES.md#known-issues)
+- [Changelog](docs/regions/CHANGELOG.md#changelog)
 - [Contributing](#contributing)
   - [Developer Commands](#developer-commands)
   - [Release Process](docs/RELEASING.md#releasing-subwaybuilder-regions)
@@ -540,11 +540,11 @@ See [PLANNED_FEATURES.md](docs/PLANNED_FEATURES.md) for the current list of plan
 
 ## Known Issues
 
-See [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for the current list of major/minor issues and workarounds.
+See [KNOWN_ISSUES.md](docs/regions/KNOWN_ISSUES.md) for the current list of major/minor issues and workarounds.
 
 ## Changelog
 
-See [CHANGELOG.md](docs/CHANGELOG.md#changelog) for full release notes.
+See [CHANGELOG.md](docs/regions/CHANGELOG.md#changelog) for full release notes.
 
 ## Contributing
 
@@ -591,7 +591,7 @@ The following are developer commands available within the repository, grouped by
 #### Release
 
 - `npm run build:fetch-cli`: Bundles runtime fetch CLI for release (`dist/tools/fetch-cli.cjs`).
-- `npm run release:version`: Resolves the latest release version from the top `docs/CHANGELOG.md` entry.
+- `npm run release:version`: Resolves the latest release version from the top `docs/regions/CHANGELOG.md` entry.
 - `npm run release:package`: Builds the mod + fetch CLI and creates release assets in `release/` (`subwaybuilder-regions-vX.Y.Z.zip` + `manifest.json`).
 
 ### Release Process

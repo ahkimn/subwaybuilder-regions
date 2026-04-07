@@ -56,11 +56,11 @@ for (const modId of modIds) {
     filesToLink.push(
       {
         relativeTargetPath: 'fetch.ps1',
-        source: path.join(projectRoot, 'fetch.ps1'),
+        source: path.join(projectRoot, 'mods', 'regions', 'fetch.ps1'),
       },
       {
         relativeTargetPath: 'fetch.sh',
-        source: path.join(projectRoot, 'fetch.sh'),
+        source: path.join(projectRoot, 'mods', 'regions', 'fetch.sh'),
       },
       {
         relativeTargetPath: path.join('tools', 'fetch-cli.cjs'),

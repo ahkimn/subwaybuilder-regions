@@ -18,7 +18,6 @@ export function createModConfig(options: {
       dedupe: ['react', 'react-dom'],
       alias: [
         { find: '@lib', replacement: resolve(ROOT_DIR, 'lib') },
-        { find: '@shared', replacement: resolve(ROOT_DIR, 'shared') },
         ...(options.extraAliases ?? []),
       ],
     },
