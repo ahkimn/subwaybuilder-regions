@@ -32,13 +32,16 @@ jobs:
           VERSION="${GITHUB_REF#refs/tags/enhanced-demand-view-v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Validate Manifest Version Matches Tag
+      - name: Sync Manifest from Changelog
+        run: npm run release:enhanced-demand-view:sync
+
+      - name: Validate Synced Manifest Version Matches Tag
         env:
           EXPECTED: ${{ steps.version.outputs.version }}
         run: |
           MANIFEST_VER=$(node -p "require('./mods/enhanced-demand-view/manifest.json').version")
           if [ "$MANIFEST_VER" != "$EXPECTED" ]; then
-            echo "::error::Tag version ($EXPECTED) != manifest version ($MANIFEST_VER)"
+            echo "::error::Tag version ($EXPECTED) != changelog/manifest version ($MANIFEST_VER). Update docs/enhanced-demand-view/CHANGELOG.md first."
             exit 1
           fi
 

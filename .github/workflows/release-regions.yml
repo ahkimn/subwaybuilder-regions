@@ -33,13 +33,16 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Validate Manifest Version Matches Tag
+      - name: Sync Manifest from Changelog
+        run: npm run release:regions:sync
+
+      - name: Validate Synced Manifest Version Matches Tag
         env:
           EXPECTED: ${{ steps.version.outputs.version }}
         run: |
           MANIFEST_VER=$(node -p "require('./mods/regions/manifest.json').version")
           if [ "$MANIFEST_VER" != "$EXPECTED" ]; then
-            echo "::error::Tag version ($EXPECTED) != manifest version ($MANIFEST_VER)"
+            echo "::error::Tag version ($EXPECTED) != changelog/manifest version ($MANIFEST_VER). Update docs/regions/CHANGELOG.md first."
             exit 1
           fi
 
@@ -61,13 +64,24 @@ jobs:
             exit 1
           fi
 
+      # Emit a plain semver tag (vX.Y.Z) on this repo for downstream consumers
+      # that expect standard vX.Y.Z tags on the regions repository.
+      - name: Create semver tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${VERSION}" "$GITHUB_SHA"
+          git push origin "v${VERSION}"
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: regions-v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
           name: Regions v${{ steps.version.outputs.version }}
           files: |
-            release/subwaybuilder-regions-v${{ steps.version.outputs.version }}.zip
+            release/subwaybuilder-regions-regions-v${{ steps.version.outputs.version }}.zip
             release/manifest.json
           body_path: release_notes.md
           generate_release_notes: false

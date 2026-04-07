@@ -73,9 +73,11 @@
     "test:watch": "node --import tsx --test --watch \"test/**/*.test.ts\"",
     "export": "tsx scripts/export-data-archives.ts",
     "release:regions:version": "tsx scripts/build/resolve-release-version.ts --changelog=docs/regions/CHANGELOG.md",
-    "release:regions:package": "npm run build:regions && npm run build:fetch-cli && tsx scripts/build/package-release.ts --mod=regions",
+    "release:regions:sync": "tsx scripts/build/sync-versions.ts --mod=regions --update-readme",
+    "release:regions:package": "npm run release:regions:sync && npm run build:regions && npm run build:fetch-cli && tsx scripts/build/package-release.ts --mod=regions",
     "release:enhanced-demand-view:version": "tsx scripts/build/resolve-release-version.ts --changelog=docs/enhanced-demand-view/CHANGELOG.md",
-    "release:enhanced-demand-view:package": "npm run build:enhanced-demand-view && tsx scripts/build/package-release.ts --mod=enhanced-demand-view"
+    "release:enhanced-demand-view:sync": "tsx scripts/build/sync-versions.ts --mod=enhanced-demand-view --update-readme",
+    "release:enhanced-demand-view:package": "npm run release:enhanced-demand-view:sync && npm run build:enhanced-demand-view && tsx scripts/build/package-release.ts --mod=enhanced-demand-view"
   },
   "repository": {
     "type": "git",

@@ -6,7 +6,7 @@
     "subway-builder": ">=1.0.0"
   },
   "icon": "Pin",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "author": {
     "name": "ahkimn",
     "url": "https://github.com/ahkimn"
@@ -19,6 +19,12 @@
     "type": "git",
     "url": "https://github.com/ahkimn/subwaybuilder-regions"
   },
-  "keywords": ["subway-builder", "mod", "regions", "boundaries", "geospatial"],
+  "keywords": [
+    "subway-builder",
+    "mod",
+    "regions",
+    "boundaries",
+    "geospatial"
+  ],
   "subwayBuilderVersion": ">=1.0.0"
 }
