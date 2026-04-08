@@ -55,6 +55,7 @@ export function renderGlobalSettingsSection(
             ticks: DOT_SCALING_TICKS,
             disabled: isUpdating,
             onChange: onResidentScalingChange,
+            mode: 'continuous',
           }),
           LabeledSlider(h, {
             id: 'edv-worker-scaling',
@@ -64,6 +65,7 @@ export function renderGlobalSettingsSection(
             ticks: DOT_SCALING_TICKS,
             disabled: isUpdating,
             onChange: onWorkerScalingChange,
+            mode: 'continuous',
           }),
         ],
       ),

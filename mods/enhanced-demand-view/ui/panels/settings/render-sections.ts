@@ -1,9 +1,9 @@
-import type React from 'react';
-import type { createElement } from 'react';
-
 import { Button } from '@lib/ui/elements/Button';
 import { ReactDivider } from '@lib/ui/elements/Divider';
 import { Arrow, ScanSearchIcon } from '@lib/ui/elements/utils/Icons';
+import type React from 'react';
+import type { createElement } from 'react';
+
 import { renderGlobalSettingsSection } from './sections/global-settings';
 import type { SettingsOverlayParams } from './types';
 
@@ -32,7 +32,7 @@ export function renderSettingsEntry(
     h(
       'p',
       { className: 'text-xs text-muted-foreground truncate pl-1' },
-      'Demand dot display settings',
+      'Manage Enhanced Demand View mod settings',
     ),
   ]);
 }
@@ -83,3 +83,4 @@ export function renderSettingsOverlay(
     ],
   );
 }
+ 

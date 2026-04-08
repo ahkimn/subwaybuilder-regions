@@ -34,11 +34,13 @@ The zip contains: `manifest.json`, `index.js`, `fetch.ps1`, `fetch.sh`, `tools/f
 ### Per-Release Steps
 
 1. Update `docs/regions/CHANGELOG.md` with a new top entry:
+
    ```
    ## vX.Y.Z - YYYY-MM-DD
 
    _Game version_ vA.B.C
    ```
+
 2. Merge release-ready changes to `main`.
 3. Sync local `main`:
    - `git checkout main && git pull origin main`

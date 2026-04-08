@@ -10,11 +10,12 @@ Imports real-world geographic regions (ZIP codes, counties, wards, etc.) into Su
 
 <!-- BEGIN regions status -->
 
-| | |
-| --- | --- |
+|                    |                                            |
+| ------------------ | ------------------------------------------ |
 | **Latest Version** | [`v0.4.8`](docs/regions/CHANGELOG.md#v048) |
-| **Game Version** | `v1.2.0` |
-| **Released** | 2026-04-05 |
+| **Game Version**   | `v1.2.0`                                   |
+| **Released**       | 2026-04-05                                 |
+
 <!-- END regions status -->
 
 [Full documentation](docs/regions/README.md) | [Changelog](docs/regions/CHANGELOG.md) | [Known Issues](docs/regions/KNOWN_ISSUES.md)
@@ -25,11 +26,12 @@ Enhances the in-game demand visualization. Releases are published to the sister 
 
 <!-- BEGIN enhanced-demand-view status -->
 
-| | |
-| --- | --- |
+|                    |                                                         |
+| ------------------ | ------------------------------------------------------- |
 | **Latest Version** | [`v0.1.0`](docs/enhanced-demand-view/CHANGELOG.md#v010) |
-| **Game Version** | `v1.2.0` |
-| **Released** | 2026-04-07 |
+| **Game Version**   | `v1.2.0`                                                |
+| **Released**       | 2026-04-07                                              |
+
 <!-- END enhanced-demand-view status -->
 
 [Changelog](docs/enhanced-demand-view/CHANGELOG.md) | [Known Issues](docs/enhanced-demand-view/KNOWN_ISSUES.md)

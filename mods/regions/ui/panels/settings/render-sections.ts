@@ -1,9 +1,9 @@
-import type React from 'react';
-import type { createElement } from 'react';
-
 import { Button } from '@lib/ui/elements/Button';
 import { ReactDivider } from '@lib/ui/elements/Divider';
 import { Arrow, MapPinnedIcon } from '@lib/ui/elements/utils/Icons';
+import type React from 'react';
+import type { createElement } from 'react';
+
 import { renderFetchDatasetsSection } from './sections/fetch-datasets';
 import { renderFooterSection } from './sections/footer';
 import { renderGlobalSettingsSection } from './sections/global-settings';

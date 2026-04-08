@@ -256,16 +256,6 @@ export const Copy: IconDefinition = {
   ],
 };
 
-export const EyeIcon: IconDefinition = {
-  nodes: [
-    {
-      tag: 'path',
-      d: 'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
-    },
-    { tag: 'circle', cx: 12, cy: 12, r: 3 },
-  ],
-};
-
 export const ScanSearchIcon: IconDefinition = {
   nodes: [
     { tag: 'path', d: 'M3 7V5a2 2 0 0 1 2-2h2' },

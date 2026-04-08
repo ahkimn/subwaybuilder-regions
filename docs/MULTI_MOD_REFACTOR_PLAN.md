@@ -101,29 +101,29 @@ subwaybuilder-regions/                    (repo root — name unchanged)
 
 ### What moves to `lib/`
 
-| Current Location | Destination | Rationale |
-|---|---|---|
-| `src/ui/elements/*` | `lib/ui/elements/` | Generic DOM primitives, no regions-specific logic |
-| `src/types/*` | `lib/types/` | Game API type definitions, universal to any mod |
-| `src/core/geometry/*` | `lib/geometry/` | Reusable spatial helpers |
-| `src/ui/panels/types.ts` | `lib/ui/panels/types.ts` | `PanelRenderer` interface, `SortState`/`SortConfig` |
-| `src/core/domain/ui-state.ts` | `lib/domain/ui-state.ts` | Base `UIState` class (mods extend) |
-| Pattern from `src/app/main.ts` | `lib/lifecycle/BaseMod.ts` | Abstract mod lifecycle class (new file) |
-| Pattern from `src/core/storage/` | `lib/storage/base.ts` | Generalized settings load/persist (new file) |
+| Current Location                 | Destination                | Rationale                                           |
+| -------------------------------- | -------------------------- | --------------------------------------------------- |
+| `src/ui/elements/*`              | `lib/ui/elements/`         | Generic DOM primitives, no regions-specific logic   |
+| `src/types/*`                    | `lib/types/`               | Game API type definitions, universal to any mod     |
+| `src/core/geometry/*`            | `lib/geometry/`            | Reusable spatial helpers                            |
+| `src/ui/panels/types.ts`         | `lib/ui/panels/types.ts`   | `PanelRenderer` interface, `SortState`/`SortConfig` |
+| `src/core/domain/ui-state.ts`    | `lib/domain/ui-state.ts`   | Base `UIState` class (mods extend)                  |
+| Pattern from `src/app/main.ts`   | `lib/lifecycle/BaseMod.ts` | Abstract mod lifecycle class (new file)             |
+| Pattern from `src/core/storage/` | `lib/storage/base.ts`      | Generalized settings load/persist (new file)        |
 
 ### What stays in `mods/regions/`
 
-| Location | Rationale |
-|---|---|
-| `core/datasets/*` | Deeply coupled to region GeoJSON model |
-| `core/registry/*` | Dataset registry = regions "database" |
-| `core/storage/RegionsStorage.ts` | Regions-specific settings schema |
-| `core/constants/*` | Regions-specific UI/map/storage constants |
-| `core/domain/` (minus base UIState) | Regions-specific domain models |
-| `map/*` | MapLibre layer management for regions |
-| `ui/RegionsUIManager.ts` | Regions panel orchestration |
-| `ui/panels/*` | All regions panel content renderers |
-| `ui/observers/*` | DOM observers for regions panel injection points |
+| Location                            | Rationale                                        |
+| ----------------------------------- | ------------------------------------------------ |
+| `core/datasets/*`                   | Deeply coupled to region GeoJSON model           |
+| `core/registry/*`                   | Dataset registry = regions "database"            |
+| `core/storage/RegionsStorage.ts`    | Regions-specific settings schema                 |
+| `core/constants/*`                  | Regions-specific UI/map/storage constants        |
+| `core/domain/` (minus base UIState) | Regions-specific domain models                   |
+| `map/*`                             | MapLibre layer management for regions            |
+| `ui/RegionsUIManager.ts`            | Regions panel orchestration                      |
+| `ui/panels/*`                       | All regions panel content renderers              |
+| `ui/observers/*`                    | DOM observers for regions panel injection points |
 
 ### Lifecycle Base Class
 
@@ -173,10 +173,10 @@ import { resolve } from 'path';
 import type { UserConfig } from 'vite';
 
 export function createModConfig(options: {
-  modDir: string;     // absolute path to mod directory
-  entry: string;      // relative entry within mod dir
+  modDir: string; // absolute path to mod directory
+  entry: string; // relative entry within mod dir
   globalName: string; // IIFE global name
-  outDir: string;     // output directory
+  outDir: string; // output directory
 }): UserConfig {
   return {
     define: {
@@ -250,10 +250,10 @@ export default createModConfig({
       "@shared/*": ["shared/*"],
       "@regions/*": ["mods/regions/*"],
       "@enhanced-demand-view/*": ["mods/enhanced-demand-view/*"],
-      "@test/*": ["test/*"]
-    }
+      "@test/*": ["test/*"],
+    },
   },
-  "include": ["lib", "mods", "shared", "scripts", "test"]
+  "include": ["lib", "mods", "shared", "scripts", "test"],
 }
 ```
 
@@ -286,8 +286,8 @@ export default createModConfig({
     "build:dev:enhanced-demand-view": "npm run build:enhanced-demand-view && npm run link:enhanced-demand-view && npm run dev",
 
     "lint": "eslint lib/ mods/ scripts/ test/",
-    "typecheck": "tsc --noEmit"
-  }
+    "typecheck": "tsc --noEmit",
+  },
 }
 ```
 
@@ -435,12 +435,14 @@ subwaybuilder-enhanced-demand-view/
 ### Release Checklist (Developer Workflow)
 
 **Releasing Regions:**
+
 1. Update `docs/CHANGELOG.md` with new version header
 2. Update `mods/regions/manifest.json` version
 3. Merge to main
 4. `git tag regions-v{X.Y.Z} && git push origin regions-v{X.Y.Z}`
 
 **Releasing Enhanced Demand View:**
+
 1. Update `docs/CHANGELOG-enhanced-demand-view.md` with new version header
 2. Update `mods/enhanced-demand-view/manifest.json` version
 3. Merge to main
@@ -498,7 +500,7 @@ Update `config.example.yaml` accordingly.
 export type DevConfig = {
   gamePath: string;
   baseModsDir: string;
-  mods: Record<string, string>;  // modId → modDirName
+  mods: Record<string, string>; // modId → modDirName
 };
 ```
 
@@ -526,7 +528,7 @@ Regions-specific files (fetch.ps1, fetch.sh, tools/fetch-cli.cjs) are only linke
 {
   "link": "tsx scripts/link.ts --mod=all",
   "link:regions": "tsx scripts/link.ts --mod=regions",
-  "link:enhanced-demand-view": "tsx scripts/link.ts --mod=enhanced-demand-view"
+  "link:enhanced-demand-view": "tsx scripts/link.ts --mod=enhanced-demand-view",
 }
 ```
 
@@ -537,7 +539,7 @@ The `dev` script currently just launches the game. It doesn't need per-mod aware
 ```jsonc
 {
   "build:dev": "npm run build:regions && npm run link:regions && npm run dev",
-  "build:dev:enhanced-demand-view": "npm run build:enhanced-demand-view && npm run link:enhanced-demand-view && npm run dev"
+  "build:dev:enhanced-demand-view": "npm run build:enhanced-demand-view && npm run link:enhanced-demand-view && npm run dev",
 }
 ```
 
@@ -548,7 +550,7 @@ The data server serves regions GeoJSON data from `data/`. This is regions-specif
 ```jsonc
 {
   "serve": "npm run serve:regions",
-  "serve:regions": "tsx scripts/serve-data.ts"
+  "serve:regions": "tsx scripts/serve-data.ts",
 }
 ```
 
@@ -639,13 +641,13 @@ This checklist should be run against the same city/dataset used during developme
 
 ## 7. Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Import breakage during move | Run `tsc --noEmit` + build after each step; commit atomically |
-| Bundle size regression | Compare `dist/index.js` size before/after step 2 |
-| Regions release workflow breaks | Test step 3 with a pre-release tag before merging |
-| Sister repo token permissions | Use a fine-grained PAT scoped to `subwaybuilder-enhanced-demand-view` only |
-| Shared code changes break both mods | Add shared-lib-level unit tests; both mod builds run in CI on every push |
+| Risk                                | Mitigation                                                                 |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| Import breakage during move         | Run `tsc --noEmit` + build after each step; commit atomically              |
+| Bundle size regression              | Compare `dist/index.js` size before/after step 2                           |
+| Regions release workflow breaks     | Test step 3 with a pre-release tag before merging                          |
+| Sister repo token permissions       | Use a fine-grained PAT scoped to `subwaybuilder-enhanced-demand-view` only |
+| Shared code changes break both mods | Add shared-lib-level unit tests; both mod builds run in CI on every push   |
 
 ---
 
@@ -655,10 +657,10 @@ The existing CI (lint, typecheck, test) should be updated to cover the new struc
 
 ```yaml
 # .github/workflows/ci.yml
-- run: npm run lint          # covers lib/, mods/, scripts/, test/
-- run: npm run typecheck     # covers all via tsconfig includes
-- run: npm test              # runs tests for all mods
-- run: npm run build         # builds all mods
+- run: npm run lint # covers lib/, mods/, scripts/, test/
+- run: npm run typecheck # covers all via tsconfig includes
+- run: npm test # runs tests for all mods
+- run: npm run build # builds all mods
 ```
 
 This ensures that changes to `lib/` are validated against all consuming mods before merge.
