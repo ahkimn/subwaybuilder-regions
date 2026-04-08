@@ -5,6 +5,8 @@ import {
 import type { BBox } from 'geojson';
 import { z } from 'zod';
 
+import { buildPaddedBBoxForDemandData } from '@lib/geometry/helpers';
+import { ModStorage } from '@lib/storage/ModStorage';
 import type { ModdingAPI } from '@lib/types';
 import type { ElectronAPI, SystemPerformanceInfo } from '@lib/types/electron';
 import type { DemandDataFile } from '@lib/types/schemas';
@@ -13,7 +15,6 @@ import {
   REGIONS_SETTINGS_STORAGE_KEY,
 } from '../constants';
 import { DEFAULT_MOD_FOLDER, MOD_ID } from '../constants/global';
-import { buildPaddedBBoxForDemandData } from '@lib/geometry/helpers';
 import { decompressGzipResponse } from '../utils';
 import { DEFAULT_REGIONS_SETTINGS } from './settings';
 import {
@@ -23,40 +24,43 @@ import {
   resolveSettings as resolveStoredSettings,
 } from './types';
 
-type SettingsListener = (settings: RegionsSettingsValue) => void;
-
-// Class to manage i/o on local files for the Regions mod. Persists settings using the Electron API if available and fetches data from the local filesystem.
-export class RegionsStorage {
-  private settings: RegionsSettingsValue = clone(DEFAULT_REGIONS_SETTINGS);
-  private initialized = false;
+/**
+ * Storage class for the Regions mod.
+ *
+ * Extends `ModStorage<RegionsSettings>` for settings persistence and adds
+ * regions-specific domain logic: registry cache, demand data fetching, mod
+ * path scanning, and system performance info.
+ */
+export class RegionsStorage extends ModStorage<RegionsSettingsValue> {
   private modScanAttempted = false;
   private resolvedModPath: string | null = null;
   private resolvedRelativeModPath = DEFAULT_MOD_FOLDER;
   private resolvedModVersion: string | null = null;
   private systemPerformanceInfo: SystemPerformanceInfo | null = null;
-  private readonly listeners = new Set<SettingsListener>();
 
   constructor(
     private api: ModdingAPI,
-    // TODO (Feature): Migrate all of these reads from the Electron API to the official game API / mod-specific storage when it is available
-    private readonly storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
-    private readonly electronApi: ElectronAPI = resolveElectronApi(),
-  ) {}
-
-  async initialize(): Promise<RegionsSettingsValue> {
-    if (this.initialized) {
-      return this.getSettings();
-    }
-
-    this.initialized = true;
-    await this.hydrateSettings();
-    await this.tryResolveModFromScan();
-    await this.getSystemPerformanceInfo();
-    return this.getSettings();
+    storageKey: string = REGIONS_SETTINGS_STORAGE_KEY,
+    electronApi?: ElectronAPI,
+  ) {
+    super(
+      {
+        storageKey,
+        defaults: DEFAULT_REGIONS_SETTINGS,
+        clone,
+        equals: RegionsSettings.equals,
+        resolveStored: resolveStoredSettings,
+        logPrefix: '[Regions]',
+      },
+      ...(electronApi ? [electronApi] as const : []),
+    );
   }
 
-  getSettings(): RegionsSettingsValue {
-    return clone(this.settings);
+  override async initialize(): Promise<RegionsSettingsValue> {
+    const settings = await super.initialize();
+    await this.tryResolveModFromScan();
+    await this.getSystemPerformanceInfo();
+    return settings;
   }
 
   getResolvedModVersion(): string | null {
@@ -69,54 +73,6 @@ export class RegionsStorage {
 
   getCachedSystemPerformanceInfo(): SystemPerformanceInfo | null {
     return this.systemPerformanceInfo;
-  }
-
-  listen(listener: SettingsListener): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  }
-
-  // --- Mod Settings Management --- //
-  async updateSettings(
-    update: Partial<RegionsSettingsValue>,
-  ): Promise<RegionsSettingsValue> {
-    const nextSettings: RegionsSettingsValue = {
-      ...this.settings,
-      ...update,
-    };
-
-    if (RegionsSettings.equals(this.settings, nextSettings)) {
-      return this.getSettings();
-    }
-
-    this.settings = nextSettings;
-    await this.persistToStorage();
-    this.emit();
-    return this.getSettings();
-  }
-
-  private async hydrateSettings(): Promise<void> {
-    const storedValue = await this.readStorageItem(this.storageKey);
-    if (storedValue == null) {
-      return;
-    }
-
-    try {
-      const stored = resolveStoredSettingsPayload(storedValue);
-      if (stored === null) {
-        console.error(
-          `[Regions] Invalid stored settings payload at key ${this.storageKey}; falling back to defaults.`,
-          storedValue,
-        );
-        return;
-      }
-
-      this.settings = { ...this.settings, ...stored };
-    } catch (error) {
-      console.error('[Regions] Failed to load settings from storage.', error);
-    }
   }
 
   // --- Registry Cache Management --- //
@@ -139,44 +95,6 @@ export class RegionsStorage {
 
   async saveRegistry(cache: RegistryCache): Promise<void> {
     await this.writeStorageItem(REGIONS_REGISTRY_STORAGE_KEY, cache);
-  }
-
-  // --- Electon Storage API --- //
-  // TODO (Game Bug) replace with API storage if possible, as the base Electron storage is game-level and saves to a shared settings.json used by the game
-  private async persistToStorage(): Promise<void> {
-    await this.writeStorageItem(this.storageKey, this.settings);
-  }
-
-  private async readStorageItem(key: string): Promise<unknown | null> {
-    try {
-      const result = await this.electronApi.getStorageItem(key);
-      if (!result.success) {
-        console.error(`[Regions] Failed to load storage key ${key}.`);
-        return null;
-      }
-      return result.data;
-    } catch (error) {
-      console.error(`[Regions] Failed to load storage key ${key}.`, error);
-      return null;
-    }
-  }
-
-  private async writeStorageItem(key: string, value: unknown): Promise<void> {
-    try {
-      const result = await this.electronApi.setStorageItem(key, value);
-      if (!result.success) {
-        console.error(`[Regions] Failed to persist storage key ${key}.`);
-      }
-    } catch (error) {
-      console.error(`[Regions] Failed to persist storage key ${key}.`, error);
-    }
-  }
-
-  private emit(): void {
-    const snapshot = this.getSettings();
-    this.listeners.forEach((listener) => {
-      listener(snapshot);
-    });
   }
 
   // --- Local Datapath Resolution --- //
@@ -214,7 +132,6 @@ export class RegionsStorage {
 
     this.modScanAttempted = true;
 
-    // Attempt to more robustly ascertain the mod's local path and version via the scanMods API (rather than assuming a strict relative path from the game's mod directory)
     try {
       const result = await this.electronApi.scanMods();
       if (!result?.success || !Array.isArray(result.mods)) {
@@ -264,7 +181,6 @@ export class RegionsStorage {
           return payload;
         }
       } catch (error) {
-        // Continue trying candidate paths and return null only if all candidates fail.
         console.warn(
           `[Regions] Failed to load demand data from path ${candidatePath}:`,
           error,
@@ -272,7 +188,6 @@ export class RegionsStorage {
       }
     }
 
-    // Fallback: attempt direct absolute path fetch for current city data root.
     const urlCandidatePaths = [
       `${cityPath}/demand_data.json.gz`,
       `${cityPath}/demand_data.json`,
@@ -336,7 +251,6 @@ export class RegionsStorage {
       return this.systemPerformanceInfo;
     }
 
-    // Overall system performance is not mod-critical as we can obtain the user's platform from the user agent as a fallback
     if (!this.electronApi.getSystemPerformanceInfo) {
       console.error(
         '[Regions] electron.getSystemPerformanceInfo API is unavailable.',
@@ -367,19 +281,6 @@ export class RegionsStorage {
       return null;
     }
   }
-}
-
-function resolveElectronApi(): ElectronAPI {
-  if (!window.electron) {
-    throw new Error('[Regions] ElectronAPI is unavailable');
-  }
-  return window.electron as ElectronAPI;
-}
-
-function resolveStoredSettingsPayload(
-  storedValue: unknown,
-): Partial<RegionsSettingsValue> | null {
-  return resolveStoredSettings(storedValue);
 }
 
 function resolvedStoredRegistry(storedValue: unknown): RegistryCache | null {
