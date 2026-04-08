@@ -8,7 +8,7 @@ import {
   type UIState,
 } from '@regions/core/domain';
 import type { ModdingAPI } from '@lib/types/api';
-import { getGameReact } from '@regions/ui/react/get-game-react';
+import { getGameReact } from '@lib/ui/react/get-game-react';
 
 import { ViewHeader } from '@lib/ui/elements/ViewHeader';
 import { getNextSortState } from '../shared/sort';

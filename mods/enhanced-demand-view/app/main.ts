@@ -1,11 +1,17 @@
-// Enhanced Demand View mod entry point
-// TODO: Implement mod logic
+import type { ModdingAPI } from '@lib/types';
+import {
+  EDV_SETTINGS_MAIN_MENU_COMPONENT_ID,
+} from '@enhanced-demand-view/core/constants';
+import { EDVStorage } from '@enhanced-demand-view/core/storage/EDVStorage';
+import { EDVSettingsPanel } from '@enhanced-demand-view/ui/panels/settings/EDVSettingsPanel';
 
-const api = window.SubwayBuilderAPI;
+const api = window.SubwayBuilderAPI as ModdingAPI | undefined;
 
 export class EnhancedDemandViewMod {
+  private storage: EDVStorage;
+
   constructor() {
-    // No storage/database support — lightweight mod
+    this.storage = new EDVStorage();
   }
 
   async initialize() {
@@ -16,6 +22,23 @@ export class EnhancedDemandViewMod {
       return;
     }
 
+    // Initialize settings from electron store
+    const settings = await this.storage.initialize();
+    console.log('[EnhancedDemandView] Settings loaded', settings);
+
+    // Listen for settings changes
+    this.storage.listen((nextSettings) => {
+      console.log('[EnhancedDemandView] Settings changed', nextSettings);
+      // TODO: Propagate scaling changes to demand dot rendering
+    });
+
+    // Register settings panel on the main menu
+    api.ui.registerComponent('main-menu', {
+      id: EDV_SETTINGS_MAIN_MENU_COMPONENT_ID,
+      component: EDVSettingsPanel({ api, storage: this.storage }),
+    });
+
+    // Register lifecycle hooks
     api.on('cityLoad', (cityCode: string) => this.onCityLoad(cityCode));
     api.on('mapReady', (map: unknown) => this.onMapReady(map));
     api.on('gameEnd', () => this.onGameEnd());

@@ -11,6 +11,7 @@
     "paths": {
       "@lib/*": ["lib/*"],
       "@regions/*": ["mods/regions/*"],
+      "@enhanced-demand-view/*": ["mods/enhanced-demand-view/*"],
       "@scripts/*": ["scripts/*"],
       "@test/*": ["test/*"]
     },

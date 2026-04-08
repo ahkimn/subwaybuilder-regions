@@ -9,7 +9,7 @@ import { REGIONS_DESELECT_KEY } from '@regions/core/constants';
 import type { RegionDataset } from '@regions/core/datasets/RegionDataset';
 import { resolveRuntimePlatform } from '@regions/core/storage/helpers';
 import type { City } from '@lib/types/cities';
-import { getGameReact } from '@regions/ui/react/get-game-react';
+import { getGameReact } from '@lib/ui/react/get-game-react';
 
 import { getNextSortState } from '../shared/sort';
 import {

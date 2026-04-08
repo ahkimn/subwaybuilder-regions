@@ -3,19 +3,9 @@ import type { createElement } from 'react';
 
 import { Button } from '@lib/ui/elements/Button';
 import { ReactDivider } from '@lib/ui/elements/Divider';
-import { Arrow, MapPinnedIcon } from '@lib/ui/elements/utils/Icons';
-import { renderFetchDatasetsSection } from './sections/fetch-datasets';
-import { renderFooterSection } from './sections/footer';
+import { Arrow, ScanSearchIcon } from '@lib/ui/elements/utils/Icons';
 import { renderGlobalSettingsSection } from './sections/global-settings';
-import { renderDatasetRegistrySection } from './sections/registry';
 import type { SettingsOverlayParams } from './types';
-
-export {
-  filterSettingsRows,
-  resolveRegistrySortConfig,
-  sortSettingsRows,
-} from './sections/registry';
-export type { SettingsDatasetRow } from './types';
 
 export function renderSettingsEntry(
   h: typeof createElement,
@@ -23,10 +13,10 @@ export function renderSettingsEntry(
 ): React.ReactNode {
   return h('div', { key: 'entry', className: 'flex flex-col gap-1 min-w-0' }, [
     Button(h, {
-      label: 'Regions',
-      ariaLabel: 'Open Regions Settings',
+      label: 'Enhanced Demand',
+      ariaLabel: 'Open Enhanced Demand View Settings',
       onClick: onOpen,
-      icon: MapPinnedIcon,
+      icon: ScanSearchIcon,
       iconPlacement: 'start',
       wrapperClassName: 'w-full min-w-0',
       buttonClassName:
@@ -42,7 +32,7 @@ export function renderSettingsEntry(
     h(
       'p',
       { className: 'text-xs text-muted-foreground truncate pl-1' },
-      'Manage Regions mod settings and datasets',
+      'Demand dot display settings',
     ),
   ]);
 }
@@ -76,7 +66,11 @@ export function renderSettingsOverlay(
           wrapperClassName: 'w-fit',
         }),
         h('div', { className: 'flex flex-col gap-1.5' }, [
-          h('h1', { className: 'text-2xl font-semibold' }, 'Regions Settings'),
+          h(
+            'h1',
+            { className: 'text-2xl font-semibold' },
+            'Enhanced Demand View Settings',
+          ),
           h(
             'p',
             { className: 'text-sm text-muted-foreground' },
@@ -85,12 +79,6 @@ export function renderSettingsOverlay(
         ]),
         ReactDivider(h, 1),
         renderGlobalSettingsSection(h, params.globalParams),
-        ReactDivider(h, 1),
-        renderDatasetRegistrySection(h, params.registryParams),
-        ReactDivider(h, 1),
-        renderFetchDatasetsSection(h, params.fetchParams),
-        ReactDivider(h, 1),
-        renderFooterSection(h, params.footerParams),
       ]),
     ],
   );
