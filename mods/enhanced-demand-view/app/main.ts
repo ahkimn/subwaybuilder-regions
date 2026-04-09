@@ -1,11 +1,15 @@
 import { EDV_SETTINGS_MAIN_MENU_COMPONENT_ID } from '@enhanced-demand-view/core/constants';
 import { EDVStorage } from '@enhanced-demand-view/core/storage/EDVStorage';
+import { DemandLayerObserver } from '@enhanced-demand-view/map/DemandLayerObserver';
 import { EDVSettingsPanel } from '@enhanced-demand-view/ui/panels/settings/EDVSettingsPanel';
+import { ModLifecycle } from '@lib/lifecycle/ModLifecycle';
 
 const api = window.SubwayBuilderAPI;
 
 export class EnhancedDemandViewMod {
   private storage: EDVStorage;
+  private lifecycle!: ModLifecycle;
+  private demandLayerObserver: DemandLayerObserver | null = null;
 
   constructor() {
     this.storage = new EDVStorage();
@@ -35,23 +39,28 @@ export class EnhancedDemandViewMod {
       component: EDVSettingsPanel({ api, storage: this.storage }),
     });
 
-    // Register lifecycle hooks
-    api.hooks.onCityLoad((cityCode: string) => this.onCityLoad(cityCode));
-    api.hooks.onMapReady((map: maplibregl.Map) => this.onMapReady(map));
-    api.hooks.onGameEnd(() => this.onGameEnd());
-  }
+    // Wire game lifecycle hooks
+    this.lifecycle = new ModLifecycle(api, {
+      logPrefix: '[EnhancedDemandView]',
+      onActivate: ({ cityCode, map }) => {
+        console.log(`[EnhancedDemandView] Activated for city: ${cityCode}`);
+        this.demandLayerObserver = new DemandLayerObserver(map);
+        this.demandLayerObserver.attach();
+      },
+      onDeactivate: (cityCode) => {
+        console.log(`[EnhancedDemandView] Deactivated for city: ${cityCode}`);
+        this.demandLayerObserver?.detach();
+        this.demandLayerObserver = null;
+      },
+      onGameEnd: () => {
+        console.log('[EnhancedDemandView] Game ended');
+        this.reattachMainMenuEntry();
+      },
+    });
 
-  async onCityLoad(cityCode: string) {
-    console.log(`[EnhancedDemandView] City loaded: ${cityCode}`);
-  }
-
-  onMapReady(_map: maplibregl.Map) {
-    console.log('[EnhancedDemandView] Map ready');
-  }
-
-  onGameEnd() {
-    console.log('[EnhancedDemandView] Game ended');
-    this.reattachMainMenuEntry();
+    this.lifecycle.register();
+    // Reconcile immediately — handles hot-reload where hooks do not replay
+    this.lifecycle.reconcile();
   }
 
   /**

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_serena_serena__list_memories",
+      "mcp__plugin_serena_serena__activate_project",
+      "mcp__plugin_serena_serena__read_memory",
+      "mcp__plugin_serena_serena__prepare_for_new_conversation",
+      "mcp__plugin_serena_serena__initial_instructions",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(npx eslint:*)",
+      "mcp__plugin_serena_serena__replace_content"
+    ]
+  }
+}
