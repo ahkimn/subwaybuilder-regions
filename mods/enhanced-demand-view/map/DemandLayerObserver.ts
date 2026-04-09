@@ -72,11 +72,62 @@ export class DemandLayerObserver {
   constructor(private readonly map: maplibregl.Map) {}
 
   // ---------------------------------------------------------------------------
+  // Map listener probe
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Dumps maplibre's internal event listener registry for events relevant to
+   * demand layer updates: mousemove, render, data, move.
+   *
+   * Helps determine the source of high-frequency setProps calls and whether
+   * throttling/replacing the underlying listeners is feasible (Option B/C).
+   *
+   * Results are logged with handler count and — where the function source is
+   * readable — the handler's string representation for identification.
+   */
+  private probeMapListeners(): void {
+    const mapAsAny = this.map as unknown as Record<string, unknown>;
+
+    // MapLibre v5 Evented stores listeners in _listeners.
+    // Fall back to logging available underscore-prefixed keys if not found.
+    const listenersRaw = mapAsAny['_listeners'];
+    if (!listenersRaw || typeof listenersRaw !== 'object') {
+      console.warn(
+        `${LOG} [probe] map._listeners not found. Available internal keys:`,
+        Object.keys(mapAsAny).filter((k) => k.startsWith('_')),
+      );
+      return;
+    }
+
+    const listeners = listenersRaw as Record<string, unknown[]>;
+    const PROBED_EVENTS = ['mousemove', 'mouseover', 'mouseout', 'render', 'data', 'move'];
+
+    console.group(`${LOG} [probe] map._listeners`);
+    for (const event of PROBED_EVENTS) {
+      const handlers = listeners[event];
+      if (!handlers || handlers.length === 0) {
+        console.log(`  ${event}: (none)`);
+        continue;
+      }
+      console.group(`  ${event}: ${handlers.length} handler(s)`);
+      handlers.forEach((h, i) => {
+        // Attempt to stringify the handler for identification; minified game
+        // code will be opaque but will reveal approximate source location.
+        const src = typeof h === 'function' ? h.toString().slice(0, 120) : String(h);
+        console.log(`    [${i}]:`, src);
+      });
+      console.groupEnd();
+    }
+    console.groupEnd();
+  }
+
+  // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
 
   attach(): void {
     this.patchMapMethods();
+    this.probeMapListeners();
 
     // If the layer already exists at attach time (hot-reload or map rebind
     // after the game already added the layer), capture it immediately.
