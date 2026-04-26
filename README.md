@@ -10,12 +10,10 @@ Imports real-world geographic regions (ZIP codes, counties, wards, etc.) into Su
 
 <!-- BEGIN regions status -->
 
-|                    |                                            |
-| ------------------ | ------------------------------------------ |
+| | |
+| --- | --- |
 | **Latest Version** | [`v0.4.9`](docs/regions/CHANGELOG.md#v049) |
-| **Game Version**   | `v1.3.0`                                   |
-| **Released**       | 2026-04-26                                 |
-
+| **Released** | 2026-04-26 |
 <!-- END regions status -->
 
 [Full documentation](docs/regions/README.md) | [Changelog](docs/regions/CHANGELOG.md) | [Known Issues](docs/regions/KNOWN_ISSUES.md)
