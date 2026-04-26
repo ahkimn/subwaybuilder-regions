@@ -69,7 +69,8 @@ function createArchiveForCity(
     fs.removeSync(archivePath);
   }
 
-  const tarArgs = ['-czf', archivePath, '-C', DATA_DIR, cityCode];
+  // --force-local: GNU tar on Windows otherwise interprets `C:\…` as host:path.
+  const tarArgs = ['--force-local', '-czf', archivePath, '-C', DATA_DIR, cityCode];
   if (!includeOSMData) {
     const osmDatasetIds = resolveOsmDatasetIdsForCity(cityCode, datasetIndex);
     for (const datasetId of osmDatasetIds) {
