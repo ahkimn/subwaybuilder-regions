@@ -21,8 +21,7 @@ const projectRoot = path.resolve(__dirname, '..');
 
 // Determine which mods to link
 const targetMod: string = argv.mod;
-const modIds =
-  targetMod === 'all' ? Object.keys(mods) : [targetMod];
+const modIds = targetMod === 'all' ? Object.keys(mods) : [targetMod];
 
 for (const modId of modIds) {
   const modDirName = mods[modId];

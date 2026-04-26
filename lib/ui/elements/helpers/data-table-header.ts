@@ -1,6 +1,9 @@
+import type {
+  ReactDataTableRow,
+  ReactDataTableValue,
+} from '@lib/ui/elements/DataTable';
 import type { TableAlign } from '@lib/ui/panels/types';
 import { SortDirection, type SortState } from '@lib/ui/panels/types';
-import type { ReactDataTableRow, ReactDataTableValue } from '@lib/ui/elements/DataTable';
 
 type HeaderClassOverrides = {
   borderClassName?: string;

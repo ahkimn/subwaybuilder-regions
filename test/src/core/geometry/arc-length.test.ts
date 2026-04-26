@@ -1,14 +1,13 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-
-import * as turf from '@turf/turf';
-import type { Feature, MultiPolygon, Polygon } from 'geojson';
 
 import {
   geodesicArcLengthInsideBoundary,
   planarArcLengthInsideBoundary,
   prepareBoundaryParams,
-} from '@/core/geometry/arc-length';
+} from '@lib/geometry/arc-length';
+import * as turf from '@turf/turf';
+import type { Feature, MultiPolygon, Polygon } from 'geojson';
 
 const squarePolygon: Feature<Polygon> = {
   type: 'Feature',

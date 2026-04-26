@@ -5,7 +5,8 @@ import minimist from 'minimist';
 import type { BoundaryBox } from './geometry';
 import { getSupportedCountryCodes } from './osm-country-config';
 
-const BUILT_IN_COUNTRY_CODES = ['AU', 'CA', 'FR', 'GB', 'JP', 'US'];
+const BUILT_IN_COUNTRY_CODES = ['AU', 'CA', 'CZ', 'FR', 'GB', 'JP', 'US'];
+const EXTERNAL_BUNDLE_COUNTRY_CODES = new Set(['CZ', 'JP']);
 
 function getAvailableCountryCodes(): Set<string> {
   return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);
@@ -171,7 +172,7 @@ export function parseExtractArgs(argvInput: string[]): ExtractMapFeaturesArgs {
     process.exit(1);
   }
 
-  if (countryCode === 'JP' && !bundle) {
+  if (EXTERNAL_BUNDLE_COUNTRY_CODES.has(countryCode) && !bundle) {
     console.error('Missing or invalid argument: --bundle');
     process.exit(1);
   }

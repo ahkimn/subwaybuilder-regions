@@ -1,4 +1,5 @@
 import type { LayerToggleOptions } from '@lib/ui/types/LayerToggleOptions';
+
 import { Label } from './Label';
 import { CheckboxIcon, createIconElement } from './utils/Icons';
 

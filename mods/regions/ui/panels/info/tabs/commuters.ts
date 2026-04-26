@@ -1,8 +1,3 @@
-import type { createElement, Dispatch, ReactNode } from 'react';
-
-import { ModeShare, type RegionGameData } from '@regions/core/domain';
-import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
-
 import { ReactDetailRow } from '@lib/ui/elements/DetailRow';
 import { ReactDivider } from '@lib/ui/elements/Divider';
 import { Placeholder } from '@lib/ui/elements/Placeholder';
@@ -12,6 +7,13 @@ import {
   type SelectButtonConfig,
 } from '@lib/ui/elements/SelectRow';
 import { ViewHeader } from '@lib/ui/elements/ViewHeader';
+import { ModeShare, type RegionGameData } from '@regions/core/domain';
+import {
+  formatNumberOrDefault,
+  formatPercentOrDefault,
+} from '@regions/core/utils';
+import type { createElement, Dispatch, ReactNode } from 'react';
+
 import { resolveCommuterBreakdownData } from '../../shared/commuter-data';
 import {
   CommuterDimension,

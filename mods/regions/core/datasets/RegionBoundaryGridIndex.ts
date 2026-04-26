@@ -1,7 +1,6 @@
-import type { BBox } from 'geojson';
-
 import type { BoundaryParams } from '@lib/geometry/arc-length';
 import { bboxIntersects, isCoordinateOutsideBBox } from '@lib/geometry/helpers';
+import type { BBox } from 'geojson';
 
 /**
  * Helper class to index region features on a regular grid based on their bounding boxes

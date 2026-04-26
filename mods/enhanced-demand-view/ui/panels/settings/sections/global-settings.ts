@@ -1,12 +1,12 @@
-import type React from 'react';
-import type { createElement } from 'react';
-
 import {
   DOT_SCALING_TICKS,
   LabeledSlider,
 } from '@lib/ui/elements/LabeledSlider';
 import { LabeledSwitch } from '@lib/ui/elements/LabeledSwitch';
 import { PanelSection } from '@lib/ui/elements/PanelSection';
+import type React from 'react';
+import type { createElement } from 'react';
+
 import type { GlobalSettingsSectionParams } from '../types';
 
 export function renderGlobalSettingsSection(
@@ -50,7 +50,8 @@ export function renderGlobalSettingsSection(
           LabeledSlider(h, {
             id: 'edv-resident-scaling',
             label: 'Resident Dot Scaling',
-            description: 'Controls the size of resident demand dots on the map.',
+            description:
+              'Controls the size of resident demand dots on the map.',
             value: settings.residentDotScaling,
             ticks: DOT_SCALING_TICKS,
             disabled: isUpdating,

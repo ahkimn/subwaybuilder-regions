@@ -10,7 +10,7 @@ function makeIoError(kind: 'network' | 'file', contextLabel: string): Error {
 
 function createThrowingFsMethod(contextLabel: string) {
   return (...args: unknown[]) => {
-    const maybeCallback = args.at(-1);
+    const maybeCallback = args[args.length - 1];
     const error = makeIoError('file', contextLabel);
 
     if (typeof maybeCallback === 'function') {

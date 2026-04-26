@@ -1,12 +1,12 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import type { City, CityTab } from '@lib/types/cities';
+import { SortDirection } from '@lib/ui/panels/types';
 import {
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasets,
 } from '@regions/datasets/catalog';
-
-import type { City, CityTab } from '@/types/cities';
 import {
   buildFetchErrors,
   deriveFetchActionAvailability,
@@ -18,15 +18,14 @@ import {
   type LastCopiedFetchRequest,
   resolveCityCountryCode,
   resolveKnownCityCountryCode,
-} from '@/ui/panels/settings/fetch-helpers';
+} from '@regions/ui/panels/settings/fetch-helpers';
 import {
   type FetchState,
   INITIAL_FETCH_STATE,
   type RegionsSettingsAction,
   regionsSettingsReducer,
   type RegionsSettingsState,
-} from '@/ui/panels/settings/RegionsSettingsState';
-import { SortDirection } from '@/ui/panels/types';
+} from '@regions/ui/panels/settings/RegionsSettingsState';
 
 type DerivedFetchUi = {
   errors: string[];

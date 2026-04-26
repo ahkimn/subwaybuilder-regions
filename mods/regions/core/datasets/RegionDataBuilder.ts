@@ -1,7 +1,18 @@
-import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
-
+import type { BoundaryParams } from '@lib/geometry/arc-length';
+import {
+  geodesicArcLengthInsideBoundary,
+  planarArcLengthInsideBoundary,
+} from '@lib/geometry/arc-length';
+import type { Coordinate } from '@lib/geometry/helpers';
+import {
+  getArcBBox,
+  isCoordinateWithinFeature,
+  isPolygonFeature,
+} from '@lib/geometry/helpers';
 import type { ModdingAPI } from '@lib/types/api';
 import type { Route, Station, Track } from '@lib/types/game-state';
+import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
+
 import { DEFAULT_CHUNK_SIZE } from '../constants';
 import type {
   RegionCommuterDetailsData,
@@ -16,17 +27,6 @@ import {
   DatasetInvalidFeatureTypeError,
   DatasetMissingFeatureError,
 } from '../errors';
-import type { BoundaryParams } from '@lib/geometry/arc-length';
-import {
-  geodesicArcLengthInsideBoundary,
-  planarArcLengthInsideBoundary,
-} from '@lib/geometry/arc-length';
-import type { Coordinate } from '@lib/geometry/helpers';
-import {
-  getArcBBox,
-  isCoordinateWithinFeature,
-  isPolygonFeature,
-} from '@lib/geometry/helpers';
 import { processInChunks } from '../utils';
 import type { RegionDataset } from './RegionDataset';
 

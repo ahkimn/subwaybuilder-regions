@@ -1,10 +1,3 @@
-import type React from 'react';
-import { type createElement } from 'react';
-
-import { ERROR_HEX, REGIONS_ID_ATTR, SUCCESS_HEX } from '@regions/core/constants';
-import * as SettingsUI from '@regions/core/constants/ui/settings';
-
-import type { DatasetTemplateMetadata } from '@regions/datasets/catalog';
 import type { ButtonOptions } from '@lib/ui/elements/Button';
 import { Button } from '@lib/ui/elements/Button';
 import type {
@@ -21,6 +14,16 @@ import {
   FolderOpen,
   OctagonX,
 } from '@lib/ui/elements/utils/Icons';
+import {
+  ERROR_HEX,
+  REGIONS_ID_ATTR,
+  SUCCESS_HEX,
+} from '@regions/core/constants';
+import * as SettingsUI from '@regions/core/constants/ui/settings';
+import type { DatasetTemplateMetadata } from '@regions/datasets/catalog';
+import type React from 'react';
+import { type createElement } from 'react';
+
 import type { FetchParameters } from '../fetch-helpers';
 import type { SettingsFetchSectionParams } from '../types';
 

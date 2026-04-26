@@ -1,16 +1,3 @@
-import type React from 'react';
-import type { createElement, useMemo, useState } from 'react';
-
-import { LOADING_VALUE_DISPLAY } from '@regions/core/constants';
-import {
-  ModeShare,
-  type RegionGameData,
-  RegionGameData as RegionGameDataUtils,
-  type RegionSelection,
-  RegionSelection as RegionSelectionUtils,
-} from '@regions/core/domain';
-import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
-
 import type {
   DataRowOptions,
   ReactDataTableRow,
@@ -19,10 +6,29 @@ import type {
 import { ReactDataTable } from '@lib/ui/elements/DataTable';
 import { buildSortableHeaderRow } from '@lib/ui/elements/helpers/data-table-header';
 import { ReactSearchInput } from '@lib/ui/elements/SearchInput';
-import { sortWithFallback } from '../../shared/sort';
-import type { InputFieldProperties, SortConfig, TableAlign } from '@lib/ui/panels/types';
+import type {
+  InputFieldProperties,
+  SortConfig,
+  TableAlign,
+} from '@lib/ui/panels/types';
 import type { SortState } from '@lib/ui/panels/types';
 import { SortDirection } from '@lib/ui/panels/types';
+import { LOADING_VALUE_DISPLAY } from '@regions/core/constants';
+import {
+  ModeShare,
+  type RegionGameData,
+  RegionGameData as RegionGameDataUtils,
+  type RegionSelection,
+  RegionSelection as RegionSelectionUtils,
+} from '@regions/core/domain';
+import {
+  formatNumberOrDefault,
+  formatPercentOrDefault,
+} from '@regions/core/utils';
+import type React from 'react';
+import type { createElement, useMemo, useState } from 'react';
+
+import { sortWithFallback } from '../../shared/sort';
 import {
   MIN_ROWS_FOR_FULL_HEIGHT,
   OVERVIEW_CELL_PADDING_CLASS_NAMES,

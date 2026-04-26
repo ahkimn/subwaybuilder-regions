@@ -1,6 +1,5 @@
-import type { createElement, ReactNode } from 'react';
-
 import { REGIONS_ID_ATTR } from '@lib/constants';
+import type { createElement, ReactNode } from 'react';
 
 import type { IconDefinition, IconRenderOptions } from './utils/Icons';
 import { createReactIconElement } from './utils/Icons';

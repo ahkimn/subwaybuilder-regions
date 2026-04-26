@@ -119,3 +119,29 @@ describe('shared/datasets/catalog JP metadata', () => {
     assert.deepEqual(onlineDatasets, []);
   });
 });
+
+describe('shared/datasets/catalog CZ metadata', () => {
+  it('includes CZ in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('CZ'));
+  });
+
+  it('resolves CZ dataset order', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('CZ'), [
+      'okres',
+      'obce',
+      'zsj',
+    ]);
+  });
+
+  it('marks CZ datasets as local-only', () => {
+    for (const datasetId of ['okres', 'obce', 'zsj']) {
+      assert.equal(
+        DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
+        false,
+      );
+    }
+
+    const onlineDatasets = resolveCountryDatasets('CZ', { onlineOnly: true });
+    assert.deepEqual(onlineDatasets, []);
+  });
+});

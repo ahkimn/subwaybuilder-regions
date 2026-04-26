@@ -208,6 +208,11 @@ function main(): void {
       target: path.join(jpMirrorRoot, 'resources'),
       linkType: 'junction',
     },
+    {
+      source: path.join(args.externalRepoRoot, 'source_data', 'cz', 'regions'),
+      target: path.join(jpMirrorRoot, 'cz', 'regions'),
+      linkType: 'junction',
+    },
   ];
 
   for (const link of links) {

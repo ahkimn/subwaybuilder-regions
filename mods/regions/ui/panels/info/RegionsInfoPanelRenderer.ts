@@ -1,6 +1,4 @@
-import { createElement } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
-
+import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 import {
   REGIONS_INFO_CONTAINER_ID,
   REGIONS_INFO_PANEL_MOD_ID,
@@ -8,8 +6,9 @@ import {
 } from '@regions/core/constants';
 import type { RegionDataManager } from '@regions/core/datasets/RegionDataManager';
 import type { UIState } from '@regions/core/domain';
+import { createElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 import { RegionsInfoPanel } from './RegionsInfoPanel';
 
 export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {

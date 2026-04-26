@@ -1,13 +1,13 @@
+import type { ModdingAPI } from '@lib/types/api';
+import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 import {
   REGIONS_OVERVIEW_PANEL_ID,
   REGIONS_OVERVIEW_PANEL_TITLE,
 } from '@regions/core/constants';
 import type { RegionDataManager } from '@regions/core/datasets/RegionDataManager';
 import type { RegionSelection, UIState } from '@regions/core/domain';
-import type { ModdingAPI } from '@lib/types/api';
 
 import { ReactToolbarPanelHost } from '../shared/ReactToolbarPanelHost';
-import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 import { renderRegionsOverviewPanel } from './RegionsOverviewPanel';
 import type { RegionsOverviewPanelState } from './types';
 

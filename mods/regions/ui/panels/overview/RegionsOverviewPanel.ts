@@ -1,5 +1,8 @@
-import type React from 'react';
-
+import type { ModdingAPI } from '@lib/types/api';
+import { ViewHeader } from '@lib/ui/elements/ViewHeader';
+import type { InputFieldProperties, SortState } from '@lib/ui/panels/types';
+import { DEFAULT_SORT_STATE, SortDirection } from '@lib/ui/panels/types';
+import { getGameReact } from '@lib/ui/react/get-game-react';
 import { REGIONS_OVERVIEW_PANEL_CONTENT_ID } from '@regions/core/constants';
 import type { RegionDataManager } from '@regions/core/datasets/RegionDataManager';
 import {
@@ -7,18 +10,12 @@ import {
   type RegionSelection,
   type UIState,
 } from '@regions/core/domain';
-import type { ModdingAPI } from '@lib/types/api';
-import { getGameReact } from '@lib/ui/react/get-game-react';
+import type React from 'react';
 
-import { ViewHeader } from '@lib/ui/elements/ViewHeader';
 import { getNextSortState } from '../shared/sort';
-import type { InputFieldProperties, SortState } from '@lib/ui/panels/types';
-import { DEFAULT_SORT_STATE, SortDirection } from '@lib/ui/panels/types';
 import { renderLayerSelectorRow, renderOverviewTabs } from './render-tabs';
-import { renderHistoricalTabContent } from './tabs/historical-data';
 import type { OverviewSortMetrics } from './tabs/overview';
 import { renderOverviewTabContent, resolveSortConfig } from './tabs/overview';
-import { renderRidershipTabContent } from './tabs/ridership';
 import type { RegionsOverviewPanelState, RegionsOverviewTab } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
 
@@ -65,7 +62,8 @@ export function renderRegionsOverviewPanel(
     props.initialState?.searchTerm ?? '',
   );
   const [activeTab, setActiveTab] = useStateHook<RegionsOverviewTab>(
-    () => props.initialState?.activeTab ?? RegionsOverviewTabs.Overview,
+    // WIP tabs are hidden for now, so ignore any stale saved tab state.
+    () => RegionsOverviewTabs.Overview,
   );
   const [summaryRenderToken, setSummaryRenderToken] = useStateHook<number>(0);
   const [sortState, setSortState] = useStateHook<SortState>(
@@ -159,35 +157,25 @@ export function renderRegionsOverviewPanel(
     setSelectedDatasetIdentifier(datasetIdentifier);
   };
 
-  let tabContent: React.ReactNode;
-  switch (activeTab) {
-    case RegionsOverviewTabs.Overview:
-      tabContent = renderOverviewTabContent(
-        h,
-        useMemoHook,
-        useStateHook,
-        Input,
-        datasetGameData,
-        summaryRenderToken,
-        selectedDatasetIdentifier,
-        activeSelection,
-        sortState,
-        searchTerm,
-        setSearchTerm,
-        onSortChange,
-        props.onRegionSelect,
-        props.onRegionDoubleClick,
-        props.uiState.settings.showUnpopulatedRegions,
-      );
-      break;
-    case RegionsOverviewTabs.HistoricalData:
-      tabContent = renderHistoricalTabContent(h);
-      break;
-    case RegionsOverviewTabs.Ridership:
-    default:
-      tabContent = renderRidershipTabContent(h);
-      break;
-  }
+  // renderOverviewTabContent calls useMemoHook, so it must be invoked on every
+  // render rather than only in the active tab branch.
+  const overviewTabContent = renderOverviewTabContent(
+    h,
+    useMemoHook,
+    useStateHook,
+    Input,
+    datasetGameData,
+    summaryRenderToken,
+    selectedDatasetIdentifier,
+    activeSelection,
+    sortState,
+    searchTerm,
+    setSearchTerm,
+    onSortChange,
+    props.onRegionSelect,
+    props.onRegionDoubleClick,
+    props.uiState.settings.showUnpopulatedRegions,
+  );
 
   return h(
     'div',
@@ -206,6 +194,6 @@ export function renderRegionsOverviewPanel(
         onSelectDataset,
       ),
     ]),
-    tabContent,
+    overviewTabContent,
   );
 }

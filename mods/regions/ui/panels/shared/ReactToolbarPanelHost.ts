@@ -1,11 +1,10 @@
-import type { ReactNode } from 'react';
-
+import type { ModdingAPI } from '@lib/types/api';
+import type { UIFloatingPanelOptions } from '@lib/types/ui';
 import {
   FLOATING_PANEL_OFFSET_X,
   FLOATING_PANEL_OFFSET_Y,
 } from '@regions/core/constants';
-import type { ModdingAPI } from '@lib/types/api';
-import type { UIFloatingPanelOptions } from '@lib/types/ui';
+import type { ReactNode } from 'react';
 
 type ToolbarPanelHostOptions = Pick<
   UIFloatingPanelOptions,

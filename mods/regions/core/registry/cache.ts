@@ -1,4 +1,7 @@
-import type { RegistryCacheEntry, RegistryOrigin } from '@regions/dataset-index';
+import type {
+  RegistryCacheEntry,
+  RegistryOrigin,
+} from '@regions/dataset-index';
 import { resolveCountryDatasetOrder } from '@regions/datasets/catalog';
 
 export const LOCAL_ORIGIN_PRECEDENCE: Record<RegistryOrigin, number> = {

@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
@@ -6,7 +6,7 @@ import {
   formatPercentOrDefault,
   isObjectRecord,
   processInChunks,
-} from '@/core/utils';
+} from '@regions/core/utils';
 
 describe('core/utils', () => {
   it('isObjectRecord_shouldReturnTrue_whenValueIsPlainObject', () => {

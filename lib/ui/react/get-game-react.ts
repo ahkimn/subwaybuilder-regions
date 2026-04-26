@@ -1,3 +1,9 @@
+import type { ModdingAPI } from '@lib/types/api';
+import type {
+  InputFieldProperties,
+  LabelProperties,
+  SwitchProperties,
+} from '@lib/ui/panels/types';
 import type React from 'react';
 import type {
   createElement,
@@ -8,13 +14,6 @@ import type {
   useRef,
   useState,
 } from 'react';
-
-import type { ModdingAPI } from '@lib/types/api';
-import type {
-  InputFieldProperties,
-  LabelProperties,
-  SwitchProperties,
-} from '@lib/ui/panels/types';
 
 type GameUiComponentBindings = {
   Input: React.ComponentType<InputFieldProperties>;

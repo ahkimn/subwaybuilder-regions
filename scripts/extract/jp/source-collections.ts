@@ -13,10 +13,7 @@ import type {
 import os from 'os';
 import path from 'path';
 
-import {
-  bboxIntersects,
-  featureBBox,
-} from '../../../lib/geometry/helpers';
+import { bboxIntersects, featureBBox } from '../../../lib/geometry/helpers';
 import { loadGeoJSON } from '../../utils/files';
 import { resolvePrimaryLabelPoint } from '../../utils/geometry';
 import { logProgressHeartbeat } from '../../utils/progress';

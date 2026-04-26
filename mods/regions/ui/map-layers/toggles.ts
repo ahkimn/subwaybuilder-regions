@@ -1,3 +1,6 @@
+import { Checkbox } from '@lib/ui/elements/Checkbox';
+import type { LayerToggleOptions } from '@lib/ui/types/LayerToggleOptions';
+
 import {
   MOD_ID_ATTR,
   MOD_ROLE_ATTR,
@@ -6,8 +9,6 @@ import {
   REGIONS_LAYER_TOGGLE_CONTAINER_MOD_ID,
   REGIONS_LAYER_TOGGLE_MOD_ROLE,
 } from '../../core/constants';
-import { Checkbox } from '@lib/ui/elements/Checkbox';
-import type { LayerToggleOptions } from '@lib/ui/types/LayerToggleOptions';
 
 function createToggleRow(options: LayerToggleOptions): HTMLElement {
   return Checkbox(options, MOD_ROLE_ATTR, REGIONS_LAYER_TOGGLE_MOD_ROLE);

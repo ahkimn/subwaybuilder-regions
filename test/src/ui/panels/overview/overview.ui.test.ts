@@ -1,11 +1,11 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { RegionGameData, RegionSelection } from '@/core/domain';
-import { OVERVIEW_HEADER_LABELS } from '@/ui/panels/overview/constants';
-import { sortRows } from '@/ui/panels/overview/tabs/overview';
-import type { RegionsOverviewRow } from '@/ui/panels/overview/types';
-import { SortDirection } from '@/ui/panels/types';
+import { SortDirection } from '@lib/ui/panels/types';
+import type { RegionGameData, RegionSelection } from '@regions/core/domain';
+import { OVERVIEW_HEADER_LABELS } from '@regions/ui/panels/overview/constants';
+import { sortRows } from '@regions/ui/panels/overview/tabs/overview';
+import type { RegionsOverviewRow } from '@regions/ui/panels/overview/types';
 
 function createGameData(
   featureId: string | number,

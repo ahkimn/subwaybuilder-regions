@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 import path from 'path';
 
-import { CITY_BOUNDARIES_FILE, SOURCE_DATA_DIR } from '../mods/regions/constants';
+import {
+  CITY_BOUNDARIES_FILE,
+  SOURCE_DATA_DIR,
+} from '../mods/regions/constants';
 import { extractAUBoundaries } from './extract/extract-au-map-features';
 import { extractCABoundaries } from './extract/extract-ca-map-features';
+import { extractCZBoundaries } from './extract/extract-cz-map-features';
 import { extractFRBoundaries } from './extract/extract-fr-map-features';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
 import { extractJPBoundaries } from './extract/extract-jp-map-features';
@@ -35,6 +39,10 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
   // Special handling for Japan since the extraction process is completely synced to the local jp-data repository and cannot be executed by any external user
   if (args.countryCode === 'JP') {
     await extractJPBoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'CZ') {
+    await extractCZBoundaries(args);
     return;
   }
 

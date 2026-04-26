@@ -40,21 +40,35 @@ export function installDomEnvironment(): () => void {
   }
 
   const target = globalThis as Record<string, unknown>;
-  target.window = dom.window;
-  target.document = dom.window.document;
-  target.navigator = dom.window.navigator;
-  target.HTMLElement = dom.window.HTMLElement;
-  target.Event = dom.window.Event;
-  target.Node = dom.window.Node;
-  target.CustomEvent = dom.window.CustomEvent;
-  target.DocumentFragment = dom.window.DocumentFragment;
-  target.MutationObserver = dom.window.MutationObserver;
-  target.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
-  target.requestAnimationFrame = (cb: FrameRequestCallback): number =>
-    setTimeout(() => cb(Date.now()), 0) as unknown as number;
-  target.cancelAnimationFrame = (id: number) => {
-    clearTimeout(id);
+  // Use defineProperty so we can overwrite getter-only globals like
+  // `navigator` (Node 21+) without TypeError.
+  const assign = (key: string, value: unknown) => {
+    Object.defineProperty(target, key, {
+      value,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
   };
+
+  assign('window', dom.window);
+  assign('document', dom.window.document);
+  assign('navigator', dom.window.navigator);
+  assign('HTMLElement', dom.window.HTMLElement);
+  assign('Event', dom.window.Event);
+  assign('Node', dom.window.Node);
+  assign('CustomEvent', dom.window.CustomEvent);
+  assign('DocumentFragment', dom.window.DocumentFragment);
+  assign('MutationObserver', dom.window.MutationObserver);
+  assign('getComputedStyle', dom.window.getComputedStyle.bind(dom.window));
+  assign(
+    'requestAnimationFrame',
+    (cb: FrameRequestCallback): number =>
+      setTimeout(() => cb(Date.now()), 0) as unknown as number,
+  );
+  assign('cancelAnimationFrame', (id: number) => {
+    clearTimeout(id);
+  });
 
   return () => {
     for (const key of GLOBAL_KEYS) {
@@ -62,7 +76,7 @@ export function installDomEnvironment(): () => void {
       if (previousValue === undefined) {
         delete target[key];
       } else {
-        target[key] = previousValue;
+        assign(key, previousValue);
       }
     }
     dom.window.close();

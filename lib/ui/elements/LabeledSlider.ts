@@ -137,9 +137,7 @@ export function valueToPosition(
   }
 
   // Fallback (should be unreachable)
-  return Math.round(
-    (nearestTickIndex(ticks, value) / maxIdx) * resolution,
-  );
+  return Math.round((nearestTickIndex(ticks, value) / maxIdx) * resolution);
 }
 
 // ---------------------------------------------------------------------------
@@ -243,59 +241,51 @@ export function LabeledSlider(
       : []),
 
     // Slider + tick marks wrapper
-    h(
-      'div',
-      { key: 'slider-wrap', className: 'relative w-full' },
-      [
-        // Tick mark lines (behind the slider)
-        h(
-          'div',
-          {
-            key: 'tick-marks',
-            className: 'absolute inset-x-0 top-0 h-2 pointer-events-none',
-            'aria-hidden': 'true',
-          },
-          ticks.map((_, idx) => {
-            const pct = maxIndex === 0 ? 50 : (idx / maxIndex) * 100;
-            const isActive = isSnap
-              ? idx === snapIndex
-              : idx === exactTickIdx;
-            return h('span', {
-              key: `tm-${idx}`,
-              className:
-                'absolute top-1/2 -translate-y-1/2 w-px rounded-full transition-colors ' +
-                (isActive ? 'h-3 bg-primary' : 'h-2 bg-muted-foreground/40'),
-              style: { left: `${pct}%` },
-            });
-          }),
-        ),
-
-        // Range input
-        h('input', {
-          key: 'slider',
-          id,
-          type: 'range',
-          min: 0,
-          max: isSnap ? maxIndex : resolution,
-          step: isSnap ? 1 : 1,
-          value: sliderPosition,
-          disabled,
-          onInput: handleInput,
-          className:
-            'relative w-full h-2 rounded-full appearance-none cursor-pointer ' +
-            'bg-border accent-primary disabled:opacity-50 disabled:cursor-not-allowed',
+    h('div', { key: 'slider-wrap', className: 'relative w-full' }, [
+      // Tick mark lines (behind the slider)
+      h(
+        'div',
+        {
+          key: 'tick-marks',
+          className: 'absolute inset-x-0 top-0 h-2 pointer-events-none',
+          'aria-hidden': 'true',
+        },
+        ticks.map((_, idx) => {
+          const pct = maxIndex === 0 ? 50 : (idx / maxIndex) * 100;
+          const isActive = isSnap ? idx === snapIndex : idx === exactTickIdx;
+          return h('span', {
+            key: `tm-${idx}`,
+            className:
+              'absolute top-1/2 -translate-y-1/2 w-px rounded-full transition-colors ' +
+              (isActive ? 'h-3 bg-primary' : 'h-2 bg-muted-foreground/40'),
+            style: { left: `${pct}%` },
+          });
         }),
-      ],
-    ),
+      ),
+
+      // Range input
+      h('input', {
+        key: 'slider',
+        id,
+        type: 'range',
+        min: 0,
+        max: isSnap ? maxIndex : resolution,
+        step: isSnap ? 1 : 1,
+        value: sliderPosition,
+        disabled,
+        onInput: handleInput,
+        className:
+          'relative w-full h-2 rounded-full appearance-none cursor-pointer ' +
+          'bg-border accent-primary disabled:opacity-50 disabled:cursor-not-allowed',
+      }),
+    ]),
 
     // Tick labels
     h(
       'div',
       { key: 'ticks', className: 'flex justify-between -mt-0.5' },
       ticks.map((tick, idx) => {
-        const isActive = isSnap
-          ? idx === snapIndex
-          : idx === exactTickIdx;
+        const isActive = isSnap ? idx === snapIndex : idx === exactTickIdx;
         return h(
           'span',
           {

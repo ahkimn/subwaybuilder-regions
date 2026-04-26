@@ -1,7 +1,6 @@
+import { formatNumberOrDefault } from '@regions/core/utils';
 import type React from 'react';
 import type { createElement } from 'react';
-
-import { formatNumberOrDefault } from '@regions/core/utils';
 
 import type { SettingsFooterSectionParams } from '../types';
 

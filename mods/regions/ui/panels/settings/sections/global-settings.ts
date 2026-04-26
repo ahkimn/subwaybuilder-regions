@@ -1,8 +1,8 @@
+import { LabeledSwitch } from '@lib/ui/elements/LabeledSwitch';
+import { PanelSection } from '@lib/ui/elements/PanelSection';
 import type React from 'react';
 import type { createElement } from 'react';
 
-import { LabeledSwitch } from '@lib/ui/elements/LabeledSwitch';
-import { PanelSection } from '@lib/ui/elements/PanelSection';
 import type { GlobalSettingsSectionParams } from '../types';
 
 // Renders the "Global Settings" section near the top of the settings menu

@@ -1,6 +1,6 @@
-import type { ComponentType, ReactNode } from 'react';
-
 import type { EDVSettings } from '@enhanced-demand-view/core/storage/types';
+import type { LabelProperties, SwitchProperties } from '@lib/ui/panels/types';
+import type { ComponentType } from 'react';
 
 export type EDVSettingsState = {
   isOpen: boolean;
@@ -16,18 +16,8 @@ export type EDVSettingsAction =
   | { type: 'set_updating'; value: boolean };
 
 export type GlobalSettingsSectionParams = {
-  Switch: ComponentType<{
-    id: string;
-    checked: boolean;
-    disabled?: boolean;
-    onCheckedChange: (checked: boolean) => void;
-    onChange?: (event: Event) => void;
-  }>;
-  Label: ComponentType<{
-    htmlFor: string;
-    className?: string;
-    children?: ReactNode;
-  }>;
+  Switch: ComponentType<SwitchProperties>;
+  Label: ComponentType<LabelProperties>;
   settings: EDVSettings;
   isUpdating: boolean;
   onToggleAutoAdjust: (checked: boolean) => void;

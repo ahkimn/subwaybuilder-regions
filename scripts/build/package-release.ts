@@ -66,12 +66,7 @@ const MOD_CONFIGS: Record<
       'enhanced-demand-view',
       'CHANGELOG.md',
     ),
-    bundlePath: path.join(
-      rootDir,
-      'dist',
-      'enhanced-demand-view',
-      'index.js',
-    ),
+    bundlePath: path.join(rootDir, 'dist', 'enhanced-demand-view', 'index.js'),
     extraFiles: [],
   },
 };
@@ -182,10 +177,7 @@ function main(): void {
 
   // Also export manifest as a standalone release asset.
   copyFileSync(modConfig.manifestPath, releaseManifestPath);
-  copyFileSync(
-    modConfig.manifestPath,
-    path.join(stagingDir, 'manifest.json'),
-  );
+  copyFileSync(modConfig.manifestPath, path.join(stagingDir, 'manifest.json'));
   copyFileSync(modConfig.bundlePath, path.join(stagingDir, 'index.js'));
 
   for (const extra of modConfig.extraFiles) {

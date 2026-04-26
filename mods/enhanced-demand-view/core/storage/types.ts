@@ -20,9 +20,7 @@ export function clone(settings: EDVSettings): EDVSettings {
   return { ...settings };
 }
 
-export function resolveSettings(
-  value: unknown,
-): Partial<EDVSettings> | null {
+export function resolveSettings(value: unknown): Partial<EDVSettings> | null {
   const SettingsPatchSchema = z.object({
     autoAdjustDotScaling: z.boolean().optional(),
     residentDotScaling: z.number().min(0.1).max(2.0).optional(),

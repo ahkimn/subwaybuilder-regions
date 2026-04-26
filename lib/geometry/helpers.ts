@@ -1,7 +1,6 @@
+import type { DemandDataFile } from '@lib/types/schemas';
 import * as turf from '@turf/turf';
 import type { BBox, Feature, MultiPolygon, Polygon, Position } from 'geojson';
-
-import type { DemandDataFile } from '@lib/types/schemas';
 
 export type Coordinate = [number, number]; // [lng, lat]
 export type RingCoordinate = Coordinate[]; // Closed loop of coordinates

@@ -228,4 +228,39 @@ describe('scripts/utils/cli utilities', () => {
       harness.calls.error,
     );
   });
+
+  it('parseExtractArgs_shouldParseCZBundleAndAllDataType_whenValid', () => {
+    const args = parseExtractArgs([
+      '--data-type',
+      'all',
+      '--city-code',
+      'PRG',
+      '--country-code',
+      'CZ',
+      '--bundle',
+      'prague',
+    ]);
+
+    assert.equal(args.dataType, 'all');
+    assert.equal(args.cityCode, 'PRG');
+    assert.equal(args.countryCode, 'CZ');
+    assert.equal(args.bundle, 'prague');
+  });
+
+  it('parseExtractArgs_shouldExitWithCode1_whenCZBundleIsMissing', async () => {
+    await expectExitCode(
+      () =>
+        parseExtractArgs([
+          '--data-type',
+          'all',
+          '--city-code',
+          'PRG',
+          '--country-code',
+          'CZ',
+        ]),
+      1,
+      'Missing or invalid argument: --bundle',
+      harness.calls.error,
+    );
+  });
 });

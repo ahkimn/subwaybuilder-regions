@@ -1,19 +1,18 @@
-import type { DatasetTemplateMetadata } from '@regions/datasets/catalog';
-import type React from 'react';
-import type { useState } from 'react';
-
-import type { DatasetOrigin } from '@regions/core/domain';
-import type { RegionDatasetRegistry } from '@regions/core/registry/RegionDatasetRegistry';
-import type { RegionsStorage } from '@regions/core/storage/RegionsStorage';
-import type { RegionsSettings } from '@regions/core/storage/types';
 import type { ModdingAPI, SystemPerformanceInfo } from '@lib/types';
-
 import type {
   InputFieldProperties,
   LabelProperties,
   SortState,
   SwitchProperties,
 } from '@lib/ui/panels/types';
+import type { DatasetOrigin } from '@regions/core/domain';
+import type { RegionDatasetRegistry } from '@regions/core/registry/RegionDatasetRegistry';
+import type { RegionsStorage } from '@regions/core/storage/RegionsStorage';
+import type { RegionsSettings } from '@regions/core/storage/types';
+import type { DatasetTemplateMetadata } from '@regions/datasets/catalog';
+import type React from 'react';
+import type { useState } from 'react';
+
 import type {
   FetchParameters,
   FetchValidationResult,

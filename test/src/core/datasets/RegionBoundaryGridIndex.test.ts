@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { RegionBoundaryGridIndex } from '@/core/datasets/RegionBoundaryGridIndex';
-import type { BoundaryParams } from '@/core/geometry/arc-length';
+import type { BoundaryParams } from '@lib/geometry/arc-length';
+import { RegionBoundaryGridIndex } from '@regions/core/datasets/RegionBoundaryGridIndex';
 
 function buildBoundaryParams(
   bbox: [number, number, number, number],

@@ -1,3 +1,5 @@
+import type { City, CityTab } from '@lib/types/cities';
+import { resolveStaticTemplateCountry } from '@regions/core/registry/static';
 import type { RegistryCacheEntry } from '@regions/dataset-index';
 import {
   isStaticCountryCode,
@@ -5,9 +7,6 @@ import {
   resolveCountryDatasets,
   type StaticCountryCode,
 } from '@regions/datasets/catalog';
-
-import { resolveStaticTemplateCountry } from '@regions/core/registry/static';
-import type { City, CityTab } from '@lib/types/cities';
 
 export type FetchCountryCode = StaticCountryCode;
 export type FetchBBox = {
