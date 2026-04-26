@@ -71,14 +71,6 @@ const CZ_RELEASE_CITY_CODES = [
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   Record<string, string>
 > = Object.freeze({
-  TOR: 'CA', // Toronto
-  MON: 'CA', // Montreal
-  OTT: 'CA', // Ottawa
-  VAN: 'CA', // Vancouver
-  CGY: 'CA', // Calgary
-  EDM: 'CA', // Edmonton
-  WPG: 'CA', // Winnipec
-  QC: 'CA', // Quebec City
   ...Object.fromEntries(
     JP_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'JP']),
   ),

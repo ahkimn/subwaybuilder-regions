@@ -2,6 +2,27 @@
 
 [Back to README](../../README.md)
 
+## v0.4.9 - 2026-04-26
+
+_Game version_ v1.3.0
+
+### New Features
+
+- Added CZ region support for:
+  - Okresy (`okres` | districts)
+  - Obce (`obce` | municipalities)
+  - ZSJ-díl (`zsj` | basic settlement units)
+- Released initial datasets for all seven currently released cities for Czechia with boundary data sourced from RÚIAN / CZSO.
+
+### Other Updates
+
+- Added local static recognition for downloaded CZ city datasets so release/distributed CZ data can be discovered by the mod even though CZ is not supported by the runtime fetch wrappers (same as JP).
+- Removed CA city codes from the static custom city/country mapping; CA datasets are now resolved solely through the online served index.
+
+### Bugfixes
+
+- Fixed `Overview Panel` crash caused by a React hook-order violation when switching to the WIP `Historical Data` or `Ridership` tabs; both tabs are now hidden and any stale saved tab state resets to `Overview` on mount.
+
 ## v0.4.8 - 2026-04-05
 
 _Game version_ v1.2.0

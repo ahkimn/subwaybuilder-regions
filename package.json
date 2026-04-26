@@ -45,7 +45,7 @@
     "zod": "^4.3.6"
   },
   "name": "subwaybuilder-regions",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "Monorepo for SubwayBuilder mods with shared core library.",
   "main": "index.js",
   "scripts": {
