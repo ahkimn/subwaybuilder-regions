@@ -810,7 +810,10 @@ function buildSafeBoundaryBBoxIndex(
   };
 }
 
-function isBBoxWithinAnyBBox(featureBBoxValue: BBox, containerBBoxes: readonly BBox[]): boolean {
+function isBBoxWithinAnyBBox(
+  featureBBoxValue: BBox,
+  containerBBoxes: readonly BBox[],
+): boolean {
   return containerBBoxes.some(
     (containerBBox) =>
       featureBBoxValue[0] >= containerBBox[0] &&

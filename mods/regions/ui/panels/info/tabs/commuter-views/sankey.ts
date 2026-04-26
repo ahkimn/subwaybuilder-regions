@@ -21,7 +21,10 @@ import {
   ModeShare,
   type RegionGameData,
 } from '@regions/core/domain';
-import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
+import {
+  formatNumberOrDefault,
+  formatPercentOrDefault,
+} from '@regions/core/utils';
 import { type createElement, type ReactNode, useState } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 

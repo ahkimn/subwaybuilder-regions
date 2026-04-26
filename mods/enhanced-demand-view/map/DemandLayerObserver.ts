@@ -66,7 +66,8 @@ type OriginalMapMethods = {
 export class DemandLayerObserver {
   private originals: OriginalMapMethods | null = null;
   private capturedImpl: MapboxLayerImpl | null = null;
-  private originalSetProps: ((props: Record<string, unknown>) => void) | null = null;
+  private originalSetProps: ((props: Record<string, unknown>) => void) | null =
+    null;
   private setPropsCalls = 0;
 
   constructor(private readonly map: maplibregl.Map) {}
@@ -100,7 +101,14 @@ export class DemandLayerObserver {
     }
 
     const listeners = listenersRaw as Record<string, unknown[]>;
-    const PROBED_EVENTS = ['mousemove', 'mouseover', 'mouseout', 'render', 'data', 'move'];
+    const PROBED_EVENTS = [
+      'mousemove',
+      'mouseover',
+      'mouseout',
+      'render',
+      'data',
+      'move',
+    ];
 
     console.group(`${LOG} [probe] map._listeners`);
     for (const event of PROBED_EVENTS) {
@@ -113,7 +121,8 @@ export class DemandLayerObserver {
       handlers.forEach((h, i) => {
         // Attempt to stringify the handler for identification; minified game
         // code will be opaque but will reveal approximate source location.
-        const src = typeof h === 'function' ? h.toString().slice(0, 120) : String(h);
+        const src =
+          typeof h === 'function' ? h.toString().slice(0, 120) : String(h);
         console.log(`    [${i}]:`, src);
       });
       console.groupEnd();
@@ -131,7 +140,9 @@ export class DemandLayerObserver {
 
     // If the layer already exists at attach time (hot-reload or map rebind
     // after the game already added the layer), capture it immediately.
-    const existing = this.map.getLayer(DEMAND_LAYER_ID) as CustomLayerMc | undefined;
+    const existing = this.map.getLayer(DEMAND_LAYER_ID) as
+      | CustomLayerMc
+      | undefined;
     if (existing) {
       console.log(`${LOG} Layer already present on attach — capturing`);
       this.captureImpl(existing.implementation);
@@ -180,7 +191,9 @@ export class DemandLayerObserver {
         const result = orig.addLayer(...args);
 
         // Capture via getLayer() for the fully-initialized runtime object.
-        const registered = map.getLayer(DEMAND_LAYER_ID) as CustomLayerMc | undefined;
+        const registered = map.getLayer(DEMAND_LAYER_ID) as
+          | CustomLayerMc
+          | undefined;
         if (registered) {
           self.captureImpl(registered.implementation);
         }
@@ -218,12 +231,16 @@ export class DemandLayerObserver {
 
   private captureImpl(impl: MapboxLayerImpl | undefined): void {
     if (!impl) {
-      console.warn(`${LOG} No implementation found on layer — cannot intercept setProps`);
+      console.warn(
+        `${LOG} No implementation found on layer — cannot intercept setProps`,
+      );
       return;
     }
 
     if (typeof impl.setProps !== 'function') {
-      console.warn(`${LOG} implementation.setProps is not a function — cannot intercept`);
+      console.warn(
+        `${LOG} implementation.setProps is not a function — cannot intercept`,
+      );
       return;
     }
 
@@ -273,7 +290,10 @@ export class DemandLayerObserver {
     const colorOnlyKeys = keys.filter((k) => colorKeys.has(k));
 
     if (shapeKeys.length > 0) {
-      console.log(`${LOG} setProps #${callNum} — shape-relevant keys:`, shapeKeys);
+      console.log(
+        `${LOG} setProps #${callNum} — shape-relevant keys:`,
+        shapeKeys,
+      );
       if ('getPointRadius' in props) {
         console.log(`${LOG}   getPointRadius:`, props['getPointRadius']);
       }

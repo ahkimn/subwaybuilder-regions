@@ -7,7 +7,10 @@ import {
   sortEntriesByCountryDatasetOrder,
   toLogicalDatasetKey,
 } from '@regions/core/registry/cache';
-import type { RegistryCacheEntry, RegistryOrigin } from '@regions/dataset-index';
+import type {
+  RegistryCacheEntry,
+  RegistryOrigin,
+} from '@regions/dataset-index';
 
 function createEntry(
   origin: RegistryOrigin,

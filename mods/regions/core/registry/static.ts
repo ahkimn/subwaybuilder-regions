@@ -58,7 +58,6 @@ const JP_RELEASE_CITY_CODES = [
   'WKY', // Wakayama
 ] as const;
 
-
 const CZ_RELEASE_CITY_CODES = [
   'BRQ', // Brno
   'HKP', // Hradec Králové - Pardubice
@@ -84,7 +83,7 @@ export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
     JP_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'JP']),
   ),
   ...Object.fromEntries(
-    CZ_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'CZ'])
+    CZ_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'CZ']),
   ),
 });
 

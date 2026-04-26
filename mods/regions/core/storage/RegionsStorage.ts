@@ -52,7 +52,7 @@ export class RegionsStorage extends ModStorage<RegionsSettingsValue> {
         resolveStored: resolveStoredSettings,
         logPrefix: '[Regions]',
       },
-      ...(electronApi ? [electronApi] as const : []),
+      ...(electronApi ? ([electronApi] as const) : []),
     );
   }
 

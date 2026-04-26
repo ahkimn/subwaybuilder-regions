@@ -50,7 +50,8 @@ export function renderGlobalSettingsSection(
           LabeledSlider(h, {
             id: 'edv-resident-scaling',
             label: 'Resident Dot Scaling',
-            description: 'Controls the size of resident demand dots on the map.',
+            description:
+              'Controls the size of resident demand dots on the map.',
             value: settings.residentDotScaling,
             ticks: DOT_SCALING_TICKS,
             disabled: isUpdating,

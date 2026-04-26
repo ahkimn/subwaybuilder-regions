@@ -7,7 +7,5 @@ export default createModConfig({
   entry: 'app/main.ts',
   globalName: 'SubwayBuilderEnhancedDemandView',
   outDir: resolve(__dirname, '../../dist/enhanced-demand-view'),
-  extraAliases: [
-    { find: '@enhanced-demand-view', replacement: __dirname },
-  ],
+  extraAliases: [{ find: '@enhanced-demand-view', replacement: __dirname }],
 });

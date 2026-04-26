@@ -50,7 +50,10 @@ function readRequiredName(
   return name;
 }
 
-function resolveMunicipalityCodeSet(value: unknown, label: string): Set<string> {
+function resolveMunicipalityCodeSet(
+  value: unknown,
+  label: string,
+): Set<string> {
   if (!Array.isArray(value)) {
     throw new Error(`[CZ] Missing municipality_codes for ${label}.`);
   }

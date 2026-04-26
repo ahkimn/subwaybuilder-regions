@@ -148,7 +148,9 @@ export class ModLifecycle {
     }
 
     this._currentCityCode = cityCode;
-    console.log(`${this.logPrefix} City load: ${cityCode} (token=${loadToken})`);
+    console.log(
+      `${this.logPrefix} City load: ${cityCode} (token=${loadToken})`,
+    );
 
     if (this._map) {
       void this.callbacks.onActivate({

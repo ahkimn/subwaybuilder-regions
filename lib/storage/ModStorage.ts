@@ -55,9 +55,7 @@ export class ModStorage<TSettings> {
     };
   }
 
-  async updateSettings(
-    update: Partial<TSettings>,
-  ): Promise<TSettings> {
+  async updateSettings(update: Partial<TSettings>): Promise<TSettings> {
     const nextSettings = { ...this.settings, ...update };
     if (this.config.equals(this.settings, nextSettings)) {
       return this.getSettings();
@@ -89,10 +87,7 @@ export class ModStorage<TSettings> {
     }
   }
 
-  protected async writeStorageItem(
-    key: string,
-    value: unknown,
-  ): Promise<void> {
+  protected async writeStorageItem(key: string, value: unknown): Promise<void> {
     try {
       const result = await this.electronApi.setStorageItem(key, value);
       if (!result.success) {

@@ -1,5 +1,9 @@
 import type { SystemPerformanceInfo } from '@lib/types';
-import { DEFAULT_SORT_STATE, SortDirection, type SortState } from '@lib/ui/panels/types';
+import {
+  DEFAULT_SORT_STATE,
+  SortDirection,
+  type SortState,
+} from '@lib/ui/panels/types';
 import type { RegionsStorage } from '@regions/core/storage/RegionsStorage';
 import type { RegistryCacheEntry } from '@regions/dataset-index';
 

@@ -10,7 +10,10 @@ import type { SortConfig } from '@lib/ui/panels/types';
 import { NumberDisplay, SortDirection } from '@lib/ui/panels/types';
 import { DEFAULT_TABLE_ROWS } from '@regions/core/constants';
 import { ModeShare } from '@regions/core/domain';
-import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
+import {
+  formatNumberOrDefault,
+  formatPercentOrDefault,
+} from '@regions/core/utils';
 import type { createElement, Dispatch, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 

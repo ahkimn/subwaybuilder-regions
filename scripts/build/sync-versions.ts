@@ -88,7 +88,9 @@ function extractGameVersion(changelogPath: string): string | null {
  */
 function extractReleaseDate(changelogPath: string): string | null {
   const content = readFileSync(changelogPath, 'utf8');
-  const match = content.match(/^##\s+v\d+\.\d+\.\d+\s+-\s+(\d{4}-\d{2}-\d{2})/m);
+  const match = content.match(
+    /^##\s+v\d+\.\d+\.\d+\s+-\s+(\d{4}-\d{2}-\d{2})/m,
+  );
   return match ? match[1] : null;
 }
 
@@ -122,8 +124,7 @@ function updateReadmeTopline(
   }
 
   const changelogSlug = `v${version.replace(/\./g, '')}`;
-  const changelogDir =
-    modId === 'regions' ? 'regions' : 'enhanced-demand-view';
+  const changelogDir = modId === 'regions' ? 'regions' : 'enhanced-demand-view';
 
   const lines: string[] = [];
   lines.push(beginTag);

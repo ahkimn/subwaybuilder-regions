@@ -61,8 +61,11 @@ export function installDomEnvironment(): () => void {
   assign('DocumentFragment', dom.window.DocumentFragment);
   assign('MutationObserver', dom.window.MutationObserver);
   assign('getComputedStyle', dom.window.getComputedStyle.bind(dom.window));
-  assign('requestAnimationFrame', (cb: FrameRequestCallback): number =>
-    setTimeout(() => cb(Date.now()), 0) as unknown as number);
+  assign(
+    'requestAnimationFrame',
+    (cb: FrameRequestCallback): number =>
+      setTimeout(() => cb(Date.now()), 0) as unknown as number,
+  );
   assign('cancelAnimationFrame', (id: number) => {
     clearTimeout(id);
   });

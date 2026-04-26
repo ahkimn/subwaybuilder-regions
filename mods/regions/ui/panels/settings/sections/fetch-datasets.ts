@@ -14,7 +14,11 @@ import {
   FolderOpen,
   OctagonX,
 } from '@lib/ui/elements/utils/Icons';
-import { ERROR_HEX, REGIONS_ID_ATTR, SUCCESS_HEX } from '@regions/core/constants';
+import {
+  ERROR_HEX,
+  REGIONS_ID_ATTR,
+  SUCCESS_HEX,
+} from '@regions/core/constants';
 import * as SettingsUI from '@regions/core/constants/ui/settings';
 import type { DatasetTemplateMetadata } from '@regions/datasets/catalog';
 import type React from 'react';

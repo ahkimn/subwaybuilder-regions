@@ -6,7 +6,11 @@ import type {
 import { ReactDataTable } from '@lib/ui/elements/DataTable';
 import { buildSortableHeaderRow } from '@lib/ui/elements/helpers/data-table-header';
 import { ReactSearchInput } from '@lib/ui/elements/SearchInput';
-import type { InputFieldProperties, SortConfig, TableAlign } from '@lib/ui/panels/types';
+import type {
+  InputFieldProperties,
+  SortConfig,
+  TableAlign,
+} from '@lib/ui/panels/types';
 import type { SortState } from '@lib/ui/panels/types';
 import { SortDirection } from '@lib/ui/panels/types';
 import { LOADING_VALUE_DISPLAY } from '@regions/core/constants';
@@ -17,7 +21,10 @@ import {
   type RegionSelection,
   RegionSelection as RegionSelectionUtils,
 } from '@regions/core/domain';
-import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
+import {
+  formatNumberOrDefault,
+  formatPercentOrDefault,
+} from '@regions/core/utils';
 import type React from 'react';
 import type { createElement, useMemo, useState } from 'react';
 

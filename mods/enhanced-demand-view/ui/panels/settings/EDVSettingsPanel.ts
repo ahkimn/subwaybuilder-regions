@@ -3,14 +3,8 @@ import type { EDVSettings } from '@enhanced-demand-view/core/storage/types';
 import type { ModdingAPI } from '@lib/types';
 import { getGameReact } from '@lib/ui/react/get-game-react';
 
-import {
-  renderSettingsEntry,
-  renderSettingsOverlay,
-} from './render-sections';
-import {
-  createInitialEDVSettingsState,
-  edvSettingsReducer,
-} from './state';
+import { renderSettingsEntry, renderSettingsOverlay } from './render-sections';
+import { createInitialEDVSettingsState, edvSettingsReducer } from './state';
 import type { GlobalSettingsSectionParams } from './types';
 
 type EDVSettingsPanelParams = {
@@ -75,7 +69,10 @@ export function EDVSettingsPanel(params: EDVSettingsPanelParams) {
           dispatch({ type: 'settings_updated', settings: nextSettings });
         })
         .catch((error) => {
-          console.error('[EnhancedDemandView] Failed to update settings', error);
+          console.error(
+            '[EnhancedDemandView] Failed to update settings',
+            error,
+          );
           api.ui.showNotification(
             'Failed to save settings. See console for details.',
             'error',

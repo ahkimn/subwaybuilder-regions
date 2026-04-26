@@ -7,7 +7,5 @@ export default createModConfig({
   entry: 'app/main.ts',
   globalName: 'SubwayBuilderRegions',
   outDir: resolve(__dirname, '../../dist/regions'),
-  extraAliases: [
-    { find: '@regions', replacement: __dirname },
-  ],
+  extraAliases: [{ find: '@regions', replacement: __dirname }],
 });

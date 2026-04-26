@@ -60,7 +60,9 @@ type CustomLayerMc = {
 
 // Shape of the game's getFillColor accessor for demand point features.
 // Returns [r, g, b, a] with components in 0–255 range.
-type GameFillColorFn = (feature: GeoJSON.Feature) => [number, number, number, number];
+type GameFillColorFn = (
+  feature: GeoJSON.Feature,
+) => [number, number, number, number];
 
 // Shape of the game's click handler.
 type GameClickFn = (info: { object: { properties: { id: string } } }) => void;
@@ -79,7 +81,8 @@ type PatchedMapMethods = {
 export class DemandLayerManager {
   private patched: PatchedMapMethods | null = null;
   private captured: CapturedGameLayer | null = null;
-  private originalSetProps: ((props: Record<string, unknown>) => void) | null = null;
+  private originalSetProps: ((props: Record<string, unknown>) => void) | null =
+    null;
 
   // Feature data from the last game setProps call that included `data`.
   // Retained so refreshColors() can recompute without waiting for the next update.
@@ -94,7 +97,8 @@ export class DemandLayerManager {
   private previousRenderWorldCopies: boolean | null = null;
 
   // Stored so we can call map.off() precisely on detach.
-  private clickHandler: ((e: maplibregl.MapLayerMouseEvent) => void) | null = null;
+  private clickHandler: ((e: maplibregl.MapLayerMouseEvent) => void) | null =
+    null;
 
   constructor(
     private readonly map: maplibregl.Map,
@@ -111,7 +115,9 @@ export class DemandLayerManager {
 
     // If the game already added the layer before we attached (hot-reload or
     // map-ready fires after city-load), take it over immediately.
-    const existing = this.map.getLayer(GAME_LAYER_ID) as CustomLayerMc | undefined;
+    const existing = this.map.getLayer(GAME_LAYER_ID) as
+      | CustomLayerMc
+      | undefined;
     if (existing?.implementation) {
       console.log(`${LOG} Game layer already present — taking over`);
       this.takeoverImpl(existing.implementation);
@@ -157,7 +163,8 @@ export class DemandLayerManager {
       getMaxTileCacheSize?(): number | null;
       setMaxTileCacheSize?(n: number): void;
     };
-    const maxTileCacheSize = mapWithOptionalMethods.getMaxTileCacheSize?.() ?? '(getter unavailable)';
+    const maxTileCacheSize =
+      mapWithOptionalMethods.getMaxTileCacheSize?.() ?? '(getter unavailable)';
 
     const antialias = mapAsAny['_antialias'] ?? '(unknown)';
 
@@ -171,7 +178,9 @@ export class DemandLayerManager {
 
     // Internal tile cache — field name varies by MapLibre version.
     const style = mapAsAny['style'] as Record<string, unknown> | undefined;
-    const sourceCaches = style?.['sourceCaches'] as Record<string, unknown> | undefined;
+    const sourceCaches = style?.['sourceCaches'] as
+      | Record<string, unknown>
+      | undefined;
     const tileCacheEntries = sourceCaches
       ? Object.values(sourceCaches).reduce<number>((sum, sc) => {
           const cache = (sc as Record<string, unknown>)['_cache'] as
@@ -183,9 +192,17 @@ export class DemandLayerManager {
 
     console.group(`${LOG} [probe] MapLibre render settings (pre-apply)`);
     console.log('  renderWorldCopies :', renderWorldCopies, '← will set false');
-    console.log('  maxTileCacheSize  :', maxTileCacheSize, '(null/unavailable = unlimited)');
+    console.log(
+      '  maxTileCacheSize  :',
+      maxTileCacheSize,
+      '(null/unavailable = unlimited)',
+    );
     console.log('  tile cache entries (all sources):', tileCacheEntries);
-    console.log('  antialias (at init):', antialias, '← read-only, flag to game devs');
+    console.log(
+      '  antialias (at init):',
+      antialias,
+      '← read-only, flag to game devs',
+    );
     console.log('  WebGL MAX_TEXTURE_SIZE:', maxTextureSize);
     console.groupEnd();
 
@@ -194,7 +211,9 @@ export class DemandLayerManager {
     // Disable world copies — city-scoped map never needs them.
     this.previousRenderWorldCopies = renderWorldCopies;
     this.map.setRenderWorldCopies(false);
-    console.log(`${LOG} setRenderWorldCopies(false) — was: ${renderWorldCopies}`);
+    console.log(
+      `${LOG} setRenderWorldCopies(false) — was: ${renderWorldCopies}`,
+    );
 
     // Bound the tile cache if the setter is available.
     // 50 tiles at ~0.5–2MB each ≈ 25–100MB budget; tunable once we have
@@ -256,7 +275,9 @@ export class DemandLayerManager {
       return;
     }
     this.updateSource(this.cachedFeatures);
-    console.log(`${LOG} Colors refreshed for ${this.cachedFeatures.length} features`);
+    console.log(
+      `${LOG} Colors refreshed for ${this.cachedFeatures.length} features`,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -281,7 +302,9 @@ export class DemandLayerManager {
         console.log(`${LOG} Intercepted game addLayer('${GAME_LAYER_ID}')`);
         const result = orig.addLayer(...args);
         // Retrieve the fully-initialized runtime object after registration.
-        const registered = map.getLayer(GAME_LAYER_ID) as CustomLayerMc | undefined;
+        const registered = map.getLayer(GAME_LAYER_ID) as
+          | CustomLayerMc
+          | undefined;
         if (registered?.implementation) {
           self.takeoverImpl(registered.implementation);
         }
@@ -294,7 +317,9 @@ export class DemandLayerManager {
       ...args: Parameters<maplibregl.Map['removeLayer']>
     ) {
       if (args[0] === GAME_LAYER_ID) {
-        console.log(`${LOG} Game removeLayer('${GAME_LAYER_ID}') — cleaning up impl patch`);
+        console.log(
+          `${LOG} Game removeLayer('${GAME_LAYER_ID}') — cleaning up impl patch`,
+        );
         // Game is tearing down its layer. Release our impl reference and
         // patch so we don't hold stale references.
         self.restoreImplSetProps();
@@ -317,7 +342,9 @@ export class DemandLayerManager {
   // ---------------------------------------------------------------------------
 
   private takeoverImpl(impl: MapboxLayerImpl): void {
-    const getFillColor = impl.props['getFillColor'] as GameFillColorFn | undefined;
+    const getFillColor = impl.props['getFillColor'] as
+      | GameFillColorFn
+      | undefined;
     const onClick = impl.props['onClick'] as GameClickFn | undefined;
 
     if (!getFillColor || !onClick) {
@@ -352,15 +379,17 @@ export class DemandLayerManager {
       if ('data' in props && Array.isArray(props['data'])) {
         const features = props['data'] as GeoJSON.Feature[];
         const now = performance.now();
-        const elapsed = self.lastDataUpdateMs !== null
-          ? `+${(now - self.lastDataUpdateMs).toFixed(1)}ms since last`
-          : 'first update';
+        const elapsed =
+          self.lastDataUpdateMs !== null
+            ? `+${(now - self.lastDataUpdateMs).toFixed(1)}ms since last`
+            : 'first update';
         self.lastDataUpdateMs = now;
         const count = ++self.dataUpdateCount;
 
         // Diff updateTriggers to detect meaningful game state changes.
         const triggers = props['updateTriggers'];
-        const triggerStr = triggers !== undefined ? JSON.stringify(triggers) : '(none)';
+        const triggerStr =
+          triggers !== undefined ? JSON.stringify(triggers) : '(none)';
         const triggerChanged = triggerStr !== self.lastUpdateTriggerSerialized;
         self.lastUpdateTriggerSerialized = triggerStr;
 
@@ -403,7 +432,9 @@ export class DemandLayerManager {
 
   private addOurLayer(): void {
     if (this.map.getSource(EDV_SOURCE_ID)) {
-      console.warn(`${LOG} Source '${EDV_SOURCE_ID}' already exists — skipping`);
+      console.warn(
+        `${LOG} Source '${EDV_SOURCE_ID}' already exists — skipping`,
+      );
       return;
     }
 
@@ -512,7 +543,9 @@ export class DemandLayerManager {
       };
     });
 
-    const source = this.map.getSource(EDV_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    const source = this.map.getSource(EDV_SOURCE_ID) as
+      | maplibregl.GeoJSONSource
+      | undefined;
     source?.setData({
       type: 'FeatureCollection',
       features: coloredFeatures,

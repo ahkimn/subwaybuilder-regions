@@ -98,10 +98,16 @@ export class DemandHoverSuppressor {
     this.suppressRenderCycleHandlers(listeners);
 
     if (this.detached.length === 0) {
-      console.warn(`${LOG} No target handlers found — listener structure may have changed`);
+      console.warn(
+        `${LOG} No target handlers found — listener structure may have changed`,
+      );
     } else {
-      const summary = this.detached.map((d) => `'${d.event}': ${d.label}`).join(', ');
-      console.log(`${LOG} Suppressed ${this.detached.length} handler(s): ${summary}`);
+      const summary = this.detached
+        .map((d) => `'${d.event}': ${d.label}`)
+        .join(', ');
+      console.log(
+        `${LOG} Suppressed ${this.detached.length} handler(s): ${summary}`,
+      );
     }
   }
 
@@ -117,12 +123,17 @@ export class DemandHoverSuppressor {
         this.map.on(event, fn);
         console.log(`${LOG} Restored '${event}' handler: ${label}`);
       } catch (e) {
-        console.warn(`${LOG} Failed to restore '${event}' handler (${label}):`, e);
+        console.warn(
+          `${LOG} Failed to restore '${event}' handler (${label}):`,
+          e,
+        );
       }
     }
 
     this.detached = [];
-    console.log(`${LOG} Restored — game hover and render-cycle behaviour resumed`);
+    console.log(
+      `${LOG} Restored — game hover and render-cycle behaviour resumed`,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -140,7 +151,9 @@ export class DemandHoverSuppressor {
     }
   }
 
-  private suppressRenderCycleHandlers(listeners: Record<string, unknown[]>): void {
+  private suppressRenderCycleHandlers(
+    listeners: Record<string, unknown[]>,
+  ): void {
     for (const { event, fragments, label } of RENDER_CYCLE_SIGNATURES) {
       const handlers = (listeners[event] ?? []) as Array<(e: unknown) => void>;
       for (const fn of handlers) {

@@ -75,9 +75,7 @@ function readGzippedGeoJson(targetPath: string): FeatureCollection {
   return JSON.parse(gunzipSync(fs.readFileSync(targetPath)).toString('utf8'));
 }
 
-async function createCZFixture(options?: {
-  bundleCountry?: string;
-}): Promise<{
+async function createCZFixture(options?: { bundleCountry?: string }): Promise<{
   args: ExtractMapFeaturesArgs;
   outputRoot: string;
   sourceRoot: string;
@@ -258,7 +256,9 @@ describe('CZ map feature extraction', () => {
   it('buildCZZsjSourceCollection_shouldFailWithSetupMessage_whenLabelsAreMissing', async () => {
     const { sourceRoot } = await createCZFixture();
     const context = loadCZBundleContext(sourceRoot, 'prague');
-    await fs.remove(path.join(sourceRoot, 'cz', 'regions', 'zsj_dil_names.csv'));
+    await fs.remove(
+      path.join(sourceRoot, 'cz', 'regions', 'zsj_dil_names.csv'),
+    );
 
     assert.throws(
       () => buildCZZsjSourceCollection(context),
@@ -286,9 +286,7 @@ describe('CZ map feature extraction', () => {
     assert.equal(zsj.features[0].properties?.NAME_EN, undefined);
     assert.equal(dataIndex.PRGX[0].country, 'CZ');
     assert.deepEqual(
-      dataIndex.PRGX.map(
-        (dataset: { datasetId: string }) => dataset.datasetId,
-      ),
+      dataIndex.PRGX.map((dataset: { datasetId: string }) => dataset.datasetId),
       ['okres', 'obce', 'zsj'],
     );
   });

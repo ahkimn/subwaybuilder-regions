@@ -66,7 +66,8 @@ function resolveRequiredString(
   label: string,
 ): string {
   const value = properties?.[fieldName];
-  const normalized = typeof value === 'string' ? value.trim() : String(value ?? '');
+  const normalized =
+    typeof value === 'string' ? value.trim() : String(value ?? '');
   if (!normalized) {
     throw new Error(`[CZ] Missing ${fieldName} for ${label}.`);
   }
