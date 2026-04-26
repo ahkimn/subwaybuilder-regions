@@ -1,8 +1,3 @@
-import type React from 'react';
-import type { createElement } from 'react';
-
-import { formatNumberOrDefault } from '@regions/core/utils';
-
 import { Button } from '@lib/ui/elements/Button';
 import { CountChip } from '@lib/ui/elements/CountChip';
 import type {
@@ -19,6 +14,10 @@ import { RefreshIcon, Trash2 } from '@lib/ui/elements/utils/Icons';
 import type { SortConfig, TableAlign } from '@lib/ui/panels/types';
 import type { SortState } from '@lib/ui/panels/types';
 import { SortDirection } from '@lib/ui/panels/types';
+import { formatNumberOrDefault } from '@regions/core/utils';
+import type React from 'react';
+import type { createElement } from 'react';
+
 import type {
   RegistrySectionParams,
   SettingsDatasetIssue,

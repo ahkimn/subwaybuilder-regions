@@ -1,13 +1,12 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { SortDirection } from '@lib/ui/panels/types';
+import { renderDatasetRegistrySection } from '@regions/ui/panels/settings/sections/registry';
+import type { SettingsDatasetRow } from '@regions/ui/panels/settings/types';
 import { setupDomTestLifecycle } from '@test/helpers/ui-test-suite';
 import { render } from '@testing-library/react';
 import React, { useState } from 'react';
-
-import { renderDatasetRegistrySection } from '@/ui/panels/settings/sections/registry';
-import type { SettingsDatasetRow } from '@/ui/panels/settings/types';
-import { SortDirection } from '@/ui/panels/types';
 
 const TEST_ROW: SettingsDatasetRow = {
   rowKey: 'AUS:counties:dynamic',

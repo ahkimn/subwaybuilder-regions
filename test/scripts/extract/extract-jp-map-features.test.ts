@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
+import { DATA_INDEX_FILE } from '@regions/constants';
 import {
   buildMunicipalityPopulationMap,
   deriveOoazaName,
@@ -13,7 +14,6 @@ import {
   selectDominantOazaName,
 } from '@scripts/extract/extract-jp-map-features';
 import type { ExtractMapFeaturesArgs } from '@scripts/utils/cli';
-import { DATA_INDEX_FILE } from '@regions/constants';
 import AdmZip from 'adm-zip';
 import { DBFFile, type FieldDescriptor } from 'dbffile';
 import fs from 'fs-extra';

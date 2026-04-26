@@ -1,6 +1,5 @@
-import type { ModeShare } from '@regions/core/domain';
-
 import type { NumberDisplay, SortState } from '@lib/ui/panels/types';
+import type { ModeShare } from '@regions/core/domain';
 
 export const RegionsInfoPanelView = {
   Statistics: 'Statistics',

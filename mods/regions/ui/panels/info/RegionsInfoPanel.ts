@@ -1,11 +1,14 @@
+import { ReactPanelHeader } from '@lib/ui/elements/PanelHeader';
+import { Placeholder } from '@lib/ui/elements/Placeholder';
 import {
-  createElement,
-  type ReactNode,
-  useEffect,
-  useReducer,
-  useState,
-} from 'react';
-
+  ReactSelectRow,
+  type SelectButtonConfig,
+} from '@lib/ui/elements/SelectRow';
+import {
+  createReactIconElement,
+  FileChartColumnIcon,
+  TramFrontIcon,
+} from '@lib/ui/elements/utils/Icons';
 import {
   INFO_PANEL_MIN_VERTICAL_OFFSET,
   INFO_PANEL_MIN_WIDTH,
@@ -20,18 +23,14 @@ import {
   RegionSelection,
   type UIState,
 } from '@regions/core/domain';
+import {
+  createElement,
+  type ReactNode,
+  useEffect,
+  useReducer,
+  useState,
+} from 'react';
 
-import { ReactPanelHeader } from '@lib/ui/elements/PanelHeader';
-import { Placeholder } from '@lib/ui/elements/Placeholder';
-import {
-  ReactSelectRow,
-  type SelectButtonConfig,
-} from '@lib/ui/elements/SelectRow';
-import {
-  createReactIconElement,
-  FileChartColumnIcon,
-  TramFrontIcon,
-} from '@lib/ui/elements/utils/Icons';
 import { renderCommutersView } from './tabs/commuters';
 import {
   commutersViewReducer,

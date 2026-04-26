@@ -1,5 +1,6 @@
-import type { createElement, ReactNode } from 'react';
-
+import { ReactDetailRow } from '@lib/ui/elements/DetailRow';
+import { ReactDivider } from '@lib/ui/elements/Divider';
+import { ViewHeader } from '@lib/ui/elements/ViewHeader';
 import {
   DEFAULT_UNIT_LABELS,
   LOADING_VALUE_DISPLAY,
@@ -7,10 +8,7 @@ import {
 } from '@regions/core/constants';
 import type { RegionGameData } from '@regions/core/domain';
 import { formatNumberOrDefault } from '@regions/core/utils';
-
-import { ReactDetailRow } from '@lib/ui/elements/DetailRow';
-import { ReactDivider } from '@lib/ui/elements/Divider';
-import { ViewHeader } from '@lib/ui/elements/ViewHeader';
+import type { createElement, ReactNode } from 'react';
 
 export function renderStatisticsView(
   h: typeof createElement,

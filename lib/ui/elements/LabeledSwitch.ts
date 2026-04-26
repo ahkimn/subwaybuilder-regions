@@ -1,3 +1,4 @@
+import type { LabelProperties, SwitchProperties } from '@lib/ui/panels/types';
 import type { ComponentType, createElement, ReactNode } from 'react';
 
 /**
@@ -9,19 +10,9 @@ import type { ComponentType, createElement, ReactNode } from 'react';
 
 export type LabeledSwitchParams = {
   /** The game's Switch component (from getGameReact). */
-  Switch: ComponentType<{
-    id: string;
-    checked: boolean;
-    disabled?: boolean;
-    onCheckedChange: (checked: boolean) => void;
-    onChange?: (event: Event) => void;
-  }>;
+  Switch: ComponentType<SwitchProperties>;
   /** The game's Label component (from getGameReact). */
-  Label: ComponentType<{
-    htmlFor: string;
-    className?: string;
-    children?: ReactNode;
-  }>;
+  Label: ComponentType<LabelProperties>;
   id: string;
   label: string;
   description?: string;

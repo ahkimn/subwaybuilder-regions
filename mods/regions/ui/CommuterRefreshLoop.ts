@@ -1,3 +1,6 @@
+import type { ModdingAPI } from '@lib/types/api';
+import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
+
 import {
   REGIONS_INFO_UPDATE_GAME_INTERVAL,
   REGIONS_INFO_UPDATE_REAL_INTERVAL,
@@ -5,8 +8,6 @@ import {
 } from '../core/constants';
 import type { RegionDataManager } from '../core/datasets/RegionDataManager';
 import { RegionDataType, type UIState } from '../core/domain';
-import type { ModdingAPI } from '@lib/types/api';
-import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 
 /*
   Helper class to manage periodic refreshing of commuter data and a set of related UI panels that require it

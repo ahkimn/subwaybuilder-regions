@@ -1,6 +1,12 @@
-import { type createElement, type ReactNode, useState } from 'react';
-import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
-
+import { Placeholder } from '@lib/ui/elements/Placeholder';
+import {
+  BLACK,
+  type ChartDisplayColor,
+  getPrimaryChartColorByName,
+  hexToRgb,
+  rgbToHex,
+  SANKEY_TERMINAL_NODE_COLOR,
+} from '@lib/ui/types/DisplayColor';
 import {
   DISTANCE_BUCKET_COUNT,
   HOURLY_SANKEY_FLOW_DISPLAY_COUNT,
@@ -16,16 +22,9 @@ import {
   type RegionGameData,
 } from '@regions/core/domain';
 import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
+import { type createElement, type ReactNode, useState } from 'react';
+import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 
-import { Placeholder } from '@lib/ui/elements/Placeholder';
-import {
-  BLACK,
-  type ChartDisplayColor,
-  getPrimaryChartColorByName,
-  hexToRgb,
-  rgbToHex,
-  SANKEY_TERMINAL_NODE_COLOR,
-} from '@lib/ui/types/DisplayColor';
 import {
   resolveOrderedUnitIds,
   resolveSourceUnitName,

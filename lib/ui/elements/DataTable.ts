@@ -1,3 +1,4 @@
+import type { TableAlign } from '@lib/ui/panels/types';
 import type { useState } from 'react';
 import {
   type createElement,
@@ -7,8 +8,6 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-
-import type { TableAlign } from '@lib/ui/panels/types';
 
 export type SortState = {
   index: number;

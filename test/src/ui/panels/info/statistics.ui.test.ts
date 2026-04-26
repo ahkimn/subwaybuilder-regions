@@ -1,12 +1,11 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import type { RegionGameData } from '@regions/core/domain';
+import { renderStatisticsView } from '@regions/ui/panels/info/tabs/statistics';
 import { setupDomTestLifecycle } from '@test/helpers/ui-test-suite';
 import { render } from '@testing-library/react';
 import React from 'react';
-
-import type { RegionGameData } from '@/core/domain';
-import { renderStatisticsView } from '@/ui/panels/info/tabs/statistics';
 
 function createGameData(overrides?: Partial<RegionGameData>): RegionGameData {
   return {

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { after, afterEach, describe, it } from 'node:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
+import type { DatasetIndex, DatasetMetadata } from '@regions/dataset-index';
 import {
   buildCSVIndex,
   loadBoundariesFromCSV,
@@ -13,7 +14,6 @@ import {
   saveGeoJSON,
   updateIndexJson,
 } from '@scripts/utils/files';
-import type { DatasetIndex, DatasetMetadata } from '@regions/dataset-index';
 
 function loadFixture(relativeFixturePath: string): string {
   return fs.readFileSync(

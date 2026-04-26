@@ -1,11 +1,15 @@
-import fs from 'fs-extra';
 import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 import path from 'path';
 
-import { SOURCE_DATA_DIR } from '../../../mods/regions/constants';
 import { isPolygonFeature } from '../../../lib/geometry/helpers';
 import { parseNumber } from '../../utils/cli';
 import { loadGeoJSON } from '../../utils/files';
+import {
+  assertExternalSourcePathExists,
+  normalizeDigitsToLength,
+  resolveExternalBundleRecord,
+  resolveExternalSourceDataRoot,
+} from '../external/context';
 import { cleanLabelName } from './names';
 import type {
   GeoBoundaryFeature,
@@ -20,9 +24,6 @@ import type {
  * That repository is private, and the extraction process is tightly coupled to the structure and content of that repository (including files not present remotely), so these functions cannot be executed or tested by any external user
  */
 
-const JP_SOURCE_DATA_ROOT_ENV = 'SUBWAYBUILDER_JP_DATA_ROOT';
-const DEFAULT_JP_SOURCE_DATA_ROOT = path.resolve(SOURCE_DATA_DIR, 'jp-data');
-const BUNDLE_INDEX_PATH = path.join('bundles', 'index.json');
 const OD_2020_MUNICIPALITY_COMPAT_MAP: Readonly<
   Record<string, readonly string[]>
 > = Object.freeze({
@@ -45,20 +46,14 @@ const OD_2020_MUNICIPALITY_REVERSE_COMPAT_MAP: Readonly<
 );
 
 export function resolveJPSourceDataRoot(): string {
-  return path.resolve(
-    process.env[JP_SOURCE_DATA_ROOT_ENV] || DEFAULT_JP_SOURCE_DATA_ROOT,
-  );
+  return resolveExternalSourceDataRoot();
 }
 
 export function assertJPSourcePathExists(
   targetPath: string,
   label: string,
 ): void {
-  if (!fs.existsSync(targetPath)) {
-    throw new Error(
-      `[JP] Missing ${label}: ${targetPath}. Run \`npm run link:jp-data\` or set ${JP_SOURCE_DATA_ROOT_ENV}.`,
-    );
-  }
+  assertExternalSourcePathExists(targetPath, label, 'JP');
 }
 
 export function toFeatureCollection(
@@ -78,13 +73,11 @@ function normalizeDigits(value: unknown): string {
 
 // Japanese 丁目 use nine- or eleven-digit keys that encode the prefecture (first two digits), municipality (next three digits), and specific chocho area (remaining digits)
 export function normalizePrefCode(value: unknown): string {
-  const digits = normalizeDigits(value);
-  return /^\d{2}$/.test(digits) ? digits : '';
+  return normalizeDigitsToLength(value, 2);
 }
 
 export function normalizeMunicipalityCode(value: unknown): string {
-  const digits = normalizeDigits(value);
-  return /^\d{5}$/.test(digits) ? digits : '';
+  return normalizeDigitsToLength(value, 5);
 }
 
 export function expandOd2020MunicipalityFamily(value: unknown): string[] {
@@ -181,28 +174,12 @@ function resolveBoundaryFeatureCollection(
   return boundaryFeature;
 }
 
-function loadJPBundleIndex(sourceRoot: string): JPBundleIndexRecord[] {
-  const indexPath = path.resolve(sourceRoot, BUNDLE_INDEX_PATH);
-  assertJPSourcePathExists(indexPath, 'bundle index');
-  const payload = fs.readJsonSync(indexPath) as {
-    bundles?: JPBundleIndexRecord[];
-  };
-  return Array.isArray(payload.bundles) ? payload.bundles : [];
-}
-
 export function resolveJPBundleRecord(
   sourceRoot: string,
   bundleId: string,
 ): JPBundleIndexRecord {
   const wantedBundle = cleanLabelName(bundleId);
-
-  const bundleRecord = loadJPBundleIndex(sourceRoot).find(
-    (record) => record.bundle_id === wantedBundle,
-  );
-  if (!bundleRecord) {
-    throw new Error(`[JP] Unknown bundle: ${wantedBundle}`);
-  }
-  return bundleRecord;
+  return resolveExternalBundleRecord(sourceRoot, wantedBundle, 'JP');
 }
 
 function loadBoundaryMetadata(bundleDir: string): JPBoundaryMetadata {

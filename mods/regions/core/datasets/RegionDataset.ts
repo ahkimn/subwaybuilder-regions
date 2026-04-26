@@ -1,8 +1,16 @@
+import {
+  type BoundaryParams,
+  prepareBoundaryParams,
+} from '@lib/geometry/arc-length';
+import {
+  isCoordinateWithinFeature,
+  isPolygonFeature,
+} from '@lib/geometry/helpers';
+import type { DemandData } from '@lib/types/game-state';
 import type { DatasetMetadata } from '@regions/dataset-index';
 import * as turf from '@turf/turf';
 import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 
-import type { DemandData } from '@lib/types/game-state';
 import {
   DEFAULT_UNIT_LABELS,
   LAYER_PREFIX,
@@ -30,14 +38,6 @@ import {
   DatasetMissingDataLayerError,
   DatasetMissingGridIndexError,
 } from '../errors';
-import {
-  type BoundaryParams,
-  prepareBoundaryParams,
-} from '@lib/geometry/arc-length';
-import {
-  isCoordinateWithinFeature,
-  isPolygonFeature,
-} from '@lib/geometry/helpers';
 import { fetchGeoJSON } from '../utils';
 import { RegionBoundaryGridIndex } from './RegionBoundaryGridIndex';
 

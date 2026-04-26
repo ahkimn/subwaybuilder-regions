@@ -1,3 +1,10 @@
+import {
+  buildBBoxFitState as fitBBox,
+  normalizeBBox,
+} from '@lib/geometry/helpers';
+import type { MapDisplayColor } from '@lib/ui/types/DisplayColor';
+import { PRIMARY_FILL_COLORS } from '@lib/ui/types/DisplayColor';
+import type { LayerToggleOptions } from '@lib/ui/types/LayerToggleOptions';
 import { resolveCountryDatasetOrder } from '@regions/datasets/catalog';
 
 import {
@@ -10,18 +17,11 @@ import {
 } from '../core/constants';
 import { RegionDataset } from '../core/datasets/RegionDataset';
 import { RegionSelection } from '../core/domain';
-import {
-  buildBBoxFitState as fitBBox,
-  normalizeBBox,
-} from '@lib/geometry/helpers';
 import { DEFAULT_REGIONS_SETTINGS } from '../core/storage/settings';
 import {
   RegionsSettings,
   type RegionsSettings as RegionsSettingsValue,
 } from '../core/storage/types';
-import type { MapDisplayColor } from '@lib/ui/types/DisplayColor';
-import { PRIMARY_FILL_COLORS } from '@lib/ui/types/DisplayColor';
-import type { LayerToggleOptions } from '@lib/ui/types/LayerToggleOptions';
 import type { LightMode } from './styles';
 import {
   DEFAULT_DARK_MODE_BOUNDARY_SETTINGS,

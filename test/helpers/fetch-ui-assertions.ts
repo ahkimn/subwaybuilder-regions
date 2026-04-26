@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 
-import { modRegionsIdSelector } from '@/core/constants/ui/common';
-import * as SettingsUI from '@/core/constants/ui/settings';
+import { modRegionsIdSelector } from '@regions/core/constants/ui/common';
+import * as SettingsUI from '@regions/core/constants/ui/settings';
 
 type FetchWarningField = 'city' | 'country' | 'datasets' | 'command';
 

@@ -1,10 +1,26 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import type { City } from '@lib/types/cities';
+import * as SettingsUI from '@regions/core/constants/ui/settings';
 import {
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasets,
 } from '@regions/datasets/catalog';
+import type {
+  FetchBBox,
+  FetchParameters,
+  FetchValidationResult,
+  LastCopiedFetchRequest,
+} from '@regions/ui/panels/settings/fetch-helpers';
+import {
+  buildFetchErrors,
+  deriveFetchActionAvailability,
+  formatFetchCommand,
+  resolveCityCountryCode,
+} from '@regions/ui/panels/settings/fetch-helpers';
+import { renderFetchDatasetsSection } from '@regions/ui/panels/settings/sections/fetch-datasets';
+import type { SettingsFetchSectionParams } from '@regions/ui/panels/settings/types';
 import {
   assertButtonDisabled,
   assertButtonEnabled,
@@ -16,23 +32,6 @@ import { setupDomTestLifecycle } from '@test/helpers/ui-test-suite';
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React, { useMemo, useState } from 'react';
-
-import * as SettingsUI from '@/core/constants/ui/settings';
-import type { City } from '@/types/cities';
-import type {
-  FetchBBox,
-  FetchParameters,
-  FetchValidationResult,
-  LastCopiedFetchRequest,
-} from '@/ui/panels/settings/fetch-helpers';
-import {
-  buildFetchErrors,
-  deriveFetchActionAvailability,
-  formatFetchCommand,
-  resolveCityCountryCode,
-} from '@/ui/panels/settings/fetch-helpers';
-import { renderFetchDatasetsSection } from '@/ui/panels/settings/sections/fetch-datasets';
-import type { SettingsFetchSectionParams } from '@/ui/panels/settings/types';
 
 const BOS_BBOX: FetchBBox = {
   west: '-71.6694',

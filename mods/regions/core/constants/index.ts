@@ -6,14 +6,14 @@ export * from './ui';
 
 // Re-export constants moved to lib/constants that are used by regions module
 export {
-  MOD_ID_ATTR,
-  MOD_ROLE_ATTR,
-  REGIONS_ID_ATTR,
-  modIdSelector,
-  modRoleSelector,
-  modRegionsIdSelector,
-  SUCCESS_HEX,
-  WARNING_HEX,
   ERROR_HEX,
   INFO_HEX,
+  MOD_ID_ATTR,
+  MOD_ROLE_ATTR,
+  modIdSelector,
+  modRegionsIdSelector,
+  modRoleSelector,
+  REGIONS_ID_ATTR,
+  SUCCESS_HEX,
+  WARNING_HEX,
 } from '@lib/constants';

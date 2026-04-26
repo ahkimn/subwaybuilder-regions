@@ -1,12 +1,12 @@
-import type React from 'react';
-import type { createElement } from 'react';
-
 import {
   DOT_SCALING_TICKS,
   LabeledSlider,
 } from '@lib/ui/elements/LabeledSlider';
 import { LabeledSwitch } from '@lib/ui/elements/LabeledSwitch';
 import { PanelSection } from '@lib/ui/elements/PanelSection';
+import type React from 'react';
+import type { createElement } from 'react';
+
 import type { GlobalSettingsSectionParams } from '../types';
 
 export function renderGlobalSettingsSection(

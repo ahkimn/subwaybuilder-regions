@@ -1,14 +1,13 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-
-import type { RegistryCacheEntry, RegistryOrigin } from '@regions/dataset-index';
 
 import {
   canonicalizeLocalRegistryEntries,
   mergeLocalRegistryEntries,
   sortEntriesByCountryDatasetOrder,
   toLogicalDatasetKey,
-} from '@/core/registry/cache';
+} from '@regions/core/registry/cache';
+import type { RegistryCacheEntry, RegistryOrigin } from '@regions/dataset-index';
 
 function createEntry(
   origin: RegistryOrigin,

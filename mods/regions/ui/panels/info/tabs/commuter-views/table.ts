@@ -1,10 +1,3 @@
-import type { createElement, Dispatch, ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
-
-import { DEFAULT_TABLE_ROWS } from '@regions/core/constants';
-import { ModeShare } from '@regions/core/domain';
-import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
-
 import type {
   ReactDataTableRow,
   TableOptions,
@@ -13,14 +6,20 @@ import { ReactDataTable } from '@lib/ui/elements/DataTable';
 import { ReactExtendButton } from '@lib/ui/elements/ExtendButton';
 import { buildSortableHeaderRow } from '@lib/ui/elements/helpers/data-table-header';
 import { ReactInlineToggle } from '@lib/ui/elements/InlineToggle';
+import type { SortConfig } from '@lib/ui/panels/types';
+import { NumberDisplay, SortDirection } from '@lib/ui/panels/types';
+import { DEFAULT_TABLE_ROWS } from '@regions/core/constants';
+import { ModeShare } from '@regions/core/domain';
+import { formatNumberOrDefault, formatPercentOrDefault } from '@regions/core/utils';
+import type { createElement, Dispatch, ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import {
   getBreakdownSortOrder,
   resolveBreakdownSourceLabel,
 } from '../../../shared/commuter-data';
 import { getNextSortState } from '../../../shared/sort';
 import { sortWithFallback } from '../../../shared/sort';
-import type { SortConfig } from '@lib/ui/panels/types';
-import { NumberDisplay, SortDirection } from '@lib/ui/panels/types';
 import {
   CommuterDimension,
   type CommutersViewAction,

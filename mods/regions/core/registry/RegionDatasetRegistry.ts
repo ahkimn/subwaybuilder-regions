@@ -1,3 +1,4 @@
+import type { ModdingAPI } from '@lib/types/api';
 import type {
   DatasetIndex,
   DatasetMetadata,
@@ -5,7 +6,6 @@ import type {
 } from '@regions/dataset-index';
 import { DATASET_METADATA_CATALOG } from '@regions/datasets/catalog';
 
-import type { ModdingAPI } from '@lib/types/api';
 import { RegionDataset } from '../datasets/RegionDataset';
 import type { DatasetOrigin } from '../domain';
 import {

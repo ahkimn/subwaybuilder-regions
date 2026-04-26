@@ -1,3 +1,8 @@
+import { buildPaddedBBoxForDemandData } from '@lib/geometry/helpers';
+import { ModStorage } from '@lib/storage/ModStorage';
+import type { ModdingAPI } from '@lib/types';
+import type { ElectronAPI, SystemPerformanceInfo } from '@lib/types/electron';
+import type { DemandDataFile } from '@lib/types/schemas';
 import {
   type RegionsRegistryCache as RegistryCache,
   StaticRegistryCacheEntrySchema,
@@ -5,11 +10,6 @@ import {
 import type { BBox } from 'geojson';
 import { z } from 'zod';
 
-import { buildPaddedBBoxForDemandData } from '@lib/geometry/helpers';
-import { ModStorage } from '@lib/storage/ModStorage';
-import type { ModdingAPI } from '@lib/types';
-import type { ElectronAPI, SystemPerformanceInfo } from '@lib/types/electron';
-import type { DemandDataFile } from '@lib/types/schemas';
 import {
   REGIONS_REGISTRY_STORAGE_KEY,
   REGIONS_SETTINGS_STORAGE_KEY,

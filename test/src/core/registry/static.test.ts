@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { resolveStaticTemplateCountry } from '@/core/registry/static';
+import { resolveStaticTemplateCountry } from '@regions/core/registry/static';
 
 describe('core/registry/static JP release city mapping', () => {
   it('resolves JP for hard-coded subwaybuilder-jp-maps city codes', () => {
     for (const cityCode of [
       'AKJ',
       'AOJ',
+      'AXT',
       'FKJ',
       'FKS',
+      'FOKK',
       'FSZ',
       'FUK',
       'GAJ',
@@ -26,15 +28,17 @@ describe('core/registry/static JP release city mapping', () => {
       'KMJ',
       'KMQ',
       'KOJ',
+      'MMJ',
       'MYJ',
-      'NGN',
       'NGO',
       'NGS',
       'OIT',
       'OKA',
       'OKJ',
       'QEB',
+      'QFY',
       'QIS',
+      'QNG',
       'QUT',
       'SDJ',
       'SKK',
@@ -71,5 +75,25 @@ describe('core/registry/static JP release city mapping', () => {
       resolveStaticTemplateCountry({ code: 'BOS', country: 'US' }),
       'US',
     );
+  });
+});
+
+describe('core/registry/static CZ release city mapping', () => {
+  it('resolves CZ for hard-coded subwaybuilder-jp-data CZ city codes', () => {
+    for (const cityCode of [
+      'BRQ',
+      'HKP',
+      'OLO',
+      'OSR',
+      'PLZ',
+      'PRG',
+      'UCH',
+    ] as const) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'CZ',
+        `Expected ${cityCode} to resolve to CZ`,
+      );
+    }
   });
 });

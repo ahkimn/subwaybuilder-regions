@@ -1,4 +1,5 @@
 import type { ModdingAPI } from '@lib/types/api';
+
 import {
   DEFAULT_CHUNK_SIZE,
   STALE_COMMUTER_DATA_THRESHOLD_SECONDS,

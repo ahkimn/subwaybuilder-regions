@@ -1,5 +1,5 @@
-import { bytesToMB } from '@lib/utils/size';
 import type { SystemPerformanceInfo } from '@lib/types';
+import { bytesToMB } from '@lib/utils/size';
 
 export type LocalDatasetProps = {
   dataPath: string;

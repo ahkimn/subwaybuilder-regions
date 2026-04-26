@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
@@ -21,7 +21,7 @@ import {
   segmentLength,
   segmentMidpoint,
   segmentPolygonIntersections,
-} from '@/core/geometry/helpers';
+} from '@lib/geometry/helpers';
 
 describe('core/geometry/helpers', () => {
   it('bboxIntersects_shouldReturnTrue_whenBBoxesTouchAtEdge', () => {
@@ -121,10 +121,12 @@ describe('core/geometry/helpers', () => {
         ] as const,
         expectedPadding: 100,
       },
-    ];
+    ] as const;
 
     for (const testCase of cases) {
-      const result = buildBBoxFitState(...testCase.args);
+      const result = buildBBoxFitState(
+        ...(testCase.args as Parameters<typeof buildBBoxFitState>),
+      );
       assert.deepEqual(result.bbox, [0, 0, 1, 1], testCase.name);
       assert.deepEqual(
         result.padding,
@@ -240,21 +242,21 @@ describe('core/geometry/helpers', () => {
       points: [
         {
           id: 'a',
-          location: [-122.5, 37.7],
+          location: [-122.5, 37.7] as [number, number],
           jobs: 1,
           residents: 2,
           popIds: [],
         },
         {
           id: 'b',
-          location: [181, 0],
+          location: [181, 0] as [number, number],
           jobs: 1,
           residents: 2,
           popIds: [],
         },
         {
           id: 'c',
-          location: [-122.4, 37.8],
+          location: [-122.4, 37.8] as [number, number],
           jobs: 3,
           residents: 4,
           popIds: [],
@@ -281,7 +283,7 @@ describe('core/geometry/helpers', () => {
       points: [
         {
           id: 'x',
-          location: [200, 95],
+          location: [200, 95] as [number, number],
           jobs: 1,
           residents: 1,
           popIds: [],

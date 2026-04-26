@@ -1,11 +1,10 @@
+import type { City } from '@lib/types/cities';
 import type { DatasetMetadata } from '@regions/dataset-index';
 import {
   buildDatasetTemplatesFromOrder,
   CATALOG_STATIC_COUNTRIES,
   resolveCountryDatasetOrder,
 } from '@regions/datasets/catalog';
-
-import type { City } from '@lib/types/cities';
 
 export type StaticDatasetTemplate = Omit<
   DatasetMetadata,
@@ -15,8 +14,10 @@ export type StaticDatasetTemplate = Omit<
 const JP_RELEASE_CITY_CODES = [
   'AKJ', // Asahikawa
   'AOJ', // Aomori / Hirosaki
+  'AXT', // Akita
   'FKJ', // Fukui
   'FKS', // Fukushima / Kōriyama
+  'FOKK', // Fukuoka / Kitakyūshū
   'FSZ', // Shizuoka / Hamamatsu
   'FUK', // Fukuoka
   'GAJ', // Yamagata
@@ -33,15 +34,17 @@ const JP_RELEASE_CITY_CODES = [
   'KMJ', // Kumamoto
   'KMQ', // Kanazawa
   'KOJ', // Kagoshima
+  'MMJ', // Matsumoto
   'MYJ', // Matsuyama
-  'NGN', // Nagano
   'NGO', // Nagoya
   'NGS', // Nagasaki
   'OIT', // Ōita
   'OKA', // Okinawa
   'OKJ', // Okayama
   'QEB', // Maebashi
-  'QIS', // Mito
+  'QIS', // Mito / Hitachi
+  'QFY', // Fukuyama
+  'QNG', // Nagano
   'QUT', // Utsunomiya
   'SDJ', // Sendai
   'SKK', // Shikoku
@@ -55,19 +58,33 @@ const JP_RELEASE_CITY_CODES = [
   'WKY', // Wakayama
 ] as const;
 
+
+const CZ_RELEASE_CITY_CODES = [
+  'BRQ', // Brno
+  'HKP', // Hradec Králové - Pardubice
+  'OLO', // Olomouc
+  'OSR', // Ostrava
+  'PLZ', // Plzeň
+  'PRG', // Praha
+  'UCH', // Ústí nad Labem - Chomutov
+] as const;
+
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   Record<string, string>
 > = Object.freeze({
-  TOR: 'CA',
-  MON: 'CA',
-  OTT: 'CA',
-  VAN: 'CA',
-  CGY: 'CA',
-  EDM: 'CA',
-  WPG: 'CA',
-  QC: 'CA',
+  TOR: 'CA', // Toronto
+  MON: 'CA', // Montreal
+  OTT: 'CA', // Ottawa
+  VAN: 'CA', // Vancouver
+  CGY: 'CA', // Calgary
+  EDM: 'CA', // Edmonton
+  WPG: 'CA', // Winnipec
+  QC: 'CA', // Quebec City
   ...Object.fromEntries(
     JP_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'JP']),
+  ),
+  ...Object.fromEntries(
+    CZ_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'CZ'])
   ),
 });
 

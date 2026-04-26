@@ -1,7 +1,6 @@
+import { Placeholder } from '@lib/ui/elements/Placeholder';
 import type React from 'react';
 import type { createElement } from 'react';
-
-import { Placeholder } from '@lib/ui/elements/Placeholder';
 
 export function renderHistoricalTabContent(
   h: typeof createElement,

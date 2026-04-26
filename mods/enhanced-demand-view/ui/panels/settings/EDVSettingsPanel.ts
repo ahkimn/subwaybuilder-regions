@@ -1,9 +1,8 @@
-import type { createElement } from 'react';
-
-import type { ModdingAPI } from '@lib/types';
-import { getGameReact } from '@lib/ui/react/get-game-react';
 import type { EDVStorage } from '@enhanced-demand-view/core/storage/EDVStorage';
 import type { EDVSettings } from '@enhanced-demand-view/core/storage/types';
+import type { ModdingAPI } from '@lib/types';
+import { getGameReact } from '@lib/ui/react/get-game-react';
+
 import {
   renderSettingsEntry,
   renderSettingsOverlay,
@@ -12,7 +11,7 @@ import {
   createInitialEDVSettingsState,
   edvSettingsReducer,
 } from './state';
-import type { EDVSettingsAction, GlobalSettingsSectionParams } from './types';
+import type { GlobalSettingsSectionParams } from './types';
 
 type EDVSettingsPanelParams = {
   api: ModdingAPI;

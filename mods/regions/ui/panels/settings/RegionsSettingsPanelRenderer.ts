@@ -1,9 +1,9 @@
+import type { ModdingAPI } from '@lib/types/api';
+import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 import { REGIONS_SETTINGS_MAIN_MENU_COMPONENT_ID as REGIONS_SETTINGS_MAIN_MENU_ENTRY_ID } from '@regions/core/constants';
 import type { RegionDatasetRegistry } from '@regions/core/registry/RegionDatasetRegistry';
 import type { RegionsStorage } from '@regions/core/storage/RegionsStorage';
-import type { ModdingAPI } from '@lib/types/api';
 
-import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 import { RegionsSettingsPanel } from './RegionsSettingsPanel';
 
 export class RegionsSettingsPanelRenderer implements RegionsPanelRenderer {

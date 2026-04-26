@@ -202,6 +202,30 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: '統計局・令和2年国勢調査 / neighborhood7 boundaries',
     existsOnlineSource: false,
   },
+  okres: {
+    datasetId: 'okres',
+    displayName: 'Okresy',
+    unitSingular: 'Okres',
+    unitPlural: 'Okresy',
+    source: 'RÚIAN / CZSO',
+    existsOnlineSource: false,
+  },
+  obce: {
+    datasetId: 'obce',
+    displayName: 'Obce',
+    unitSingular: 'Obec',
+    unitPlural: 'Obce',
+    source: 'RÚIAN / CZSO',
+    existsOnlineSource: false,
+  },
+  zsj: {
+    datasetId: 'zsj',
+    displayName: 'ZSJ',
+    unitSingular: 'ZSJ',
+    unitPlural: 'ZSJ',
+    source: 'RÚIAN / CZSO ZSJ-díl',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -213,6 +237,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   FR: ['departments', 'arrondissements', 'cantons', 'epci', 'communes'],
   AU: ['sa3s', 'sa2s', 'ceds', 'seds', 'lgas', 'poas'],
   JP: ['shichouson', 'ooaza'],
+  CZ: ['okres', 'obce', 'zsj'],
 });
 
 export const CATALOG_STATIC_COUNTRIES = [
@@ -222,6 +247,7 @@ export const CATALOG_STATIC_COUNTRIES = [
   'FR',
   'AU',
   'JP',
+  'CZ',
 ] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 

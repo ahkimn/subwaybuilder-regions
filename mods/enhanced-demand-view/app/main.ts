@@ -1,6 +1,7 @@
 import { EDV_SETTINGS_MAIN_MENU_COMPONENT_ID } from '@enhanced-demand-view/core/constants';
 import { EDVStorage } from '@enhanced-demand-view/core/storage/EDVStorage';
-import { DemandLayerObserver } from '@enhanced-demand-view/map/DemandLayerObserver';
+import { DemandHoverSuppressor } from '@enhanced-demand-view/map/DemandHoverSuppressor';
+import { DemandLayerManager } from '@enhanced-demand-view/map/DemandLayerManager';
 import { EDVSettingsPanel } from '@enhanced-demand-view/ui/panels/settings/EDVSettingsPanel';
 import { ModLifecycle } from '@lib/lifecycle/ModLifecycle';
 
@@ -9,7 +10,8 @@ const api = window.SubwayBuilderAPI;
 export class EnhancedDemandViewMod {
   private storage: EDVStorage;
   private lifecycle!: ModLifecycle;
-  private demandLayerObserver: DemandLayerObserver | null = null;
+  private demandLayerManager: DemandLayerManager | null = null;
+  private demandHoverSuppressor: DemandHoverSuppressor | null = null;
 
   constructor() {
     this.storage = new EDVStorage();
@@ -44,13 +46,19 @@ export class EnhancedDemandViewMod {
       logPrefix: '[EnhancedDemandView]',
       onActivate: ({ cityCode, map }) => {
         console.log(`[EnhancedDemandView] Activated for city: ${cityCode}`);
-        this.demandLayerObserver = new DemandLayerObserver(map);
-        this.demandLayerObserver.attach();
+        // Option B: suppress the hover cascade that drives high-frequency setProps.
+        this.demandHoverSuppressor = new DemandHoverSuppressor(map);
+        this.demandHoverSuppressor.suppress();
+        // Option C: replace the game's deck.gl layer with a native circle layer.
+        this.demandLayerManager = new DemandLayerManager(map);
+        this.demandLayerManager.attach();
       },
       onDeactivate: (cityCode) => {
         console.log(`[EnhancedDemandView] Deactivated for city: ${cityCode}`);
-        this.demandLayerObserver?.detach();
-        this.demandLayerObserver = null;
+        this.demandLayerManager?.detach();
+        this.demandLayerManager = null;
+        this.demandHoverSuppressor?.restore();
+        this.demandHoverSuppressor = null;
       },
       onGameEnd: () => {
         console.log('[EnhancedDemandView] Game ended');

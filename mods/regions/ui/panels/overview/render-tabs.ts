@@ -1,6 +1,3 @@
-import type React from 'react';
-import type { createElement } from 'react';
-
 import {
   COMPACT_SELECT_MENU_BUTTON_CLASS,
   COMPACT_SELECT_MENU_OPTION_CLASS,
@@ -8,6 +5,9 @@ import {
 } from '@lib/ui/elements/SelectMenu';
 import type { SelectButtonConfig } from '@lib/ui/elements/SelectRow';
 import { ReactSelectRow } from '@lib/ui/elements/SelectRow';
+import type React from 'react';
+import type { createElement } from 'react';
+
 import type { RegionsOverviewTab } from './types';
 import { RegionsOverviewTab as RegionsOverviewTabs } from './types';
 
@@ -54,14 +54,6 @@ export function renderOverviewTabs(
   tabOptions.set(RegionsOverviewTabs.Overview, {
     label: 'Overview',
     onSelect: () => onSetTab(RegionsOverviewTabs.Overview),
-  });
-  tabOptions.set(RegionsOverviewTabs.HistoricalData, {
-    label: 'Historical Data (WIP)',
-    onSelect: () => onSetTab(RegionsOverviewTabs.HistoricalData),
-  });
-  tabOptions.set(RegionsOverviewTabs.Ridership, {
-    label: 'Ridership (WIP)',
-    onSelect: () => onSetTab(RegionsOverviewTabs.Ridership),
   });
 
   return ReactSelectRow(

@@ -1,11 +1,11 @@
-import { SANKEY_LABEL_FLOW_SYNC } from '@regions/core/constants';
-
 import {
   DEFAULT_SORT_STATE,
   NumberDisplay,
   SortDirection,
   SortState,
 } from '@lib/ui/panels/types';
+import { SANKEY_LABEL_FLOW_SYNC } from '@regions/core/constants';
+
 import {
   CommuterDimension,
   CommuterDirection,

@@ -1,3 +1,6 @@
+import type { ModdingAPI } from '@lib/types/api';
+import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
+
 import {
   LAYERS_PANEL_MOD_ID,
   modIdSelector,
@@ -17,7 +20,6 @@ import {
   type RegionsSettings as RegionsSettingsValue,
 } from '../core/storage/types';
 import type { RegionsMapLayers } from '../map/RegionsMapLayers';
-import type { ModdingAPI } from '@lib/types/api';
 import { CommuterRefreshLoop } from './CommuterRefreshLoop';
 import { injectRegionToggles } from './map-layers/toggles';
 import {
@@ -27,7 +29,6 @@ import {
 import { RegionsInfoPanelRenderer } from './panels/info/RegionsInfoPanelRenderer';
 import { RegionsOverviewPanelRenderer } from './panels/overview/RegionsOverviewPanelRenderer';
 import { RegionsSettingsPanelRenderer } from './panels/settings/RegionsSettingsPanelRenderer';
-import type { RegionsPanelRenderer } from '@lib/ui/panels/types';
 import { resolveInfoPanelRoot } from './resolve/resolve-info-panel';
 
 export class RegionsUIManager {

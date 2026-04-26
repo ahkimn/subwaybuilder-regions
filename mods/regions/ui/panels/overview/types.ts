@@ -1,6 +1,5 @@
-import type { RegionGameData, RegionSelection } from '@regions/core/domain';
-
 import type { SortState } from '@lib/ui/panels/types';
+import type { RegionGameData, RegionSelection } from '@regions/core/domain';
 
 export const RegionsOverviewTab = {
   Overview: 'Overview',

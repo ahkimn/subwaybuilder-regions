@@ -1,13 +1,12 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { prepareBoundaryParams } from '@lib/geometry/arc-length';
+import type { ModdingAPI } from '@lib/types/api';
+import { RegionDataBuilder } from '@regions/core/datasets/RegionDataBuilder';
+import type { RegionDataset } from '@regions/core/datasets/RegionDataset';
+import type { RegionGameData } from '@regions/core/domain';
 import type { Feature, Polygon } from 'geojson';
-
-import { RegionDataBuilder } from '@/core/datasets/RegionDataBuilder';
-import type { RegionDataset } from '@/core/datasets/RegionDataset';
-import type { RegionGameData } from '@/core/domain';
-import { prepareBoundaryParams } from '@/core/geometry/arc-length';
-import type { ModdingAPI } from '@/types/api';
 
 function createFeature(
   id: string | number,

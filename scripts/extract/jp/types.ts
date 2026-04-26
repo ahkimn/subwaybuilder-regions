@@ -5,21 +5,19 @@ import type {
   Polygon,
 } from 'geojson';
 
+import type {
+  ExternalBoundaryFeature,
+  ExternalBundleIndexRecord,
+} from '../external/types';
+
 export type GeoBoundaryFeature = Feature<Polygon | MultiPolygon>;
 
 export type JPDatasetId = 'shichouson' | 'ooaza';
 
-export type JPBundleIndexRecord = {
-  bundle_id: string;
-  city_code: string;
-  boundary_path?: string;
-  city_name_en?: string;
-  city_name_ja?: string;
-  country?: string;
-};
+export type JPBundleIndexRecord = ExternalBundleIndexRecord;
 
 export type JPBoundaryMetadata = {
-  boundaryFeature: GeoBoundaryFeature;
+  boundaryFeature: ExternalBoundaryFeature;
   municipalityCodes: string[];
   prefCodes: string[];
 };

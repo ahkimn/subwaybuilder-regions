@@ -36,10 +36,21 @@ export type BoundaryBox = {
 };
 
 const DEFAULT_CLIP_WORKER_COUNT = 4;
+const SAFE_BBOX_GRID_LEVELS = [8, 16, 32] as const;
 
 type ClipCandidate = {
   sourceFeature: Feature<Polygon | MultiPolygon>;
   featureBBox: BBox;
+};
+
+type BoundaryClipChunk = {
+  feature: Feature<Polygon>;
+  bbox: BBox;
+};
+
+type SafeBoundaryBBoxIndex = {
+  bboxes: BBox[];
+  buildMs: number;
 };
 
 type ClipWorkerResult = {
@@ -88,6 +99,7 @@ type GeometryFilterStats = {
   processedFeatures?: number;
   polygonFeatures?: number;
   bboxPrefilterPassed?: number;
+  safeBBoxWithinCount?: number;
   fullyWithinCount?: number;
   clippedCount?: number;
   rejectedNoIntersectionCount?: number;
@@ -109,6 +121,7 @@ function incrementGeometryFilterStat(
     | 'processedFeatures'
     | 'polygonFeatures'
     | 'bboxPrefilterPassed'
+    | 'safeBBoxWithinCount'
     | 'fullyWithinCount'
     | 'clippedCount'
     | 'rejectedNoIntersectionCount'
@@ -135,7 +148,7 @@ function formatGeometryFilterSummary(
   outputCount: number,
   stats: GeometryFilterStats,
 ): string {
-  return `[Geometry] ${progressLabel} summary | total: ${totalFeatures}, polygon: ${stats.polygonFeatures ?? 0}, bbox-pass: ${stats.bboxPrefilterPassed ?? 0}, fully-within: ${stats.fullyWithinCount ?? 0}, clipped: ${stats.clippedCount ?? 0}, no-intersection: ${stats.rejectedNoIntersectionCount ?? 0}, output: ${outputCount} | timings ms within: ${(stats.withinCheckMs ?? 0).toFixed(2)}, intersects: ${(stats.intersectsCheckMs ?? 0).toFixed(2)}, clip: ${(stats.clippingMs ?? 0).toFixed(2)}, props: ${(stats.propertiesMs ?? 0).toFixed(2)}`;
+  return `[Geometry] ${progressLabel} summary | total: ${totalFeatures}, polygon: ${stats.polygonFeatures ?? 0}, bbox-pass: ${stats.bboxPrefilterPassed ?? 0}, safe-bbox-within: ${stats.safeBBoxWithinCount ?? 0}, fully-within: ${stats.fullyWithinCount ?? 0}, clipped: ${stats.clippedCount ?? 0}, no-intersection: ${stats.rejectedNoIntersectionCount ?? 0}, output: ${outputCount} | timings ms within: ${(stats.withinCheckMs ?? 0).toFixed(2)}, intersects: ${(stats.intersectsCheckMs ?? 0).toFixed(2)}, clip: ${(stats.clippingMs ?? 0).toFixed(2)}, props: ${(stats.propertiesMs ?? 0).toFixed(2)}`;
 }
 
 function hasNonEmptyPolygonCoordinates(
@@ -399,6 +412,7 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
   const preparedBoundary = prepareBoundaryContainment(boundaryFeature);
   const usePreparedContainment =
     shouldUsePreparedBoundaryContainment(preparedBoundary);
+  const safeBoundaryBBoxes = buildSafeBoundaryBBoxIndex(boundaryFeature);
   const totalFeatures = shapeJSON.features.length;
   const stats: GeometryFilterStats = {};
   const clipCandidates: ClipCandidate[] = [];
@@ -426,24 +440,32 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
     }
     incrementGeometryFilterStat(stats, 'bboxPrefilterPassed');
 
-    const withinCheckStart = performance.now();
-    const fullyWithinBoundary = usePreparedContainment
-      ? isFullyWithinPreparedBoundary(
-          feature,
-          preparedBoundary,
-          currentFeatureBBox,
-        )
-      : isFullyWithinFeature(
-          feature,
-          boundaryFeature,
-          'boundary',
-          currentFeatureBBox,
-        );
-    addGeometryFilterTiming(
-      stats,
-      'withinCheckMs',
-      performance.now() - withinCheckStart,
+    let fullyWithinBoundary = isBBoxWithinAnyBBox(
+      currentFeatureBBox,
+      safeBoundaryBBoxes.bboxes,
     );
+    if (fullyWithinBoundary) {
+      incrementGeometryFilterStat(stats, 'safeBBoxWithinCount');
+    } else {
+      const withinCheckStart = performance.now();
+      fullyWithinBoundary = usePreparedContainment
+        ? isFullyWithinPreparedBoundary(
+            feature,
+            preparedBoundary,
+            currentFeatureBBox,
+          )
+        : isFullyWithinFeature(
+            feature,
+            boundaryFeature,
+            'boundary',
+            currentFeatureBBox,
+          );
+      addGeometryFilterTiming(
+        stats,
+        'withinCheckMs',
+        performance.now() - withinCheckStart,
+      );
+    }
 
     if (
       !fullyWithinBoundary &&
@@ -490,9 +512,10 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
   }
 
   const clippingStart = performance.now();
+  const boundaryClipChunks = buildBoundaryClipChunks(boundaryFeature);
   const clippedRegions = await clipCandidatesWithWorkers(
     clipCandidates,
-    boundaryFeature,
+    boundaryClipChunks,
     options?.workerCount ?? DEFAULT_CLIP_WORKER_COUNT,
   );
   addGeometryFilterTiming(
@@ -533,7 +556,7 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
 
   if (progressLabel) {
     console.log(
-      `${formatGeometryFilterSummary(progressLabel, totalFeatures, results.length, stats)} | within-mode: ${usePreparedContainment ? 'prepared' : 'turf'}, workers: ${Math.min(options?.workerCount ?? DEFAULT_CLIP_WORKER_COUNT, Math.max(clipCandidates.length, 1))}, clip-candidates: ${clipCandidates.length}`,
+      `${formatGeometryFilterSummary(progressLabel, totalFeatures, results.length, stats)} | within-mode: ${usePreparedContainment ? 'prepared' : 'turf'}, safe-bboxes: ${safeBoundaryBBoxes.bboxes.length}, safe-bbox-build-ms: ${safeBoundaryBBoxes.buildMs.toFixed(2)}, workers: ${Math.min(options?.workerCount ?? DEFAULT_CLIP_WORKER_COUNT, Math.max(clipCandidates.length, 1))}, clip-candidates: ${clipCandidates.length}, boundary-chunks: ${boundaryClipChunks.length}`,
     );
   }
 
@@ -723,9 +746,83 @@ function filterAndClipRegionsToMask(
   return results;
 }
 
+function buildBoundaryClipChunks(
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): BoundaryClipChunk[] {
+  if (boundaryFeature.geometry.type === 'Polygon') {
+    return [
+      {
+        feature: boundaryFeature as Feature<Polygon>,
+        bbox: featureBBox(boundaryFeature),
+      },
+    ];
+  }
+
+  return boundaryFeature.geometry.coordinates.map((coordinates, index) => {
+    const feature = turf.polygon(
+      coordinates,
+      boundaryFeature.properties ?? {},
+      { id: `${boundaryFeature.id ?? 'boundary'}-${index}` },
+    );
+    return {
+      feature,
+      bbox: featureBBox(feature),
+    };
+  });
+}
+
+function buildSafeBoundaryBBoxIndex(
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): SafeBoundaryBBoxIndex {
+  const buildStart = performance.now();
+  const boundaryBBox = featureBBox(boundaryFeature);
+  const safeBBoxes: BBox[] = [];
+
+  for (const gridSize of SAFE_BBOX_GRID_LEVELS) {
+    const lngStep = (boundaryBBox[2] - boundaryBBox[0]) / gridSize;
+    const latStep = (boundaryBBox[3] - boundaryBBox[1]) / gridSize;
+    if (lngStep <= 0 || latStep <= 0) {
+      continue;
+    }
+
+    for (let xIndex = 0; xIndex < gridSize; xIndex += 1) {
+      for (let yIndex = 0; yIndex < gridSize; yIndex += 1) {
+        const cellBBox: BBox = [
+          boundaryBBox[0] + lngStep * xIndex,
+          boundaryBBox[1] + latStep * yIndex,
+          xIndex === gridSize - 1
+            ? boundaryBBox[2]
+            : boundaryBBox[0] + lngStep * (xIndex + 1),
+          yIndex === gridSize - 1
+            ? boundaryBBox[3]
+            : boundaryBBox[1] + latStep * (yIndex + 1),
+        ];
+        if (turf.booleanContains(boundaryFeature, turf.bboxPolygon(cellBBox))) {
+          safeBBoxes.push(cellBBox);
+        }
+      }
+    }
+  }
+
+  return {
+    bboxes: safeBBoxes,
+    buildMs: performance.now() - buildStart,
+  };
+}
+
+function isBBoxWithinAnyBBox(featureBBoxValue: BBox, containerBBoxes: readonly BBox[]): boolean {
+  return containerBBoxes.some(
+    (containerBBox) =>
+      featureBBoxValue[0] >= containerBBox[0] &&
+      featureBBoxValue[1] >= containerBBox[1] &&
+      featureBBoxValue[2] <= containerBBox[2] &&
+      featureBBoxValue[3] <= containerBBox[3],
+  );
+}
+
 async function clipCandidatesWithWorkers(
   clipCandidates: readonly ClipCandidate[],
-  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  boundaryClipChunks: readonly BoundaryClipChunk[],
   workerCount: number,
 ): Promise<Array<Feature<Geometry, GeoJsonProperties> | null>> {
   if (clipCandidates.length === 0) {
@@ -738,7 +835,7 @@ async function clipCandidatesWithWorkers(
   );
   if (resolvedWorkerCount === 1) {
     return clipCandidates.map(({ sourceFeature }) =>
-      intersectFeatureWithBoundary(sourceFeature, boundaryFeature),
+      intersectFeatureWithBoundaryChunks(sourceFeature, boundaryClipChunks),
     );
   }
 
@@ -748,12 +845,14 @@ async function clipCandidatesWithWorkers(
       [] as Array<{
         index: number;
         feature: Feature<Polygon | MultiPolygon>;
+        featureBBox: BBox;
       }>,
   );
   clipCandidates.forEach((candidate, index) => {
     batches[index % resolvedWorkerCount].push({
       index,
       feature: candidate.sourceFeature,
+      featureBBox: candidate.featureBBox,
     });
   });
 
@@ -761,7 +860,7 @@ async function clipCandidatesWithWorkers(
     const workerResults = await Promise.all(
       batches
         .filter((batch) => batch.length > 0)
-        .map((batch) => runClipWorkerBatch(batch, boundaryFeature)),
+        .map((batch) => runClipWorkerBatch(batch, boundaryClipChunks)),
     );
 
     const clippedRegions = new Array<Feature<
@@ -780,21 +879,25 @@ async function clipCandidatesWithWorkers(
       error,
     );
     return clipCandidates.map(({ sourceFeature }) =>
-      intersectFeatureWithBoundary(sourceFeature, boundaryFeature),
+      intersectFeatureWithBoundaryChunks(sourceFeature, boundaryClipChunks),
     );
   }
 }
 
 function runClipWorkerBatch(
-  batch: Array<{ index: number; feature: Feature<Polygon | MultiPolygon> }>,
-  boundaryFeature: Feature<Polygon | MultiPolygon>,
+  batch: Array<{
+    index: number;
+    feature: Feature<Polygon | MultiPolygon>;
+    featureBBox: BBox;
+  }>,
+  boundaryClipChunks: readonly BoundaryClipChunk[],
 ): Promise<ClipWorkerResult[]> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(
       new URL('./geometry-clip-worker.cjs', import.meta.url),
       {
         workerData: {
-          boundaryFeature,
+          boundaryClipChunks,
           batch,
         },
       },
@@ -810,6 +913,36 @@ function runClipWorkerBatch(
       }
     });
   });
+}
+
+function intersectFeatureWithBoundaryChunks(
+  feature: Feature<Polygon | MultiPolygon>,
+  boundaryClipChunks: readonly BoundaryClipChunk[],
+): Feature<Geometry, GeoJsonProperties> | null {
+  const currentFeatureBBox = featureBBox(feature);
+  const matchingChunks = boundaryClipChunks.filter((chunk) =>
+    bboxIntersects(chunk.bbox, currentFeatureBBox),
+  );
+  if (matchingChunks.length === 0) {
+    return null;
+  }
+
+  if (matchingChunks.length === 1) {
+    return intersectFeatureWithBoundary(feature, matchingChunks[0].feature);
+  }
+
+  const intersections = matchingChunks.flatMap((chunk) => {
+    const intersection = intersectFeatureWithBoundary(feature, chunk.feature);
+    return intersection && isPolygonFeature(intersection) ? [intersection] : [];
+  });
+  if (intersections.length === 0) {
+    return null;
+  }
+  if (intersections.length === 1) {
+    return intersections[0];
+  }
+
+  return combinePolygonIntersections(intersections);
 }
 
 function intersectFeatureWithBoundary(
@@ -835,6 +968,18 @@ function intersectFeatureWithBoundary(
   }
 
   return cleanedIntersection;
+}
+
+function combinePolygonIntersections(
+  intersections: Array<Feature<Polygon | MultiPolygon>>,
+): Feature<MultiPolygon, GeoJsonProperties> | null {
+  const coordinates = intersections.flatMap((intersection) =>
+    intersection.geometry.type === 'Polygon'
+      ? [intersection.geometry.coordinates]
+      : intersection.geometry.coordinates,
+  );
+
+  return coordinates.length > 0 ? turf.multiPolygon(coordinates) : null;
 }
 
 // Basic properties builder for region features, which also handles label point calculation and population/unit type property resolution if applicable.

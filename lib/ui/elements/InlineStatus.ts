@@ -1,12 +1,12 @@
-import type { createElement, ReactNode } from 'react';
-
 import {
-  REGIONS_ID_ATTR,
   ERROR_HEX,
   INFO_HEX,
+  REGIONS_ID_ATTR,
   SUCCESS_HEX,
   WARNING_HEX,
 } from '@lib/constants';
+import type { createElement, ReactNode } from 'react';
+
 import {
   CircleCheck,
   CircleInfo,
