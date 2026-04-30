@@ -37,6 +37,12 @@
  * - refreshColors()  Call to recompute fill colors using current game state.
  */
 
+import { SystemPerformanceMonitor } from '@enhanced-demand-view/map/SystemPerformanceMonitor';
+import {
+  type ResourceCounts,
+  WebGLResourceTracker,
+} from '@enhanced-demand-view/map/WebGLResourceTracker';
+
 const GAME_LAYER_ID = 'demand-points';
 const EDV_SOURCE_ID = 'edv-demand-source';
 const EDV_LAYER_ID = 'edv-demand-points';
@@ -73,6 +79,15 @@ type CapturedGameLayer = {
   onClick: GameClickFn;
 };
 
+type MemorySnapshot = {
+  event: string;
+  timestamp: number;
+  heapUsedMB: number;
+  tileCacheEntries: number;
+  domNodeCount: number;
+  webglNet: ResourceCounts | null;
+};
+
 type PatchedMapMethods = {
   addLayer: maplibregl.Map['addLayer'];
   removeLayer: maplibregl.Map['removeLayer'];
@@ -96,6 +111,17 @@ export class DemandLayerManager {
   // Render optimisation: stored pre-attach values for clean restore on detach.
   private previousRenderWorldCopies: boolean | null = null;
 
+  // Cached tile-breakdown string to suppress redundant per-capture logs.
+  private lastTileBreakdownSummary = '';
+
+  // Memory leak detection: track demand view open/close transitions and the
+  // memory state at each transition, to identify if usage grows per cycle.
+  private lastRequestedVisible: boolean | null = null;
+  private webglTracker: WebGLResourceTracker | null = null;
+  private perfMonitor: SystemPerformanceMonitor | null = null;
+  private perfPeriodicHandle: ReturnType<typeof setInterval> | null = null;
+  private memorySnapshots: Array<MemorySnapshot> = [];
+
   // Stored so we can call map.off() precisely on detach.
   private clickHandler: ((e: maplibregl.MapLayerMouseEvent) => void) | null =
     null;
@@ -112,6 +138,8 @@ export class DemandLayerManager {
   attach(): void {
     this.patchMapMethods();
     this.probeAndApplyMapRenderSettings();
+    this.startWebGLTracker();
+    this.startPerfMonitor();
 
     // If the game already added the layer before we attached (hot-reload or
     // map-ready fires after city-load), take it over immediately.
@@ -124,6 +152,62 @@ export class DemandLayerManager {
     } else {
       console.log(`${LOG} Waiting for game to add '${GAME_LAYER_ID}'`);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebGL resource tracking (GPU leak detection)
+  // ---------------------------------------------------------------------------
+
+  private startWebGLTracker(): void {
+    const gl = this.resolveGLContext();
+    if (!gl) {
+      console.warn(
+        `${LOG} No WebGL context — GPU resource tracking unavailable`,
+      );
+      return;
+    }
+    this.webglTracker = new WebGLResourceTracker(gl);
+    this.webglTracker.start();
+    console.log(`${LOG} WebGL resource tracker started`);
+  }
+
+  private stopWebGLTracker(): void {
+    this.webglTracker?.stop();
+    this.webglTracker = null;
+  }
+
+  private startPerfMonitor(): void {
+    const gl = this.resolveGLContext();
+    this.perfMonitor = new SystemPerformanceMonitor(gl);
+    this.perfMonitor.start();
+
+    // Independent periodic log — captures degradation between toggles.
+    this.perfPeriodicHandle = setInterval(() => {
+      if (this.perfMonitor) {
+        console.log(`${LOG} [perf] ${this.perfMonitor.summary()}`);
+      }
+    }, 5_000);
+    console.log(`${LOG} System performance monitor started`);
+  }
+
+  private stopPerfMonitor(): void {
+    if (this.perfPeriodicHandle !== null) {
+      clearInterval(this.perfPeriodicHandle);
+      this.perfPeriodicHandle = null;
+    }
+    this.perfMonitor?.stop();
+    this.perfMonitor = null;
+  }
+
+  private resolveGLContext():
+    | WebGLRenderingContext
+    | WebGL2RenderingContext
+    | null {
+    const canvas = this.map.getCanvas();
+    return (
+      (canvas.getContext('webgl2') as WebGL2RenderingContext | null) ??
+      (canvas.getContext('webgl') as WebGLRenderingContext | null)
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -176,19 +260,7 @@ export class DemandLayerManager {
         )
       : '(no gl context)';
 
-    // Internal tile cache — field name varies by MapLibre version.
-    const style = mapAsAny['style'] as Record<string, unknown> | undefined;
-    const sourceCaches = style?.['sourceCaches'] as
-      | Record<string, unknown>
-      | undefined;
-    const tileCacheEntries = sourceCaches
-      ? Object.values(sourceCaches).reduce<number>((sum, sc) => {
-          const cache = (sc as Record<string, unknown>)['_cache'] as
-            | { size?: number }
-            | undefined;
-          return sum + (cache?.size ?? 0);
-        }, 0)
-      : '(not accessible)';
+    const tileCacheEntries = this.getTileCacheEntries();
 
     console.group(`${LOG} [probe] MapLibre render settings (pre-apply)`);
     console.log('  renderWorldCopies :', renderWorldCopies, '← will set false');
@@ -238,11 +310,211 @@ export class DemandLayerManager {
     this.previousRenderWorldCopies = null;
   }
 
+  /**
+   * Counts tiles across all source caches in the map's style.
+   *
+   * Two structures of interest per source:
+   *  - `_tiles`: actively-loaded tiles (visible or recently-visible)
+   *  - `_cache`: LRU cache for evicted tiles being kept warm
+   *
+   * Returns the sum across all sources; 0 if the internal structure is not
+   * accessible. Logs a per-source breakdown for diagnostic visibility.
+   */
+  private getTileCacheEntries(): number {
+    const mapAsAny = this.map as unknown as Record<string, unknown>;
+    const style = mapAsAny['style'] as Record<string, unknown> | undefined;
+    const sourceCaches =
+      (style?.['sourceCaches'] as Record<string, unknown> | undefined) ??
+      (style?.['_sourceCaches'] as Record<string, unknown> | undefined);
+
+    if (!sourceCaches) return 0;
+
+    const breakdown: Record<string, { tiles: number; cache: number }> = {};
+    let total = 0;
+
+    for (const [sourceId, sc] of Object.entries(sourceCaches)) {
+      const scAny = sc as Record<string, unknown>;
+
+      // _tiles is typically a Map<string, Tile> or plain object.
+      const tilesField = scAny['_tiles'];
+      let tilesCount = 0;
+      if (tilesField instanceof Map) {
+        tilesCount = tilesField.size;
+      } else if (tilesField && typeof tilesField === 'object') {
+        tilesCount = Object.keys(tilesField).length;
+      }
+
+      // _cache is an LRU cache. Try common shapes: .size, .data.size, .order.length.
+      const cacheField = scAny['_cache'] as Record<string, unknown> | undefined;
+      let cacheCount = 0;
+      if (cacheField) {
+        const cacheSize = cacheField['size'];
+        const cacheData = cacheField['data'];
+        const cacheOrder = cacheField['order'];
+        if (typeof cacheSize === 'number') {
+          cacheCount = cacheSize;
+        } else if (cacheData instanceof Map) {
+          cacheCount = cacheData.size;
+        } else if (Array.isArray(cacheOrder)) {
+          cacheCount = cacheOrder.length;
+        }
+      }
+
+      breakdown[sourceId] = { tiles: tilesCount, cache: cacheCount };
+      total += tilesCount + cacheCount;
+    }
+
+    // Log per-source breakdown only when it changes. Each capture would
+    // otherwise emit identical breakdown lines, polluting DevTools logs.
+    const summary = Object.entries(breakdown)
+      .map(([id, { tiles, cache }]) => `${id}:${tiles}+${cache}`)
+      .join('|');
+    if (summary !== this.lastTileBreakdownSummary) {
+      this.lastTileBreakdownSummary = summary;
+      if (total > 0) {
+        console.log(`${LOG} [tile-breakdown] ${summary} (active+evicted)`);
+      }
+    }
+
+    return total;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Memory leak detection
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Captures a memory snapshot tagged with the triggering event and logs the
+   * delta vs. the previous snapshot. Used to detect per-cycle memory growth
+   * that points to a leak.
+   *
+   * Reads `performance.memory` (Chromium/Electron-specific). Note: this only
+   * sees JS heap. ArrayBuffer external memory (where most tile data lives)
+   * is not directly visible here, but its growth typically tracks heap growth
+   * via wrapper objects and tile cache entry counts.
+   */
+  private captureMemory(event: string): void {
+    const perfWithMemory = performance as Performance & {
+      memory?: {
+        usedJSHeapSize: number;
+        totalJSHeapSize: number;
+        jsHeapSizeLimit: number;
+      };
+    };
+    const memory = perfWithMemory.memory;
+    if (!memory) {
+      console.warn(
+        `${LOG} [memory] performance.memory unavailable — skipping ${event}`,
+      );
+      return;
+    }
+
+    const heapUsedMB = memory.usedJSHeapSize / (1024 * 1024);
+    const tileCacheEntries = this.getTileCacheEntries();
+    const domNodeCount = document.getElementsByTagName('*').length;
+    const webglNet = this.webglTracker?.snapshot() ?? null;
+    const timestamp = performance.now();
+
+    const snapshot: MemorySnapshot = {
+      event,
+      timestamp,
+      heapUsedMB,
+      tileCacheEntries,
+      domNodeCount,
+      webglNet,
+    };
+    const prev = this.memorySnapshots[this.memorySnapshots.length - 1];
+    this.memorySnapshots.push(snapshot);
+
+    // Cap history to prevent the tracker itself from leaking memory.
+    if (this.memorySnapshots.length > 200) {
+      this.memorySnapshots.shift();
+    }
+
+    const idx = this.memorySnapshots.length;
+    const sign = (n: number) => (n >= 0 ? '+' : '');
+
+    // Single-line summary keeps DevTools log volume manageable. Each console
+    // call has IPC overhead to the DevTools process; many lines per toggle
+    // become a real bottleneck and can OOM DevTools itself.
+    const webglParts = webglNet
+      ? [
+          `B${webglNet.Buffer.net}`,
+          `T${webglNet.Texture.net}`,
+          `V${webglNet.VertexArray.net}`,
+        ].join(',')
+      : '?';
+    const perfPart = this.perfMonitor ? ` | ${this.perfMonitor.summary()}` : '';
+    const totalSummary = `${heapUsedMB.toFixed(1)}MB heap / ${tileCacheEntries}t / ${domNodeCount}d / ${webglParts}${perfPart}`;
+    console.log(`${LOG} [${event} #${idx}] ${totalSummary}`);
+
+    // Detail logs only when something genuinely changed beyond expected
+    // toggle churn. Thresholds are tuned to the baseline noise observed on
+    // demand-view toggles (heap stable, DOM ±108, WebGL net ±~30).
+    if (prev) {
+      const dHeap = heapUsedMB - prev.heapUsedMB;
+      const dCache = tileCacheEntries - prev.tileCacheEntries;
+      const HEAP_GROWTH_THRESHOLD_MB = 5;
+      const TILE_GROWTH_THRESHOLD = 5;
+
+      if (Math.abs(dHeap) >= HEAP_GROWTH_THRESHOLD_MB) {
+        console.warn(
+          `${LOG} ⚠ heap moved ${sign(dHeap)}${dHeap.toFixed(1)} MB this cycle — investigate`,
+        );
+      }
+      if (Math.abs(dCache) >= TILE_GROWTH_THRESHOLD) {
+        console.warn(
+          `${LOG} ⚠ tile cache moved ${sign(dCache)}${dCache} entries this cycle`,
+        );
+      }
+
+      // Cycle-level (same event to same event) — flag persistent drift only.
+      const prevSameEvent = this.findPreviousSameEvent(event, idx - 2);
+      if (prevSameEvent) {
+        const dCycleHeap = heapUsedMB - prevSameEvent.heapUsedMB;
+        if (Math.abs(dCycleHeap) >= HEAP_GROWTH_THRESHOLD_MB) {
+          console.warn(
+            `${LOG} ⚠ heap drift vs prev '${event}': ${sign(dCycleHeap)}${dCycleHeap.toFixed(1)} MB`,
+          );
+        }
+      }
+    }
+
+    // FPS warning — flag when the renderer is clearly struggling.
+    if (this.perfMonitor) {
+      const perfSnap = this.perfMonitor.snapshot();
+      if (perfSnap.fps < 20 && perfSnap.fps > 0) {
+        // Only log every ~10 toggles to avoid spam during sustained low FPS.
+        if (idx % 10 === 1) {
+          console.warn(
+            `${LOG} ⚠ FPS low: ${perfSnap.fps} (p95 ${perfSnap.frameTimeP95Ms.toFixed(0)}ms, longtasks ${perfSnap.longTasksLastSecond})`,
+          );
+        }
+      }
+      if (perfSnap.glErrors.length > 0) {
+        console.warn(`${LOG} ⚠ WebGL errors: ${perfSnap.glErrors.join(', ')}`);
+      }
+    }
+  }
+
+  private findPreviousSameEvent(
+    event: string,
+    fromIndex: number,
+  ): MemorySnapshot | null {
+    for (let i = fromIndex; i >= 0; i--) {
+      const s = this.memorySnapshots[i];
+      if (s && s.event === event) return s;
+    }
+    return null;
+  }
+
   detach(): void {
     this.removeOurLayer();
     this.restoreImplSetProps();
     this.restoreMapMethods();
     this.restoreMapRenderSettings();
+    this.stopWebGLTracker();
+    this.stopPerfMonitor();
 
     // Best-effort: restore game layer visibility so it is in a clean state if
     // the city is reloaded without a full game restart. City teardown will
@@ -356,9 +628,12 @@ export class DemandLayerManager {
 
     this.captured = { impl, getFillColor, onClick };
 
-    // Hide the game's deck.gl layer. Our circle layer renders instead.
-    impl.setProps({ visible: false });
-    console.log(`${LOG} Game layer hidden`);
+    // Hide the game's deck.gl layer AND free its GPU buffers by clearing data.
+    // The buffers from the initial addLayer (allocated for thousands of
+    // features) are released here, before patching setProps to suppress all
+    // future data updates to the hidden layer.
+    impl.setProps({ visible: false, data: [] });
+    console.log(`${LOG} Game layer hidden + initial data cleared`);
 
     // Intercept future setProps calls so we receive data updates.
     this.patchImplSetProps(impl);
@@ -376,6 +651,21 @@ export class DemandLayerManager {
     this.originalSetProps = impl.setProps.bind(impl);
 
     impl.setProps = function (props: Record<string, unknown>) {
+      // Detect demand view open/close transitions via the game's original
+      // visible flag (we override to false below, but capture the intent first).
+      if ('visible' in props) {
+        const requestedVisible = props['visible'] === true;
+        if (
+          self.lastRequestedVisible !== null &&
+          self.lastRequestedVisible !== requestedVisible
+        ) {
+          self.captureMemory(
+            requestedVisible ? 'demand-view-open' : 'demand-view-close',
+          );
+        }
+        self.lastRequestedVisible = requestedVisible;
+      }
+
       if ('data' in props && Array.isArray(props['data'])) {
         const features = props['data'] as GeoJSON.Feature[];
         const now = performance.now();
@@ -415,8 +705,20 @@ export class DemandLayerManager {
         }
       }
 
-      // Enforce visible: false regardless of what the game sends.
-      self.originalSetProps!({ ...props, visible: false });
+      // DO NOT forward to deck.gl. The MapboxOverlay's setProps re-runs
+      // resolveLayers on every call, iterating all deck.gl layers — this
+      // dominates the frame budget during rapid setProps cascades and is the
+      // root cause of the FPS collapse we observed (60→3 fps, p95 frame time
+      // 78ms→700ms during rapid demand-view toggling).
+      //
+      // The layer was put into a stable state in takeoverImpl:
+      //   { visible: false, data: [] }
+      // and stays that way as long as we don't forward. The game's React
+      // continues calling setProps on every render — those calls are now
+      // no-ops past our patch, so resolveLayers never fires.
+      //
+      // We still extract data above for our own MapLibre layer's source, and
+      // capture visibility transitions for memory diagnostics.
     };
   }
 

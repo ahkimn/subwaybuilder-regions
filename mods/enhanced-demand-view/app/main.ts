@@ -1,7 +1,8 @@
 import { EDV_SETTINGS_MAIN_MENU_COMPONENT_ID } from '@enhanced-demand-view/core/constants';
 import { EDVStorage } from '@enhanced-demand-view/core/storage/EDVStorage';
-import { DemandHoverSuppressor } from '@enhanced-demand-view/map/DemandHoverSuppressor';
+import type { DemandHoverSuppressor } from '@enhanced-demand-view/map/DemandHoverSuppressor';
 import { DemandLayerManager } from '@enhanced-demand-view/map/DemandLayerManager';
+import { MapListenerWatcher } from '@enhanced-demand-view/map/MapListenerWatcher';
 import { EDVSettingsPanel } from '@enhanced-demand-view/ui/panels/settings/EDVSettingsPanel';
 import { ModLifecycle } from '@lib/lifecycle/ModLifecycle';
 
@@ -12,6 +13,7 @@ export class EnhancedDemandViewMod {
   private lifecycle!: ModLifecycle;
   private demandLayerManager: DemandLayerManager | null = null;
   private demandHoverSuppressor: DemandHoverSuppressor | null = null;
+  private mapListenerWatcher: MapListenerWatcher | null = null;
 
   constructor() {
     this.storage = new EDVStorage();
@@ -46,9 +48,15 @@ export class EnhancedDemandViewMod {
       logPrefix: '[EnhancedDemandView]',
       onActivate: ({ cityCode, map }) => {
         console.log(`[EnhancedDemandView] Activated for city: ${cityCode}`);
-        // Option B: suppress the hover cascade that drives high-frequency setProps.
-        this.demandHoverSuppressor = new DemandHoverSuppressor(map);
-        this.demandHoverSuppressor.suppress();
+        // Diagnostic: watch for handler pollution (game re-registering listeners
+        // on demand view open/close). Logs additions/removals + periodic counts.
+        this.mapListenerWatcher = new MapListenerWatcher(map);
+        this.mapListenerWatcher.start();
+        // Option B (DemandHoverSuppressor) is intentionally not invoked here:
+        // the deck.gl _updateHover handler is map-level and services all deck.gl
+        // layers in the game, so removing it breaks unrelated layer interactivity.
+        // The trigger gate in DemandLayerManager already eliminates the wasteful
+        // setProps work for our hidden demand-points layer.
         // Option C: replace the game's deck.gl layer with a native circle layer.
         this.demandLayerManager = new DemandLayerManager(map);
         this.demandLayerManager.attach();
@@ -59,6 +67,8 @@ export class EnhancedDemandViewMod {
         this.demandLayerManager = null;
         this.demandHoverSuppressor?.restore();
         this.demandHoverSuppressor = null;
+        this.mapListenerWatcher?.stop();
+        this.mapListenerWatcher = null;
       },
       onGameEnd: () => {
         console.log('[EnhancedDemandView] Game ended');

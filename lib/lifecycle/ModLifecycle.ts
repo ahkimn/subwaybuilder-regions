@@ -63,6 +63,10 @@ export class ModLifecycle {
   private _map: maplibregl.Map | null = null;
   private _cityLoadToken = 0;
   private _mapReadyToken = 0;
+  // Tracks whether onActivate has fired for the current (cityCode, map) pair
+  // and not been followed by onDeactivate. Prevents double-activation when
+  // both reconcile() and the onCityLoad hook fire for the same city.
+  private _isActive = false;
   private readonly logPrefix: string;
 
   constructor(
@@ -139,12 +143,14 @@ export class ModLifecycle {
 
   private handleCityLoad(cityCode: string): void {
     const loadToken = ++this._cityLoadToken;
+    const isSameCity = this._currentCityCode === cityCode;
 
     if (this._currentCityCode && this._currentCityCode !== cityCode) {
       console.warn(
         `${this.logPrefix} City switch: ${this._currentCityCode} → ${cityCode}; deactivating`,
       );
       this.callbacks.onDeactivate(this._currentCityCode);
+      this._isActive = false;
     }
 
     this._currentCityCode = cityCode;
@@ -152,13 +158,24 @@ export class ModLifecycle {
       `${this.logPrefix} City load: ${cityCode} (token=${loadToken})`,
     );
 
-    if (this._map) {
-      void this.callbacks.onActivate({
-        cityCode,
-        map: this._map,
-        isCurrent: () => loadToken === this._cityLoadToken,
-      });
+    if (!this._map) return;
+
+    // Skip re-activation if already active for this same city — avoids
+    // double-firing onActivate when both reconcile() and the onCityLoad hook
+    // arrive for the same city (common on hot-reload / initial mod load).
+    if (isSameCity && this._isActive) {
+      console.log(
+        `${this.logPrefix} Already active for ${cityCode} — skipping re-activation`,
+      );
+      return;
     }
+
+    this._isActive = true;
+    void this.callbacks.onActivate({
+      cityCode,
+      map: this._map,
+      isCurrent: () => loadToken === this._cityLoadToken,
+    });
   }
 
   private handleMapReady(map: maplibregl.Map | null): void {
@@ -178,14 +195,22 @@ export class ModLifecycle {
     console.log(`${this.logPrefix} Map ready (token=${mapToken})`);
 
     if (this._currentCityCode) {
-      // Capture the token at map-ready time so that a subsequent city load
-      // invalidates this activation's isCurrent predicate.
-      const cityToken = this._cityLoadToken;
-      void this.callbacks.onActivate({
-        cityCode: this._currentCityCode,
-        map: this._map,
-        isCurrent: () => cityToken === this._cityLoadToken,
-      });
+      // Skip if we're already active and the map is unchanged.
+      if (this._isActive) {
+        console.log(
+          `${this.logPrefix} Map ready: already active — skipping re-activation`,
+        );
+      } else {
+        // Capture the token at map-ready time so that a subsequent city load
+        // invalidates this activation's isCurrent predicate.
+        const cityToken = this._cityLoadToken;
+        this._isActive = true;
+        void this.callbacks.onActivate({
+          cityCode: this._currentCityCode,
+          map: this._map,
+          isCurrent: () => cityToken === this._cityLoadToken,
+        });
+      }
     } else if (this._cityLoadToken === 0) {
       // Hot-reload: city load hook did not replay. Recover from the API.
       const cityCode = this.api.utils.getCityCode();
@@ -209,6 +234,7 @@ export class ModLifecycle {
     if (this._currentCityCode) {
       this.callbacks.onDeactivate(this._currentCityCode);
       this._currentCityCode = null;
+      this._isActive = false;
     }
 
     this._cityLoadToken = 0;
