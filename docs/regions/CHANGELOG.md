@@ -19,6 +19,10 @@ _Game version_ v1.3.0
 
 - Added local static recognition for downloaded PL city datasets so release/distributed PL data can be discovered by the mod even though PL is not supported by the runtime fetch wrappers (same as JP and CZ).
 
+### Bugfixes
+
+- Fixed runtime fetch CLI failing on US datasets (`counties`, `county-subdivisions`, `places`, `zctas`) with an opaque "non-JSON response" error after the US Census Bureau tightened ACS API key enforcement. The fetch CLI now appends a `key` query parameter when the `CENSUS_API_KEY` environment variable is set, and surfaces an actionable error pointing at <https://api.census.gov/data/key_signup.html> when Census rejects the request.
+
 ## v0.4.9 - 2026-04-26
 
 _Game version_ v1.3.0

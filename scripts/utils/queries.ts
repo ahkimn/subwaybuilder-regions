@@ -130,6 +130,46 @@ function isRawFeatureCollection(
   );
 }
 
+const CENSUS_API_KEY_ENV = 'CENSUS_API_KEY';
+const CENSUS_API_KEY_SIGNUP_URL =
+  'https://api.census.gov/data/key_signup.html';
+
+/**
+ * Append the CENSUS_API_KEY (if set in env) to a Census Data API URL.
+ *
+ * Census tightened key enforcement: unauthenticated requests can now be
+ * rejected with an HTML "Missing Key" page instead of a JSON error. The key
+ * is free; users sign up at api.census.gov/data/key_signup.html.
+ */
+export function withCensusApiKey(url: URL): URL {
+  const key = process.env[CENSUS_API_KEY_ENV];
+  if (key && key.trim()) {
+    url.searchParams.set('key', key.trim());
+  }
+  return url;
+}
+
+/**
+ * If an upstream error matches Census's "Missing Key" / "Invalid Key"
+ * signature, rethrow with an actionable message pointing the user at the
+ * signup page and the env var. Other errors are passed through unchanged so
+ * we don't mask unrelated failures.
+ */
+export function decorateAcsKeyError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+  const looksLikeMissingKey =
+    lower.includes('missing key') || lower.includes('invalid key');
+  if (looksLikeMissingKey) {
+    const keySet = Boolean(process.env[CENSUS_API_KEY_ENV]);
+    const guidance = keySet
+      ? `${CENSUS_API_KEY_ENV} is set but Census rejected it (invalid or revoked). Re-check the value at ${CENSUS_API_KEY_SIGNUP_URL}.`
+      : `Set ${CENSUS_API_KEY_ENV} in your shell before re-running. Free signup: ${CENSUS_API_KEY_SIGNUP_URL}.`;
+    throw new Error(`[ACS] Census API key required. ${guidance}`);
+  }
+  throw error instanceof Error ? error : new Error(message);
+}
+
 function parseACSRows(rows: unknown, endpoint: string): string[][] {
   if (!isStringMatrix(rows) || rows.length < 1) {
     throw new Error(`[ACS] Unexpected response shape for ${endpoint}`);
@@ -560,16 +600,16 @@ async function fetchCountyPopulationsByState(
   state: string,
 ): Promise<Map<string, string>> {
   // Use 2022 ACS data as prior to that date, there were no county-equivalent population data available for the state
-  const url = new URL(ACS_API_URL);
+  const url = withCensusApiKey(new URL(ACS_API_URL));
 
-  url.search = new URLSearchParams({
-    get: 'B01003_001E',
-    for: 'county:*',
-    in: `state:${state}`,
-  }).toString();
+  url.searchParams.set('get', 'B01003_001E');
+  url.searchParams.set('for', 'county:*');
+  url.searchParams.set('in', `state:${state}`);
 
   const rows = parseACSRows(
-    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }).catch(
+      decorateAcsKeyError,
+    ),
     url.toString(),
   );
 
@@ -589,15 +629,15 @@ async function fetchCountyPopulationsByState(
 export async function fetchCountySubdivisionPopulations(
   state: string,
 ): Promise<Map<string, string>> {
-  const url = new URL(ACS_API_URL);
-  url.search = new URLSearchParams({
-    get: 'B01003_001E',
-    for: 'county subdivision:*',
-    in: `state:${state}`,
-  }).toString();
+  const url = withCensusApiKey(new URL(ACS_API_URL));
+  url.searchParams.set('get', 'B01003_001E');
+  url.searchParams.set('for', 'county subdivision:*');
+  url.searchParams.set('in', `state:${state}`);
 
   const rows = parseACSRows(
-    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }).catch(
+      decorateAcsKeyError,
+    ),
     url.toString(),
   );
 
@@ -615,15 +655,15 @@ export async function fetchCountySubdivisionPopulations(
 export async function fetchPlacePopulations(
   state: string,
 ): Promise<Map<string, string>> {
-  const url = new URL(ACS_API_URL);
-  url.search = new URLSearchParams({
-    get: 'B01003_001E',
-    for: 'place:*',
-    in: `state:${state}`,
-  }).toString();
+  const url = withCensusApiKey(new URL(ACS_API_URL));
+  url.searchParams.set('get', 'B01003_001E');
+  url.searchParams.set('for', 'place:*');
+  url.searchParams.set('in', `state:${state}`);
 
   const rows = parseACSRows(
-    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }).catch(
+      decorateAcsKeyError,
+    ),
     url.toString(),
   );
 
@@ -639,14 +679,14 @@ export async function fetchPlacePopulations(
 }
 
 export async function fetchZctaPopulations(): Promise<Map<string, string>> {
-  const url = new URL(ACS_API_URL);
-  url.search = new URLSearchParams({
-    get: 'B01003_001E',
-    for: 'zip code tabulation area:*',
-  }).toString();
+  const url = withCensusApiKey(new URL(ACS_API_URL));
+  url.searchParams.set('get', 'B01003_001E');
+  url.searchParams.set('for', 'zip code tabulation area:*');
 
   const rows = parseACSRows(
-    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }),
+    await fetchJsonWithRetry(url, undefined, { label: 'ACS' }).catch(
+      decorateAcsKeyError,
+    ),
     url.toString(),
   );
 

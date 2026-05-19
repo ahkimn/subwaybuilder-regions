@@ -8,8 +8,10 @@ import {
   buildAUCensusPopulationQuery,
   buildIgnAdminWfsQuery,
   buildNomisPopulationQuery,
+  decorateAcsKeyError,
   fetchNomisPopulationIndex,
   getWPCONSQuery,
+  withCensusApiKey,
 } from '@scripts/utils/queries';
 
 describe('scripts/utils/queries WFS helpers', () => {
@@ -160,5 +162,66 @@ describe('scripts/utils/queries NOMIS helpers', () => {
       fetchNomisPopulationIndex(buildNomisPopulationQuery('NM_2014_1', 172)),
       /Unexpected CSV response shape/,
     );
+  });
+});
+
+describe('scripts/utils/queries Census API key helpers', () => {
+  const originalKey = process.env.CENSUS_API_KEY;
+
+  afterEach(() => {
+    if (originalKey === undefined) {
+      delete process.env.CENSUS_API_KEY;
+    } else {
+      process.env.CENSUS_API_KEY = originalKey;
+    }
+  });
+
+  it('appends CENSUS_API_KEY to URL when env var is set', () => {
+    process.env.CENSUS_API_KEY = 'abc123';
+    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    assert.equal(url.searchParams.get('key'), 'abc123');
+  });
+
+  it('trims whitespace from CENSUS_API_KEY', () => {
+    process.env.CENSUS_API_KEY = '  abc123  ';
+    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    assert.equal(url.searchParams.get('key'), 'abc123');
+  });
+
+  it('leaves URL unchanged when CENSUS_API_KEY is unset', () => {
+    delete process.env.CENSUS_API_KEY;
+    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    assert.equal(url.searchParams.has('key'), false);
+  });
+
+  it('leaves URL unchanged when CENSUS_API_KEY is empty/whitespace', () => {
+    process.env.CENSUS_API_KEY = '   ';
+    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    assert.equal(url.searchParams.has('key'), false);
+  });
+
+  it('rethrows missing-key errors with signup-URL guidance', () => {
+    delete process.env.CENSUS_API_KEY;
+    const upstream = new Error(
+      'returned non-JSON response (text/html). Body starts with: <html><title>Missing Key</title>',
+    );
+    assert.throws(
+      () => decorateAcsKeyError(upstream),
+      /Census API key required.*Set CENSUS_API_KEY.*key_signup\.html/,
+    );
+  });
+
+  it('rethrows missing-key errors with invalid-key guidance when env var is set', () => {
+    process.env.CENSUS_API_KEY = 'bogus';
+    const upstream = new Error('<title>Invalid Key</title>');
+    assert.throws(
+      () => decorateAcsKeyError(upstream),
+      /CENSUS_API_KEY is set but Census rejected it/,
+    );
+  });
+
+  it('passes through unrelated errors unchanged', () => {
+    const upstream = new Error('network timeout after 10s');
+    assert.throws(() => decorateAcsKeyError(upstream), /network timeout after 10s/);
   });
 });
