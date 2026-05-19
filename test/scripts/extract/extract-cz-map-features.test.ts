@@ -157,8 +157,15 @@ async function createCZFixture(options?: { bundleCountry?: string }): Promise<{
     path.join(regionsRoot, 'zsj_dil_names.csv'),
     [
       'chocho_key,zsj_dil_code,zsj_code,parent_obec_code,name',
+      // Singleton ZSJ (one díl, bare name with no suffix per CIS convention).
       '5000010000001,0000001,000000,500001,Žižkov',
+      // Multi-díl ZSJ on obec 500001: two díly that should aggregate to one
+      // ZSJ named "Bavoryně" (the " díl N" suffix is stripped).
+      '5000010010101,0010101,001010,500001,Bavoryně díl 1',
+      '5000010010102,0010102,001010,500001,Bavoryně díl 2',
+      // Singleton ZSJ on obec 500002.
       '5000020000002,0000002,000000,500002,Černá Pole',
+      // Outside the bundle.
       '5999990000003,0000003,000000,599999,Mimo',
       '',
     ].join('\n'),
@@ -172,6 +179,16 @@ async function createCZFixture(options?: { bundleCountry?: string }): Promise<{
         chocho_key: '5000010000001',
         municipality_code: '500001',
         pop_total: 80,
+      }),
+      polygonFeature(square(0, 1, 0.5, 2), {
+        chocho_key: '5000010010101',
+        municipality_code: '500001',
+        pop_total: 30,
+      }),
+      polygonFeature(square(0.5, 1, 1, 2), {
+        chocho_key: '5000010010102',
+        municipality_code: '500001',
+        pop_total: 50,
       }),
       polygonFeature(square(1, 0, 2, 1), {
         chocho_key: '5000020000002',
@@ -244,13 +261,23 @@ describe('CZ map feature extraction', () => {
     assert.equal(okres.features[0].properties?.SOURCE_NAME, 'Praha-východ');
     assert.equal(okres.features[0].properties?.POPULATION, 300);
     assert.deepEqual(
-      zsj.features.map((feature) => feature.properties?.SOURCE_NAME),
-      ['Žižkov', 'Černá Pole'],
+      zsj.features.map((feature) => feature.properties?.SOURCE_ID),
+      ['500001000000', '500001001010', '500002000000'],
     );
     assert.deepEqual(
-      zsj.features.map((feature) => feature.properties?.POPULATION),
-      [80, 160],
+      zsj.features.map((feature) => feature.properties?.SOURCE_NAME),
+      ['Žižkov', 'Bavoryně', 'Černá Pole'],
     );
+    // Bavoryně sums two díly: 30 + 50 = 80.
+    assert.deepEqual(
+      zsj.features.map((feature) => feature.properties?.POPULATION),
+      [80, 80, 160],
+    );
+    // Aggregated multi-díl ZSJ becomes a MultiPolygon; singletons stay
+    // as Polygon.
+    assert.equal(zsj.features[0].geometry.type, 'Polygon');
+    assert.equal(zsj.features[1].geometry.type, 'MultiPolygon');
+    assert.equal(zsj.features[2].geometry.type, 'Polygon');
   });
 
   it('buildCZZsjSourceCollection_shouldFailWithSetupMessage_whenLabelsAreMissing', async () => {
@@ -279,7 +306,9 @@ describe('CZ map feature extraction', () => {
 
     assert.equal(okres.features.length, 1);
     assert.equal(obce.features.length, 2);
-    assert.equal(zsj.features.length, 2);
+    // 4 chocho rows in-bundle (3 for obec 500001 + 1 for obec 500002),
+    // aggregated into 3 ZSJs (the two Bavoryně díly collapse into one).
+    assert.equal(zsj.features.length, 3);
     assert.equal(okres.features[0].properties?.NAME, 'Praha-východ');
     assert.equal(zsj.features[0].properties?.NAME, 'Žižkov');
     assert.equal(zsj.features[0].properties?.NAME_JA, undefined);

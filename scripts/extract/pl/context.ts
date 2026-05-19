@@ -119,7 +119,11 @@ export function loadPLGminaIndex(
 ): Map<string, PLGminaRegion> {
   const collection = toPolygonFeatureCollection(
     loadGeoJSON(
-      resolvePLRequiredSourcePath(sourceRoot, PL_GMINA_FILE, 'PL gmina regions'),
+      resolvePLRequiredSourcePath(
+        sourceRoot,
+        PL_GMINA_FILE,
+        'PL gmina regions',
+      ),
     ),
   );
   const index = new Map<string, PLGminaRegion>();

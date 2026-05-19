@@ -18,10 +18,12 @@ _Game version_ v1.3.0
 ### Other Updates
 
 - Added local static recognition for downloaded PL city datasets so release/distributed PL data can be discovered by the mod even though PL is not supported by the runtime fetch wrappers (same as JP and CZ).
+- Cleaned up PL powiat display names: stripped the redundant `powiat` prefix word from every powiat label and normalised capitalisation so regional powiaty appear as `Bolesławiecki` and city-powiaty as `Warszawa` instead of `powiat bolesławiecki` / `powiat Warszawa`.
 
 ### Bugfixes
 
 - Fixed runtime fetch CLI failing on US datasets (`counties`, `county-subdivisions`, `places`, `zctas`) with an opaque "non-JSON response" error after the US Census Bureau tightened ACS API key enforcement. The fetch CLI now sends a Census Data API key on every ACS request, using a bundled project-owned key by default so most users don't need to do anything. Power users can override with their own key by setting `CENSUS_API_KEY` in their shell. If the key (either bundled or user-supplied) is ever rejected, an actionable error now points at <https://api.census.gov/data/key_signup.html>.
+- Aggregated CZ ZSJ-díl features into ZSJ-level features in the `zsj` dataset. Statutory cities (Praha, Hradec Králové, Plzeň, Liberec, etc.) were previously shipping fragmented sub-ZSJ subdivisions (e.g. `Bavoryně díl 1` through `díl 5`) as separate map regions; they're now collapsed into a single MultiPolygon per ZSJ with the bare ZSJ name (`Bavoryně`) and summed population. Singleton ZSJs are unchanged. Affects all 9 CZ bundles: Praha 3,408 → 3,283 features (−125), Hradec–Pardubice 1,058 → 992 (−66), Liberec–Jablonec 796 → 732 (−64), Plzeň 1,004 → 978 (−26), others smaller.
 
 ## v0.4.9 - 2026-04-26
 

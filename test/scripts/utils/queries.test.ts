@@ -178,19 +178,25 @@ describe('scripts/utils/queries Census API key helpers', () => {
 
   it('appends user-supplied CENSUS_API_KEY to URL when env var is set', () => {
     process.env.CENSUS_API_KEY = 'abc123';
-    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
     assert.equal(url.searchParams.get('key'), 'abc123');
   });
 
   it('trims whitespace from CENSUS_API_KEY', () => {
     process.env.CENSUS_API_KEY = '  abc123  ';
-    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
     assert.equal(url.searchParams.get('key'), 'abc123');
   });
 
   it('falls back to bundled default key when CENSUS_API_KEY is unset', () => {
     delete process.env.CENSUS_API_KEY;
-    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
     const key = url.searchParams.get('key');
     assert.ok(key && key.length > 0, 'expected a default key to be appended');
     // Sanity-check the key shape (40-char hex per Census Data API key format).
@@ -199,7 +205,9 @@ describe('scripts/utils/queries Census API key helpers', () => {
 
   it('falls back to bundled default key when CENSUS_API_KEY is empty/whitespace', () => {
     process.env.CENSUS_API_KEY = '   ';
-    const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
     const key = url.searchParams.get('key');
     assert.ok(key && key.length > 0);
     assert.match(key!, /^[a-f0-9]{40}$/);
@@ -227,6 +235,9 @@ describe('scripts/utils/queries Census API key helpers', () => {
 
   it('passes through unrelated errors unchanged', () => {
     const upstream = new Error('network timeout after 10s');
-    assert.throws(() => decorateAcsKeyError(upstream), /network timeout after 10s/);
+    assert.throws(
+      () => decorateAcsKeyError(upstream),
+      /network timeout after 10s/,
+    );
   });
 });

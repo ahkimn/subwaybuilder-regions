@@ -75,9 +75,7 @@ function readGzippedGeoJson(targetPath: string): FeatureCollection {
   return JSON.parse(gunzipSync(fs.readFileSync(targetPath)).toString('utf8'));
 }
 
-async function createPLFixture(options?: {
-  bundleCountry?: string;
-}): Promise<{
+async function createPLFixture(options?: { bundleCountry?: string }): Promise<{
   args: ExtractMapFeaturesArgs;
   outputRoot: string;
   sourceRoot: string;
@@ -286,9 +284,7 @@ describe('PL map feature extraction', () => {
     assert.equal(rejon.features[0].properties?.NAME, '1465011000001');
     assert.equal(dataIndex.WARX[0].country, 'PL');
     assert.deepEqual(
-      dataIndex.WARX.map(
-        (dataset: { datasetId: string }) => dataset.datasetId,
-      ),
+      dataIndex.WARX.map((dataset: { datasetId: string }) => dataset.datasetId),
       ['powiat', 'gmina', 'rejon'],
     );
   });

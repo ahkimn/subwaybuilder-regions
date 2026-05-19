@@ -131,8 +131,7 @@ function isRawFeatureCollection(
 }
 
 const CENSUS_API_KEY_ENV = 'CENSUS_API_KEY';
-const CENSUS_API_KEY_SIGNUP_URL =
-  'https://api.census.gov/data/key_signup.html';
+const CENSUS_API_KEY_SIGNUP_URL = 'https://api.census.gov/data/key_signup.html';
 
 /**
  * Project-owned Census Data API key bundled with the runtime fetch CLI so

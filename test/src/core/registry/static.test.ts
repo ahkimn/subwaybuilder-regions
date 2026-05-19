@@ -131,4 +131,3 @@ describe('core/registry/static CZ release city mapping', () => {
     }
   });
 });
-

@@ -163,10 +163,58 @@ export function buildCZOkresSourceCollection(context: CZBundleContext) {
   };
 }
 
+// chocho_key is parent_obec_code(6) + zsj_dil_code(7) = 13 chars. The
+// trailing digit of zsj_dil_code is the díl suffix; the first 6 are the
+// ZSJ code itself. So 12 chars = parent_obec(6) + zsj(6) = the canonical
+// ZSJ identity that we aggregate díly into.
+const CZ_ZSJ_KEY_LENGTH = 12;
+// Per the CIS schema, multi-díl ZSJ names follow `<ZSJ-name> díl <N>`
+// uniformly (e.g. "Bavoryně díl 1", "Bavoryně díl 2"). Singleton ZSJs
+// carry the bare ZSJ name with no suffix. Stripping this pattern recovers
+// the ZSJ name in either case (no-op for singletons).
+const CZ_DIL_NAME_SUFFIX_PATTERN = / díl \d+$/u;
+
+type CZZsjAggregate = {
+  zsjKey: string; // 12 chars
+  name: string;
+  population: number;
+  polygons: Polygon['coordinates'][];
+  template: CZSourceFeature; // for property carryover via spread
+};
+
+function flattenPolygonCoordinates(
+  feature: CZSourceFeature,
+): Polygon['coordinates'][] {
+  return feature.geometry.type === 'Polygon'
+    ? [feature.geometry.coordinates]
+    : feature.geometry.coordinates;
+}
+
+function buildZsjAggregateFeature(agg: CZZsjAggregate): CZSourceFeature {
+  const geometry: Polygon | MultiPolygon =
+    agg.polygons.length === 1
+      ? { type: 'Polygon', coordinates: agg.polygons[0] }
+      : { type: 'MultiPolygon', coordinates: agg.polygons };
+  const propertyBase: GeoJSON.GeoJsonProperties = {
+    ...(agg.template.properties ?? {}),
+    pop_total: agg.population, // overwrite so the canonical pop matches the sum
+  };
+  return withCZRegionProperties(
+    {
+      type: 'Feature',
+      geometry,
+      properties: propertyBase,
+    },
+    agg.zsjKey,
+    agg.name,
+    agg.population,
+  );
+}
+
 export function buildCZZsjSourceCollection(context: CZBundleContext) {
   const chochoSelected = loadCZChochoSelected(context);
   const namesByChochoKey = loadCZZsjDilNameIndex(context.sourceRoot);
-  const features: CZSourceFeature[] = [];
+  const aggregates = new Map<string, CZZsjAggregate>();
 
   for (const feature of chochoSelected.features) {
     const properties = feature.properties ?? {};
@@ -188,18 +236,33 @@ export function buildCZZsjSourceCollection(context: CZBundleContext) {
       );
     }
 
-    features.push(
-      withCZRegionProperties(
-        feature,
-        chochoKey,
-        nameRow.name,
-        resolveCZPopulation(properties, 'pop_total', `chocho ${chochoKey}`),
-      ),
+    const zsjKey = chochoKey.slice(0, CZ_ZSJ_KEY_LENGTH);
+    const zsjName = nameRow.name.replace(CZ_DIL_NAME_SUFFIX_PATTERN, '');
+    const pop = resolveCZPopulation(
+      properties,
+      'pop_total',
+      `chocho ${chochoKey}`,
     );
+
+    const existing = aggregates.get(zsjKey);
+    if (existing) {
+      existing.population += pop;
+      existing.polygons.push(...flattenPolygonCoordinates(feature));
+      // Keep the first-encountered name; for multi-díl ZSJs all díly share
+      // the same stripped name so this is stable in practice.
+    } else {
+      aggregates.set(zsjKey, {
+        zsjKey,
+        name: zsjName,
+        population: pop,
+        polygons: flattenPolygonCoordinates(feature),
+        template: feature,
+      });
+    }
   }
 
   return {
     type: 'FeatureCollection' as const,
-    features,
+    features: Array.from(aggregates.values()).map(buildZsjAggregateFeature),
   };
 }
