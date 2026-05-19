@@ -135,25 +135,38 @@ const CENSUS_API_KEY_SIGNUP_URL =
   'https://api.census.gov/data/key_signup.html';
 
 /**
- * Append the CENSUS_API_KEY (if set in env) to a Census Data API URL.
- *
- * Census tightened key enforcement: unauthenticated requests can now be
- * rejected with an HTML "Missing Key" page instead of a JSON error. The key
- * is free; users sign up at api.census.gov/data/key_signup.html.
+ * Project-owned Census Data API key bundled with the runtime fetch CLI so
+ * end users don't have to obtain one for the (low-volume) US fetches the
+ * mod issues. Users can override by setting CENSUS_API_KEY in their shell
+ * — useful if this key is ever rate-limited or revoked. If both this key
+ * and the user override stop working, decorateAcsKeyError() surfaces the
+ * signup URL so users can swap in their own.
+ */
+const DEFAULT_CENSUS_API_KEY = '72578a006a5208be7496d0f7db988ade8863b93b';
+
+function resolveCensusApiKey(): string {
+  const userKey = process.env[CENSUS_API_KEY_ENV];
+  if (userKey && userKey.trim()) {
+    return userKey.trim();
+  }
+  return DEFAULT_CENSUS_API_KEY;
+}
+
+/**
+ * Append a Census Data API key (user override via CENSUS_API_KEY, else the
+ * project-bundled default) to a Census Data API URL.
  */
 export function withCensusApiKey(url: URL): URL {
-  const key = process.env[CENSUS_API_KEY_ENV];
-  if (key && key.trim()) {
-    url.searchParams.set('key', key.trim());
-  }
+  url.searchParams.set('key', resolveCensusApiKey());
   return url;
 }
 
 /**
  * If an upstream error matches Census's "Missing Key" / "Invalid Key"
- * signature, rethrow with an actionable message pointing the user at the
- * signup page and the env var. Other errors are passed through unchanged so
- * we don't mask unrelated failures.
+ * signature, rethrow with an actionable message. Messages differ depending
+ * on whether the failure used the bundled default key or a user-supplied
+ * one. Unrelated errors pass through unchanged so we don't mask other
+ * failures.
  */
 export function decorateAcsKeyError(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
@@ -161,11 +174,11 @@ export function decorateAcsKeyError(error: unknown): never {
   const looksLikeMissingKey =
     lower.includes('missing key') || lower.includes('invalid key');
   if (looksLikeMissingKey) {
-    const keySet = Boolean(process.env[CENSUS_API_KEY_ENV]);
-    const guidance = keySet
-      ? `${CENSUS_API_KEY_ENV} is set but Census rejected it (invalid or revoked). Re-check the value at ${CENSUS_API_KEY_SIGNUP_URL}.`
-      : `Set ${CENSUS_API_KEY_ENV} in your shell before re-running. Free signup: ${CENSUS_API_KEY_SIGNUP_URL}.`;
-    throw new Error(`[ACS] Census API key required. ${guidance}`);
+    const userKeySet = Boolean(process.env[CENSUS_API_KEY_ENV]);
+    const guidance = userKeySet
+      ? `${CENSUS_API_KEY_ENV} is set but Census rejected it (invalid, revoked, or rate-limited). Re-check the value at ${CENSUS_API_KEY_SIGNUP_URL}.`
+      : `The bundled Census API key was rejected by the Census Data API (likely revoked or rate-limited). Set ${CENSUS_API_KEY_ENV} in your shell to override with your own — free signup at ${CENSUS_API_KEY_SIGNUP_URL}.`;
+    throw new Error(`[ACS] Census API key rejected. ${guidance}`);
   }
   throw error instanceof Error ? error : new Error(message);
 }

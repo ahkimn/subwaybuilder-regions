@@ -176,7 +176,7 @@ describe('scripts/utils/queries Census API key helpers', () => {
     }
   });
 
-  it('appends CENSUS_API_KEY to URL when env var is set', () => {
+  it('appends user-supplied CENSUS_API_KEY to URL when env var is set', () => {
     process.env.CENSUS_API_KEY = 'abc123';
     const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
     assert.equal(url.searchParams.get('key'), 'abc123');
@@ -188,30 +188,35 @@ describe('scripts/utils/queries Census API key helpers', () => {
     assert.equal(url.searchParams.get('key'), 'abc123');
   });
 
-  it('leaves URL unchanged when CENSUS_API_KEY is unset', () => {
+  it('falls back to bundled default key when CENSUS_API_KEY is unset', () => {
     delete process.env.CENSUS_API_KEY;
     const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
-    assert.equal(url.searchParams.has('key'), false);
+    const key = url.searchParams.get('key');
+    assert.ok(key && key.length > 0, 'expected a default key to be appended');
+    // Sanity-check the key shape (40-char hex per Census Data API key format).
+    assert.match(key!, /^[a-f0-9]{40}$/);
   });
 
-  it('leaves URL unchanged when CENSUS_API_KEY is empty/whitespace', () => {
+  it('falls back to bundled default key when CENSUS_API_KEY is empty/whitespace', () => {
     process.env.CENSUS_API_KEY = '   ';
     const url = withCensusApiKey(new URL('https://api.census.gov/data/2022/acs/acs5'));
-    assert.equal(url.searchParams.has('key'), false);
+    const key = url.searchParams.get('key');
+    assert.ok(key && key.length > 0);
+    assert.match(key!, /^[a-f0-9]{40}$/);
   });
 
-  it('rethrows missing-key errors with signup-URL guidance', () => {
+  it('rethrows missing-key errors with bundled-key guidance when env unset', () => {
     delete process.env.CENSUS_API_KEY;
     const upstream = new Error(
       'returned non-JSON response (text/html). Body starts with: <html><title>Missing Key</title>',
     );
     assert.throws(
       () => decorateAcsKeyError(upstream),
-      /Census API key required.*Set CENSUS_API_KEY.*key_signup\.html/,
+      /bundled Census API key was rejected.*Set CENSUS_API_KEY.*key_signup\.html/,
     );
   });
 
-  it('rethrows missing-key errors with invalid-key guidance when env var is set', () => {
+  it('rethrows missing-key errors with user-key guidance when env var is set', () => {
     process.env.CENSUS_API_KEY = 'bogus';
     const upstream = new Error('<title>Invalid Key</title>');
     assert.throws(

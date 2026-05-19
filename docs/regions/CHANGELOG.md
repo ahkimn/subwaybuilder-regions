@@ -21,7 +21,7 @@ _Game version_ v1.3.0
 
 ### Bugfixes
 
-- Fixed runtime fetch CLI failing on US datasets (`counties`, `county-subdivisions`, `places`, `zctas`) with an opaque "non-JSON response" error after the US Census Bureau tightened ACS API key enforcement. The fetch CLI now appends a `key` query parameter when the `CENSUS_API_KEY` environment variable is set, and surfaces an actionable error pointing at <https://api.census.gov/data/key_signup.html> when Census rejects the request.
+- Fixed runtime fetch CLI failing on US datasets (`counties`, `county-subdivisions`, `places`, `zctas`) with an opaque "non-JSON response" error after the US Census Bureau tightened ACS API key enforcement. The fetch CLI now sends a Census Data API key on every ACS request, using a bundled project-owned key by default so most users don't need to do anything. Power users can override with their own key by setting `CENSUS_API_KEY` in their shell. If the key (either bundled or user-supplied) is ever rejected, an actionable error now points at <https://api.census.gov/data/key_signup.html>.
 
 ## v0.4.9 - 2026-04-26
 

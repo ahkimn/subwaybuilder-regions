@@ -253,7 +253,7 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    Supported datasets for this runtime CLI are the limited to those having `online` equal to `Yes` in [Preset Dataset Reference](../PRESET_DATA_REFERENCE.md).
 
-   :warning: **US fetches require a Census Data API key.** As of v0.4.10 the US Census Bureau rejects unauthenticated requests to its ACS endpoints with a `Missing Key` error. Get a free key at <https://api.census.gov/data/key_signup.html> and set the `CENSUS_API_KEY` environment variable before invoking the fetch CLI:
+   :information_source: **US fetches use a bundled Census Data API key.** As of v0.4.10 the US Census Bureau requires every ACS request to carry an API key; the mod ships with a project-owned key embedded in the runtime CLI so end users don't have to obtain one. If the bundled key is ever rate-limited or revoked, override it with your own (free signup at <https://api.census.gov/data/key_signup.html>) by setting the `CENSUS_API_KEY` environment variable before invoking the fetch CLI:
 
    ```powershell
    # PowerShell (current session)
@@ -267,7 +267,7 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
    ./subwaybuilder-regions/fetch.sh --cityCode=NYC --countryCode=US ...
    ```
 
-   The key is only needed for US datasets (counties, county-subdivisions, places, zctas); GB / FR / CA / AU fetches are unaffected.
+   This only matters for US datasets (counties, county-subdivisions, places, zctas); GB / FR / CA / AU fetches are unaffected.
 
    :information_source: GB population attachment now uses live NOMIS API responses for all GB datasets (`districts`, `wpcs`, `bua`, `wards`), including when boundaries are loaded from local files (`--use-local-data=true`).
 
