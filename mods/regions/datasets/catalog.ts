@@ -226,6 +226,30 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'RÚIAN / CZSO ZSJ-díl',
     existsOnlineSource: false,
   },
+  powiat: {
+    datasetId: 'powiat',
+    displayName: 'Powiaty',
+    unitSingular: 'Powiat',
+    unitPlural: 'Powiaty',
+    source: 'GUGiK PRG',
+    existsOnlineSource: false,
+  },
+  gmina: {
+    datasetId: 'gmina',
+    displayName: 'Gminy',
+    unitSingular: 'Gmina',
+    unitPlural: 'Gminy',
+    source: 'GUGiK PRG',
+    existsOnlineSource: false,
+  },
+  rejon: {
+    datasetId: 'rejon',
+    displayName: 'Rejony',
+    unitSingular: 'Rejon',
+    unitPlural: 'Rejony',
+    source: 'GUS BREC',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -238,6 +262,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   AU: ['sa3s', 'sa2s', 'ceds', 'seds', 'lgas', 'poas'],
   JP: ['shichouson', 'ooaza'],
   CZ: ['okres', 'obce', 'zsj'],
+  PL: ['powiat', 'gmina', 'rejon'],
 });
 
 export const CATALOG_STATIC_COUNTRIES = [
@@ -248,6 +273,7 @@ export const CATALOG_STATIC_COUNTRIES = [
   'AU',
   'JP',
   'CZ',
+  'PL',
 ] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 

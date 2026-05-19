@@ -81,6 +81,18 @@ function createLink(target: LinkTarget, forceFileSymlink: boolean): void {
   }
 }
 
+// lstat-based existence check so broken symlinks (e.g. a previous source
+// path that has since moved) are still treated as "present" — otherwise the
+// script tries to create a new link at the same path and hits EEXIST.
+function targetLinkExists(targetPath: string): boolean {
+  try {
+    fs.lstatSync(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function ensureSymlink(
   target: LinkTarget,
   args: Pick<LinkScriptArgs, 'dryRun' | 'forceFileSymlink'>,
@@ -90,7 +102,7 @@ function ensureSymlink(
     return;
   }
 
-  if (!fs.existsSync(target.target)) {
+  if (!targetLinkExists(target.target)) {
     if (args.dryRun) {
       console.log(
         `[dry-run] Would create ${target.linkType} link: ${target.target} -> ${target.source}`,
@@ -189,6 +201,8 @@ function main(): void {
       source: path.join(
         args.externalRepoRoot,
         'source_data',
+        'jp',
+        'raw',
         'neighborhood7_boundaries',
       ),
       target: path.join(jpMirrorRoot, 'neighborhood7_boundaries'),
@@ -198,6 +212,8 @@ function main(): void {
       source: path.join(
         args.externalRepoRoot,
         'source_data',
+        'jp',
+        'ksj',
         'N03-20240101.geojson.gz',
       ),
       target: path.join(jpMirrorRoot, 'N03-20240101.geojson.gz'),
@@ -211,6 +227,11 @@ function main(): void {
     {
       source: path.join(args.externalRepoRoot, 'source_data', 'cz', 'regions'),
       target: path.join(jpMirrorRoot, 'cz', 'regions'),
+      linkType: 'junction',
+    },
+    {
+      source: path.join(args.externalRepoRoot, 'source_data', 'pl', 'regions'),
+      target: path.join(jpMirrorRoot, 'pl', 'regions'),
       linkType: 'junction',
     },
   ];

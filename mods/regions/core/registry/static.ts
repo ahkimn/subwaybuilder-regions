@@ -60,12 +60,36 @@ const JP_RELEASE_CITY_CODES = [
 
 const CZ_RELEASE_CITY_CODES = [
   'BRQ', // Brno
+  'CBS', // České Budějovice
   'HKP', // Hradec Králové - Pardubice
+  'LBC', // Liberec - Jablonec
   'OLO', // Olomouc
   'OSR', // Ostrava
   'PLZ', // Plzeň
   'PRG', // Praha
   'UCH', // Ústí nad Labem - Chomutov
+] as const;
+
+const PL_RELEASE_CITY_CODES = [
+  'BTK', // Białystok
+  'BZG', // Bydgoszcz - Toruń
+  'CZE', // Częstochowa
+  'GDN', // Gdańsk
+  'IEG', // Zielona Góra
+  'KIE', // Kielce
+  'KRK', // Kraków
+  'KTW', // Katowice - GZM
+  'LCJ', // Łódź
+  'LUZ', // Lublin
+  'OPL', // Opole
+  'POZ', // Poznań
+  'RDO', // Radom
+  'RZE', // Rzeszów
+  'SLE', // Silesia (Katowice - Ostrava metro)
+  'SZY', // Olsztyn
+  'SZZ', // Szczecin
+  'WAR', // Warszawa
+  'WRO', // Wrocław
 ] as const;
 
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
@@ -76,6 +100,9 @@ export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   ),
   ...Object.fromEntries(
     CZ_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'CZ']),
+  ),
+  ...Object.fromEntries(
+    PL_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'PL']),
   ),
 });
 

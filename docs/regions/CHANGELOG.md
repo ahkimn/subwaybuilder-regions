@@ -2,6 +2,23 @@
 
 [Back to README](../../README.md)
 
+## v0.4.10 - 2026-05-20
+
+_Game version_ v1.3.0
+
+### New Features
+
+- Added PL region support for:
+  - Powiaty (`powiat` | counties)
+  - Gminy (`gmina` | municipalities)
+  - Rejony (`rejon` | statistical census tracts)
+- Released initial datasets for twelve Polish cities — Białystok (BTK), Bydgoszcz–Toruń (BZG), Gdańsk (GDN), Katowice–GZM (KTW), Kraków (KRK), Łódź (LCJ), Lublin (LUZ), Poznań (POZ), Rzeszów (RZE), Szczecin (SZZ), Warszawa (WAR), Wrocław (WRO) — with boundary data sourced from GUGiK PRG (powiaty + gminy) and GUS BREC (rejony).
+- Added two new CZ city datasets: České Budějovice (CBS) and Liberec–Jablonec (LBC).
+
+### Other Updates
+
+- Added local static recognition for downloaded PL city datasets so release/distributed PL data can be discovered by the mod even though PL is not supported by the runtime fetch wrappers (same as JP and CZ).
+
 ## v0.4.9 - 2026-04-26
 
 _Game version_ v1.3.0

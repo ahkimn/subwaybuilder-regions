@@ -11,6 +11,7 @@ import { extractCZBoundaries } from './extract/extract-cz-map-features';
 import { extractFRBoundaries } from './extract/extract-fr-map-features';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
 import { extractJPBoundaries } from './extract/extract-jp-map-features';
+import { extractPLBoundaries } from './extract/extract-pl-map-features';
 import { extractWorldMapFeatures } from './extract/extract-row-map-features';
 import { extractUSBoundaries } from './extract/extract-us-map-features';
 import {
@@ -43,6 +44,10 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
   }
   if (args.countryCode === 'CZ') {
     await extractCZBoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'PL') {
+    await extractPLBoundaries(args);
     return;
   }
 
