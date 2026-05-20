@@ -273,10 +273,12 @@ describe('CZ map feature extraction', () => {
       zsj.features.map((feature) => feature.properties?.POPULATION),
       [80, 80, 160],
     );
-    // Aggregated multi-díl ZSJ becomes a MultiPolygon; singletons stay
-    // as Polygon.
+    // turf.union dissolves adjacent díly into a single Polygon (shared
+    // edge collapses); singletons stay as Polygon. The fixture's two
+    // Bavoryně díly tile the rectangle (0,1)-(1,2), so the dissolved
+    // shape is one Polygon (not a MultiPolygon).
     assert.equal(zsj.features[0].geometry.type, 'Polygon');
-    assert.equal(zsj.features[1].geometry.type, 'MultiPolygon');
+    assert.equal(zsj.features[1].geometry.type, 'Polygon');
     assert.equal(zsj.features[2].geometry.type, 'Polygon');
   });
 

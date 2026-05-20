@@ -1,3 +1,4 @@
+import * as turf from '@turf/turf';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
 
 import { loadGeoJSON } from '../../utils/files';
@@ -178,32 +179,55 @@ type CZZsjAggregate = {
   zsjKey: string; // 12 chars
   name: string;
   population: number;
-  polygons: Polygon['coordinates'][];
-  template: CZSourceFeature; // for property carryover via spread
+  members: CZSourceFeature[];
 };
 
-function flattenPolygonCoordinates(
-  feature: CZSourceFeature,
-): Polygon['coordinates'][] {
-  return feature.geometry.type === 'Polygon'
-    ? [feature.geometry.coordinates]
-    : feature.geometry.coordinates;
+/**
+ * Dissolve adjacent díly into a single polygon. turf.union performs a true
+ * geometric union (shared edges collapse) so the output is one Polygon when
+ * the díly are contiguous and a MultiPolygon when they're disjoint (rare —
+ * the CIS partitions ZSJs into adjacent díly by construction). Falls back
+ * to a coordinate concat if the union ever returns null (topology edge
+ * case) so we never lose a feature.
+ */
+function dissolveZsjMembers(
+  members: CZSourceFeature[],
+): Polygon | MultiPolygon {
+  if (members.length === 1) {
+    return members[0].geometry;
+  }
+  const collection = turf.featureCollection(members);
+  const dissolved = turf.union(collection);
+  if (dissolved && dissolved.geometry) {
+    return dissolved.geometry as Polygon | MultiPolygon;
+  }
+  const fallbackPolygons: Polygon['coordinates'][] = [];
+  for (const member of members) {
+    if (member.geometry.type === 'Polygon') {
+      fallbackPolygons.push(member.geometry.coordinates);
+    } else {
+      fallbackPolygons.push(...member.geometry.coordinates);
+    }
+  }
+  return { type: 'MultiPolygon', coordinates: fallbackPolygons };
 }
 
 function buildZsjAggregateFeature(agg: CZZsjAggregate): CZSourceFeature {
-  const geometry: Polygon | MultiPolygon =
-    agg.polygons.length === 1
-      ? { type: 'Polygon', coordinates: agg.polygons[0] }
-      : { type: 'MultiPolygon', coordinates: agg.polygons };
-  const propertyBase: GeoJSON.GeoJsonProperties = {
-    ...(agg.template.properties ?? {}),
-    pop_total: agg.population, // overwrite so the canonical pop matches the sum
-  };
+  const geometry = dissolveZsjMembers(agg.members);
+  const template = agg.members[0];
+  // Strip any precomputed label-point hints inherited from the first díl —
+  // they'd anchor the displayed label to that díl's centroid instead of the
+  // dissolved-polygon centroid that the downstream label resolver computes.
+  const inherited = { ...(template.properties ?? {}) };
+  delete inherited.LAT;
+  delete inherited.LNG;
+  delete inherited.centroid_lat;
+  delete inherited.centroid_lng;
   return withCZRegionProperties(
     {
       type: 'Feature',
       geometry,
-      properties: propertyBase,
+      properties: { ...inherited, pop_total: agg.population },
     },
     agg.zsjKey,
     agg.name,
@@ -247,7 +271,7 @@ export function buildCZZsjSourceCollection(context: CZBundleContext) {
     const existing = aggregates.get(zsjKey);
     if (existing) {
       existing.population += pop;
-      existing.polygons.push(...flattenPolygonCoordinates(feature));
+      existing.members.push(feature);
       // Keep the first-encountered name; for multi-díl ZSJs all díly share
       // the same stripped name so this is stable in practice.
     } else {
@@ -255,8 +279,7 @@ export function buildCZZsjSourceCollection(context: CZBundleContext) {
         zsjKey,
         name: zsjName,
         population: pop,
-        polygons: flattenPolygonCoordinates(feature),
-        template: feature,
+        members: [feature],
       });
     }
   }
