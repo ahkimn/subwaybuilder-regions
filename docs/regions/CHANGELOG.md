@@ -12,7 +12,7 @@ _Game version_ v1.3.0
   - Powiaty (`powiat` | counties)
   - Gminy (`gmina` | municipalities)
   - Rejony (`rejon` | statistical census tracts)
-- Released initial datasets for twelve Polish cities — Białystok (BTK), Bydgoszcz–Toruń (BZG), Gdańsk (GDN), Katowice–GZM (KTW), Kraków (KRK), Łódź (LCJ), Lublin (LUZ), Poznań (POZ), Rzeszów (RZE), Szczecin (SZZ), Warszawa (WAR), Wrocław (WRO) — with boundary data sourced from GUGiK PRG (powiaty + gminy) and GUS BREC (rejony).
+- Released initial datasets for all twelve currently Polish cities with boundary data sourced from GUGiK PRG (powiaty + gminy) and GUS BREC (rejony).
 - Added two new CZ city datasets: České Budějovice (CBS) and Liberec–Jablonec (LBC).
 
 ### Other Updates
@@ -22,8 +22,11 @@ _Game version_ v1.3.0
 
 ### Bugfixes
 
-- Fixed runtime fetch CLI failing on US datasets (`counties`, `county-subdivisions`, `places`, `zctas`) with an opaque "non-JSON response" error after the US Census Bureau tightened ACS API key enforcement. The fetch CLI now sends a Census Data API key on every ACS request, using a bundled project-owned key by default so most users don't need to do anything. Power users can override with their own key by setting `CENSUS_API_KEY` in their shell. If the key (either bundled or user-supplied) is ever rejected, an actionable error now points at <https://api.census.gov/data/key_signup.html>.
-- Aggregated CZ ZSJ-díl features into ZSJ-level features in the `zsj` dataset. Statutory cities (Praha, Hradec Králové, Plzeň, Liberec, etc.) were previously shipping fragmented sub-ZSJ subdivisions (e.g. `Bavoryně díl 1` through `díl 5`) as separate map regions; the díly of each ZSJ are now geometrically dissolved into a single region (internal boundaries removed) with the bare ZSJ name (`Bavoryně`), summed population, and a label point recomputed for the merged shape. Singleton ZSJs are unchanged. Affects all 9 CZ bundles, e.g. Praha 3,408 → 3,283 features (−125), Hradec–Pardubice 1,058 → 992 (−66), Plzeň 1,004 → 978 (−26).
+- Fixed runtime fetch CLI failing on US datasets (`counties`, `county-subdivisions`, `places`, `zctas`) with an opaque "non-JSON response" error after the US Census Bureau tightened ACS API key enforcement.
+  - The fetch CLI now sends a Census Data API key on every ACS request, using a bundled project-owned key by default so most users don't need to do anything. Power users can override with their own key by setting `CENSUS_API_KEY` in their shell.
+  - If the key (either bundled or user-supplied) is ever rejected, an actionable error now points at <https://api.census.gov/data/key_signup.html>.
+- Aggregated CZ ZSJ-díl features into ZSJ-level features in the `zsj` dataset.
+  - Statutory cities (Praha, Hradec Králové, Plzeň, Liberec, etc.) were previously shipping fragmented sub-ZSJ subdivisions (e.g. `Bavoryně díl 1` through `díl 5`) as separate map regions; the díly of each ZSJ are now geometrically dissolved into a single region.
 
 ## v0.4.9 - 2026-04-26
 
