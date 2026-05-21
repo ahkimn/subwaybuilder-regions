@@ -19,6 +19,7 @@ _Game version_ v1.3.0
 
 - Added local static recognition for downloaded PL city datasets so release/distributed PL data can be discovered by the mod even though PL is not supported by the runtime fetch wrappers (same as JP and CZ).
 - Cleaned up PL powiat display names: stripped the redundant `powiat` prefix word from every powiat label and normalised capitalisation so regional powiaty appear as `Bolesławiecki` and city-powiaty as `Warszawa` instead of `powiat bolesławiecki` / `powiat Warszawa`.
+- Made runtime fetch CLI network failures debuggable: `fetch failed` errors now surface their underlying cause chain (DNS failure, connection refused, timeout, TLS error) and error codes (e.g. `ENOTFOUND`, `UND_ERR_CONNECT_TIMEOUT`) in both the per-retry warnings and the final error, instead of an opaque `fetch failed`.
 
 ### Bugfixes
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { fetchJsonWithRetry } from '@scripts/utils/http';
+import { describeError, fetchJsonWithRetry } from '@scripts/utils/http';
 
 describe('scripts/utils/http fetchJsonWithRetry', () => {
   const originalFetch = global.fetch;
@@ -152,6 +152,61 @@ describe('scripts/utils/http fetchJsonWithRetry', () => {
 
     assert.equal(callCount, 3);
     assert.deepEqual(result, { ok: true });
+  });
+
+  it('surfaces the cause chain of a "fetch failed" error in the final message', async () => {
+    let callCount = 0;
+
+    global.fetch = async () => {
+      callCount += 1;
+      // Mirror Node's undici failure shape: a bare `TypeError: fetch failed`
+      // whose real reason (DNS failure here) sits in `cause` with a `.code`.
+      const cause = Object.assign(
+        new Error('getaddrinfo ENOTFOUND tigerweb.geo.census.gov'),
+        { code: 'ENOTFOUND' },
+      );
+      throw Object.assign(new TypeError('fetch failed'), { cause });
+    };
+
+    await assert.rejects(
+      fetchJsonWithRetry('https://example.com/dns-failure', undefined, {
+        maxRetries: 1,
+        retryDelayMs: 1,
+        label: 'TEST',
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /failed on attempt 2\/2:/);
+        // The opaque "fetch failed" is now followed by the real cause + code.
+        assert.match(
+          error.message,
+          /fetch failed; caused by: getaddrinfo ENOTFOUND tigerweb\.geo\.census\.gov \[ENOTFOUND\]/,
+        );
+        return true;
+      },
+    );
+
+    assert.equal(callCount, 2);
+  });
+
+  it('describeError unwraps nested cause chains and bare values', () => {
+    const root = Object.assign(new Error('connect timeout'), {
+      code: 'UND_ERR_CONNECT_TIMEOUT',
+    });
+    const wrapped = Object.assign(new TypeError('fetch failed'), {
+      cause: root,
+    });
+    assert.equal(
+      describeError(wrapped),
+      'fetch failed; caused by: connect timeout [UND_ERR_CONNECT_TIMEOUT]',
+    );
+    assert.equal(describeError(new Error('plain')), 'plain');
+    assert.equal(describeError('not-an-error'), 'not-an-error');
+
+    // A self-referential cause must not loop forever.
+    const cyclic = new Error('cyclic');
+    (cyclic as { cause?: unknown }).cause = cyclic;
+    assert.equal(describeError(cyclic), 'cyclic');
   });
 
   it('retries on AbortError and eventually fails with attempt metadata', async () => {
