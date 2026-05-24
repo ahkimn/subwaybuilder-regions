@@ -141,7 +141,7 @@ const CENSUS_API_KEY_SIGNUP_URL = 'https://api.census.gov/data/key_signup.html';
  * and the user override stop working, decorateAcsKeyError() surfaces the
  * signup URL so users can swap in their own.
  */
-const DEFAULT_CENSUS_API_KEY = '72578a006a5208be7496d0f7db988ade8863b93b';
+const DEFAULT_CENSUS_API_KEY = 'b26f8a3316cbff82536eddf67f0bf4d44e88c522';
 
 function resolveCensusApiKey(): string {
   const userKey = process.env[CENSUS_API_KEY_ENV];
@@ -495,8 +495,7 @@ function parseNomisPopulationCsvRows(
     }) as NomisPopulationRow[];
   } catch (error) {
     throw new Error(
-      `[NOMIS] Failed to parse CSV response for ${requestUrl}: ${
-        error instanceof Error ? error.message : String(error)
+      `[NOMIS] Failed to parse CSV response for ${requestUrl}: ${error instanceof Error ? error.message : String(error)
       }`,
     );
   }
