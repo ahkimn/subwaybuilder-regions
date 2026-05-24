@@ -131,3 +131,22 @@ describe('core/registry/static CZ release city mapping', () => {
     }
   });
 });
+
+describe('core/registry/static TW release city mapping', () => {
+  it('resolves TW for hard-coded subwaybuilder-tw-maps city codes', () => {
+    for (const cityCode of [
+      'TPE',
+      'RMQ',
+      'KHH',
+      'TNN',
+      'HSZ',
+      'CYI',
+    ] as const) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'TW',
+        `Expected ${cityCode} to resolve to TW`,
+      );
+    }
+  });
+});

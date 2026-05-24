@@ -10,7 +10,7 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 
 _Latest Mod Version:_ `v0.4.10`  
 _Latest Tested Game Version:_ `v1.3.0`
-_Latest Changelog Entry:_ [v0.4.10](CHANGELOG.md#v0410---2026-05-20)
+_Latest Changelog Entry:_ [v0.4.10](CHANGELOG.md#v0410---2026-05-24)
 
 ## Table of Contents
 
@@ -75,6 +75,17 @@ _Latest Changelog Entry:_ [v0.4.10](CHANGELOG.md#v0410---2026-05-20)
   - **JP** (Japan)
     - Municipalities (`shichouson`)
     - Ōaza (`ooaza`)
+  - **CZ** (Czechia)
+    - Okresy (`okres`)
+    - Obce (`obce`)
+    - ZSJ (`zsj`)
+  - **PL** (Poland)
+    - Powiaty (`powiat`)
+    - Gminy (`gmina`)
+    - Rejony (`rejon`)
+  - **TW** (Taiwan)
+    - 鄉鎮市區 (Townships) (`township`)
+    - 里 (Villages) (`li`)
 
 ## Specifications
 

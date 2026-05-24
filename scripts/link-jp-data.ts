@@ -234,6 +234,28 @@ function main(): void {
       target: path.join(jpMirrorRoot, 'pl', 'regions'),
       linkType: 'junction',
     },
+    {
+      source: path.join(
+        args.externalRepoRoot,
+        'source_data',
+        'tw',
+        'raw',
+        'chocho_sets',
+      ),
+      target: path.join(jpMirrorRoot, 'tw', 'raw', 'chocho_sets'),
+      linkType: 'junction',
+    },
+    {
+      source: path.join(
+        args.externalRepoRoot,
+        'source_data',
+        'tw',
+        'raw',
+        'tw_moi_village_boundaries',
+      ),
+      target: path.join(jpMirrorRoot, 'tw', 'raw', 'tw_moi_village_boundaries'),
+      linkType: 'junction',
+    },
   ];
 
   for (const link of links) {

@@ -263,4 +263,21 @@ describe('scripts/utils/cli utilities', () => {
       harness.calls.error,
     );
   });
+
+  it('parseExtractArgs_shouldRequireBundleForTW', async () => {
+    await expectExitCode(
+      () =>
+        parseExtractArgs([
+          '--data-type',
+          'all',
+          '--city-code',
+          'TPE',
+          '--country-code',
+          'TW',
+        ]),
+      1,
+      'Missing or invalid argument: --bundle',
+      harness.calls.error,
+    );
+  });
 });

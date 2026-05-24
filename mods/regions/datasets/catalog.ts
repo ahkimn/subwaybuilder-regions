@@ -250,6 +250,22 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'GUS BREC',
     existsOnlineSource: false,
   },
+  township: {
+    datasetId: 'township',
+    displayName: '鄉鎮市區 (Townships)',
+    unitSingular: 'Township',
+    unitPlural: 'Townships',
+    source: 'MOI / DGBAS',
+    existsOnlineSource: false,
+  },
+  li: {
+    datasetId: 'li',
+    displayName: '里 (Villages)',
+    unitSingular: 'Village',
+    unitPlural: 'Villages',
+    source: 'MOI / DGBAS',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -263,6 +279,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   JP: ['shichouson', 'ooaza'],
   CZ: ['okres', 'obce', 'zsj'],
   PL: ['powiat', 'gmina', 'rejon'],
+  TW: ['township', 'li'],
 });
 
 export const CATALOG_STATIC_COUNTRIES = [
@@ -274,6 +291,7 @@ export const CATALOG_STATIC_COUNTRIES = [
   'JP',
   'CZ',
   'PL',
+  'TW',
 ] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 

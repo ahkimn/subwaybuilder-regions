@@ -5,8 +5,18 @@ import minimist from 'minimist';
 import type { BoundaryBox } from './geometry';
 import { getSupportedCountryCodes } from './osm-country-config';
 
-const BUILT_IN_COUNTRY_CODES = ['AU', 'CA', 'CZ', 'FR', 'GB', 'JP', 'PL', 'US'];
-const EXTERNAL_BUNDLE_COUNTRY_CODES = new Set(['CZ', 'JP', 'PL']);
+const BUILT_IN_COUNTRY_CODES = [
+  'AU',
+  'CA',
+  'CZ',
+  'FR',
+  'GB',
+  'JP',
+  'PL',
+  'TW',
+  'US',
+];
+const EXTERNAL_BUNDLE_COUNTRY_CODES = new Set(['CZ', 'JP', 'PL', 'TW']);
 
 function getAvailableCountryCodes(): Set<string> {
   return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);

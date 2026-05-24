@@ -13,6 +13,7 @@ import { extractGBBoundaries } from './extract/extract-gb-map-features';
 import { extractJPBoundaries } from './extract/extract-jp-map-features';
 import { extractPLBoundaries } from './extract/extract-pl-map-features';
 import { extractWorldMapFeatures } from './extract/extract-row-map-features';
+import { extractTWBoundaries } from './extract/extract-tw-map-features';
 import { extractUSBoundaries } from './extract/extract-us-map-features';
 import {
   type ExtractMapFeaturesArgs,
@@ -48,6 +49,10 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
   }
   if (args.countryCode === 'PL') {
     await extractPLBoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'TW') {
+    await extractTWBoundaries(args);
     return;
   }
 

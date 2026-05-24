@@ -14,7 +14,7 @@ Imports real-world geographic regions (ZIP codes, counties, wards, etc.) into Su
 | ------------------ | -------------------------------------------- |
 | **Latest Version** | [`v0.4.10`](docs/regions/CHANGELOG.md#v0410) |
 | **Game Version**   | `v1.3.0`                                     |
-| **Released**       | 2026-05-20                                   |
+| **Released**       | 2026-05-24                                   |
 
 <!-- END regions status -->
 

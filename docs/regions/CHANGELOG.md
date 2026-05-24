@@ -2,7 +2,7 @@
 
 [Back to README](../../README.md)
 
-## v0.4.10 - 2026-05-20
+## v0.4.10 - 2026-05-24
 
 _Game version_ v1.3.0
 
@@ -12,12 +12,18 @@ _Game version_ v1.3.0
   - Powiaty (`powiat` | counties)
   - Gminy (`gmina` | municipalities)
   - Rejony (`rejon` | statistical census tracts)
+- Added TW region support for:
+  - 鄉鎮市區 (`township` | townships)
+  - 里 (`li` | villages)
 - Released initial datasets for all twelve currently Polish cities with boundary data sourced from GUGiK PRG (powiaty + gminy) and GUS BREC (rejony).
+- Released initial datasets for all six currently released Taiwan cities with boundary data sourced from MOI village/borough polygons and DGBAS/MOI population inputs.
 - Added two new CZ city datasets: České Budějovice (CBS) and Liberec–Jablonec (LBC).
 
 ### Other Updates
 
 - Added local static recognition for downloaded PL city datasets so release/distributed PL data can be discovered by the mod even though PL is not supported by the runtime fetch wrappers (same as JP and CZ).
+- Added local static recognition for downloaded TW city datasets so release/distributed TW data can be discovered by the mod even though TW is not supported by the runtime fetch wrappers (same as JP, CZ, and PL).
+- Added bilingual TW labels using the JP-style Traditional Chinese + newline + English pattern for region labels and dataset names.
 - Cleaned up PL powiat display names: stripped the redundant `powiat` prefix word from every powiat label and normalised capitalisation so regional powiaty appear as `Bolesławiecki` and city-powiaty as `Warszawa` instead of `powiat bolesławiecki` / `powiat Warszawa`.
 - Made runtime fetch CLI network failures debuggable: `fetch failed` errors now surface their underlying cause chain (DNS failure, connection refused, timeout, TLS error) and error codes (e.g. `ENOTFOUND`, `UND_ERR_CONNECT_TIMEOUT`) in both the per-retry warnings and the final error, instead of an opaque `fetch failed`.
 
