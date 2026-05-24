@@ -8,8 +8,10 @@ import {
   buildAUCensusPopulationQuery,
   buildIgnAdminWfsQuery,
   buildNomisPopulationQuery,
+  decorateAcsKeyError,
   fetchNomisPopulationIndex,
   getWPCONSQuery,
+  withCensusApiKey,
 } from '@scripts/utils/queries';
 
 describe('scripts/utils/queries WFS helpers', () => {
@@ -159,6 +161,83 @@ describe('scripts/utils/queries NOMIS helpers', () => {
     await assert.rejects(
       fetchNomisPopulationIndex(buildNomisPopulationQuery('NM_2014_1', 172)),
       /Unexpected CSV response shape/,
+    );
+  });
+});
+
+describe('scripts/utils/queries Census API key helpers', () => {
+  const originalKey = process.env.CENSUS_API_KEY;
+
+  afterEach(() => {
+    if (originalKey === undefined) {
+      delete process.env.CENSUS_API_KEY;
+    } else {
+      process.env.CENSUS_API_KEY = originalKey;
+    }
+  });
+
+  it('appends user-supplied CENSUS_API_KEY to URL when env var is set', () => {
+    process.env.CENSUS_API_KEY = 'abc123';
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
+    assert.equal(url.searchParams.get('key'), 'abc123');
+  });
+
+  it('trims whitespace from CENSUS_API_KEY', () => {
+    process.env.CENSUS_API_KEY = '  abc123  ';
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
+    assert.equal(url.searchParams.get('key'), 'abc123');
+  });
+
+  it('falls back to bundled default key when CENSUS_API_KEY is unset', () => {
+    delete process.env.CENSUS_API_KEY;
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
+    const key = url.searchParams.get('key');
+    assert.ok(key && key.length > 0, 'expected a default key to be appended');
+    // Sanity-check the key shape (40-char hex per Census Data API key format).
+    assert.match(key!, /^[a-f0-9]{40}$/);
+  });
+
+  it('falls back to bundled default key when CENSUS_API_KEY is empty/whitespace', () => {
+    process.env.CENSUS_API_KEY = '   ';
+    const url = withCensusApiKey(
+      new URL('https://api.census.gov/data/2022/acs/acs5'),
+    );
+    const key = url.searchParams.get('key');
+    assert.ok(key && key.length > 0);
+    assert.match(key!, /^[a-f0-9]{40}$/);
+  });
+
+  it('rethrows missing-key errors with bundled-key guidance when env unset', () => {
+    delete process.env.CENSUS_API_KEY;
+    const upstream = new Error(
+      'returned non-JSON response (text/html). Body starts with: <html><title>Missing Key</title>',
+    );
+    assert.throws(
+      () => decorateAcsKeyError(upstream),
+      /bundled Census API key was rejected.*Set CENSUS_API_KEY.*key_signup\.html/,
+    );
+  });
+
+  it('rethrows missing-key errors with user-key guidance when env var is set', () => {
+    process.env.CENSUS_API_KEY = 'bogus';
+    const upstream = new Error('<title>Invalid Key</title>');
+    assert.throws(
+      () => decorateAcsKeyError(upstream),
+      /CENSUS_API_KEY is set but Census rejected it/,
+    );
+  });
+
+  it('passes through unrelated errors unchanged', () => {
+    const upstream = new Error('network timeout after 10s');
+    assert.throws(
+      () => decorateAcsKeyError(upstream),
+      /network timeout after 10s/,
     );
   });
 });

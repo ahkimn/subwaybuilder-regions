@@ -78,11 +78,45 @@ describe('core/registry/static JP release city mapping', () => {
   });
 });
 
+describe('core/registry/static PL release city mapping', () => {
+  it('resolves PL for hard-coded subwaybuilder-jp-data PL city codes', () => {
+    for (const cityCode of [
+      'BTK',
+      'BZG',
+      'CZE',
+      'GDN',
+      'IEG',
+      'KIE',
+      'KRK',
+      'KTW',
+      'LCJ',
+      'LUZ',
+      'OPL',
+      'POZ',
+      'RDO',
+      'RZE',
+      'SLE',
+      'SZY',
+      'SZZ',
+      'WAR',
+      'WRO',
+    ] as const) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'PL',
+        `Expected ${cityCode} to resolve to PL`,
+      );
+    }
+  });
+});
+
 describe('core/registry/static CZ release city mapping', () => {
   it('resolves CZ for hard-coded subwaybuilder-jp-data CZ city codes', () => {
     for (const cityCode of [
       'BRQ',
+      'CBS',
       'HKP',
+      'LBC',
       'OLO',
       'OSR',
       'PLZ',

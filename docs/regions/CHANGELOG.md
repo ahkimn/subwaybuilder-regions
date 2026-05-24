@@ -2,6 +2,33 @@
 
 [Back to README](../../README.md)
 
+## v0.4.10 - 2026-05-20
+
+_Game version_ v1.3.0
+
+### New Features
+
+- Added PL region support for:
+  - Powiaty (`powiat` | counties)
+  - Gminy (`gmina` | municipalities)
+  - Rejony (`rejon` | statistical census tracts)
+- Released initial datasets for all twelve currently Polish cities with boundary data sourced from GUGiK PRG (powiaty + gminy) and GUS BREC (rejony).
+- Added two new CZ city datasets: České Budějovice (CBS) and Liberec–Jablonec (LBC).
+
+### Other Updates
+
+- Added local static recognition for downloaded PL city datasets so release/distributed PL data can be discovered by the mod even though PL is not supported by the runtime fetch wrappers (same as JP and CZ).
+- Cleaned up PL powiat display names: stripped the redundant `powiat` prefix word from every powiat label and normalised capitalisation so regional powiaty appear as `Bolesławiecki` and city-powiaty as `Warszawa` instead of `powiat bolesławiecki` / `powiat Warszawa`.
+- Made runtime fetch CLI network failures debuggable: `fetch failed` errors now surface their underlying cause chain (DNS failure, connection refused, timeout, TLS error) and error codes (e.g. `ENOTFOUND`, `UND_ERR_CONNECT_TIMEOUT`) in both the per-retry warnings and the final error, instead of an opaque `fetch failed`.
+
+### Bugfixes
+
+- Fixed runtime fetch CLI failing on US datasets (`counties`, `county-subdivisions`, `places`, `zctas`) with an opaque "non-JSON response" error after the US Census Bureau tightened ACS API key enforcement.
+  - The fetch CLI now sends a Census Data API key on every ACS request, using a bundled project-owned key by default so most users don't need to do anything. Power users can override with their own key by setting `CENSUS_API_KEY` in their shell.
+  - If the key (either bundled or user-supplied) is ever rejected, an actionable error now points at <https://api.census.gov/data/key_signup.html>.
+- Aggregated CZ ZSJ-díl features into ZSJ-level features in the `zsj` dataset.
+  - Statutory cities (Praha, Hradec Králové, Plzeň, Liberec, etc.) were previously shipping fragmented sub-ZSJ subdivisions (e.g. `Bavoryně díl 1` through `díl 5`) as separate map regions; the díly of each ZSJ are now geometrically dissolved into a single region.
+
 ## v0.4.9 - 2026-04-26
 
 _Game version_ v1.3.0

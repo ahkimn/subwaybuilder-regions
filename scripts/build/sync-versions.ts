@@ -4,14 +4,17 @@
  * Reads the latest version (and optionally game version) from a mod's
  * CHANGELOG.md and syncs it into the mod's manifest.json.
  *
- * When --update-readme is passed, also patches the root README.md topline
- * badges (mod version, game version, changelog link) for the given mod.
+ * When --update-readme is passed, also patches:
+ *   - the root README.md topline badges (mod version, game version,
+ *     changelog link) for the given mod, and
+ *   - the per-mod docs/{mod}/README.md header lines (_Latest Mod Version:_,
+ *     _Latest Tested Game Version:_, _Latest Changelog Entry:_), if present.
  *
  * Usage:
  *   tsx scripts/build/sync-versions.ts --mod=regions [--update-readme]
  *   tsx scripts/build/sync-versions.ts --mod=enhanced-demand-view
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import minimist from 'minimist';
@@ -156,6 +159,63 @@ function updateReadmeTopline(
   return true;
 }
 
+/**
+ * Update the per-mod docs/{mod}/README.md header lines, when present:
+ *   _Latest Mod Version:_ `vX.Y.Z`
+ *   _Latest Tested Game Version:_ `vA.B.C`
+ *   _Latest Changelog Entry:_ [vX.Y.Z](CHANGELOG.md#anchor)
+ *
+ * Best-effort: a missing file or any missing line is silently skipped, so
+ * mods whose docs README has no version header (e.g. enhanced-demand-view)
+ * are a no-op rather than an error.
+ */
+function updateModDocsReadme(
+  modId: string,
+  version: string,
+  gameVersion: string | null,
+  date: string | null,
+): boolean {
+  const changelogDir = modId === 'regions' ? 'regions' : 'enhanced-demand-view';
+  const docsReadmePath = path.join(rootDir, 'docs', changelogDir, 'README.md');
+  if (!existsSync(docsReadmePath)) {
+    console.log(`[sync] docs README absent, skipping: ${docsReadmePath}`);
+    return false;
+  }
+
+  const original = readFileSync(docsReadmePath, 'utf8');
+  let content = original;
+
+  content = content.replace(
+    /(_Latest Mod Version:_ +`v)[\d.]+(`)/,
+    `$1${version}$2`,
+  );
+  if (gameVersion) {
+    content = content.replace(
+      /(_Latest Tested Game Version:_ +`v)[\d.]+(`)/,
+      `$1${gameVersion}$2`,
+    );
+  }
+  if (date) {
+    // GitHub heading anchor for `## v0.4.10 - 2026-05-20` → `v0410---2026-05-20`
+    const anchor = `v${version.replace(/\./g, '')}---${date}`;
+    content = content.replace(
+      /(_Latest Changelog Entry:_ +\[v)[\d.]+(\]\(CHANGELOG\.md#)[^)]+(\))/,
+      `$1${version}$2${anchor}$3`,
+    );
+  }
+
+  if (content === original) {
+    console.log(
+      `[sync] docs README ${modId} has no version header lines or is already up to date`,
+    );
+    return false;
+  }
+
+  writeFileSync(docsReadmePath, content, 'utf8');
+  console.log(`[sync] docs README ${modId} header updated to v${version}`);
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -187,6 +247,7 @@ function main(): void {
     const gameVersion = extractGameVersion(meta.changelogPath);
     const date = extractReleaseDate(meta.changelogPath);
     updateReadmeTopline(modId, releaseVersion.bare, gameVersion, date);
+    updateModDocsReadme(modId, releaseVersion.bare, gameVersion, date);
   }
 }
 

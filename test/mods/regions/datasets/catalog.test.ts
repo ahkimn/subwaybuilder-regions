@@ -145,3 +145,29 @@ describe('shared/datasets/catalog CZ metadata', () => {
     assert.deepEqual(onlineDatasets, []);
   });
 });
+
+describe('shared/datasets/catalog PL metadata', () => {
+  it('includes PL in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('PL'));
+  });
+
+  it('resolves PL dataset order', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('PL'), [
+      'powiat',
+      'gmina',
+      'rejon',
+    ]);
+  });
+
+  it('marks PL datasets as local-only', () => {
+    for (const datasetId of ['powiat', 'gmina', 'rejon']) {
+      assert.equal(
+        DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
+        false,
+      );
+    }
+
+    const onlineDatasets = resolveCountryDatasets('PL', { onlineOnly: true });
+    assert.deepEqual(onlineDatasets, []);
+  });
+});

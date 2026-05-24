@@ -48,6 +48,32 @@ function formatAttempt(attempt: number, maxRetries: number): string {
   return `${attempt + 1}/${maxRetries + 1}`;
 }
 
+/**
+ * Build a human-readable description of an error, including its `cause`
+ * chain. Node's `fetch` throws a bare `TypeError: fetch failed` whose real
+ * detail (DNS failure, connection refused, timeout, TLS error) lives in
+ * `error.cause` — often with a `.code` like ENOTFOUND or
+ * UND_ERR_CONNECT_TIMEOUT. Surfacing that chain turns an opaque
+ * "fetch failed" into actionable context.
+ */
+export function describeError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const seen = new Set<unknown>();
+  const segments: string[] = [];
+  let current: unknown = error;
+  while (current instanceof Error && !seen.has(current)) {
+    seen.add(current);
+    const code = (current as { code?: unknown }).code;
+    const codeSuffix = typeof code === 'string' && code ? ` [${code}]` : '';
+    segments.push(`${current.message}${codeSuffix}`);
+    current = (current as { cause?: unknown }).cause;
+  }
+  return segments.join('; caused by: ');
+}
+
 function isJsonContentType(contentType: string | null): boolean {
   if (!contentType) {
     return false;
@@ -124,22 +150,19 @@ async function executeFetchWithRetry<T>(
 
       if (attempt < resolvedOptions.maxRetries && shouldRetryForError(error)) {
         const retryCount = attempt + 1;
+        const retryReason = isAbortError(error)
+          ? `${resolvedOptions.timeoutMs}ms timeout/abort`
+          : `network error: ${describeError(error)}`;
         console.warn(
-          `[${resolvedOptions.label}] retry ${retryCount}/${resolvedOptions.maxRetries} for ${method} ${requestUrl} after ${isAbortError(error) ? 'timeout/abort' : 'network error'}`,
+          `[${resolvedOptions.label}] retry ${retryCount}/${resolvedOptions.maxRetries} for ${method} ${requestUrl} after ${retryReason}`,
         );
         await sleep(resolvedOptions.retryDelayMs * 2 ** attempt);
         continue;
       }
 
       const attemptText = formatAttempt(attempt, resolvedOptions.maxRetries);
-      if (error instanceof Error) {
-        throw new Error(
-          `[${resolvedOptions.label}] ${method} ${requestUrl} failed on attempt ${attemptText}: ${error.message}`,
-        );
-      }
-
       throw new Error(
-        `[${resolvedOptions.label}] ${method} ${requestUrl} failed on attempt ${attemptText}: ${String(error)}`,
+        `[${resolvedOptions.label}] ${method} ${requestUrl} failed on attempt ${attemptText}: ${describeError(error)}`,
       );
     }
   }

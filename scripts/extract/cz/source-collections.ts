@@ -1,3 +1,4 @@
+import * as turf from '@turf/turf';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
 
 import { loadGeoJSON } from '../../utils/files';
@@ -163,10 +164,81 @@ export function buildCZOkresSourceCollection(context: CZBundleContext) {
   };
 }
 
+// chocho_key is parent_obec_code(6) + zsj_dil_code(7) = 13 chars. The
+// trailing digit of zsj_dil_code is the díl suffix; the first 6 are the
+// ZSJ code itself. So 12 chars = parent_obec(6) + zsj(6) = the canonical
+// ZSJ identity that we aggregate díly into.
+const CZ_ZSJ_KEY_LENGTH = 12;
+// Per the CIS schema, multi-díl ZSJ names follow `<ZSJ-name> díl <N>`
+// uniformly (e.g. "Bavoryně díl 1", "Bavoryně díl 2"). Singleton ZSJs
+// carry the bare ZSJ name with no suffix. Stripping this pattern recovers
+// the ZSJ name in either case (no-op for singletons).
+const CZ_DIL_NAME_SUFFIX_PATTERN = / díl \d+$/u;
+
+type CZZsjAggregate = {
+  zsjKey: string; // 12 chars
+  name: string;
+  population: number;
+  members: CZSourceFeature[];
+};
+
+/**
+ * Dissolve adjacent díly into a single polygon. turf.union performs a true
+ * geometric union (shared edges collapse) so the output is one Polygon when
+ * the díly are contiguous and a MultiPolygon when they're disjoint (rare —
+ * the CIS partitions ZSJs into adjacent díly by construction). Falls back
+ * to a coordinate concat if the union ever returns null (topology edge
+ * case) so we never lose a feature.
+ */
+function dissolveZsjMembers(
+  members: CZSourceFeature[],
+): Polygon | MultiPolygon {
+  if (members.length === 1) {
+    return members[0].geometry;
+  }
+  const collection = turf.featureCollection(members);
+  const dissolved = turf.union(collection);
+  if (dissolved && dissolved.geometry) {
+    return dissolved.geometry as Polygon | MultiPolygon;
+  }
+  const fallbackPolygons: Polygon['coordinates'][] = [];
+  for (const member of members) {
+    if (member.geometry.type === 'Polygon') {
+      fallbackPolygons.push(member.geometry.coordinates);
+    } else {
+      fallbackPolygons.push(...member.geometry.coordinates);
+    }
+  }
+  return { type: 'MultiPolygon', coordinates: fallbackPolygons };
+}
+
+function buildZsjAggregateFeature(agg: CZZsjAggregate): CZSourceFeature {
+  const geometry = dissolveZsjMembers(agg.members);
+  const template = agg.members[0];
+  // Strip any precomputed label-point hints inherited from the first díl —
+  // they'd anchor the displayed label to that díl's centroid instead of the
+  // dissolved-polygon centroid that the downstream label resolver computes.
+  const inherited = { ...(template.properties ?? {}) };
+  delete inherited.LAT;
+  delete inherited.LNG;
+  delete inherited.centroid_lat;
+  delete inherited.centroid_lng;
+  return withCZRegionProperties(
+    {
+      type: 'Feature',
+      geometry,
+      properties: { ...inherited, pop_total: agg.population },
+    },
+    agg.zsjKey,
+    agg.name,
+    agg.population,
+  );
+}
+
 export function buildCZZsjSourceCollection(context: CZBundleContext) {
   const chochoSelected = loadCZChochoSelected(context);
   const namesByChochoKey = loadCZZsjDilNameIndex(context.sourceRoot);
-  const features: CZSourceFeature[] = [];
+  const aggregates = new Map<string, CZZsjAggregate>();
 
   for (const feature of chochoSelected.features) {
     const properties = feature.properties ?? {};
@@ -188,18 +260,32 @@ export function buildCZZsjSourceCollection(context: CZBundleContext) {
       );
     }
 
-    features.push(
-      withCZRegionProperties(
-        feature,
-        chochoKey,
-        nameRow.name,
-        resolveCZPopulation(properties, 'pop_total', `chocho ${chochoKey}`),
-      ),
+    const zsjKey = chochoKey.slice(0, CZ_ZSJ_KEY_LENGTH);
+    const zsjName = nameRow.name.replace(CZ_DIL_NAME_SUFFIX_PATTERN, '');
+    const pop = resolveCZPopulation(
+      properties,
+      'pop_total',
+      `chocho ${chochoKey}`,
     );
+
+    const existing = aggregates.get(zsjKey);
+    if (existing) {
+      existing.population += pop;
+      existing.members.push(feature);
+      // Keep the first-encountered name; for multi-díl ZSJs all díly share
+      // the same stripped name so this is stable in practice.
+    } else {
+      aggregates.set(zsjKey, {
+        zsjKey,
+        name: zsjName,
+        population: pop,
+        members: [feature],
+      });
+    }
   }
 
   return {
     type: 'FeatureCollection' as const,
-    features,
+    features: Array.from(aggregates.values()).map(buildZsjAggregateFeature),
   };
 }

@@ -8,9 +8,9 @@ This repository contains a standalone mod, **SubwayBuilder Regions**, for the ga
 >
 > The mod adds a visualization layer on top of the in-game map as well as additional panels for region-based statistics such as population, commuter flows, and infrastructure.
 
-_Latest Mod Version:_ `v0.4.7`  
-_Latest Tested Game Version:_ `v1.2.0`
-_Latest Changelog Entry:_ [v0.4.7](CHANGELOG.md#v047---2026-04-05)
+_Latest Mod Version:_ `v0.4.10`  
+_Latest Tested Game Version:_ `v1.3.0`
+_Latest Changelog Entry:_ [v0.4.10](CHANGELOG.md#v0410---2026-05-20)
 
 ## Table of Contents
 
@@ -252,6 +252,22 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
    This CLI has the additional benefit of supporting multiple datasets per city, as shown above
 
    Supported datasets for this runtime CLI are the limited to those having `online` equal to `Yes` in [Preset Dataset Reference](../PRESET_DATA_REFERENCE.md).
+
+   :information_source: **US fetches use a bundled Census Data API key.** As of v0.4.10 the US Census Bureau requires every ACS request to carry an API key; the mod ships with a project-owned key embedded in the runtime CLI so end users don't have to obtain one. If the bundled key is ever rate-limited or revoked, override it with your own (free signup at <https://api.census.gov/data/key_signup.html>) by setting the `CENSUS_API_KEY` environment variable before invoking the fetch CLI:
+
+   ```powershell
+   # PowerShell (current session)
+   $env:CENSUS_API_KEY = 'your-key-here'
+   & .\subwaybuilder-regions\fetch.ps1 --cityCode=NYC --countryCode=US ...
+   ```
+
+   ```bash
+   # bash
+   export CENSUS_API_KEY='your-key-here'
+   ./subwaybuilder-regions/fetch.sh --cityCode=NYC --countryCode=US ...
+   ```
+
+   This only matters for US datasets (counties, county-subdivisions, places, zctas); GB / FR / CA / AU fetches are unaffected.
 
    :information_source: GB population attachment now uses live NOMIS API responses for all GB datasets (`districts`, `wpcs`, `bua`, `wards`), including when boundaries are loaded from local files (`--use-local-data=true`).
 
