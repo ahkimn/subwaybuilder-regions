@@ -32,3 +32,13 @@ The `Population Data` column indicates whether population data can be attached f
 | **AU**         | seds                | State Electoral Divisions                | AU ABS (ASGS 2021)                | Yes    | Online          |
 | **AU**         | lgas                | Local Government Areas                   | AU ABS (ASGS 2021)                | Yes    | Online          |
 | **AU**         | poas                | Postal Areas                             | AU ABS (ASGS 2021)                | Yes    | Online          |
+| **JP**         | shichouson          | 市町村 / Municipalities                  | Statistics Bureau / MLIT          | No     | Local           |
+| **JP**         | ooaza               | 大字 / Ōaza                              | Statistics Bureau / local source  | No     | Local           |
+| **CZ**         | okres               | Okresy                                   | RÚIAN / CZSO                      | No     | Local           |
+| **CZ**         | obce                | Obce                                     | RÚIAN / CZSO                      | No     | Local           |
+| **CZ**         | zsj                 | ZSJ                                      | RÚIAN / CZSO ZSJ-díl              | No     | Local           |
+| **PL**         | powiat              | Powiaty                                  | GUGiK PRG                         | No     | Local           |
+| **PL**         | gmina               | Gminy                                    | GUGiK PRG                         | No     | Local           |
+| **PL**         | rejon               | Rejony                                   | GUS BREC                          | No     | Local           |
+| **TW**         | township            | 鄉鎮市區 (Townships)                     | MOI / DGBAS                       | No     | Local           |
+| **TW**         | li                  | 里 (Villages)                            | MOI / DGBAS                       | No     | Local           |

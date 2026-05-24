@@ -1,6 +1,7 @@
 import Kuroshiro from 'kuroshiro';
 import KuromojiAnalyzer from 'kuroshiro-analyzer-kuromoji';
 
+import { formatBilingualName as formatSharedBilingualName } from '../bilingual-names';
 import type { GeoBoundaryFeature } from './types';
 
 const JAPANESE_TEXT_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/;
@@ -174,11 +175,7 @@ export async function romanizeJapaneseName(nameJa: string): Promise<string> {
   return conversionPromise;
 }
 
-export function formatBilingualName(nameJa: string, nameEn: string): string {
-  const normalizedJa = cleanLabelName(nameJa);
-  const normalizedEn = cleanLabelName(nameEn);
-  return normalizedEn ? `${normalizedJa}\n${normalizedEn}` : normalizedJa;
-}
+export const formatBilingualName = formatSharedBilingualName;
 
 export function selectDominantOazaName(
   weightedNames: ReadonlyMap<string, number>,

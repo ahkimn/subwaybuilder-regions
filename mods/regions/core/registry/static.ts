@@ -92,6 +92,15 @@ const PL_RELEASE_CITY_CODES = [
   'WRO', // Wrocław
 ] as const;
 
+const TW_RELEASE_CITY_CODES = [
+  'TPE', // Taipei
+  'RMQ', // Taichung
+  'KHH', // Kaohsiung
+  'TNN', // Tainan
+  'HSZ', // Hsinchu
+  'CYI', // Chiayi
+] as const;
+
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   Record<string, string>
 > = Object.freeze({
@@ -103,6 +112,9 @@ export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   ),
   ...Object.fromEntries(
     PL_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'PL']),
+  ),
+  ...Object.fromEntries(
+    TW_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'TW']),
   ),
 });
 

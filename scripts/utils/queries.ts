@@ -495,7 +495,8 @@ function parseNomisPopulationCsvRows(
     }) as NomisPopulationRow[];
   } catch (error) {
     throw new Error(
-      `[NOMIS] Failed to parse CSV response for ${requestUrl}: ${error instanceof Error ? error.message : String(error)
+      `[NOMIS] Failed to parse CSV response for ${requestUrl}: ${
+        error instanceof Error ? error.message : String(error)
       }`,
     );
   }

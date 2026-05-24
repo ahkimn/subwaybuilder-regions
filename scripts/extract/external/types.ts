@@ -5,7 +5,7 @@ import type {
   Polygon,
 } from 'geojson';
 
-export type ExternalCountryCode = 'JP' | 'CZ' | 'PL';
+export type ExternalCountryCode = 'JP' | 'CZ' | 'PL' | 'TW';
 
 export type ExternalBundleIndexRecord = {
   bundle_id: string;

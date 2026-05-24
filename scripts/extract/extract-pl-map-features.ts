@@ -1,9 +1,6 @@
-import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
-
 import type { ExtractMapFeaturesArgs } from '../utils/cli';
-import { buildRegionsWithoutClipping } from '../utils/geometry';
-import { renderFeaturePreview } from '../utils/preview';
 import { createDataConfigFromCatalog } from './data-config';
+import { extractExternalBundleDatasets } from './external/extractor-runner';
 import type { DataConfig } from './handler-types';
 import {
   PL_DATASET_ORDER,
@@ -18,7 +15,6 @@ import {
   buildPLRejonSourceCollection,
 } from './pl/source-collections';
 import type { PLBundleContext, PLDatasetId } from './pl/types';
-import { saveBoundaries } from './process';
 
 const PL_DATA_CONFIGS: Record<PLDatasetId, DataConfig> = {
   powiat: createDataConfigFromCatalog('powiat', {
@@ -44,7 +40,7 @@ const PL_DATA_CONFIGS: Record<PLDatasetId, DataConfig> = {
 function buildSourceCollectionForDataset(
   context: PLBundleContext,
   datasetId: PLDatasetId,
-): FeatureCollection<Polygon | MultiPolygon> {
+) {
   switch (datasetId) {
     case 'powiat':
       return buildPLPowiatSourceCollection(context);
@@ -53,38 +49,6 @@ function buildSourceCollectionForDataset(
     case 'rejon':
       return buildPLRejonSourceCollection(context);
   }
-}
-
-async function extractSinglePLDataset(
-  args: ExtractMapFeaturesArgs,
-  context: PLBundleContext,
-  datasetId: PLDatasetId,
-): Promise<void> {
-  const dataConfig = PL_DATA_CONFIGS[datasetId];
-  const buildStartTime = Date.now();
-  const sourceCollection = buildSourceCollectionForDataset(context, datasetId);
-  console.log(
-    `[PL] Built ${datasetId} source collection: ${sourceCollection.features.length} features in ${Date.now() - buildStartTime}ms`,
-  );
-
-  const postProcessStartTime = Date.now();
-  const regions = buildRegionsWithoutClipping(sourceCollection, dataConfig, {
-    includeLabelPointCandidates: args.includeLabelPointCandidates,
-  });
-  console.log(
-    `[PL] Built ${datasetId} regions without clipping: ${regions.length} features in ${Date.now() - postProcessStartTime}ms`,
-  );
-
-  if (args.preview) {
-    renderFeaturePreview(regions, args.previewCount!);
-    return;
-  }
-
-  const saveStartTime = Date.now();
-  saveBoundaries({ ...args, dataType: datasetId }, regions, dataConfig);
-  console.log(
-    `[PL] Saved ${datasetId} dataset in ${Date.now() - saveStartTime}ms`,
-  );
 }
 
 export async function extractPLBoundaries(
@@ -97,17 +61,12 @@ export async function extractPLBoundaries(
 
   const sourceRoot = resolvePLSourceDataRoot();
   const context = loadPLBundleContext(sourceRoot, bundleId);
-  const datasetIds =
-    args.dataType === 'all' ? PL_DATASET_ORDER : [args.dataType as PLDatasetId];
-
-  for (const datasetId of datasetIds) {
-    if (!PL_DATA_CONFIGS[datasetId]) {
-      throw new Error(
-        `[PL] Unsupported data type: ${datasetId}. Supported data types: ${PL_DATASET_ORDER.join(', ')}, all`,
-      );
-    }
-    await extractSinglePLDataset(args, context, datasetId);
-  }
+  await extractExternalBundleDatasets(args, context, {
+    countryCode: 'PL',
+    datasetOrder: PL_DATASET_ORDER,
+    dataConfigs: PL_DATA_CONFIGS,
+    buildSourceCollection: buildSourceCollectionForDataset,
+  });
 }
 
 export {

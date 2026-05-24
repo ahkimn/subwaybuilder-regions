@@ -171,3 +171,30 @@ describe('shared/datasets/catalog PL metadata', () => {
     assert.deepEqual(onlineDatasets, []);
   });
 });
+
+describe('shared/datasets/catalog TW metadata', () => {
+  it('includes TW in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('TW'));
+  });
+
+  it('resolves TW dataset order', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('TW'), ['township', 'li']);
+  });
+
+  it('marks TW datasets as local-only with bilingual dataset names', () => {
+    for (const datasetId of ['township', 'li']) {
+      assert.equal(
+        DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
+        false,
+      );
+    }
+    assert.equal(
+      DATASET_METADATA_CATALOG['township']?.displayName,
+      '鄉鎮市區 (Townships)',
+    );
+    assert.equal(DATASET_METADATA_CATALOG['li']?.displayName, '里 (Villages)');
+
+    const onlineDatasets = resolveCountryDatasets('TW', { onlineOnly: true });
+    assert.deepEqual(onlineDatasets, []);
+  });
+});

@@ -52,6 +52,20 @@ function resolveOsmDatasetIdsForCity(
     .map((entry) => entry.datasetId);
 }
 
+function supportsTarForceLocal(): boolean {
+  const helpResult = spawnSync('tar', ['--help'], {
+    encoding: 'utf8',
+    shell: false,
+  });
+
+  if (helpResult.error || helpResult.status !== 0) {
+    return false;
+  }
+
+  const helpText = `${helpResult.stdout ?? ''}\n${helpResult.stderr ?? ''}`;
+  return helpText.includes('--force-local');
+}
+
 function createArchiveForCity(
   cityCode: string,
   outputDir: string,
@@ -69,15 +83,13 @@ function createArchiveForCity(
     fs.removeSync(archivePath);
   }
 
-  // --force-local: GNU tar on Windows otherwise interprets `C:\…` as host:path.
-  const tarArgs = [
-    '--force-local',
-    '-czf',
-    archivePath,
-    '-C',
-    DATA_DIR,
-    cityCode,
-  ];
+  // GNU tar on Windows otherwise interprets `C:\...` as host:path, but BSD tar
+  // builds on some Windows installs do not support --force-local.
+  const tarArgs = ['-czf', archivePath, '-C', DATA_DIR, cityCode];
+  if (supportsTarForceLocal()) {
+    tarArgs.unshift('--force-local');
+  }
+
   if (!includeOSMData) {
     const osmDatasetIds = resolveOsmDatasetIdsForCity(cityCode, datasetIndex);
     for (const datasetId of osmDatasetIds) {
