@@ -266,6 +266,30 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'MOI / DGBAS',
     existsOnlineSource: false,
   },
+  'pe-provinces': {
+    datasetId: 'pe-provinces',
+    displayName: 'Provinces',
+    unitSingular: 'Province',
+    unitPlural: 'Provinces',
+    source: 'INEI',
+    existsOnlineSource: false,
+  },
+  'pe-districts': {
+    datasetId: 'pe-districts',
+    displayName: 'Districts',
+    unitSingular: 'District',
+    unitPlural: 'Districts',
+    source: 'INEI',
+    existsOnlineSource: false,
+  },
+  'pe-manzanas': {
+    datasetId: 'pe-manzanas',
+    displayName: 'Manzanas',
+    unitSingular: 'Manzana',
+    unitPlural: 'Manzanas',
+    source: 'INEI',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -280,6 +304,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   CZ: ['okres', 'obce', 'zsj'],
   PL: ['powiat', 'gmina', 'rejon'],
   TW: ['township', 'li'],
+  PE: ['pe-provinces', 'pe-districts', 'pe-manzanas'],
 });
 
 export const CATALOG_STATIC_COUNTRIES = [
@@ -292,6 +317,7 @@ export const CATALOG_STATIC_COUNTRIES = [
   'CZ',
   'PL',
   'TW',
+  'PE',
 ] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 
