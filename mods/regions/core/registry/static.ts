@@ -101,6 +101,18 @@ const TW_RELEASE_CITY_CODES = [
   'CYI', // Chiayi
 ] as const;
 
+const PE_RELEASE_CITY_CODES = [
+  'LIM', // Lima
+  'AQP', // Arequipa
+  'TRU', // Trujillo
+  'CIX', // Chiclayo
+  'PIU', // Piura
+  'IQT', // Iquitos
+  'CUZ', // Cusco
+  'CHM', // Chimbote
+  'JAU', // Huancayo/Jauja
+] as const;
+
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   Record<string, string>
 > = Object.freeze({
@@ -115,6 +127,9 @@ export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   ),
   ...Object.fromEntries(
     TW_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'TW']),
+  ),
+  ...Object.fromEntries(
+    PE_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'PE']),
   ),
 });
 
