@@ -113,6 +113,15 @@ const PE_RELEASE_CITY_CODES = [
   'JAU', // Huancayo/Jauja
 ] as const;
 
+const CN_RELEASE_CITY_CODES = [
+  'SHA', // Shanghai
+  'SZX', // Shenzhen
+  'CAN', // Guangzhou
+  'PEK', // Beijing
+  'CKG', // Chongqing
+  'CTU', // Chengdu
+] as const;
+
 export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   Record<string, string>
 > = Object.freeze({
@@ -130,6 +139,9 @@ export const STATIC_CUSTOM_CITY_COUNTRY_MAPPING: Readonly<
   ),
   ...Object.fromEntries(
     PE_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'PE']),
+  ),
+  ...Object.fromEntries(
+    CN_RELEASE_CITY_CODES.map((cityCode) => [cityCode, 'CN']),
   ),
 });
 

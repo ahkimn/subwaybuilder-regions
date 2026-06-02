@@ -150,3 +150,44 @@ describe('core/registry/static TW release city mapping', () => {
     }
   });
 });
+
+describe('core/registry/static PE release city mapping', () => {
+  it('resolves PE for hard-coded collaborator city codes', () => {
+    for (const cityCode of [
+      'LIM',
+      'AQP',
+      'TRU',
+      'CIX',
+      'PIU',
+      'IQT',
+      'CUZ',
+      'CHM',
+      'JAU',
+    ] as const) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'PE',
+        `Expected ${cityCode} to resolve to PE`,
+      );
+    }
+  });
+});
+
+describe('core/registry/static CN release city mapping', () => {
+  it('resolves CN for hard-coded collaborator city codes', () => {
+    for (const cityCode of [
+      'SHA',
+      'SZX',
+      'CAN',
+      'PEK',
+      'CKG',
+      'CTU',
+    ] as const) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'CN',
+        `Expected ${cityCode} to resolve to CN`,
+      );
+    }
+  });
+});

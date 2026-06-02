@@ -290,6 +290,22 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'INEI',
     existsOnlineSource: false,
   },
+  'cn-districts': {
+    datasetId: 'cn-districts',
+    displayName: '区县 (Districts)',
+    unitSingular: 'District',
+    unitPlural: 'Districts',
+    source: 'Collaborator-provided administrative boundaries',
+    existsOnlineSource: false,
+  },
+  'cn-subdistricts': {
+    datasetId: 'cn-subdistricts',
+    displayName: '街道/乡镇 (Subdistricts)',
+    unitSingular: 'Subdistrict',
+    unitPlural: 'Subdistricts',
+    source: 'Collaborator-provided administrative boundaries',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -305,6 +321,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   PL: ['powiat', 'gmina', 'rejon'],
   TW: ['township', 'li'],
   PE: ['pe-provinces', 'pe-districts', 'pe-manzanas'],
+  CN: ['cn-districts', 'cn-subdistricts'],
 });
 
 export const CATALOG_STATIC_COUNTRIES = [
@@ -318,6 +335,7 @@ export const CATALOG_STATIC_COUNTRIES = [
   'PL',
   'TW',
   'PE',
+  'CN',
 ] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 
