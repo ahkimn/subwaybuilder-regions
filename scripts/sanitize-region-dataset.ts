@@ -21,7 +21,6 @@ function main(): void {
     default: {
       compress: true,
       'update-index': true,
-      out: 'data',
     },
     alias: {
       'city-code': 'cityCode',
@@ -35,20 +34,27 @@ function main(): void {
   const inputPath = argv.input ?? argv._[0];
   if (typeof inputPath !== 'string' || inputPath.length === 0) {
     throw new Error(
-      'Usage: tsx scripts/sanitize-region-dataset.ts --input=<geojson> --country-code=PE|CN [--city-code=<CITY>] [--dataset-id=<DATASET>] [--out=data]',
+      'Usage: tsx scripts/sanitize-region-dataset.ts <geojson> <PE|CN> [CITY] [DATASET] [OUT_DIR]',
     );
   }
 
   if (typeof argv.countryCode !== 'string' || argv.countryCode.length === 0) {
-    throw new Error('Missing required argument: --country-code');
+    const positionalCountryCode = argv._[1];
+    if (
+      typeof positionalCountryCode !== 'string' ||
+      positionalCountryCode.length === 0
+    ) {
+      throw new Error('Missing required argument: --country-code');
+    }
+    argv.countryCode = positionalCountryCode;
   }
 
   const result = sanitizeRegionDataset({
     inputPath,
     countryCode: argv.countryCode,
-    cityCode: argv.cityCode,
-    datasetId: argv.datasetId,
-    outputRoot: argv.outputRoot ?? argv.out,
+    cityCode: argv.cityCode ?? argv._[2],
+    datasetId: argv.datasetId ?? argv._[3],
+    outputRoot: argv.outputRoot ?? argv.out ?? argv._[4],
     compress: Boolean(argv.compress),
     updateIndex: Boolean(argv.updateIndex),
   });

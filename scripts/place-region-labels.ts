@@ -16,15 +16,27 @@ function main(): void {
   const inputPath = argv.input ?? argv._[0];
   if (typeof inputPath !== 'string' || inputPath.length === 0) {
     throw new Error(
-      'Usage: tsx scripts/place-region-labels.ts --input=<geojson|city-dir|archive> [--out=<dir>] [--in-place] [--refresh]',
+      'Usage: tsx scripts/place-region-labels.ts <geojson|city-dir|archive> [OUT_DIR] [in-place] [refresh]',
     );
   }
 
   const result = placeRegionLabels({
     inputPath,
-    outputRoot: argv.outputRoot ?? argv.out,
-    inPlace: Boolean(argv.inPlace),
-    refresh: Boolean(argv.refresh),
+    outputRoot: argv.outputRoot ?? argv.out ?? argv._[1],
+    inPlace:
+      Boolean(argv.inPlace) ||
+      argv._.some(
+        (value) =>
+          typeof value === 'string' &&
+          value.toLowerCase().replace(/^--/, '') === 'in-place',
+      ),
+    refresh:
+      Boolean(argv.refresh) ||
+      argv._.some(
+        (value) =>
+          typeof value === 'string' &&
+          value.toLowerCase().replace(/^--/, '') === 'refresh',
+      ),
   });
 
   console.log(JSON.stringify(result, null, 2));
