@@ -2,6 +2,26 @@
 
 [Back to README](../../README.md)
 
+## v0.4.11 - 2026-06-02
+
+_Game version_ v1.3.0
+
+### New Features
+
+- Added PE region support for:
+  - Provinces (`pe-provinces`)
+  - Districts (`pe-districts`)
+  - Manzanas (`pe-manzanas`)
+- Added CN region support for:
+  - 区县 (`cn-districts` | districts)
+  - 街道/乡镇 (`cn-subdistricts` | subdistricts)
+
+### Other Updates
+
+- Added local static recognition for Peru collaborator city datasets (`LIM`, `AQP`, `TRU`, `CIX`, `PIU`, `IQT`, `CUZ`, `CHM`, `JAU`).
+- Added local static recognition for China collaborator city datasets (`SHA`, `SZX`, `CAN`, `PEK`, `CKG`, `CTU`).
+- Added collaborator data scripts to validate PE/CN city archives, sanitize CN/PE GeoJSON samples into canonical mod format, and add missing label coordinates.
+
 ## v0.4.10 - 2026-05-24
 
 _Game version_ v1.3.0
