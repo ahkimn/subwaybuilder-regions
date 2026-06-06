@@ -57,6 +57,7 @@ export type ValidateRegionInputOptions = {
   inputPath: string;
   countryCode?: string;
   requireLabels?: boolean;
+  allowMissingDatasets?: boolean;
 };
 
 const REQUIRED_PROPERTIES = [
@@ -112,7 +113,13 @@ export function validateCityDirectory(
     errors.push('Unable to infer country code from input or dataset IDs.');
   } else {
     validateRegistryCompatibility(cityCode, countryCode, errors);
-    validateCanonicalFileSet(countryCode, datasetFiles, errors, warnings);
+    validateCanonicalFileSet(
+      countryCode,
+      datasetFiles,
+      errors,
+      warnings,
+      Boolean(options?.allowMissingDatasets),
+    );
   }
 
   const datasetSummaries = datasetFiles.map((datasetFile) =>
@@ -236,6 +243,7 @@ function validateCanonicalFileSet(
   datasetFiles: RegionDatasetFile[],
   errors: string[],
   warnings: string[],
+  allowMissingDatasets: boolean,
 ): void {
   const expectedDatasetIds = getExpectedDatasetIds(countryCode);
   const actualDatasetIds = new Set(
@@ -245,7 +253,12 @@ function validateCanonicalFileSet(
   for (const datasetId of expectedDatasetIds) {
     assertKnownDataset(datasetId);
     if (!actualDatasetIds.has(datasetId)) {
-      errors.push(`Missing canonical dataset file: ${datasetId}.geojson.gz`);
+      const message = `Missing canonical dataset file: ${datasetId}.geojson.gz`;
+      if (allowMissingDatasets) {
+        warnings.push(message);
+      } else {
+        errors.push(message);
+      }
     }
   }
 

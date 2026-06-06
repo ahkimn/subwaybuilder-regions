@@ -230,6 +230,41 @@ describe('scripts/regions collaborator data workflow', () => {
     );
   });
 
+  it('can validate a partial CN dataset set with a missing-dataset warning', () => {
+    const tempRoot = createTempDirectory(temporaryDirectories);
+    const cityDir = path.join(tempRoot, 'PEK');
+    writeGeoJSONGz(
+      path.join(cityDir, 'cn-districts.geojson.gz'),
+      createFeatureCollection([
+        createSquareFeature({
+          ID: 'relation/1',
+          NAME: 'Dongcheng',
+          DISPLAY_NAME: 'Dongcheng District',
+          POPULATION: 10,
+          TOTAL_AREA: 1,
+          AREA_WITHIN_BBOX: 1,
+          LAT: 0.005,
+          LNG: 0.005,
+        }),
+      ]),
+    );
+
+    const report = validateRegionInput({
+      inputPath: cityDir,
+      countryCode: 'CN',
+      requireLabels: true,
+      allowMissingDatasets: true,
+    });
+
+    assert.equal(report.ok, true);
+    assert.equal(
+      report.warnings.includes(
+        'Missing canonical dataset file: cn-subdistricts.geojson.gz',
+      ),
+      true,
+    );
+  });
+
   it('places labels inside polygon features', () => {
     const tempRoot = createTempDirectory(temporaryDirectories);
     const inputPath = path.join(tempRoot, 'cn-districts.geojson.gz');
@@ -263,6 +298,65 @@ describe('scripts/regions collaborator data workflow', () => {
       ),
       true,
     );
+  });
+
+  it('rejects root index updates for a lone dataset file', () => {
+    const tempRoot = createTempDirectory(temporaryDirectories);
+    const inputPath = path.join(tempRoot, 'cn-districts.geojson.gz');
+    writeGeoJSONGz(
+      inputPath,
+      createFeatureCollection([
+        createSquareFeature({
+          ID: 'relation/1',
+          NAME: 'Dongcheng',
+          DISPLAY_NAME: 'Dongcheng District',
+          POPULATION: 10,
+          TOTAL_AREA: 1,
+          AREA_WITHIN_BBOX: 1,
+        }),
+      ]),
+    );
+
+    assert.throws(
+      () =>
+        placeRegionLabels({
+          inputPath,
+          outputRoot: path.join(tempRoot, 'data'),
+          updateIndex: true,
+        }),
+      /--update-index requires a city directory or archive/,
+    );
+  });
+
+  it('updates the root index from final labeled city output', () => {
+    const tempRoot = createTempDirectory(temporaryDirectories);
+    const inputCityDir = path.join(tempRoot, 'source', 'AQP');
+    writeGeoJSONGz(
+      path.join(inputCityDir, 'pe-districts.geojson.gz'),
+      createFeatureCollection([
+        createSquareFeature({
+          ID: '040101',
+          NAME: 'District',
+          DISPLAY_NAME: 'District',
+          POPULATION: 10,
+          TOTAL_AREA: 1,
+          AREA_WITHIN_BBOX: 1,
+        }),
+      ]),
+    );
+
+    const outputRoot = path.join(tempRoot, 'data');
+    placeRegionLabels({
+      inputPath: inputCityDir,
+      outputRoot,
+      updateIndex: true,
+    });
+
+    const index = JSON.parse(
+      fs.readFileSync(path.join(outputRoot, 'data_index.json'), 'utf8'),
+    ) as Record<string, Array<{ datasetId: string; size: number }>>;
+    assert.equal(index.AQP[0].datasetId, 'pe-districts');
+    assert.equal(index.AQP[0].size, 1);
   });
 
   it('supports CN sanitize-label-validate chain', () => {

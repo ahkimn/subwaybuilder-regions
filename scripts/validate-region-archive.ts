@@ -24,11 +24,19 @@ function readCountryCode(argv: ParsedArgs): string | undefined {
 function main(): void {
   const argv = minimist(process.argv.slice(2), {
     string: ['input', 'country-code', 'countryCode', 'report-dir', 'reportDir'],
-    boolean: ['require-labels', 'requireLabels', 'write-report', 'writeReport'],
+    boolean: [
+      'require-labels',
+      'requireLabels',
+      'allow-missing-datasets',
+      'allowMissingDatasets',
+      'write-report',
+      'writeReport',
+    ],
     alias: {
       'country-code': 'countryCode',
       'report-dir': 'reportDir',
       'require-labels': 'requireLabels',
+      'allow-missing-datasets': 'allowMissingDatasets',
       'write-report': 'writeReport',
     },
   });
@@ -36,7 +44,7 @@ function main(): void {
   const inputPath = argv.input ?? argv._[0];
   if (typeof inputPath !== 'string' || inputPath.length === 0) {
     throw new Error(
-      'Usage: tsx scripts/validate-region-archive.ts <archive-or-city-dir> [PE|CN] [require-labels] [--write-report] [--report-dir=<dir>]',
+      'Usage: tsx scripts/validate-region-archive.ts <archive-or-city-dir> [PE|CN] [require-labels] [allow-missing-datasets] [--write-report] [--report-dir=<dir>]',
     );
   }
 
@@ -49,6 +57,13 @@ function main(): void {
         (value) =>
           typeof value === 'string' &&
           value.toLowerCase().replace(/^--/, '') === 'require-labels',
+      ),
+    allowMissingDatasets:
+      Boolean(argv.allowMissingDatasets) ||
+      argv._.some(
+        (value) =>
+          typeof value === 'string' &&
+          value.toLowerCase().replace(/^--/, '') === 'allow-missing-datasets',
       ),
   });
 

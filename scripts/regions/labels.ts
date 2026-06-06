@@ -2,8 +2,14 @@ import fs from 'fs-extra';
 import path from 'path';
 
 import { isPolygonFeature } from '../../lib/geometry/helpers';
+import { DATA_INDEX_FILE } from '../../mods/regions/constants';
 import { parseNumber } from '../utils/cli';
+import { updateIndexJson } from '../utils/files';
 import { resolvePrimaryLabelPoint } from '../utils/geometry';
+import {
+  buildDatasetMetadata,
+  inferCountryCodeFromDatasetIds,
+} from './datasets';
 import {
   copyCitySupportFiles,
   isGeoJsonDatasetPath,
@@ -19,6 +25,7 @@ export type PlaceRegionLabelsOptions = {
   outputRoot?: string;
   inPlace?: boolean;
   refresh?: boolean;
+  updateIndex?: boolean;
 };
 
 export type DatasetLabelPlacementResult = {
@@ -28,6 +35,8 @@ export type DatasetLabelPlacementResult = {
   refreshed: number;
   skipped: number;
   nonPolygonFeatures: number;
+  featureCount: number;
+  fileSizeMB?: number;
 };
 
 export type PlaceRegionLabelsResult = {
@@ -48,7 +57,12 @@ export function placeRegionLabels(
 
   if (fs.statSync(resolvedInputPath).isFile()) {
     if (isGeoJsonDatasetPath(resolvedInputPath)) {
-      return {
+      if (options.updateIndex) {
+        throw new Error(
+          '[RegionsData] --update-index requires a city directory or archive.',
+        );
+      }
+      const result = {
         outputs: [
           placeLabelsForDatasetFile(
             {
@@ -64,6 +78,7 @@ export function placeRegionLabels(
           ),
         ],
       };
+      return result;
     }
 
     if (options.inPlace) {
@@ -79,11 +94,15 @@ export function placeRegionLabels(
         loadedInput.cityCode,
       );
       copyCitySupportFiles(loadedInput.cityDir, outputCityDir);
-      return placeLabelsForCityDirectory(
+      const result = placeLabelsForCityDirectory(
         loadedInput.cityDir,
         outputCityDir,
         Boolean(options.refresh),
       );
+      if (options.updateIndex) {
+        updateOutputIndex(outputCityDir, loadedInput.cityCode, result);
+      }
+      return result;
     } finally {
       loadedInput.cleanup();
     }
@@ -100,11 +119,15 @@ export function placeRegionLabels(
     copyCitySupportFiles(resolvedInputPath, outputCityDir);
   }
 
-  return placeLabelsForCityDirectory(
+  const result = placeLabelsForCityDirectory(
     resolvedInputPath,
     outputCityDir,
     Boolean(options.refresh),
   );
+  if (options.updateIndex) {
+    updateOutputIndex(outputCityDir, cityCode, result);
+  }
+  return result;
 }
 
 export function placeLabelsInFeatureCollection(
@@ -201,7 +224,39 @@ function placeLabelsForDatasetFile(
     refreshed: result.refreshed,
     skipped: result.skipped,
     nonPolygonFeatures: result.nonPolygonFeatures,
+    featureCount: result.featureCollection.features.length,
+    fileSizeMB: savedOutput.fileSizeMB,
   };
+}
+
+function updateOutputIndex(
+  outputCityDir: string,
+  cityCode: string,
+  result: PlaceRegionLabelsResult,
+): void {
+  const countryCode = inferCountryCodeFromDatasetIds(
+    result.outputs.map((output) => output.datasetId),
+  );
+  if (!countryCode) {
+    throw new Error(
+      `[RegionsData] Unable to infer country for labeled city ${cityCode}.`,
+    );
+  }
+
+  const indexPath = path.join(path.dirname(outputCityDir), DATA_INDEX_FILE);
+  for (const output of result.outputs) {
+    updateIndexJson(
+      indexPath,
+      cityCode,
+      buildDatasetMetadata(
+        output.datasetId,
+        countryCode,
+        output.featureCount,
+        output.fileSizeMB,
+      ),
+      countryCode,
+    );
+  }
 }
 
 function resolveSingleFileOutputPath(
