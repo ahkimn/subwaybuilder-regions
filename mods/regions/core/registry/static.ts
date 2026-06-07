@@ -80,6 +80,7 @@ const PL_RELEASE_CITY_CODES = [
   'KRK', // Kraków
   'KTW', // Katowice - GZM
   'LCJ', // Łódź
+  'LEG', // Legnica
   'LUZ', // Lublin
   'OPL', // Opole
   'POZ', // Poznań

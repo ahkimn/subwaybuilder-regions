@@ -90,6 +90,7 @@ describe('core/registry/static PL release city mapping', () => {
       'KRK',
       'KTW',
       'LCJ',
+      'LEG',
       'LUZ',
       'OPL',
       'POZ',
