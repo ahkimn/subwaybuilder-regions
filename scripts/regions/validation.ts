@@ -6,11 +6,7 @@ import type { City } from '../../lib/types/cities';
 import { resolveStaticTemplateCountry } from '../../mods/regions/core/registry/static';
 import { DATASET_METADATA_CATALOG } from '../../mods/regions/datasets/catalog';
 import { parseNumber } from '../utils/cli';
-import {
-  assertKnownDataset,
-  getExpectedDatasetIds,
-  inferCountryCodeFromDatasetIds,
-} from './datasets';
+import { assertKnownDataset, getExpectedDatasetIds } from './datasets';
 import {
   listDatasetFiles,
   loadFeatureCollection,
@@ -46,7 +42,7 @@ export type RegionArchiveValidationReport = {
   ok: boolean;
   inputPath: string;
   cityCode: string;
-  countryCode: string | null;
+  countryCode: string;
   cityName?: string;
   datasets: DatasetValidationSummary[];
   errors: string[];
@@ -55,7 +51,8 @@ export type RegionArchiveValidationReport = {
 
 export type ValidateRegionInputOptions = {
   inputPath: string;
-  countryCode?: string;
+  countryCode: string;
+  cityCode: string;
   requireLabels?: boolean;
   allowMissingDatasets?: boolean;
 };
@@ -72,11 +69,12 @@ const REQUIRED_PROPERTIES = [
 export function validateRegionInput(
   options: ValidateRegionInputOptions,
 ): RegionArchiveValidationReport {
+  requireExplicitCode(options.countryCode, 'countryCode');
+  requireExplicitCode(options.cityCode, 'cityCode');
   const loadedInput = loadRegionInput(options.inputPath);
   try {
     return validateCityDirectory(
       loadedInput.cityDir,
-      loadedInput.cityCode,
       loadedInput.inputPath,
       options,
     );
@@ -87,19 +85,19 @@ export function validateRegionInput(
 
 export function validateCityDirectory(
   cityDir: string,
-  fallbackCityCode: string,
   inputPath: string,
-  options?: Omit<ValidateRegionInputOptions, 'inputPath'>,
+  options: Omit<ValidateRegionInputOptions, 'inputPath'>,
 ): RegionArchiveValidationReport {
   const dataIndex = loadCollaboratorDataIndex(cityDir);
   const datasetFiles = listDatasetFiles(cityDir);
-  const datasetIds = datasetFiles.map((entry) => entry.datasetId);
-  const cityCode = (dataIndex?.cityCode ?? fallbackCityCode).toUpperCase();
-  const inferredCountryCode =
-    options?.countryCode?.toUpperCase() ??
-    dataIndex?.countryCode?.toUpperCase() ??
-    inferCountryCodeFromDatasetIds(datasetIds);
-  const countryCode = inferredCountryCode ?? null;
+  const cityCode = requireExplicitCode(
+    options.cityCode,
+    'cityCode',
+  ).toUpperCase();
+  const countryCode = requireExplicitCode(
+    options.countryCode,
+    'countryCode',
+  ).toUpperCase();
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -109,25 +107,26 @@ export function validateCityDirectory(
     );
   }
 
-  if (!countryCode) {
-    errors.push('Unable to infer country code from input or dataset IDs.');
-  } else {
-    validateRegistryCompatibility(cityCode, countryCode, errors);
-    validateCanonicalFileSet(
-      countryCode,
-      datasetFiles,
-      errors,
-      warnings,
-      Boolean(options?.allowMissingDatasets),
+  if (
+    dataIndex?.countryCode &&
+    dataIndex.countryCode.toUpperCase() !== countryCode
+  ) {
+    errors.push(
+      `data_index countryCode ${dataIndex.countryCode} does not match ${countryCode}.`,
     );
   }
 
+  validateRegistryCompatibility(cityCode, countryCode, errors);
+  validateCanonicalFileSet(
+    countryCode,
+    datasetFiles,
+    errors,
+    warnings,
+    Boolean(options.allowMissingDatasets),
+  );
+
   const datasetSummaries = datasetFiles.map((datasetFile) =>
-    validateDatasetFile(
-      datasetFile,
-      dataIndex,
-      Boolean(options?.requireLabels),
-    ),
+    validateDatasetFile(datasetFile, dataIndex, Boolean(options.requireLabels)),
   );
   for (const summary of datasetSummaries) {
     errors.push(...summary.errors);
@@ -147,6 +146,13 @@ export function validateCityDirectory(
   };
 }
 
+function requireExplicitCode(value: string, optionName: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`[RegionsData] Missing required ${optionName}.`);
+  }
+  return value.trim();
+}
+
 export function renderValidationReportMarkdown(
   report: RegionArchiveValidationReport,
 ): string {
@@ -154,7 +160,7 @@ export function renderValidationReportMarkdown(
     `# ${report.cityCode} Regions Validation Report`,
     '',
     `Input: ${report.inputPath}`,
-    `Country: ${report.countryCode ?? 'Unknown'}`,
+    `Country: ${report.countryCode}`,
     `Status: ${report.ok ? 'OK' : 'FAILED'}`,
     '',
     '## Datasets',

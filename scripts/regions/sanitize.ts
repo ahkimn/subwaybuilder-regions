@@ -7,17 +7,16 @@ import { DATA_INDEX_FILE } from '../../mods/regions/constants';
 import { parseNumber } from '../utils/cli';
 import { updateIndexJson } from '../utils/files';
 import {
+  assertDatasetRegisteredForCountry,
   buildDatasetMetadata,
-  inferChinaCityCodeFromPath,
-  resolveCanonicalDatasetId,
 } from './datasets';
 import { loadFeatureCollection, saveFeatureCollection } from './io';
 
 export type SanitizeRegionDatasetOptions = {
   inputPath: string;
   countryCode: string;
-  cityCode?: string;
-  datasetId?: string;
+  cityCode: string;
+  datasetId: string;
   outputRoot?: string;
   compress?: boolean;
   updateIndex?: boolean;
@@ -35,27 +34,19 @@ export type SanitizeRegionDatasetResult = {
 export function sanitizeRegionDataset(
   options: SanitizeRegionDatasetOptions,
 ): SanitizeRegionDatasetResult {
-  const countryCode = options.countryCode.toUpperCase();
-  const cityCode =
-    options.cityCode?.toUpperCase() ??
-    (countryCode === 'CN'
-      ? inferChinaCityCodeFromPath(options.inputPath)
-      : null);
-  if (!cityCode) {
-    throw new Error(
-      '[RegionsData] Missing --city-code; only CN city codes can be inferred from collaborator filenames.',
-    );
-  }
-
-  const datasetId = resolveCanonicalDatasetId(
-    countryCode,
-    options.datasetId ?? options.inputPath,
-  );
-  if (!datasetId) {
-    throw new Error(
-      `[RegionsData] Unable to resolve canonical dataset ID for ${options.inputPath}.`,
-    );
-  }
+  const countryCode = requireExplicitValue(
+    options.countryCode,
+    'countryCode',
+  ).toUpperCase();
+  const cityCode = requireExplicitValue(
+    options.cityCode,
+    'cityCode',
+  ).toUpperCase();
+  const datasetId = requireExplicitValue(
+    options.datasetId,
+    'datasetId',
+  ).toLowerCase();
+  assertDatasetRegisteredForCountry(datasetId, countryCode);
 
   const sourceCollection = loadFeatureCollection(options.inputPath);
   const sanitizedCollection = sanitizeFeatureCollection(
@@ -90,6 +81,13 @@ export function sanitizeRegionDataset(
     outputPath: savedOutput.resolvedFilePath,
     fileSizeMB: savedOutput.fileSizeMB,
   };
+}
+
+function requireExplicitValue(value: string, optionName: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`[RegionsData] Missing required ${optionName}.`);
+  }
+  return value.trim();
 }
 
 export function sanitizeFeatureCollection(

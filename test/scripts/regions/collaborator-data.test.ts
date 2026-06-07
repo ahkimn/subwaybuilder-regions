@@ -6,6 +6,7 @@ import path from 'node:path';
 import { after, afterEach, describe, it } from 'node:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
+import { resolveCliDatasetId } from '@scripts/regions/cli';
 import { placeRegionLabels } from '@scripts/regions/labels';
 import { sanitizeRegionDataset } from '@scripts/regions/sanitize';
 import { validateRegionInput } from '@scripts/regions/validation';
@@ -168,7 +169,11 @@ describe('scripts/regions collaborator data workflow', () => {
     );
 
     const archivePath = createArchive(tempRoot, 'AQP');
-    const report = validateRegionInput({ inputPath: archivePath });
+    const report = validateRegionInput({
+      inputPath: archivePath,
+      countryCode: 'PE',
+      cityCode: 'AQP',
+    });
 
     assert.equal(report.ok, true);
     assert.equal(report.cityCode, 'AQP');
@@ -181,6 +186,8 @@ describe('scripts/regions collaborator data workflow', () => {
 
     const strictReport = validateRegionInput({
       inputPath: archivePath,
+      countryCode: 'PE',
+      cityCode: 'AQP',
       requireLabels: true,
     });
     assert.equal(strictReport.ok, false);
@@ -209,6 +216,8 @@ describe('scripts/regions collaborator data workflow', () => {
     const result = sanitizeRegionDataset({
       inputPath,
       countryCode: 'CN',
+      cityCode: 'PEK',
+      datasetId: 'cn-districts',
       outputRoot,
     });
 
@@ -252,6 +261,7 @@ describe('scripts/regions collaborator data workflow', () => {
     const report = validateRegionInput({
       inputPath: cityDir,
       countryCode: 'CN',
+      cityCode: 'PEK',
       requireLabels: true,
       allowMissingDatasets: true,
     });
@@ -283,7 +293,12 @@ describe('scripts/regions collaborator data workflow', () => {
     );
 
     const outputRoot = path.join(tempRoot, 'labels');
-    const result = placeRegionLabels({ inputPath, outputRoot });
+    const result = placeRegionLabels({
+      inputPath,
+      countryCode: 'CN',
+      cityCode: 'PEK',
+      outputRoot,
+    });
     const outputCollection = readGeoJSONGz(result.outputs[0].outputPath);
     const outputFeature = outputCollection.features[0];
     const lat = outputFeature.properties?.LAT;
@@ -321,6 +336,8 @@ describe('scripts/regions collaborator data workflow', () => {
       () =>
         placeRegionLabels({
           inputPath,
+          countryCode: 'CN',
+          cityCode: 'PEK',
           outputRoot: path.join(tempRoot, 'data'),
           updateIndex: true,
         }),
@@ -348,6 +365,8 @@ describe('scripts/regions collaborator data workflow', () => {
     const outputRoot = path.join(tempRoot, 'data');
     placeRegionLabels({
       inputPath: inputCityDir,
+      countryCode: 'PE',
+      cityCode: 'AQP',
       outputRoot,
       updateIndex: true,
     });
@@ -396,22 +415,30 @@ describe('scripts/regions collaborator data workflow', () => {
     sanitizeRegionDataset({
       inputPath: districtsInputPath,
       countryCode: 'CN',
+      cityCode: 'PEK',
+      datasetId: 'cn-districts',
       outputRoot: sanitizedRoot,
     });
     sanitizeRegionDataset({
       inputPath: subdistrictsInputPath,
       countryCode: 'CN',
+      cityCode: 'PEK',
+      datasetId: 'cn-subdistricts',
       outputRoot: sanitizedRoot,
     });
 
     const labeledRoot = path.join(tempRoot, 'labeled');
     placeRegionLabels({
       inputPath: path.join(sanitizedRoot, 'PEK'),
+      countryCode: 'CN',
+      cityCode: 'PEK',
       outputRoot: labeledRoot,
     });
 
     const report = validateRegionInput({
       inputPath: path.join(labeledRoot, 'PEK'),
+      countryCode: 'CN',
+      cityCode: 'PEK',
       requireLabels: true,
     });
 
@@ -420,5 +447,69 @@ describe('scripts/regions collaborator data workflow', () => {
       'cn-districts',
       'cn-subdistricts',
     ]);
+  });
+
+  it('resolves only generic CLI dataset shorthand against the catalog', () => {
+    assert.equal(resolveCliDatasetId('CN', 'districts'), 'cn-districts');
+    assert.equal(resolveCliDatasetId('PE', 'pe-manzanas'), 'pe-manzanas');
+    assert.throws(
+      () => resolveCliDatasetId('CN', 'district'),
+      /Invalid --dataset-id/,
+    );
+    assert.throws(
+      () => resolveCliDatasetId('CN', 'DistrictsBeijing.geojson.gz'),
+      /Invalid --dataset-id/,
+    );
+    assert.throws(
+      () => resolveCliDatasetId('CN', 'cn-districts.geojson.gz'),
+      /Invalid --dataset-id/,
+    );
+  });
+
+  it('requires explicit collaborator country, city, and dataset values', () => {
+    const tempRoot = createTempDirectory(temporaryDirectories);
+    const inputPath = path.join(tempRoot, 'cn-districts.geojson.gz');
+    writeGeoJSONGz(
+      inputPath,
+      createFeatureCollection([
+        createSquareFeature({
+          ID: 'relation/1',
+          NAME: 'Dongcheng',
+          DISPLAY_NAME: 'Dongcheng District',
+          POPULATION: 10,
+          TOTAL_AREA: 1,
+          AREA_WITHIN_BBOX: 1,
+        }),
+      ]),
+    );
+
+    assert.throws(
+      () =>
+        sanitizeRegionDataset({
+          inputPath,
+          countryCode: 'CN',
+          cityCode: '',
+          datasetId: 'cn-districts',
+        }),
+      /Missing required cityCode/,
+    );
+    assert.throws(
+      () =>
+        placeRegionLabels({
+          inputPath,
+          countryCode: '',
+          cityCode: 'PEK',
+        }),
+      /Missing required countryCode/,
+    );
+    assert.throws(
+      () =>
+        validateRegionInput({
+          inputPath,
+          countryCode: 'CN',
+          cityCode: '',
+        }),
+      /Missing required cityCode/,
+    );
   });
 });

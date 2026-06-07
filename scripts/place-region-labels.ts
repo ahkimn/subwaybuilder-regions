@@ -1,14 +1,26 @@
 #!/usr/bin/env node
 import minimist from 'minimist';
 
+import { readRequiredCliString } from './regions/cli';
 import { placeRegionLabels } from './regions/labels';
 
 function main(): void {
   const argv = minimist(process.argv.slice(2), {
-    string: ['input', 'output-root', 'outputRoot', 'out'],
+    string: [
+      'input',
+      'country-code',
+      'countryCode',
+      'city-code',
+      'cityCode',
+      'output-root',
+      'outputRoot',
+      'out',
+    ],
     boolean: ['in-place', 'inPlace', 'refresh', 'update-index', 'updateIndex'],
     alias: {
       'in-place': 'inPlace',
+      'country-code': 'countryCode',
+      'city-code': 'cityCode',
       'output-root': 'outputRoot',
       'update-index': 'updateIndex',
     },
@@ -17,13 +29,15 @@ function main(): void {
   const inputPath = argv.input ?? argv._[0];
   if (typeof inputPath !== 'string' || inputPath.length === 0) {
     throw new Error(
-      'Usage: tsx scripts/place-region-labels.ts <geojson|city-dir|archive> [OUT_DIR] [in-place] [refresh] [update-index]',
+      'Usage: tsx scripts/place-region-labels.ts <geojson|city-dir|archive> <COUNTRY> <CITY> [OUT_DIR] [in-place] [refresh] [update-index]',
     );
   }
 
   const result = placeRegionLabels({
     inputPath,
-    outputRoot: argv.outputRoot ?? argv.out ?? argv._[1],
+    countryCode: readRequiredCliString(argv, 'countryCode', 1),
+    cityCode: readRequiredCliString(argv, 'cityCode', 2),
+    outputRoot: argv.outputRoot ?? argv.out ?? argv._[3],
     inPlace:
       Boolean(argv.inPlace) ||
       argv._.some(

@@ -7,8 +7,8 @@ import { parseNumber } from '../utils/cli';
 import { updateIndexJson } from '../utils/files';
 import { resolvePrimaryLabelPoint } from '../utils/geometry';
 import {
+  assertDatasetRegisteredForCountry,
   buildDatasetMetadata,
-  inferCountryCodeFromDatasetIds,
 } from './datasets';
 import {
   copyCitySupportFiles,
@@ -22,6 +22,8 @@ import {
 
 export type PlaceRegionLabelsOptions = {
   inputPath: string;
+  countryCode: string;
+  cityCode: string;
   outputRoot?: string;
   inPlace?: boolean;
   refresh?: boolean;
@@ -48,6 +50,14 @@ const DEFAULT_LABEL_OUTPUT_ROOT = path.join('tmp', 'region-labels');
 export function placeRegionLabels(
   options: PlaceRegionLabelsOptions,
 ): PlaceRegionLabelsResult {
+  const countryCode = requireExplicitCode(
+    options.countryCode,
+    'countryCode',
+  ).toUpperCase();
+  const cityCode = requireExplicitCode(
+    options.cityCode,
+    'cityCode',
+  ).toUpperCase();
   const resolvedInputPath = path.resolve(options.inputPath);
   if (!fs.existsSync(resolvedInputPath)) {
     throw new Error(
@@ -91,7 +101,7 @@ export function placeRegionLabels(
     try {
       const outputCityDir = path.join(
         path.resolve(options.outputRoot ?? DEFAULT_LABEL_OUTPUT_ROOT),
-        loadedInput.cityCode,
+        cityCode,
       );
       copyCitySupportFiles(loadedInput.cityDir, outputCityDir);
       const result = placeLabelsForCityDirectory(
@@ -100,7 +110,7 @@ export function placeRegionLabels(
         Boolean(options.refresh),
       );
       if (options.updateIndex) {
-        updateOutputIndex(outputCityDir, loadedInput.cityCode, result);
+        updateOutputIndex(outputCityDir, cityCode, countryCode, result);
       }
       return result;
     } finally {
@@ -108,7 +118,6 @@ export function placeRegionLabels(
     }
   }
 
-  const cityCode = path.basename(resolvedInputPath).toUpperCase();
   const outputCityDir = options.inPlace
     ? resolvedInputPath
     : path.join(
@@ -125,7 +134,7 @@ export function placeRegionLabels(
     Boolean(options.refresh),
   );
   if (options.updateIndex) {
-    updateOutputIndex(outputCityDir, cityCode, result);
+    updateOutputIndex(outputCityDir, cityCode, countryCode, result);
   }
   return result;
 }
@@ -232,19 +241,12 @@ function placeLabelsForDatasetFile(
 function updateOutputIndex(
   outputCityDir: string,
   cityCode: string,
+  countryCode: string,
   result: PlaceRegionLabelsResult,
 ): void {
-  const countryCode = inferCountryCodeFromDatasetIds(
-    result.outputs.map((output) => output.datasetId),
-  );
-  if (!countryCode) {
-    throw new Error(
-      `[RegionsData] Unable to infer country for labeled city ${cityCode}.`,
-    );
-  }
-
   const indexPath = path.join(path.dirname(outputCityDir), DATA_INDEX_FILE);
   for (const output of result.outputs) {
+    assertDatasetRegisteredForCountry(output.datasetId, countryCode);
     updateIndexJson(
       indexPath,
       cityCode,
@@ -257,6 +259,13 @@ function updateOutputIndex(
       countryCode,
     );
   }
+}
+
+function requireExplicitCode(value: string, optionName: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`[RegionsData] Missing required ${optionName}.`);
+  }
+  return value.trim();
 }
 
 function resolveSingleFileOutputPath(

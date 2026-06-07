@@ -362,14 +362,14 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
    Validate an already packaged PE archive:
 
    ```bash
-   npm run validate:regions-archive -- ~/Downloads/LIM.gz PE
+   npm run validate:regions-archive -- ~/Downloads/LIM.gz PE LIM
    ```
 
    Add missing label coordinates to a PE archive, stage the final city under
    `data/`, and update the root simulator index:
 
    ```bash
-   npm run place:regions-labels -- ~/Downloads/LIM.gz ./data update-index
+   npm run place:regions-labels -- ~/Downloads/LIM.gz PE LIM ./data update-index
    ```
 
    Sanitize a CN collaborator GeoJSON sample, then place labels and validate the extracted city directory:
@@ -379,16 +379,21 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
      ~/Downloads/DistrictsBeijing.geojson.gz \
      CN \
      PEK \
-     cn-districts \
+     districts \
      ./data
 
-   npm run place:regions-labels -- ./data/PEK in-place update-index
+   npm run place:regions-labels -- ./data/PEK CN PEK in-place update-index
    npm run validate:regions-archive -- \
      ./data/PEK \
      CN \
+     PEK \
      require-labels \
      allow-missing-datasets
    ```
+
+   Country and city codes are always required. The sanitizer dataset argument
+   may be a canonical dataset ID such as `cn-districts`, or generic catalog
+   shorthand such as `districts`; filenames and city names are never inferred.
 
    `allow-missing-datasets` keeps validation strict for files that are present,
    but reports registered future datasets such as `cn-subdistricts` as warnings.
@@ -657,9 +662,9 @@ The following are developer commands available within the repository, grouped by
 - `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview] [--include-label-point-candidates]`: Extracts boundary GeoJSONs for a single city/dataset.
   - Full `LABEL_POINTS.candidates` generation is disabled by default for faster extraction. Pass `--include-label-point-candidates` to restore the previous full candidate output.
 - `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA|FR|AU> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
-- `npm run validate:regions-archive -- <ARCHIVE_OR_CITY_DIR> [PE|CN] [require-labels] [allow-missing-datasets]`: Validates collaborator PE/CN city archives or extracted city directories.
-- `npm run sanitize:regions-dataset -- <GEOJSON_OR_GEOJSON_GZ> <PE|CN> [CITY] [DATASET_ID] [OUT_DIR]`: Normalizes a collaborator dataset into canonical mod GeoJSON under `data/{CITY}/`.
-- `npm run place:regions-labels -- <GEOJSON_OR_CITY_DIR_OR_ARCHIVE> [OUT_DIR] [in-place] [refresh] [update-index]`: Adds or refreshes `LAT`/`LNG` label coordinates for region GeoJSON files and can update the root data index from final outputs.
+- `npm run validate:regions-archive -- <ARCHIVE_OR_CITY_DIR> <COUNTRY> <CITY> [require-labels] [allow-missing-datasets]`: Validates collaborator city archives or extracted city directories.
+- `npm run sanitize:regions-dataset -- <GEOJSON_OR_GEOJSON_GZ> <COUNTRY> <CITY> <DATASET_ID_OR_SHORTHAND> [OUT_DIR]`: Normalizes a collaborator dataset into canonical mod GeoJSON under `data/{CITY}/`.
+- `npm run place:regions-labels -- <GEOJSON_OR_CITY_DIR_OR_ARCHIVE> <COUNTRY> <CITY> [OUT_DIR] [in-place] [refresh] [update-index]`: Adds or refreshes `LAT`/`LNG` label coordinates for region GeoJSON files and can update the root data index from final outputs.
 - `npm run export -- --city-code=<CITY[,CITY...]>|--all [--include-osm-data] [--output-dir=<DIR>]`: Packages `data/{CITY}` into `export/{CITY}.gz`.
 - `npm run serve -- [--port=<PORT>] [--dir=<RELATIVE_DATA_DIR>]`: Launches a local HTTP server for data files (defaults to project `data/`).
 

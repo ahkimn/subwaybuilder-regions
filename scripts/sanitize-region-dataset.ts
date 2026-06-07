@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import minimist from 'minimist';
 
+import { readRequiredCliString, resolveCliDatasetId } from './regions/cli';
 import { sanitizeRegionDataset } from './regions/sanitize';
 
 function main(): void {
@@ -34,26 +35,19 @@ function main(): void {
   const inputPath = argv.input ?? argv._[0];
   if (typeof inputPath !== 'string' || inputPath.length === 0) {
     throw new Error(
-      'Usage: tsx scripts/sanitize-region-dataset.ts <geojson> <PE|CN> [CITY] [DATASET] [OUT_DIR]',
+      'Usage: tsx scripts/sanitize-region-dataset.ts <geojson> <COUNTRY> <CITY> <DATASET> [OUT_DIR]',
     );
   }
 
-  if (typeof argv.countryCode !== 'string' || argv.countryCode.length === 0) {
-    const positionalCountryCode = argv._[1];
-    if (
-      typeof positionalCountryCode !== 'string' ||
-      positionalCountryCode.length === 0
-    ) {
-      throw new Error('Missing required argument: --country-code');
-    }
-    argv.countryCode = positionalCountryCode;
-  }
+  const countryCode = readRequiredCliString(argv, 'countryCode', 1);
+  const cityCode = readRequiredCliString(argv, 'cityCode', 2);
+  const datasetToken = readRequiredCliString(argv, 'datasetId', 3);
 
   const result = sanitizeRegionDataset({
     inputPath,
-    countryCode: argv.countryCode,
-    cityCode: argv.cityCode ?? argv._[2],
-    datasetId: argv.datasetId ?? argv._[3],
+    countryCode,
+    cityCode,
+    datasetId: resolveCliDatasetId(countryCode, datasetToken),
     outputRoot: argv.outputRoot ?? argv.out ?? argv._[4],
     compress: Boolean(argv.compress),
     updateIndex: Boolean(argv.updateIndex),

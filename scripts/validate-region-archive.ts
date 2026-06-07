@@ -1,29 +1,25 @@
 #!/usr/bin/env node
-import type { ParsedArgs } from 'minimist';
 import minimist from 'minimist';
 import path from 'path';
 
+import { readRequiredCliString } from './regions/cli';
 import {
   renderValidationReportMarkdown,
   validateRegionInput,
   writeValidationReports,
 } from './regions/validation';
 
-function readCountryCode(argv: ParsedArgs): string | undefined {
-  if (typeof argv.countryCode === 'string') {
-    return argv.countryCode;
-  }
-  const positionalCountryCode = argv._.find(
-    (value) => typeof value === 'string' && /^[A-Z]{2}$/i.test(value),
-  );
-  return typeof positionalCountryCode === 'string'
-    ? positionalCountryCode
-    : undefined;
-}
-
 function main(): void {
   const argv = minimist(process.argv.slice(2), {
-    string: ['input', 'country-code', 'countryCode', 'report-dir', 'reportDir'],
+    string: [
+      'input',
+      'country-code',
+      'countryCode',
+      'city-code',
+      'cityCode',
+      'report-dir',
+      'reportDir',
+    ],
     boolean: [
       'require-labels',
       'requireLabels',
@@ -34,6 +30,7 @@ function main(): void {
     ],
     alias: {
       'country-code': 'countryCode',
+      'city-code': 'cityCode',
       'report-dir': 'reportDir',
       'require-labels': 'requireLabels',
       'allow-missing-datasets': 'allowMissingDatasets',
@@ -44,13 +41,14 @@ function main(): void {
   const inputPath = argv.input ?? argv._[0];
   if (typeof inputPath !== 'string' || inputPath.length === 0) {
     throw new Error(
-      'Usage: tsx scripts/validate-region-archive.ts <archive-or-city-dir> [PE|CN] [require-labels] [allow-missing-datasets] [--write-report] [--report-dir=<dir>]',
+      'Usage: tsx scripts/validate-region-archive.ts <archive-or-city-dir> <COUNTRY> <CITY> [require-labels] [allow-missing-datasets] [--write-report] [--report-dir=<dir>]',
     );
   }
 
   const report = validateRegionInput({
     inputPath,
-    countryCode: readCountryCode(argv),
+    countryCode: readRequiredCliString(argv, 'countryCode', 1),
+    cityCode: readRequiredCliString(argv, 'cityCode', 2),
     requireLabels:
       Boolean(argv.requireLabels) ||
       argv._.some(
