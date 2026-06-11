@@ -86,6 +86,12 @@ _Latest Changelog Entry:_ [v0.4.10](CHANGELOG.md#v0410---2026-05-24)
   - **TW** (Taiwan)
     - 鄉鎮市區 (Townships) (`township`)
     - 里 (Villages) (`li`)
+  - **PE** (Peru)
+    - Provinces (`pe-provinces`)
+    - Districts (`pe-districts`)
+  - **CN** (China)
+    - 区县 (Districts) (`cn-districts`)
+    - 街道/乡镇 (Subdistricts) (`cn-subdistricts`)
 
 ## Specifications
 
@@ -348,7 +354,50 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    :information_source: By default (`--include-osm-data=false`), OSM datasets are excluded based on each dataset's `source` in `data/data_index.json` (not by filename conventions).
 
-5. Serve Local Data
+5. Validate / Sanitize Archives (Optional)
+
+   Some datasets (e.g. those from PE / CN) are not supported by the runtime fetch CLI. Collaborators can validate and sanitize these datasets using the following scripts before placing them in the mod's data directory:
+
+   Validate an already packaged archive:
+
+   ```bash
+   npm run validate:regions-archive -- ~/Downloads/LIM.gz PE LIM
+   ```
+
+   Add missing label coordinates to an archive, stage the final city under
+   `data/`, and update the root simulator index:
+
+   ```bash
+   npm run place:regions-labels -- ~/Downloads/LIM.gz PE LIM ./data update-index
+   ```
+
+   Sanitize a GeoJSON sample, then place labels and validate the extracted city directory:
+
+   ```bash
+   npm run sanitize:regions-dataset -- \
+     ~/Downloads/DistrictsBeijing.geojson.gz \
+     CN \
+     PEK \
+     districts \
+     ./data
+
+   npm run place:regions-labels -- ./data/PEK CN PEK in-place update-index
+   npm run validate:regions-archive -- \
+     ./data/PEK \
+     CN \
+     PEK \
+     require-labels \
+     allow-missing-datasets
+   ```
+
+   Country and city codes are always required. The sanitizer dataset argument
+   may be a canonical dataset ID such as `cn-districts`, or generic catalog
+   shorthand such as `districts`; filenames and city names are never inferred.
+
+   `allow-missing-datasets` keeps validation strict for files that are present,
+   but reports registered future datasets such as `cn-subdistricts` as warnings.
+
+6. Serve Local Data
    From the repository root, run:
 
    ```
@@ -357,7 +406,7 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    By default this serves: http://127.0.0.1:8088.
 
-6. Build
+7. Build
    From the repository root, run:
 
    ```
@@ -366,7 +415,7 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    This will build the `index.js` in `dist/`
 
-7. Install
+8. Install
 
    Move the built `index.js` as well as the mod's `manifest.json` in the root directory to the mod's folder in the game's mod directory.
 
@@ -378,7 +427,7 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    :information_source: The `config.yaml` file can be created from `config.example.yaml` and updating the `gamePath` / `baseModsDir` / `modDirName`.
 
-8. Validate Behavior
+9. Validate Behavior
 
    Use the following command to run the game from terminal with the Console enabled (requires `config.yaml`).
 
@@ -387,15 +436,15 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    ```
 
-9. Contribute
+10. Contribute
 
-   Once new behavior is verified, run code quality checks before opening a PR:
+    Once new behavior is verified, run code quality checks before opening a PR:
 
-   ```
-   npx tsc --noEmit
-   npm run lint
-   npm run format:check
-   ```
+    ```
+    npx tsc --noEmit
+    npm run lint
+    npm run format:check
+    ```
 
 ### Disclaimer
 
@@ -612,6 +661,9 @@ The following are developer commands available within the repository, grouped by
 - `npm run extract:map-features -- --country-code=<CODE> --data-type=<DATASET_ID> --city-code=<CITY> [--west=<N> --south=<N> --east=<N> --north=<N>] [--use-local-data] [--compress=<true|false>] [--preview] [--include-label-point-candidates]`: Extracts boundary GeoJSONs for a single city/dataset.
   - Full `LABEL_POINTS.candidates` generation is disabled by default for faster extraction. Pass `--include-label-point-candidates` to restore the previous full candidate output.
 - `npm run fetch:city -- --cityCode=<CITY> --countryCode=<US|GB|CA|FR|AU> --datasets=<CSV> --west=<N> --south=<N> --east=<N> --north=<N> [--out=<DIR>] [--compress=<true|false>]`: Runtime-equivalent single-city dataset fetch flow.
+- `npm run validate:regions-archive -- <ARCHIVE_OR_CITY_DIR> <COUNTRY> <CITY> [require-labels] [allow-missing-datasets]`: Validates collaborator city archives or extracted city directories.
+- `npm run sanitize:regions-dataset -- <GEOJSON_OR_GEOJSON_GZ> <COUNTRY> <CITY> <DATASET_ID_OR_SHORTHAND> [OUT_DIR]`: Normalizes a collaborator dataset into canonical mod GeoJSON under `data/{CITY}/`.
+- `npm run place:regions-labels -- <GEOJSON_OR_CITY_DIR_OR_ARCHIVE> <COUNTRY> <CITY> [OUT_DIR] [in-place] [refresh] [update-index]`: Adds or refreshes `LAT`/`LNG` label coordinates for region GeoJSON files and can update the root data index from final outputs.
 - `npm run export -- --city-code=<CITY[,CITY...]>|--all [--include-osm-data] [--output-dir=<DIR>]`: Packages `data/{CITY}` into `export/{CITY}.gz`.
 - `npm run serve -- [--port=<PORT>] [--dir=<RELATIVE_DATA_DIR>]`: Launches a local HTTP server for data files (defaults to project `data/`).
 

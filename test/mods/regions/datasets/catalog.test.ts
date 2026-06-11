@@ -198,3 +198,61 @@ describe('shared/datasets/catalog TW metadata', () => {
     assert.deepEqual(onlineDatasets, []);
   });
 });
+
+describe('shared/datasets/catalog PE metadata', () => {
+  it('includes PE in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('PE'));
+  });
+
+  it('resolves PE dataset order', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('PE'), [
+      'pe-provinces',
+      'pe-districts',
+    ]);
+  });
+
+  it('marks PE datasets as local-only', () => {
+    for (const datasetId of ['pe-provinces', 'pe-districts']) {
+      assert.equal(
+        DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
+        false,
+      );
+    }
+
+    const onlineDatasets = resolveCountryDatasets('PE', { onlineOnly: true });
+    assert.deepEqual(onlineDatasets, []);
+  });
+});
+
+describe('shared/datasets/catalog CN metadata', () => {
+  it('includes CN in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('CN'));
+  });
+
+  it('resolves CN dataset order', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('CN'), [
+      'cn-districts',
+      'cn-subdistricts',
+    ]);
+  });
+
+  it('marks CN datasets as local-only with bilingual dataset names', () => {
+    for (const datasetId of ['cn-districts', 'cn-subdistricts']) {
+      assert.equal(
+        DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
+        false,
+      );
+    }
+    assert.equal(
+      DATASET_METADATA_CATALOG['cn-districts']?.displayName,
+      '区县 (Districts)',
+    );
+    assert.equal(
+      DATASET_METADATA_CATALOG['cn-subdistricts']?.displayName,
+      '街道/乡镇 (Subdistricts)',
+    );
+
+    const onlineDatasets = resolveCountryDatasets('CN', { onlineOnly: true });
+    assert.deepEqual(onlineDatasets, []);
+  });
+});
