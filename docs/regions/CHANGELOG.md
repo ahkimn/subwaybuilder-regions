@@ -17,9 +17,9 @@ _Game version_ v1.3.0
 
 ### Other Updates
 
-- Added local static recognition for Peru collaborator city datasets (`LIM`, `AQP`, `TRU`, `CIX`, `PIU`, `IQT`, `CUZ`, `CHM`, `JAU`).
-- Added local static recognition for China collaborator city datasets (`SHA`, `SZX`, `CAN`, `PEK`, `CKG`, `CTU`).
-- Added collaborator data scripts to validate PE/CN city archives, sanitize CN/PE GeoJSON samples into canonical mod format, and add missing label coordinates.
+- Added local static recognition for Peru city datasets (`LIM`, `AQP`, `TRU`, `CIX`, `PIU`, `IQT`, `CUZ`, `CHM`, `JAU`).
+- Added local static recognition for China city datasets (`SHA`, `SZX`, `CAN`, `PEK`, `CKG`, `CTU`).
+- Added data scripts to validate external/collaborator archives, sanitize GeoJSON samples into canonical mod format, and add missing label coordinates.
 
 ## v0.4.10 - 2026-05-24
 

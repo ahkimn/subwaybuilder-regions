@@ -354,24 +354,24 @@ From the Main Menu, click on the `Regions` button to open the `Settings Menu`. T
 
    :information_source: By default (`--include-osm-data=false`), OSM datasets are excluded based on each dataset's `source` in `data/data_index.json` (not by filename conventions).
 
-5. Validate / Sanitize Collaborator Archives (Optional)
+5. Validate / Sanitize Archives (Optional)
 
-   PE and CN datasets are local-only collaborator datasets. They are not supported by the runtime fetch CLI. Generated archives are published separately from the mod release, typically via Google Drive.
+   Some datasets (e.g. those from PE / CN) are not supported by the runtime fetch CLI. Collaborators can validate and sanitize these datasets using the following scripts before placing them in the mod's data directory:
 
-   Validate an already packaged PE archive:
+   Validate an already packaged archive:
 
    ```bash
    npm run validate:regions-archive -- ~/Downloads/LIM.gz PE LIM
    ```
 
-   Add missing label coordinates to a PE archive, stage the final city under
+   Add missing label coordinates to an archive, stage the final city under
    `data/`, and update the root simulator index:
 
    ```bash
    npm run place:regions-labels -- ~/Downloads/LIM.gz PE LIM ./data update-index
    ```
 
-   Sanitize a CN collaborator GeoJSON sample, then place labels and validate the extracted city directory:
+   Sanitize a GeoJSON sample, then place labels and validate the extracted city directory:
 
    ```bash
    npm run sanitize:regions-dataset -- \
