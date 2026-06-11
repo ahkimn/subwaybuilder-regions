@@ -208,12 +208,11 @@ describe('shared/datasets/catalog PE metadata', () => {
     assert.deepEqual(resolveCountryDatasetOrder('PE'), [
       'pe-provinces',
       'pe-districts',
-      'pe-manzanas',
     ]);
   });
 
   it('marks PE datasets as local-only', () => {
-    for (const datasetId of ['pe-provinces', 'pe-districts', 'pe-manzanas']) {
+    for (const datasetId of ['pe-provinces', 'pe-districts']) {
       assert.equal(
         DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
         false,

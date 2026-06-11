@@ -282,14 +282,6 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'INEI',
     existsOnlineSource: false,
   },
-  'pe-manzanas': {
-    datasetId: 'pe-manzanas',
-    displayName: 'Manzanas',
-    unitSingular: 'Manzana',
-    unitPlural: 'Manzanas',
-    source: 'INEI',
-    existsOnlineSource: false,
-  },
   'cn-districts': {
     datasetId: 'cn-districts',
     displayName: '区县 (Districts)',
@@ -320,7 +312,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   CZ: ['okres', 'obce', 'zsj'],
   PL: ['powiat', 'gmina', 'rejon'],
   TW: ['township', 'li'],
-  PE: ['pe-provinces', 'pe-districts', 'pe-manzanas'],
+  PE: ['pe-provinces', 'pe-districts'],
   CN: ['cn-districts', 'cn-subdistricts'],
 });
 

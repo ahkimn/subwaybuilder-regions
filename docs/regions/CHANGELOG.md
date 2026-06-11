@@ -11,7 +11,6 @@ _Game version_ v1.3.0
 - Added PE region support for:
   - Provinces (`pe-provinces`)
   - Districts (`pe-districts`)
-  - Manzanas (`pe-manzanas`)
 - Added CN region support for:
   - 区县 (`cn-districts` | districts)
   - 街道/乡镇 (`cn-subdistricts` | subdistricts)

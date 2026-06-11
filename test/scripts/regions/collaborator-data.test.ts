@@ -131,18 +131,6 @@ describe('scripts/regions collaborator data workflow', () => {
       },
       0.02,
     );
-    const manzana = createSquareFeature(
-      {
-        ID: '040101001',
-        NAME: '001',
-        DISPLAY_NAME: '001',
-        POPULATION: 10,
-        TOTAL_AREA: 1,
-        AREA_WITHIN_BBOX: 1,
-      },
-      0.04,
-    );
-
     writeGeoJSONGz(
       path.join(cityDir, 'pe-provinces.geojson.gz'),
       createFeatureCollection([province]),
@@ -150,10 +138,6 @@ describe('scripts/regions collaborator data workflow', () => {
     writeGeoJSONGz(
       path.join(cityDir, 'pe-districts.geojson.gz'),
       createFeatureCollection([district]),
-    );
-    writeGeoJSONGz(
-      path.join(cityDir, 'pe-manzanas.geojson.gz'),
-      createFeatureCollection([manzana]),
     );
     fs.writeFileSync(
       path.join(cityDir, 'data_index.json'),
@@ -163,7 +147,6 @@ describe('scripts/regions collaborator data workflow', () => {
         datasets: [
           { id: 'pe-provinces', featureCount: 1 },
           { id: 'pe-districts', featureCount: 1 },
-          { id: 'pe-manzanas', featureCount: 1 },
         ],
       }),
     );
@@ -178,7 +161,7 @@ describe('scripts/regions collaborator data workflow', () => {
     assert.equal(report.ok, true);
     assert.equal(report.cityCode, 'AQP');
     assert.equal(report.countryCode, 'PE');
-    assert.equal(report.datasets.length, 3);
+    assert.equal(report.datasets.length, 2);
     assert.equal(
       report.warnings.some((warning) => warning.includes('missing LAT/LNG')),
       true,
@@ -451,7 +434,10 @@ describe('scripts/regions collaborator data workflow', () => {
 
   it('resolves only generic CLI dataset shorthand against the catalog', () => {
     assert.equal(resolveCliDatasetId('CN', 'districts'), 'cn-districts');
-    assert.equal(resolveCliDatasetId('PE', 'pe-manzanas'), 'pe-manzanas');
+    assert.throws(
+      () => resolveCliDatasetId('PE', 'manzanas'),
+      /Invalid --dataset-id/,
+    );
     assert.throws(
       () => resolveCliDatasetId('CN', 'district'),
       /Invalid --dataset-id/,
