@@ -24,7 +24,12 @@ jobs:
           cache: npm
 
       - name: Install Dependencies
+        # NODE_AUTH_TOKEN authenticates the @subway-builder-modded scope to GitHub
+        # Packages (see .npmrc). Requires a PAT with read:packages as the
+        # PACKAGES_READ_TOKEN secret in the `release` environment.
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
 
       - name: Resolve Version from Tag
         id: version
