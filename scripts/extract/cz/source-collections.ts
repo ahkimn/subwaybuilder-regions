@@ -12,7 +12,6 @@ import {
 } from './constants';
 import {
   loadCZChochoSelected,
-  loadCZObecPopulationIndex,
   loadCZZsjDilNameIndex,
   normalizeCZMunicipalityCode,
   resolveCZPopulation,
@@ -74,6 +73,32 @@ function resolveMunicipalityCodeSet(
   return municipalityCodes;
 }
 
+function buildBundleObecPopulationIndex(
+  context: CZBundleContext,
+): Map<string, number> {
+  const chochoSelected = loadCZChochoSelected(context);
+  const populationByObec = new Map<string, number>();
+
+  for (const feature of chochoSelected.features) {
+    const properties = feature.properties ?? {};
+    const obecCode = normalizeCZMunicipalityCode(properties.municipality_code);
+    if (!obecCode || !context.municipalityCodes.has(obecCode)) {
+      continue;
+    }
+    const population = resolveCZPopulation(
+      properties,
+      'pop_total',
+      `chocho ${String(properties.chocho_key ?? '').trim()}`,
+    );
+    populationByObec.set(
+      obecCode,
+      (populationByObec.get(obecCode) ?? 0) + population,
+    );
+  }
+
+  return populationByObec;
+}
+
 export function buildCZObceSourceCollection(context: CZBundleContext) {
   const sourceCollection = toPolygonFeatureCollection(
     loadGeoJSON(
@@ -84,6 +109,7 @@ export function buildCZObceSourceCollection(context: CZBundleContext) {
       ),
     ),
   );
+  const populationByObec = buildBundleObecPopulationIndex(context);
   const features: CZSourceFeature[] = [];
 
   for (const feature of sourceCollection.features) {
@@ -98,7 +124,7 @@ export function buildCZObceSourceCollection(context: CZBundleContext) {
         feature,
         obecCode,
         readRequiredName(properties, 'obec_name', `obec ${obecCode}`),
-        resolveCZPopulation(properties, 'population', `obec ${obecCode}`),
+        populationByObec.get(obecCode) ?? 0,
       ),
     );
   }
@@ -119,7 +145,7 @@ export function buildCZOkresSourceCollection(context: CZBundleContext) {
       ),
     ),
   );
-  const obecIndex = loadCZObecPopulationIndex(context.sourceRoot);
+  const populationByObec = buildBundleObecPopulationIndex(context);
   const features: CZSourceFeature[] = [];
 
   for (const feature of sourceCollection.features) {
@@ -141,7 +167,7 @@ export function buildCZOkresSourceCollection(context: CZBundleContext) {
         continue;
       }
       hasIncludedMunicipality = true;
-      population += obecIndex.get(municipalityCode)?.population ?? 0;
+      population += populationByObec.get(municipalityCode) ?? 0;
     }
 
     if (!hasIncludedMunicipality) {

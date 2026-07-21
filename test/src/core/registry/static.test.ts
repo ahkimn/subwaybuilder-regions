@@ -18,10 +18,11 @@ describe('core/registry/static JP release city mapping', () => {
       'HIJ',
       'HKD',
       'HNA',
-      'HSG',
       'ITM',
       'IZO',
       'KCZ',
+      'KFU',
+      'KHS',
       'KIJ',
       'KMI',
       'KKJ',
@@ -35,21 +36,21 @@ describe('core/registry/static JP release city mapping', () => {
       'OIT',
       'OKA',
       'OKJ',
-      'QEB',
       'QFY',
       'QIS',
       'QNG',
       'QUT',
       'SDJ',
-      'SKK',
+      'SHB',
       'SPK',
       'TAK',
       'TKS',
       'TOY',
       'TTJ',
+      'UBJ',
       'UKB',
       'UKY',
-      'WKY',
+      'WKJ',
     ] as const) {
       assert.equal(
         resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
@@ -117,12 +118,15 @@ describe('core/registry/static CZ release city mapping', () => {
       'BRQ',
       'CBS',
       'HKP',
+      'JIH',
+      'KVY',
       'LBC',
       'OLO',
       'OSR',
       'PLZ',
       'PRG',
       'UCH',
+      'ZLN',
     ] as const) {
       assert.equal(
         resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
@@ -188,6 +192,40 @@ describe('core/registry/static CN release city mapping', () => {
         resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
         'CN',
         `Expected ${cityCode} to resolve to CN`,
+      );
+    }
+  });
+});
+
+describe('core/registry/static EE and UA release city mapping', () => {
+  it('resolves all planned EE and UA city codes', () => {
+    for (const cityCode of ['TLL', 'TAY', 'EPU', 'IDV']) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'EE',
+      );
+    }
+    for (const cityCode of ['LWO', 'ODS', 'KBP', 'HRK', 'DNK', 'OZH', 'KWG']) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'UA',
+      );
+    }
+  });
+});
+
+describe('core/registry/static LV and LT release city mapping', () => {
+  it('resolves all planned LV and LT city codes', () => {
+    for (const cityCode of ['RIX', 'DGV', 'LPX']) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'LV',
+      );
+    }
+    for (const cityCode of ['VNO', 'KUN', 'PLQ', 'PNV', 'SQQ']) {
+      assert.equal(
+        resolveStaticTemplateCountry({ code: cityCode, country: undefined }),
+        'LT',
       );
     }
   });

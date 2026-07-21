@@ -689,4 +689,33 @@ describe('scripts/extract/extract-jp-map-features integration', () => {
     assert.ok(municipality);
     assert.equal(municipality.properties?.POPULATION, 100);
   });
+
+  it('extractJPBoundaries_shouldBuildOoazaFromChochoWhenNeighborhood7ZipsAbsent', async () => {
+    const { args, outputRoot } = await createJPFixture();
+    // jp-data excised the neighborhood7 zip source (export/jp HYGIENE #11).
+    // With the optional zips removed, ōaza must still build from the bundle
+    // chocho geometry, deriving names by stripping the 丁目 suffix.
+    const sourceRoot = process.env.SUBWAYBUILDER_JP_DATA_ROOT!;
+    await fs.remove(path.join(sourceRoot, 'neighborhood7_boundaries'));
+
+    await extractJPBoundaries(args);
+
+    const ooaza = loadOutputGeoJson(outputRoot, 'JPTEST', 'ooaza');
+
+    // 大通一丁目 + 大通二丁目 still dissolve into 大通 with summed population.
+    const mergedOoaza = ooaza.features.find(
+      (feature) => feature.properties?.ID === '011011001',
+    );
+    assert.ok(mergedOoaza);
+    assert.equal(mergedOoaza.properties?.POPULATION, 100);
+    assert.equal(mergedOoaza.properties?.NAME_JA, '大通');
+
+    // Every ōaza carries a non-empty, non-numeric name from the chocho fallback.
+    assert.ok(
+      ooaza.features.every((feature) => {
+        const name = String(feature.properties?.NAME_JA ?? '').trim();
+        return name.length > 0 && !/^\d+$/.test(name);
+      }),
+    );
+  });
 });

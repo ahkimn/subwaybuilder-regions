@@ -280,4 +280,23 @@ describe('scripts/utils/cli utilities', () => {
       harness.calls.error,
     );
   });
+
+  it('parseExtractArgs_shouldRequireBundleForEEAndUA', async () => {
+    for (const countryCode of ['EE', 'UA']) {
+      await expectExitCode(
+        () =>
+          parseExtractArgs([
+            '--data-type',
+            'all',
+            '--city-code',
+            'TST',
+            '--country-code',
+            countryCode,
+          ]),
+        1,
+        'Missing or invalid argument: --bundle',
+        harness.calls.error,
+      );
+    }
+  });
 });

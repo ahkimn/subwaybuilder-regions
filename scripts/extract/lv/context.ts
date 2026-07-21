@@ -1,0 +1,43 @@
+import {
+  loadBundlePhaseInputGeoJson,
+  loadExternalBundleContext,
+  resolveExternalBundleRecord,
+  resolveExternalSourceDataRoot,
+  toPolygonFeatureCollection,
+} from '../external/context';
+import { LV_COUNTRY_CODE } from './constants';
+import type { LVBundleContext } from './types';
+
+export function resolveLVSourceDataRoot(): string {
+  return resolveExternalSourceDataRoot();
+}
+
+export function loadLVBundleContext(
+  sourceRoot: string,
+  bundleId: string,
+): LVBundleContext {
+  const bundle = resolveExternalBundleRecord(sourceRoot, bundleId.trim(), 'LV');
+  return loadExternalBundleContext({
+    sourceRoot,
+    bundle,
+    countryCode: LV_COUNTRY_CODE,
+    // ATVK 2021 local government units carry 7-digit codes.
+    municipalityCodeLength: 7,
+    normalizeMunicipalityCode: (value) => String(value ?? '').trim(),
+  });
+}
+
+export function loadLVChochoSelected(context: LVBundleContext) {
+  return toPolygonFeatureCollection(
+    loadBundlePhaseInputGeoJson(context, 'chocho_selected.geojson'),
+  );
+}
+
+export function loadLVMunicipalitiesSelected(context: LVBundleContext) {
+  return toPolygonFeatureCollection(
+    loadBundlePhaseInputGeoJson(
+      context,
+      'region_municipality_selected.geojson',
+    ),
+  );
+}

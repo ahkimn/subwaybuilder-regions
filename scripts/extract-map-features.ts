@@ -8,12 +8,16 @@ import {
 import { extractAUBoundaries } from './extract/extract-au-map-features';
 import { extractCABoundaries } from './extract/extract-ca-map-features';
 import { extractCZBoundaries } from './extract/extract-cz-map-features';
+import { extractEEBoundaries } from './extract/extract-ee-map-features';
 import { extractFRBoundaries } from './extract/extract-fr-map-features';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
 import { extractJPBoundaries } from './extract/extract-jp-map-features';
+import { extractLTBoundaries } from './extract/extract-lt-map-features';
+import { extractLVBoundaries } from './extract/extract-lv-map-features';
 import { extractPLBoundaries } from './extract/extract-pl-map-features';
 import { extractWorldMapFeatures } from './extract/extract-row-map-features';
 import { extractTWBoundaries } from './extract/extract-tw-map-features';
+import { extractUABoundaries } from './extract/extract-ua-map-features';
 import { extractUSBoundaries } from './extract/extract-us-map-features';
 import {
   type ExtractMapFeaturesArgs,
@@ -53,6 +57,22 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
   }
   if (args.countryCode === 'TW') {
     await extractTWBoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'EE') {
+    await extractEEBoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'UA') {
+    await extractUABoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'LV') {
+    await extractLVBoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'LT') {
+    await extractLTBoundaries(args);
     return;
   }
 
