@@ -33,6 +33,16 @@ export function loadLVChochoSelected(context: LVBundleContext) {
   );
 }
 
+// Fully-tiling administrative sub-municipal grain (apkaimes in-city +
+// pilsētas / pagasti elsewhere) with DPA-free geometry, emitted by jp-data's
+// prepare stage. Preferred over the DPA-fragmented chocho layer for the
+// neighbourhoods & parishes dataset.
+export function loadLVSubMunicipalSelected(context: LVBundleContext) {
+  return toPolygonFeatureCollection(
+    loadBundlePhaseInputGeoJson(context, 'sub_municipal_selected.geojson'),
+  );
+}
+
 export function loadLVMunicipalitiesSelected(context: LVBundleContext) {
   return toPolygonFeatureCollection(
     loadBundlePhaseInputGeoJson(

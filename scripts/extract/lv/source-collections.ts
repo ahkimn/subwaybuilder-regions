@@ -4,7 +4,11 @@ import {
   LV_POPULATION_PROPERTY,
   LV_SOURCE_ID_PROPERTY,
 } from './constants';
-import { loadLVChochoSelected, loadLVMunicipalitiesSelected } from './context';
+import {
+  loadLVChochoSelected,
+  loadLVMunicipalitiesSelected,
+  loadLVSubMunicipalSelected,
+} from './context';
 import type { LVBundleContext, LVSourceFeature } from './types';
 
 function text(value: unknown): string {
@@ -32,17 +36,17 @@ function withProperties(
   };
 }
 
-// Finest LV grain: a heterogeneous mix of apkaimes (city neighbourhoods),
-// densely-populated-area clusters, and pagasti residuals. Emitted directly.
+// Fully-tiling sub-municipal admin grain: apkaimes (in-city) + pilsētas /
+// pagasti (elsewhere), from jp-data's DPA-free sub_municipal_selected layer.
 export function buildLVApkaimesSourceCollection(context: LVBundleContext) {
   return {
     type: 'FeatureCollection' as const,
-    features: loadLVChochoSelected(context).features.map((feature) =>
+    features: loadLVSubMunicipalSelected(context).features.map((feature) =>
       withProperties(
         feature,
-        text(feature.properties?.chocho_key),
-        text(feature.properties?.chocho_name),
-        population(feature.properties),
+        text(feature.properties?.code),
+        text(feature.properties?.name),
+        parseNumber(feature.properties?.pop_total) ?? 0,
       ),
     ),
   };
