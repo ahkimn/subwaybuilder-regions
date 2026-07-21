@@ -256,3 +256,62 @@ describe('shared/datasets/catalog CN metadata', () => {
     assert.deepEqual(onlineDatasets, []);
   });
 });
+
+describe('shared/datasets/catalog EE and UA metadata', () => {
+  it('registers the public local-term dataset IDs', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('EE'), [
+      'ee-maakond',
+      'ee-omavalitsused',
+      'ee-asustusuksused',
+    ]);
+    assert.deepEqual(resolveCountryDatasetOrder('UA'), [
+      'ua-raions',
+      'ua-hromadas',
+      'ua-naseleni-punkty',
+    ]);
+    assert.equal(
+      DATASET_METADATA_CATALOG['ee-omavalitsused']?.displayName,
+      'Omavalitsused / linnaosad (Municipalities / City Districts)',
+    );
+  });
+});
+
+describe('shared/datasets/catalog LV and LT metadata', () => {
+  it('includes LV and LT in static countries', () => {
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('LV'));
+    assert.ok(CATALOG_STATIC_COUNTRIES.includes('LT'));
+  });
+
+  it('registers the public local-term dataset IDs', () => {
+    assert.deepEqual(resolveCountryDatasetOrder('LV'), [
+      'lv-pasvaldibas',
+      'lv-apkaimes',
+    ]);
+    assert.deepEqual(resolveCountryDatasetOrder('LT'), [
+      'lt-savivaldybes',
+      'lt-seniunijos',
+      'lt-gyvenvietes',
+    ]);
+  });
+
+  it('marks LV and LT datasets as local-only with local-term dataset names', () => {
+    for (const datasetId of [
+      'lv-pasvaldibas',
+      'lv-apkaimes',
+      'lt-savivaldybes',
+      'lt-seniunijos',
+      'lt-gyvenvietes',
+    ]) {
+      assert.equal(
+        DATASET_METADATA_CATALOG[datasetId]?.existsOnlineSource,
+        false,
+      );
+    }
+    assert.equal(
+      DATASET_METADATA_CATALOG['lt-seniunijos']?.displayName,
+      'Seniūnijos (Elderships)',
+    );
+    assert.deepEqual(resolveCountryDatasets('LV', { onlineOnly: true }), []);
+    assert.deepEqual(resolveCountryDatasets('LT', { onlineOnly: true }), []);
+  });
+});

@@ -215,10 +215,16 @@ async function loadOazaBoundaryRowsForPrefecture(
     NEIGHBORHOOD_BOUNDARY_DIR,
     NEIGHBORHOOD_ZIP_TEMPLATE.replace('{prefCode}', prefCode),
   );
-  assertJPSourcePathExists(
-    zipPath,
-    `neighborhood7 boundary zip for ${prefCode}`,
-  );
+  // The neighborhood7 zip source is optional: jp-data excised this path
+  // (export/jp HYGIENE #11), and ōaza geometry/grouping already come from the
+  // bundle chocho features. When a prefecture zip is absent we return an empty
+  // lookup and derive ōaza names from chocho_selected downstream.
+  if (!fs.existsSync(zipPath)) {
+    console.warn(
+      `[JP] Optional neighborhood7 boundary zip for ${prefCode} not found (${zipPath}); deriving ōaza names from chocho_selected.`,
+    );
+    return new Map();
+  }
 
   const extractedDbfPath = await extractZipEntryToTempFile(
     zipPath,
@@ -450,26 +456,26 @@ export async function buildOoazaSourceCollection(
     if (!chochoKey) {
       throw new Error('[JP] chocho_selected feature is missing chocho_key.');
     }
-    if (!oazaRow) {
-      throw new Error(
-        `[JP] Missing neighborhood7 boundary mapping for chocho_key ${chochoKey}.`,
-      );
-    }
 
     // Census KEY_CODE encodes PREF(2) + CITY(3) + OAZA(4) + AZA(...). Rebuild
     // the ōaza key from the normalized municipality code plus the 4-digit
     // OAZA segment so Hamamatsu's legacy 2020 ward codes still pool to the
     // current 2024 ward codes.
     const groupKey = `${municipalityCode}${chochoKey.slice(5, 9)}`;
-    const expectedGroupKey = `${municipalityCode}${oazaRow.kcode1Base}`;
-    if (groupKey !== expectedGroupKey) {
-      throw new Error(
-        `[JP] KEY_CODE/KCODE1 mismatch for chocho_key ${chochoKey}: ${groupKey} !== ${expectedGroupKey}.`,
-      );
+    // When the optional neighborhood7 lookup is present, cross-check the chocho's
+    // KEY_CODE-derived ōaza group against the DBF's explicit KCODE1 base.
+    if (oazaRow) {
+      const expectedGroupKey = `${municipalityCode}${oazaRow.kcode1Base}`;
+      if (groupKey !== expectedGroupKey) {
+        throw new Error(
+          `[JP] KEY_CODE/KCODE1 mismatch for chocho_key ${chochoKey}: ${groupKey} !== ${expectedGroupKey}.`,
+        );
+      }
     }
+    // Prefer the census ōaza name from the neighborhood7 DBF when available;
+    // otherwise derive it by stripping the 丁目 suffix from the chocho name.
     const resolvedName =
-      deriveOoazaName(oazaRow.oazaName) ||
-      oazaRow.oazaName ||
+      (oazaRow && (deriveOoazaName(oazaRow.oazaName) || oazaRow.oazaName)) ||
       deriveOoazaName(chochoName) ||
       chochoName ||
       groupKey;

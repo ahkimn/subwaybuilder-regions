@@ -2,23 +2,39 @@
 
 [Back to README](../../README.md)
 
-## v0.4.11 - 2026-06-02
+## v0.5.0 - 2026-07-21
 
 _Game version_ v1.3.0
 
 ### New Features
 
-- Added PE region support for:
+- Added EE (Estonia) region support for:
+  - Maakonnad (`ee-maakond` | counties)
+  - Omavalitsused / linnaosad (`ee-omavalitsused` | municipalities / city districts)
+  - Asustusüksused (`ee-asustusuksused` | settlement units)
+- Added UA (Ukraine) region support for:
+  - Райони (`ua-raions` | raions)
+  - Громади / міські райони (`ua-hromadas` | hromadas / city districts)
+  - Населені пункти (`ua-naseleni-punkty` | settlements)
+- Added LV (Latvia) region support for:
+  - Novadi un valstspilsētas (`lv-pasvaldibas` | municipalities)
+  - Apkaimes un pagasti (`lv-apkaimes` | neighbourhoods & parishes)
+- Added LT (Lithuania) region support for:
+  - Savivaldybės (`lt-savivaldybes` | municipalities)
+  - Seniūnijos (`lt-seniunijos` | elderships)
+  - Gyvenamosios vietovės (`lt-gyvenvietes` | localities)
+- Added PE (Peru) region support for:
   - Provinces (`pe-provinces`)
   - Districts (`pe-districts`)
-- Added CN region support for:
+- Added CN (China) region support for:
   - 区县 (`cn-districts` | districts)
   - 街道/乡镇 (`cn-subdistricts` | subdistricts)
 
 ### Other Updates
 
-- Added local static recognition for Peru city datasets (`LIM`, `AQP`, `TRU`, `CIX`, `PIU`, `IQT`, `CUZ`, `CHM`, `JAU`).
-- Added local static recognition for China city datasets (`SHA`, `SZX`, `CAN`, `PEK`, `CKG`, `CTU`).
+- Added native-language region labels for EE, LV, and LT datasets, and bilingual (Ukrainian + English) labels for UA.
+- Joined LT savivaldybė/seniūnija names from the Registrų centras INSPIRE administrative-unit layers (via the jp-data source pipeline); those tiers are dissolved from the settlement grain and carry only codes in the bundle inputs.
+- Added local static recognition for downloaded EE/UA/LV/LT as well as PE/CN city datasets so release/distributed data can be discovered by the mod even though those countries are not supported by the runtime fetch wrappers (same as JP, CZ, PL, and TW).
 - Added data scripts to validate external/collaborator archives, sanitize GeoJSON samples into canonical mod format, and add missing label coordinates.
 
 ## v0.4.10 - 2026-05-24

@@ -298,6 +298,94 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'Collaborator-provided administrative boundaries',
     existsOnlineSource: false,
   },
+  'ee-maakond': {
+    datasetId: 'ee-maakond',
+    displayName: 'Maakonnad (Counties)',
+    unitSingular: 'Maakond',
+    unitPlural: 'Maakonnad',
+    source: 'EHAK / Maa-amet',
+    existsOnlineSource: false,
+  },
+  'ee-omavalitsused': {
+    datasetId: 'ee-omavalitsused',
+    displayName: 'Omavalitsused / linnaosad (Municipalities / City Districts)',
+    unitSingular: 'Omavalitsus / linnaosa',
+    unitPlural: 'Omavalitsused / linnaosad',
+    source: 'EHAK / Maa-amet',
+    existsOnlineSource: false,
+  },
+  'ee-asustusuksused': {
+    datasetId: 'ee-asustusuksused',
+    displayName: 'Asustusüksused (Settlement Units)',
+    unitSingular: 'Asustusüksus',
+    unitPlural: 'Asustusüksused',
+    source: 'EHAK / Maa-amet',
+    existsOnlineSource: false,
+  },
+  'ua-raions': {
+    datasetId: 'ua-raions',
+    displayName: 'Райони (Raions)',
+    unitSingular: 'Raion',
+    unitPlural: 'Raions',
+    source: 'OCHA / KATOTTH',
+    existsOnlineSource: false,
+  },
+  'ua-hromadas': {
+    datasetId: 'ua-hromadas',
+    displayName: 'Громади / міські райони (Hromadas / City Districts)',
+    unitSingular: 'Hromada / City District',
+    unitPlural: 'Hromadas / City Districts',
+    source: 'OCHA / KATOTTH',
+    existsOnlineSource: false,
+  },
+  'ua-naseleni-punkty': {
+    datasetId: 'ua-naseleni-punkty',
+    displayName: 'Населені пункти (Settlements)',
+    unitSingular: 'Населений пункт',
+    unitPlural: 'Населені пункти',
+    source: 'OCHA / KATOTTH',
+    existsOnlineSource: false,
+  },
+  'lv-pasvaldibas': {
+    datasetId: 'lv-pasvaldibas',
+    displayName: 'Novadi un valstspilsētas (Municipalities)',
+    unitSingular: 'Pašvaldība',
+    unitPlural: 'Pašvaldības',
+    source: 'VZD ATVK 2021 / INSPIRE',
+    existsOnlineSource: false,
+  },
+  'lv-apkaimes': {
+    datasetId: 'lv-apkaimes',
+    displayName: 'Apkaimes un pagasti (Neighbourhoods & Parishes)',
+    unitSingular: 'Apkaime / pagasts',
+    unitPlural: 'Apkaimes un pagasti',
+    source: 'VZD / CSP',
+    existsOnlineSource: false,
+  },
+  'lt-savivaldybes': {
+    datasetId: 'lt-savivaldybes',
+    displayName: 'Savivaldybės (Municipalities)',
+    unitSingular: 'Savivaldybė',
+    unitPlural: 'Savivaldybės',
+    source: 'Registrų centras / geoportal.lt INSPIRE',
+    existsOnlineSource: false,
+  },
+  'lt-seniunijos': {
+    datasetId: 'lt-seniunijos',
+    displayName: 'Seniūnijos (Elderships)',
+    unitSingular: 'Seniūnija',
+    unitPlural: 'Seniūnijos',
+    source: 'Registrų centras / geoportal.lt INSPIRE',
+    existsOnlineSource: false,
+  },
+  'lt-gyvenvietes': {
+    datasetId: 'lt-gyvenvietes',
+    displayName: 'Gyvenamosios vietovės (Localities)',
+    unitSingular: 'Gyvenamoji vietovė',
+    unitPlural: 'Gyvenamosios vietovės',
+    source: 'Registrų centras',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -314,6 +402,10 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   TW: ['township', 'li'],
   PE: ['pe-provinces', 'pe-districts'],
   CN: ['cn-districts', 'cn-subdistricts'],
+  EE: ['ee-maakond', 'ee-omavalitsused', 'ee-asustusuksused'],
+  UA: ['ua-raions', 'ua-hromadas', 'ua-naseleni-punkty'],
+  LV: ['lv-pasvaldibas', 'lv-apkaimes'],
+  LT: ['lt-savivaldybes', 'lt-seniunijos', 'lt-gyvenvietes'],
 });
 
 export const CATALOG_STATIC_COUNTRIES = [
@@ -328,6 +420,10 @@ export const CATALOG_STATIC_COUNTRIES = [
   'TW',
   'PE',
   'CN',
+  'EE',
+  'UA',
+  'LV',
+  'LT',
 ] as const;
 export type StaticCountryCode = (typeof CATALOG_STATIC_COUNTRIES)[number];
 

@@ -9,14 +9,27 @@ const BUILT_IN_COUNTRY_CODES = [
   'AU',
   'CA',
   'CZ',
+  'EE',
   'FR',
   'GB',
   'JP',
+  'LT',
+  'LV',
   'PL',
   'TW',
+  'UA',
   'US',
 ];
-const EXTERNAL_BUNDLE_COUNTRY_CODES = new Set(['CZ', 'JP', 'PL', 'TW']);
+const EXTERNAL_BUNDLE_COUNTRY_CODES = new Set([
+  'CZ',
+  'EE',
+  'JP',
+  'LT',
+  'LV',
+  'PL',
+  'TW',
+  'UA',
+]);
 
 function getAvailableCountryCodes(): Set<string> {
   return new Set([...BUILT_IN_COUNTRY_CODES, ...getSupportedCountryCodes()]);

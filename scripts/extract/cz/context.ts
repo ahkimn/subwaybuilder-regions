@@ -12,6 +12,7 @@ import {
   toPolygonFeatureCollection,
 } from '../external/context';
 import {
+  CZ_CISZSJD_FILE,
   CZ_COUNTRY_CODE,
   CZ_MUNICIPALITY_CODE_LENGTH,
   CZ_OBCE_FILE,
@@ -115,7 +116,7 @@ export function loadCZObecPopulationIndex(
 export function loadCZZsjDilNameIndex(
   sourceRoot: string,
 ): Map<string, CZZsjDilNameRow> {
-  const rows = loadCSV(
+  const legacyRows = loadCSV(
     resolveCZRequiredSourcePath(
       sourceRoot,
       CZ_ZSJ_DIL_NAMES_FILE,
@@ -124,13 +125,34 @@ export function loadCZZsjDilNameIndex(
   );
   const index = new Map<string, CZZsjDilNameRow>();
 
-  for (const row of rows) {
+  for (const row of legacyRows) {
     const chochoKey = String(row.chocho_key ?? '').trim();
     const name = String(row.name ?? '').trim();
     if (!chochoKey || !name) {
       throw new Error(
         '[CZ] zsj_dil_names.csv requires non-empty chocho_key and name columns.',
       );
+    }
+    index.set(chochoKey, { chochoKey, name });
+  }
+
+  const ciszsjd = loadGeoJSON(
+    resolveCZRequiredSourcePath(
+      sourceRoot,
+      CZ_CISZSJD_FILE,
+      'CZ national CISZSJD labels',
+    ),
+  );
+  for (const feature of ciszsjd.features) {
+    const properties = feature.properties ?? {};
+    const parentObecCode = normalizeCZMunicipalityCode(
+      properties.parent_obec_code,
+    );
+    const zsjDilCode = normalizeDigitsToLength(properties.kod, 7);
+    const name = String(properties.nazev ?? '').trim();
+    const chochoKey = `${parentObecCode}${zsjDilCode}`;
+    if (!parentObecCode || !zsjDilCode || !name || index.has(chochoKey)) {
+      continue;
     }
     index.set(chochoKey, { chochoKey, name });
   }

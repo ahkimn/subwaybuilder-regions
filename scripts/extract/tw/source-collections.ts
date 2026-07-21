@@ -1,5 +1,3 @@
-import { cleanCoords } from '@turf/clean-coords';
-import * as turf from '@turf/turf';
 import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 
 import {
@@ -7,6 +5,7 @@ import {
   cleanName,
   formatBilingualName,
 } from '../bilingual-names';
+import { mergePolygonFeatures } from '../external/geometry';
 import {
   TW_BILINGUAL_NAME_PROPERTY,
   TW_NAME_EN_PROPERTY,
@@ -48,63 +47,6 @@ function withTWRegionProperties(
       [TW_BILINGUAL_NAME_PROPERTY]: formatBilingualName(nameZh, nameEn),
       [TW_POPULATION_PROPERTY]: population,
     },
-  };
-}
-
-function mergePolygonFeatures(
-  features: readonly TWSourceFeature[],
-  properties: GeoJSON.GeoJsonProperties,
-): TWSourceFeature {
-  if (features.length === 0) {
-    throw new Error('[TW] Cannot merge an empty township feature group.');
-  }
-
-  if (features.length === 1) {
-    const cloned = turf.clone(features[0]) as TWSourceFeature;
-    cloned.properties = properties;
-    return cloned;
-  }
-
-  const collection = turf.featureCollection([...features]);
-  let merged: TWSourceFeature | null = null;
-
-  try {
-    merged = turf.union(collection, { properties }) as TWSourceFeature | null;
-  } catch (error) {
-    const sourceId = String(properties?.[TW_SOURCE_ID_PROPERTY] ?? 'unknown');
-    console.warn(
-      `[TW] Union failed for township ${sourceId}; retrying with cleaned/truncated coordinates.`,
-      error,
-    );
-    const normalizedFeatures = features.map((feature) =>
-      turf.truncate(cleanCoords(feature), {
-        precision: 7,
-        coordinates: 2,
-        mutate: false,
-      }),
-    ) as TWSourceFeature[];
-    merged = turf.union(turf.featureCollection(normalizedFeatures), {
-      properties,
-    }) as TWSourceFeature | null;
-  }
-
-  if (merged) {
-    merged.properties = properties;
-    return merged;
-  }
-
-  const coordinates = features.flatMap((feature) =>
-    feature.geometry.type === 'Polygon'
-      ? [feature.geometry.coordinates]
-      : feature.geometry.coordinates,
-  );
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'MultiPolygon',
-      coordinates,
-    },
-    properties,
   };
 }
 
@@ -241,16 +183,20 @@ export function buildTWTownshipSourceCollection(
       left.municipalityCode.localeCompare(right.municipalityCode),
     )
     .map((aggregate) =>
-      mergePolygonFeatures(aggregate.features, {
-        [TW_SOURCE_ID_PROPERTY]: aggregate.municipalityCode,
-        [TW_NAME_ZH_PROPERTY]: aggregate.nameZh,
-        [TW_NAME_EN_PROPERTY]: aggregate.nameEn,
-        [TW_BILINGUAL_NAME_PROPERTY]: formatBilingualName(
-          aggregate.nameZh,
-          aggregate.nameEn,
-        ),
-        [TW_POPULATION_PROPERTY]: aggregate.population,
-      }),
+      mergePolygonFeatures(
+        aggregate.features,
+        {
+          [TW_SOURCE_ID_PROPERTY]: aggregate.municipalityCode,
+          [TW_NAME_ZH_PROPERTY]: aggregate.nameZh,
+          [TW_NAME_EN_PROPERTY]: aggregate.nameEn,
+          [TW_BILINGUAL_NAME_PROPERTY]: formatBilingualName(
+            aggregate.nameZh,
+            aggregate.nameEn,
+          ),
+          [TW_POPULATION_PROPERTY]: aggregate.population,
+        },
+        `TW township ${aggregate.municipalityCode}`,
+      ),
     );
 
   return {
