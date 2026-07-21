@@ -51,6 +51,9 @@ export const FLOATING_PANEL_OFFSET_Y = 80;
 export const INFO_PANEL_MIN_WIDTH = 80;
 export const INFO_PANEL_MIN_VERTICAL_OFFSET = 100; // Minimum vertical offset from bottom of viewport to avoid rendering over the bottom bar
 
+export const INFO_PANEL_DEFAULT_POSITION = { x: 8, y: 8 } as const; // top-left, matching the legacy static panel
+export const REGIONS_INFO_DRAG_HANDLE_ATTR = 'data-regions-drag-handle';
+
 export const SUCCESS_HEX = getPrimaryChartColorByName('Green').hex;
 export const WARNING_HEX = getPrimaryChartColorByName('Amber').hex;
 export const ERROR_HEX = getPrimaryChartColorByName('Red').hex;

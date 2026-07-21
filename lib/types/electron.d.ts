@@ -8,6 +8,8 @@ import { ModManifest } from './manifest';
 
 export interface ElectronAPI {
   invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+  /** Returns the running game (app) version, e.g. "1.4.0". */
+  getVersion?: () => Promise<string>;
   quit(): void;
   reloadWindow(): void;
   setCurrentRoute(route: string): void;

@@ -1,3 +1,4 @@
+import { resolveGameVersionAtLeast } from '@lib/utils/game-version';
 import { DATA_INDEX_FILE, DEFAULT_PORT, DEFAULT_URL } from '@regions/constants';
 
 import { REGIONS_DESELECT_KEY } from '../core/constants';
@@ -12,6 +13,10 @@ import { attachRegionsDebug } from './debug';
 
 const SERVE_URL = `http://${DEFAULT_URL}:${DEFAULT_PORT}/`;
 const INDEX_FILE = `${DATA_INDEX_FILE}`;
+
+// From game v1.4.0 the top-left demand view became a draggable nav panel, so the
+// info panel switches to a draggable, nav-panel-hosted floating panel.
+const DYNAMIC_INFO_PANEL_MIN_GAME_VERSION = [1, 4, 0] as const;
 
 const api = window.SubwayBuilderAPI;
 
@@ -69,11 +74,16 @@ export class RegionsMod {
       this.storage,
     );
 
+    const usesDynamicInfoPanel = await resolveGameVersionAtLeast(
+      DYNAMIC_INFO_PANEL_MIN_GAME_VERSION,
+    );
+
     this.uiManager = new RegionsUIManager(
       api,
       this.registry,
       this.storage,
       this.settings,
+      usesDynamicInfoPanel,
     );
 
     this.uiManager.initialize();
