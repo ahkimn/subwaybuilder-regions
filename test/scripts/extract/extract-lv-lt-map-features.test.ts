@@ -97,7 +97,7 @@ function args(
 }
 
 describe('LV external bundle extraction', () => {
-  it('emits municipalities (population summed from chocho) and the fine grain', async () => {
+  it('emits municipalities (pop from chocho) and the DPA-free sub-municipal grain', async () => {
     const { outputRoot, phaseInputs } = await fixture('LV', 'lvtest');
     await writeCollection(path.join(phaseInputs, 'boundary.geojson'), [
       polygon(0, {
@@ -105,6 +105,7 @@ describe('LV external bundle extraction', () => {
         pref_codes: ['99'],
       }),
     ]);
+    // chocho still drives lv-pasvaldibas population (summed by parent_lgu).
     await writeCollection(path.join(phaseInputs, 'chocho_selected.geojson'), [
       polygon(0, {
         chocho_key: 'LVRIG01',
@@ -121,6 +122,25 @@ describe('LV external bundle extraction', () => {
         pop_total: 40,
       }),
     ]);
+    // lv-apkaimes now reads the clean sub-municipal layer (apkaime + pagasts),
+    // not the chocho — no DPA fragments.
+    await writeCollection(
+      path.join(phaseInputs, 'sub_municipal_selected.geojson'),
+      [
+        polygon(0, {
+          code: 'LVRIG01',
+          name: 'Kleisti',
+          l1_type: 'apkaime',
+          pop_total: 60,
+        }),
+        polygon(1, {
+          code: 'LV0001100',
+          name: 'Testes pagasts',
+          l1_type: 'pagasts',
+          pop_total: 40,
+        }),
+      ],
+    );
     await writeCollection(
       path.join(phaseInputs, 'region_municipality_selected.geojson'),
       [
@@ -147,7 +167,14 @@ describe('LV external bundle extraction', () => {
     assert.equal(apkaimes.features.length, 2);
     assert.ok(
       apkaimes.features.some(
-        (feature) => feature.properties?.NAME === 'Kleisti',
+        (feature) =>
+          feature.properties?.NAME === 'Kleisti' &&
+          feature.properties?.POPULATION === 60,
+      ),
+    );
+    assert.ok(
+      apkaimes.features.some(
+        (feature) => feature.properties?.NAME === 'Testes pagasts',
       ),
     );
   });
