@@ -29,7 +29,10 @@ import {
 import { RegionsInfoPanelRenderer } from './panels/info/RegionsInfoPanelRenderer';
 import { RegionsOverviewPanelRenderer } from './panels/overview/RegionsOverviewPanelRenderer';
 import { RegionsSettingsPanelRenderer } from './panels/settings/RegionsSettingsPanelRenderer';
-import { resolveInfoPanelRoot } from './resolve/resolve-info-panel';
+import {
+  resolveInfoPanelRoot,
+  resolveNavPanelHost,
+} from './resolve/resolve-info-panel';
 
 export class RegionsUIManager {
   private mapLayers: RegionsMapLayers | null = null;
@@ -59,6 +62,8 @@ export class RegionsUIManager {
     private datasetRegistry: RegionDatasetRegistry,
     storage: RegionsStorage,
     initialSettings?: RegionsSettingsValue,
+    // From game 1.4.0+ the infoPanel is implemented as dynamic (draggable)
+    private readonly dynamicInfoPanel: boolean = false,
   ) {
     this.state = new UIState();
     if (initialSettings) {
@@ -77,6 +82,7 @@ export class RegionsUIManager {
       this.regionDataManager,
       this.getInfoPanelRoot.bind(this),
       () => this.clearSelection(),
+      this.dynamicInfoPanel,
     );
 
     this.overviewPanelRenderer = new RegionsOverviewPanelRenderer(
@@ -156,7 +162,9 @@ export class RegionsUIManager {
       }
     }
 
-    this.infoPanelRoot = resolveInfoPanelRoot();
+    this.infoPanelRoot = this.dynamicInfoPanel
+      ? resolveNavPanelHost()
+      : resolveInfoPanelRoot();
     this.infoPanelRoot && this.ensureInfoPanelObserver(this.infoPanelRoot);
     return this.infoPanelRoot;
   }
@@ -369,6 +377,9 @@ export class RegionsUIManager {
   // --- State Mutations --- //
   onCityChange(cityCode: string) {
     this.reset();
+    // A dragged info-panel position persists across close/reopen within a city,
+    // but resets to the default when switching cities.
+    this.infoPanelRenderer.resetPosition();
     this.state.cityCode = cityCode;
     this.commuterRefreshLoop.start();
     this.infoPanelRenderer.initialize();

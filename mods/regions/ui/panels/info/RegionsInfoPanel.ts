@@ -13,6 +13,7 @@ import {
   INFO_PANEL_MIN_VERTICAL_OFFSET,
   INFO_PANEL_MIN_WIDTH,
   LOADING_VALUE_DISPLAY,
+  REGIONS_INFO_DRAG_HANDLE_ATTR,
   REGIONS_INFO_PANEL_ID,
   REGIONS_INFO_PANEL_TITLE,
 } from '@regions/core/constants';
@@ -44,6 +45,8 @@ export type RegionsInfoPanelProps = {
   uiState: Readonly<UIState>;
   onClose: () => void;
   forceRefreshToken: number;
+  /** When true, the header is rendered as a drag handle (dynamic v1.4.0+ panel). */
+  draggable?: boolean;
 };
 
 export function RegionsInfoPanel({
@@ -51,6 +54,7 @@ export function RegionsInfoPanel({
   uiState,
   onClose,
   forceRefreshToken,
+  draggable = false,
 }: RegionsInfoPanelProps): ReactNode {
   const [activeView, setActiveView] = useState<RegionsInfoPanelView>(
     RegionsInfoPanelView.Statistics,
@@ -205,14 +209,21 @@ export function RegionsInfoPanel({
         'border border-border/50',
         'h-fit rounded-lg',
         'text-sm shadow-lg overflow-hidden',
-        'w-full flex flex-col min-h-0',
+        'w-96 flex flex-col min-h-0',
       ].join(' '),
       style: {
         // Leave offset at bottom of viewport to avoid rendering over the bottom bar and to ensure that all content in the panel is fully visible
         maxHeight: `calc(100vh - ${INFO_PANEL_MIN_VERTICAL_OFFSET}px)`,
       },
     },
-    ReactPanelHeader(createElement, REGIONS_INFO_PANEL_TITLE, onClose),
+    ReactPanelHeader(
+      createElement,
+      REGIONS_INFO_PANEL_TITLE,
+      onClose,
+      draggable
+        ? { draggable: true, extraProps: { [REGIONS_INFO_DRAG_HANDLE_ATTR]: '' } }
+        : undefined,
+    ),
     createElement(
       'div',
       { className: 'flex flex-col flex-1 min-h-0 overflow-hidden' },

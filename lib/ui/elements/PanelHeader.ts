@@ -8,15 +8,27 @@ const HEADER_CLASS_NAMES = [
   'items-center justify-between bg-primary-foreground',
 ];
 
+const DRAG_HANDLE_CLASS_NAMES = 'cursor-grab active:cursor-grabbing select-none';
+
+export type PanelHeaderOptions = {
+  // Render the header as a drag handle (adds grab cursor + no-select)
+  draggable?: boolean;
+  extraProps?: Record<string, unknown>;
+};
+
 export function ReactPanelHeader(
   h: typeof createElement,
   title: string,
   onClose: () => void,
+  options?: PanelHeaderOptions,
 ): ReactNode {
   return h(
     'div',
     {
-      className: HEADER_CLASS_NAMES.join(' '),
+      className: options?.draggable
+        ? `${HEADER_CLASS_NAMES.join(' ')} ${DRAG_HANDLE_CLASS_NAMES}`
+        : HEADER_CLASS_NAMES.join(' '),
+      ...(options?.extraProps ?? {}),
     },
     h('div', { className: 'flex items-center h-full w-full' }),
     h(
