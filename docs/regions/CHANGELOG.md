@@ -32,16 +32,9 @@ _Game version_ v1.3.0
 
 ### Other Updates
 
-- Added native-language region labels for EE, LV, and LT datasets, and bilingual (Ukrainian + English) labels for UA, sourced from the collaborator bundle pipeline.
+- Added native-language region labels for EE, LV, and LT datasets, and bilingual (Ukrainian + English) labels for UA.
 - Joined LT savivaldybė/seniūnija names from the Registrų centras INSPIRE administrative-unit layers (via the jp-data source pipeline); those tiers are dissolved from the settlement grain and carry only codes in the bundle inputs.
-- Added local static recognition for downloaded EE city datasets (`TLL`, `TAY`, `EPU`, `IDV`).
-- Added local static recognition for downloaded UA city datasets (`LWO`, `ODS`, `KBP`, `HRK`, `DNK`, `OZH`, `KWG`).
-- Added local static recognition for downloaded LV city datasets (`RIX`, `DGV`, `LPX`).
-- Added local static recognition for downloaded LT city datasets (`VNO`, `KUN`, `PLQ`, `PNV`, `SQQ`).
-- Added local static recognition for Peru city datasets (`LIM`, `AQP`, `TRU`, `CIX`, `PIU`, `IQT`, `CUZ`, `CHM`, `JAU`).
-- Added local static recognition for China city datasets (`SHA`, `SZX`, `CAN`, `PEK`, `CKG`, `CTU`).
-- Synced the JP release city set to the complete jp-data bundle set (45 maps): added `KFU`, `KHS`, `SHB`, `UBJ`, and `WKJ`, and removed retired codes (`HSG`, `QEB`, `SKK`, `WKY`).
-- Modernized JP ōaza extraction to derive the 大字 grain (geometry, names, population) directly from the bundle `chocho_selected` layer; the national neighborhood7 boundary zips are now an optional refinement rather than a hard requirement, matching jp-data's removal of that source path. Re-exported the 30 JP bundles whose boundaries were refreshed in jp-maps 0.4.4–0.4.6.
+- Added local static recognition for downloaded EE/UA/LV/LT as well as PE/CN city datasets so release/distributed data can be discovered by the mod even though those countries are not supported by the runtime fetch wrappers (same as JP, CZ, PL, and TW).
 - Added data scripts to validate external/collaborator archives, sanitize GeoJSON samples into canonical mod format, and add missing label coordinates.
 
 ## v0.4.10 - 2026-05-24
