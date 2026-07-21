@@ -8,7 +8,8 @@ const HEADER_CLASS_NAMES = [
   'items-center justify-between bg-primary-foreground',
 ];
 
-const DRAG_HANDLE_CLASS_NAMES = 'cursor-grab active:cursor-grabbing select-none';
+const DRAG_HANDLE_CLASS_NAMES =
+  'cursor-grab active:cursor-grabbing select-none';
 
 export type PanelHeaderOptions = {
   // Render the header as a drag handle (adds grab cursor + no-select)

@@ -213,10 +213,7 @@ describe('LT external bundle extraction', () => {
       path.join(outputRoot, 'TST', 'lt-savivaldybes.geojson.gz'),
     );
     assert.equal(savivaldybes.features.length, 1);
-    assert.equal(
-      savivaldybes.features[0].properties?.NAME,
-      'Vilniaus m. sav.',
-    );
+    assert.equal(savivaldybes.features[0].properties?.NAME, 'Vilniaus m. sav.');
     assert.equal(savivaldybes.features[0].properties?.POPULATION, 100);
 
     const seniunijos = readGzip(

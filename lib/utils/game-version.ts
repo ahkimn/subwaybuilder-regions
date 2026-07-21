@@ -31,7 +31,6 @@ export async function resolveGameVersionAtLeast(
   return version ? isVersionAtLeast(version, target) : false;
 }
 
-
 // Resolve the running game version (e.g. "1.4.0"), or `null` if unavailable.
 export async function resolveGameVersion(): Promise<string | null> {
   try {
@@ -42,4 +41,3 @@ export async function resolveGameVersion(): Promise<string | null> {
     return null;
   }
 }
-

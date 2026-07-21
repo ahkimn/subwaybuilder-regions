@@ -35,7 +35,11 @@ function withProperties(
   };
 }
 
-type LTGroup = { name: string; population: number; features: LTSourceFeature[] };
+type LTGroup = {
+  name: string;
+  population: number;
+  features: LTSourceFeature[];
+};
 
 function dissolveChochoByCode(
   context: LTBundleContext,

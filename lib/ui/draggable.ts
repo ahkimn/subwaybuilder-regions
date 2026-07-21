@@ -15,7 +15,7 @@ export type DraggableOptions = {
   minVisiblePx?: number;
   // Keep at least this many px of the element's top edge on-screen vertically.
   edgeGutterPx?: number;
-  // Called after each drag-driven position change (e.g. to persist it). 
+  // Called after each drag-driven position change (e.g. to persist it).
   onChange?: (position: Point) => void;
 };
 

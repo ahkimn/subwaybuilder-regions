@@ -221,7 +221,10 @@ export function RegionsInfoPanel({
       REGIONS_INFO_PANEL_TITLE,
       onClose,
       draggable
-        ? { draggable: true, extraProps: { [REGIONS_INFO_DRAG_HANDLE_ATTR]: '' } }
+        ? {
+            draggable: true,
+            extraProps: { [REGIONS_INFO_DRAG_HANDLE_ATTR]: '' },
+          }
         : undefined,
     ),
     createElement(
