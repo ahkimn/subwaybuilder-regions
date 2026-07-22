@@ -8,7 +8,7 @@ import {
   REGIONS_INFO_ROOT_PREFIX,
 } from '@regions/core/constants';
 import type { RegionDataManager } from '@regions/core/datasets/RegionDataManager';
-import type { UIState } from '@regions/core/domain';
+import type { RegionSelection, UIState } from '@regions/core/domain';
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -40,6 +40,8 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
     private readonly getParentContainer: () => HTMLElement | null,
     private readonly onClose: () => void,
     private readonly dynamic: boolean = false,
+    private readonly onRegionSelect: (selection: RegionSelection) => void = () =>
+      {},
   ) {}
 
   initialize(): void {
@@ -111,6 +113,7 @@ export class RegionsInfoPanelRenderer implements RegionsPanelRenderer {
         onClose: this.onClose,
         forceRefreshToken: this.forceRefreshToken,
         draggable: this.dynamic,
+        onRegionSelect: this.onRegionSelect,
       }),
     );
   }

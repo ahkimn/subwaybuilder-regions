@@ -83,6 +83,7 @@ export class RegionsUIManager {
       this.getInfoPanelRoot.bind(this),
       () => this.clearSelection(),
       this.dynamicInfoPanel,
+      this.onInfoPanelRegionSelect.bind(this),
     );
 
     this.overviewPanelRenderer = new RegionsOverviewPanelRenderer(
@@ -301,6 +302,21 @@ export class RegionsUIManager {
     if (focusRegion && this.mapLayers) {
       this.mapLayers.focusRegion(dataset, selection.featureId);
     }
+  }
+
+  // Double-click a counterpart region in the info panel commuter breakdown:
+  // open its panel and focus/zoom the map on it (mirrors the Overview panel's
+  // double-click).
+  private onInfoPanelRegionSelect(selection: RegionSelection): void {
+    const dataset = this.datasetRegistry.getDatasetByIdentifier(
+      selection.datasetIdentifier,
+    );
+    this.mapLayers?.toggleOrSetVisibility(dataset, true);
+    this.setActiveSelection(selection, {
+      toggleIfSame: false,
+      showInfo: true,
+    });
+    this.mapLayers?.focusRegion(dataset, selection.featureId);
   }
 
   private onLayerVisibilityChange(

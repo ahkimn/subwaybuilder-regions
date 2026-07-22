@@ -77,6 +77,17 @@ function getSourceCategoryColor(
   return SOURCE_CHART_COLOR_BY_TYPE[String(sourceUnitId)] ?? null;
 }
 
+// Terminal-node navigation target; undefined when not a real region.
+export function resolveSankeySelectableUnitId(
+  regionId: string | number,
+  isAggregate: boolean,
+): string | number | undefined {
+  if (isAggregate || String(regionId) === UNASSIGNED_REGION_ID) {
+    return undefined;
+  }
+  return regionId;
+}
+
 type SankeyNodeType = 'selected' | 'region' | 'others' | 'mode';
 type SankeyNodeLane = 'source' | 'middle' | 'sink';
 
@@ -87,6 +98,8 @@ type SankeyNodeData = {
   mode?: ModeKey;
   tooltipBubbleColor?: string;
   fillColor?: string;
+  // Navigation target feature id; set only on real terminal region sinks.
+  unitId?: string | number;
 };
 
 type SourceBreakdownEntry = {
@@ -158,6 +171,7 @@ type SankeyCanvasProps = {
   displaySourceOnLeft: boolean;
   valueUnitLabel: 'commuters' | 'commutes';
   labelsFollowFlowDirection: boolean;
+  onRegionSelect?: (featureId: string | number) => void;
 };
 
 export function renderCommutersSankey(
@@ -165,7 +179,13 @@ export function renderCommutersSankey(
   gameData: RegionGameData,
   viewState: CommutersViewState,
   breakdownData: CommuterBreakdownData,
+  onRegionSelect?: (featureId: string | number) => void,
 ): ReactNode {
+  // Region navigation only applies to the Region breakdown.
+  const regionSelect =
+    viewState.dimension === CommuterDimension.Region
+      ? onRegionSelect
+      : undefined;
   const byBreakdownUnitModeShare = breakdownData.modeShareByBreakdownUnit;
   const hasSplitSources = Boolean(breakdownData.sourceModeShareByBreakdownUnit);
   const sourceModeShareByBreakdownUnit = hasSplitSources
@@ -237,6 +257,7 @@ export function renderCommutersSankey(
         valueUnitLabel,
         labelsFollowFlowDirection:
           viewState.sankeyOptions.labelsFollowFlowDirection,
+        onRegionSelect: regionSelect,
       } satisfies SankeyCanvasProps),
     ),
     h(
@@ -300,6 +321,7 @@ function SankeyCanvas({
   displaySourceOnLeft,
   valueUnitLabel,
   labelsFollowFlowDirection,
+  onRegionSelect,
 }: SankeyCanvasProps): ReactNode {
   const [chartWidth, setChartWidth] = useState<number>(SANKEY_MIN_WIDTH_PX);
   const [hoveredLinkIndex, setHoveredLinkIndex] = useState<number | null>(null);
@@ -355,6 +377,7 @@ function SankeyCanvas({
             chartHeight,
             renderLabelsOnLeft,
             valueUnitLabel,
+            onRegionSelect,
           ),
           link: buildSankeyLinkRenderer(
             h,
@@ -653,6 +676,7 @@ function buildSankeyNodes(
     mode?: ModeKey,
     tooltipBubbleColor?: string,
     fillColor?: string,
+    unitId?: string | number,
   ) => {
     const existing = nodeIndexByKey.get(key);
     if (existing !== undefined) return existing;
@@ -665,6 +689,7 @@ function buildSankeyNodes(
       mode,
       tooltipBubbleColor,
       fillColor,
+      unitId,
     });
     return index;
   };
@@ -708,6 +733,10 @@ function buildSankeyNodes(
   });
 
   displayFlows.forEach((entry) => {
+    const selectableUnitId = resolveSankeySelectableUnitId(
+      entry.regionId,
+      entry.isAggregate,
+    );
     sinkNodeIndex.set(
       entry.regionId,
       addNode(
@@ -717,6 +746,8 @@ function buildSankeyNodes(
         'sink',
         undefined,
         getModeShareBubbleColor(entry.modeShare),
+        undefined,
+        selectableUnitId,
       ),
     );
   });
@@ -890,10 +921,15 @@ function buildSankeyNodeRenderer(
   chartHeight: number,
   renderLabelsOnLeft: boolean,
   valueUnitLabel: 'commuters' | 'commutes',
+  onRegionSelect?: (featureId: string | number) => void,
 ): (props: unknown) => ReactNode {
   return function SankeyNodeShape(props: unknown): ReactNode {
     const shape = props as Record<string, unknown>;
     const payload = shape.payload as NodeRenderPayload;
+    const selectableUnitId = payload.unitId;
+    const isClickable = Boolean(
+      onRegionSelect && selectableUnitId !== undefined,
+    );
     const x = Number(shape.x);
     const y = Number(shape.y);
     const width = Number(shape.width);
@@ -983,7 +1019,12 @@ function buildSankeyNodeRenderer(
 
     return h(
       'g',
-      null,
+      isClickable
+        ? {
+            style: { cursor: 'pointer' },
+            onDoubleClick: () => onRegionSelect!(selectableUnitId!),
+          }
+        : null,
       h('rect', {
         x,
         y,

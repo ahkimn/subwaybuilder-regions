@@ -21,7 +21,7 @@ export const DEFAULT_LIGHT_MODE_LABEL_SETTINGS = {
   'text-halo-width': 1.2,
   'hover-halo-width': 1.6,
   'text-halo-blur': 0.3,
-  'text-font': ['Noto Sans Regular'],
+  // text-font is resolved at runtime — see map/font-resolver.ts.
   'text-letter-spacing': 0.04,
   'text-size': SCALED_TEXT_SIZE_SETTINGS,
 };
@@ -33,7 +33,7 @@ export const DEFAULT_DARK_MODE_LABEL_SETTINGS = {
   'text-halo-width': 1,
   'hover-halo-width': 1.4,
   'text-halo-blur': 0.4,
-  'text-font': ['Noto Sans Regular'],
+  // text-font is resolved at runtime — see map/font-resolver.ts.
   'text-letter-spacing': 0.04,
   'text-size': SCALED_TEXT_SIZE_SETTINGS,
 };

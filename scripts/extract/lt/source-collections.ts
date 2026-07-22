@@ -8,7 +8,12 @@ import {
   LT_SOURCE_ID_PROPERTY,
 } from './constants';
 import { loadLTAdminNames, loadLTChochoSelected } from './context';
-import type { LTAdminNameKey, LTBundleContext, LTSourceFeature } from './types';
+import type {
+  LTAdminNameKey,
+  LTAdminNames,
+  LTBundleContext,
+  LTSourceFeature,
+} from './types';
 
 function text(value: unknown): string {
   return String(value ?? '').trim();
@@ -81,16 +86,113 @@ function dissolveChochoByCode(
   };
 }
 
-// Finest LT grain: localities (gyvenamosios vietovės). Emitted directly.
+type LTLocalityEntry = {
+  feature: LTSourceFeature;
+  key: string;
+  base: string;
+  qualifier: string | null;
+  population: number;
+};
+
+// Resolve the admin unit a locality sits in, used both as a name fallback (for
+// the nameless cadastral residuals jp-data emits) and as a duplicate-name
+// qualifier: the 4-digit municipality_code is the seniūnija; whole-city OD
+// nodes carry a 2-digit code and fall back to the savivaldybė.
+function resolveLTQualifier(
+  names: LTAdminNames,
+  properties: GeoJSON.GeoJsonProperties,
+): string | null {
+  const municipalityCode = text(properties?.municipality_code);
+  const savivaldybeCode = text(properties?.savivaldybe_code);
+  return (
+    names.seniunijos[municipalityCode] ??
+    names.savivaldybes[savivaldybeCode] ??
+    null
+  );
+}
+
+// Give every locality a non-empty, unique display name. jp-data's chocho grain
+// (kept as the finest display grain) leaves two naming defects: nameless
+// cadastral residuals, and many features sharing a parent-settlement name
+// (e.g. a city's cadastral blokai). We fill blanks from the admin hierarchy,
+// then de-duplicate: same-named localities in different seniūnijos are
+// qualified by seniūnija; any that still collide (same admin unit, e.g. one
+// city's blokai) get a deterministic ordinal (population desc, key tiebreak).
+function assignUniqueLocalityNames(
+  entries: LTLocalityEntry[],
+): Map<string, string> {
+  const resolved = new Map<string, string>();
+
+  const assignOrdinals = (group: LTLocalityEntry[], label: string): void => {
+    if (group.length === 1) {
+      resolved.set(group[0].key, label);
+      return;
+    }
+    [...group]
+      .sort((a, b) => b.population - a.population || a.key.localeCompare(b.key))
+      .forEach((entry, index) => {
+        resolved.set(entry.key, `${label} (${index + 1})`);
+      });
+  };
+
+  const byBase = new Map<string, LTLocalityEntry[]>();
+  for (const entry of entries) {
+    const group = byBase.get(entry.base) ?? [];
+    group.push(entry);
+    byBase.set(entry.base, group);
+  }
+
+  for (const [base, group] of byBase) {
+    const distinctQualifiers = new Set(group.map((e) => e.qualifier ?? ''));
+    if (distinctQualifiers.size <= 1) {
+      // Qualifier can't separate them (single admin unit) → ordinal on base.
+      assignOrdinals(group, base);
+      continue;
+    }
+    // Qualifier distinguishes at least some; sub-group by it, ordinal within.
+    const byQualifier = new Map<string, LTLocalityEntry[]>();
+    for (const entry of group) {
+      const qualifier = entry.qualifier ?? '';
+      const sub = byQualifier.get(qualifier) ?? [];
+      sub.push(entry);
+      byQualifier.set(qualifier, sub);
+    }
+    for (const [qualifier, sub] of byQualifier) {
+      assignOrdinals(sub, qualifier ? `${base} (${qualifier})` : base);
+    }
+  }
+  return resolved;
+}
+
+// Finest LT grain: localities (gyvenamosios vietovės). Kept at the jp-data
+// chocho grain, but every feature is guaranteed a non-empty, unique name.
 export function buildLTGyvenvietesSourceCollection(context: LTBundleContext) {
+  const names = loadLTAdminNames();
+  const entries: LTLocalityEntry[] = loadLTChochoSelected(context).features.map(
+    (feature) => {
+      const properties = feature.properties ?? {};
+      const qualifier = resolveLTQualifier(names, properties);
+      return {
+        feature,
+        key: text(properties.chocho_key),
+        base:
+          text(properties.chocho_name) ||
+          qualifier ||
+          text(properties.chocho_key),
+        qualifier,
+        population: population(properties),
+      };
+    },
+  );
+  const uniqueNames = assignUniqueLocalityNames(entries);
   return {
     type: 'FeatureCollection' as const,
-    features: loadLTChochoSelected(context).features.map((feature) =>
+    features: entries.map((entry) =>
       withProperties(
-        feature,
-        text(feature.properties?.chocho_key),
-        text(feature.properties?.chocho_name),
-        population(feature.properties),
+        entry.feature,
+        entry.key,
+        uniqueNames.get(entry.key) ?? entry.base,
+        entry.population,
       ),
     ),
   };

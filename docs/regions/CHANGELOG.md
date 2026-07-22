@@ -2,9 +2,9 @@
 
 [Back to README](../../README.md)
 
-## v0.5.0 - 2026-07-21
+## v0.5.0 - 2026-07-22
 
-_Game version_ v1.3.0
+_Game version_ v1.4.0
 
 ### New Features
 
@@ -29,13 +29,25 @@ _Game version_ v1.3.0
 - Added CN (China) region support for:
   - 区县 (`cn-districts` | districts)
   - 街道/乡镇 (`cn-subdistricts` | subdistricts)
+- Double-clicking a region in the Info Panel's Commuters → Region breakdown (table row or Sankey node) now opens that region's info panel and focuses the
+  map on it.
 
 ### Other Updates
 
 - Added native-language region labels for EE, LV, and LT datasets, and bilingual (Ukrainian + English) labels for UA.
+  - ![Latvia Example](img/latvia_example.png)
 - Joined LT savivaldybė/seniūnija names from the Registrų centras INSPIRE administrative-unit layers (via the jp-data source pipeline); those tiers are dissolved from the settlement grain and carry only codes in the bundle inputs.
 - Added local static recognition for downloaded EE/UA/LV/LT as well as PE/CN city datasets so release/distributed data can be discovered by the mod even though those countries are not supported by the runtime fetch wrappers (same as JP, CZ, PL, and TW).
 - Added data scripts to validate external/collaborator archives, sanitize GeoJSON samples into canonical mod format, and add missing label coordinates.
+- For game versions 1.4.0+, the Regions Info Panel is now draggable
+  ![Draggable Info Panel](img/draggable_info_panel.png)
+
+### Bugfixes
+
+- Fixed blank region labels: the map label font is now resolved at runtime
+  against the fonts the game's glyph endpoint actually serves instead of requesting a
+  fixed font the newer game build no longer provides.
+- Hardened navbar host layer resolution such that the Regions Info Panel properly latches in versions 1.4.0+
 
 ## v0.4.10 - 2026-05-24
 
