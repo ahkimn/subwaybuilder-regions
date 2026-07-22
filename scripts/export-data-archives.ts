@@ -10,8 +10,30 @@ import {
   SOURCE_DATA_DIR,
 } from '../mods/regions/constants';
 import type { DatasetIndex } from '../mods/regions/dataset-index';
+import { COUNTRY_DATASET_ORDER } from '../mods/regions/datasets/catalog';
 import { parseExportArgs } from './utils/cli';
 import { loadBoundariesFromCSV } from './utils/files';
+
+// Inverse of COUNTRY_DATASET_ORDER: dataset id -> country code. Lets us group a
+// city's archive under its country from the datasets recorded in the index.
+const DATASET_COUNTRY: ReadonlyMap<string, string> = new Map(
+  Object.entries(COUNTRY_DATASET_ORDER).flatMap(([country, datasetIds]) =>
+    datasetIds.map((datasetId) => [datasetId, country] as const),
+  ),
+);
+
+// Country code (lowercased, used as the archive subfolder) for a city, resolved
+// from its indexed datasets. null when the city has no recognised dataset.
+function resolveCityCountry(
+  cityCode: string,
+  datasetIndex: DatasetIndex,
+): string | null {
+  for (const entry of datasetIndex[cityCode] ?? []) {
+    const country = DATASET_COUNTRY.get(entry.datasetId);
+    if (country) return country.toLowerCase();
+  }
+  return null;
+}
 
 function resolveCityCodes(args: ReturnType<typeof parseExportArgs>): string[] {
   if (!args.all) {
@@ -77,8 +99,12 @@ function createArchiveForCity(
     return { ok: false, reason: 'missing_data_directory' };
   }
 
-  fs.ensureDirSync(outputDir);
-  const archivePath = path.resolve(outputDir, `${cityCode}.gz`);
+  // Group each archive under its country (export/<cc>/<CITY>.gz); cities with
+  // no recognised dataset fall back to the flat output root.
+  const country = resolveCityCountry(cityCode, datasetIndex);
+  const targetDir = country ? path.resolve(outputDir, country) : outputDir;
+  fs.ensureDirSync(targetDir);
+  const archivePath = path.resolve(targetDir, `${cityCode}.gz`);
   if (fs.existsSync(archivePath)) {
     fs.removeSync(archivePath);
   }
