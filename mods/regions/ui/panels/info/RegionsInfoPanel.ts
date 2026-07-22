@@ -47,6 +47,8 @@ export type RegionsInfoPanelProps = {
   forceRefreshToken: number;
   /** When true, the header is rendered as a drag handle (dynamic v1.4.0+ panel). */
   draggable?: boolean;
+  /** Opens another region's info panel from the commuter breakdown. */
+  onRegionSelect?: (selection: RegionSelection) => void;
 };
 
 export function RegionsInfoPanel({
@@ -55,6 +57,7 @@ export function RegionsInfoPanel({
   onClose,
   forceRefreshToken,
   draggable = false,
+  onRegionSelect,
 }: RegionsInfoPanelProps): ReactNode {
   const [activeView, setActiveView] = useState<RegionsInfoPanelView>(
     RegionsInfoPanelView.Statistics,
@@ -87,6 +90,12 @@ export function RegionsInfoPanel({
       activeDatasetIdentifier!,
       regionId,
     );
+  };
+
+  // Breakdown unit ids are features in the active dataset.
+  const handleBreakdownRegionSelect = (featureId: string | number): void => {
+    if (!activeDatasetIdentifier) return;
+    onRegionSelect?.({ datasetIdentifier: activeDatasetIdentifier, featureId });
   };
 
   useEffect(() => {
@@ -192,6 +201,7 @@ export function RegionsInfoPanel({
               commutersViewState,
               dispatchCommutersViewAction,
               resolveRegionName,
+              handleBreakdownRegionSelect,
             )
           : Placeholder(createElement, LOADING_VALUE_DISPLAY);
       break;

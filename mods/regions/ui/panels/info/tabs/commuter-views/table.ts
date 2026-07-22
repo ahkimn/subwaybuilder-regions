@@ -99,6 +99,7 @@ export function renderCommutersTable(
   dispatch: Dispatch<CommutersViewAction>,
   modeShareByBreakdownUnit: Map<string | number, ModeShare>,
   resolveBreakdownUnitName: (unitId: string | number) => string,
+  onRegionSelect?: (featureId: string | number) => void,
 ): ReactNode {
   const rows = sortCommuterRows(
     deriveCommuterRows(
@@ -124,7 +125,7 @@ export function renderCommutersTable(
   );
   const rowsToRender = rows.slice(0, rowsToDisplay);
   const tableBodyData = rowsToRender.map((rowData) =>
-    buildTableRow(viewState, rowData),
+    buildTableRow(viewState, rowData, onRegionSelect),
   );
 
   return h(
@@ -418,11 +419,29 @@ function buildTableHeader(
   return [titleRow, controlsRow];
 }
 
+// Per-column double-click handlers for region navigation; undefined outside the Region breakdown.
+export function resolveCommuterRowDoubleClick(
+  dimension: CommuterDimension,
+  breakdownUnitId: string | number,
+  columnCount: number,
+  onRegionSelect?: (featureId: string | number) => void,
+): Array<() => void> | undefined {
+  if (!onRegionSelect || dimension !== CommuterDimension.Region) {
+    return undefined;
+  }
+  return Array.from(
+    { length: columnCount },
+    () => () => onRegionSelect(breakdownUnitId),
+  );
+}
+
 function buildTableRow(
   viewState: CommutersViewState,
   rowData: CommuterRowData,
+  onRegionSelect?: (featureId: string | number) => void,
 ) {
   const {
+    breakdownUnitId,
     regionName,
     commuterValue,
     transitValue,
@@ -452,6 +471,14 @@ function buildTableRow(
     )[],
     rowClassName: 'transition-colors',
     rowHoverClassName: 'bg-accent text-accent-foreground',
+    // Double-click any cell opens the region's panel (matches the row-wide
+    // hover affordance); single-click stays free for reading the table.
+    onDoubleClick: resolveCommuterRowDoubleClick(
+      viewState.dimension,
+      breakdownUnitId,
+      rowValues.length,
+      onRegionSelect,
+    ),
   };
 
   return { rowValues, options };

@@ -31,6 +31,7 @@ export function renderCommutersView(
   viewState: CommutersViewState,
   dispatch: Dispatch<CommutersViewAction>,
   resolveRegionName: (unitId: string | number) => string,
+  onRegionSelect?: (featureId: string | number) => void,
 ): ReactNode {
   const commuterSummaryData = gameData.commuterSummary!;
   const commuterDetailsData = gameData.commuterDetails!;
@@ -52,7 +53,13 @@ export function renderCommutersView(
   let content: ReactNode;
   switch (viewState.displayMode) {
     case CommuterDisplayMode.Sankey:
-      content = renderCommutersSankey(h, gameData, viewState, breakdownData);
+      content = renderCommutersSankey(
+        h,
+        gameData,
+        viewState,
+        breakdownData,
+        onRegionSelect,
+      );
       break;
     case CommuterDisplayMode.BarChart:
       content = Placeholder(h, 'Bar Chart view coming soon');
@@ -64,6 +71,7 @@ export function renderCommutersView(
         dispatch,
         byBreakdownModeShare,
         breakdownData.resolveBreakdownUnitName,
+        onRegionSelect,
       );
       break;
   }

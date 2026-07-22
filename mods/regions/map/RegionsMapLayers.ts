@@ -22,6 +22,7 @@ import {
   RegionsSettings,
   type RegionsSettings as RegionsSettingsValue,
 } from '../core/storage/types';
+import { LABEL_FONT_CANDIDATES, resolveLabelFont } from './font-resolver';
 import type { LightMode } from './styles';
 import {
   DEFAULT_DARK_MODE_BOUNDARY_SETTINGS,
@@ -82,6 +83,9 @@ export type RegionsMapLayersEvents = {
 
 export class RegionsMapLayers {
   private map: maplibregl.Map;
+  // Single label font the game's glyph endpoint serves; resolved async (see
+  // font-resolver.ts) and re-applied to existing label layers once known.
+  private resolvedLabelFont: string = LABEL_FONT_CANDIDATES[0];
   private lightMode: LightMode = 'dark';
   private settings: RegionsSettingsValue = { ...DEFAULT_REGIONS_SETTINGS };
   private nextColorIndex = 0;
@@ -100,6 +104,31 @@ export class RegionsMapLayers {
 
   constructor(map: maplibregl.Map) {
     this.map = map;
+    void this.ensureLabelFontResolved();
+  }
+
+  // Resolve the label font once (cached across map re-binds); when it differs
+  // from the current value, re-apply it to any existing label layers.
+  private async ensureLabelFontResolved(): Promise<void> {
+    const font = await resolveLabelFont();
+    if (!font || font === this.resolvedLabelFont) return;
+    this.resolvedLabelFont = font;
+    this.reapplyLabelFont();
+  }
+
+  private reapplyLabelFont(): void {
+    const mapRef = this.getMapReference();
+    if (!mapRef) return;
+    for (const layerState of this.layerStates.values()) {
+      if (!this.tryGetLayer(layerState.labelLayerId)) continue;
+      try {
+        mapRef.setLayoutProperty(layerState.labelLayerId, 'text-font', [
+          this.resolvedLabelFont,
+        ]);
+      } catch (e) {
+        console.warn('[Regions] Failed to apply resolved label font', e);
+      }
+    }
   }
 
   // The game may dispose and recreate map instances during city transitions.
@@ -179,6 +208,7 @@ export class RegionsMapLayers {
 
     if (this.map === map) return;
     this.rebindMap(map);
+    void this.ensureLabelFontResolved();
     console.log('[Regions] Rebound RegionsMapLayers to a new map instance');
   }
 
@@ -732,7 +762,7 @@ export class RegionsMapLayers {
       mapRef.setLayoutProperty(
         layerState.labelLayerId,
         'text-font',
-        labelSettings['text-font'],
+        [this.resolvedLabelFont],
       );
       mapRef.setLayoutProperty(
         layerState.labelLayerId,
