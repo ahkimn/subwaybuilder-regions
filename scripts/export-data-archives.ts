@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from 'child_process';
+import AdmZip from 'adm-zip';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -74,20 +74,6 @@ function resolveOsmDatasetIdsForCity(
     .map((entry) => entry.datasetId);
 }
 
-function supportsTarForceLocal(): boolean {
-  const helpResult = spawnSync('tar', ['--help'], {
-    encoding: 'utf8',
-    shell: false,
-  });
-
-  if (helpResult.error || helpResult.status !== 0) {
-    return false;
-  }
-
-  const helpText = `${helpResult.stdout ?? ''}\n${helpResult.stderr ?? ''}`;
-  return helpText.includes('--force-local');
-}
-
 function createArchiveForCity(
   cityCode: string,
   outputDir: string,
@@ -99,45 +85,46 @@ function createArchiveForCity(
     return { ok: false, reason: 'missing_data_directory' };
   }
 
-  // Group each archive under its country (export/<cc>/<CITY>.gz); cities with
+  // Group each archive under its country (export/<cc>/<CITY>.zip); cities with
   // no recognised dataset fall back to the flat output root.
   const country = resolveCityCountry(cityCode, datasetIndex);
   const targetDir = country ? path.resolve(outputDir, country) : outputDir;
   fs.ensureDirSync(targetDir);
-  const archivePath = path.resolve(targetDir, `${cityCode}.gz`);
+  const archivePath = path.resolve(targetDir, `${cityCode}.zip`);
   if (fs.existsSync(archivePath)) {
     fs.removeSync(archivePath);
   }
 
-  // GNU tar on Windows otherwise interprets `C:\...` as host:path, but BSD tar
-  // builds on some Windows installs do not support --force-local.
-  const tarArgs = ['-czf', archivePath, '-C', DATA_DIR, cityCode];
-  if (supportsTarForceLocal()) {
-    tarArgs.unshift('--force-local');
-  }
-
+  // OSM-derived datasets are fetched at runtime, so they are excluded from the
+  // shipped bundle by default (keyed by `<datasetId>.geojson[.gz]`).
+  const excludedNames = new Set<string>();
   if (!includeOSMData) {
-    const osmDatasetIds = resolveOsmDatasetIdsForCity(cityCode, datasetIndex);
-    for (const datasetId of osmDatasetIds) {
-      tarArgs.unshift(
-        '--exclude',
-        `${cityCode}/${datasetId}.geojson`,
-        '--exclude',
-        `${cityCode}/${datasetId}.geojson.gz`,
-      );
+    for (const datasetId of resolveOsmDatasetIdsForCity(cityCode, datasetIndex)) {
+      excludedNames.add(`${datasetId}.geojson`);
+      excludedNames.add(`${datasetId}.geojson.gz`);
     }
   }
 
-  const tarResult = spawnSync('tar', tarArgs, {
-    stdio: 'inherit',
-    shell: false,
-  });
-
-  if (tarResult.error) {
-    return { ok: false, reason: tarResult.error.message };
-  }
-  if (tarResult.status !== 0) {
-    return { ok: false, reason: `tar_exit_${tarResult.status}` };
+  // Emit a real ZIP (not tar.gz) so Windows recognises and extracts it natively.
+  // Datasets are nested under a `<CITY>/` folder, matching the layout consumers
+  // unzip into `mods/regions/data/`.
+  try {
+    const zip = new AdmZip();
+    // City data directories are flat (dataset files only); add each file under
+    // the `<CITY>/` prefix.
+    for (const entry of fs.readdirSync(cityDataDir)) {
+      if (excludedNames.has(entry)) continue;
+      const entryPath = path.join(cityDataDir, entry);
+      if (fs.statSync(entryPath).isFile()) {
+        zip.addLocalFile(entryPath, cityCode);
+      }
+    }
+    zip.writeZip(archivePath);
+  } catch (error) {
+    return {
+      ok: false,
+      reason: error instanceof Error ? error.message : 'zip_write_failed',
+    };
   }
 
   return { ok: true };
