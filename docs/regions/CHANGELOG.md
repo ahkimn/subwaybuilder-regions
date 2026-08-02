@@ -36,7 +36,6 @@ _Game version_ v1.4.0
 
 - Added native-language region labels for EE, LV, and LT datasets, and bilingual (Ukrainian + English) labels for UA.
   - ![Latvia Example](img/latvia_example.png)
-- Joined LT savivaldybė/seniūnija names from the Registrų centras INSPIRE administrative-unit layers (via the jp-data source pipeline); those tiers are dissolved from the settlement grain and carry only codes in the bundle inputs.
 - Added local static recognition for downloaded EE/UA/LV/LT as well as PE/CN city datasets so release/distributed data can be discovered by the mod even though those countries are not supported by the runtime fetch wrappers (same as JP, CZ, PL, and TW).
 - Added data scripts to validate external/collaborator archives, sanitize GeoJSON samples into canonical mod format, and add missing label coordinates.
 - For game versions 1.4.0+, the Regions Info Panel is now draggable
