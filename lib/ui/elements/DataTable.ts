@@ -1,5 +1,5 @@
 import type { TableAlign } from '@lib/ui/panels/types';
-import type { useState } from 'react';
+import type { useEffect, useRef, useState } from 'react';
 import {
   type createElement,
   type CSSProperties,
@@ -52,11 +52,22 @@ export type TableOptions = {
 
 // --- React Implementation --- //
 
+// Opt-in windowed rendering: only the rows within (and just outside) the scroll
+// viewport are rendered. Requires useRefHook + useEffectHook. Assumes a single
+// sticky header row at index 0 and (roughly) fixed data-row height.
+export type VirtualizationOptions = {
+  rowHeight: number;
+  overscan?: number;
+};
+
 export type ReactDataTableProps = {
   h: typeof createElement;
   useStateHook: typeof useState;
   tableOptions: TableOptions;
   tableValues: ReactDataTableRow[];
+  virtualization?: VirtualizationOptions;
+  useRefHook?: typeof useRef;
+  useEffectHook?: typeof useEffect;
 };
 
 export type TableCellOptions = {
@@ -76,18 +87,27 @@ export function ReactDataTable({
   useStateHook,
   tableOptions,
   tableValues,
+  virtualization,
+  useRefHook,
+  useEffectHook,
 }: ReactDataTableProps): ReactNode {
   const [hoveredRowIndex, setHoveredRowIndex] = useStateHook<number | null>(
     null,
   );
-  const cells: ReactNode[] = [];
   const cellOptions = tableOptions.tableCellOptions ?? {};
+  const gridClassName = `grid min-w-0 ${TABLE_DENSITY_SETTINGS[tableOptions.density]}`;
+  const gridStyle: CSSProperties = {
+    gridTemplateColumns: tableOptions.columnTemplate,
+  };
 
-  tableValues.forEach(({ rowValues, options }, rowIndex) => {
-    const rowOptions = options ?? {};
+  const appendRowCells = (
+    cells: ReactNode[],
+    row: ReactDataTableRow,
+    rowIndex: number,
+  ): void => {
+    const rowOptions = row.options ?? {};
     const isHeader = rowOptions.header ?? false;
-
-    rowValues.forEach((value, colIndex) => {
+    row.rowValues.forEach((value, colIndex) => {
       cells.push(
         buildReactCell(
           h,
@@ -103,13 +123,92 @@ export function ReactDataTable({
         ),
       );
     });
-  });
+  };
+
+  // Virtualized path (opt-in). The branch is stable per component instance
+  // (virtualization is fixed by the caller), so the extra hooks keep a
+  // consistent order across renders.
+  if (virtualization && useRefHook && useEffectHook) {
+    const [scrollTop, setScrollTop] = useStateHook<number>(0);
+    const [viewportHeight, setViewportHeight] = useStateHook<number>(0);
+    const containerRef = useRefHook<HTMLDivElement | null>(null);
+
+    useEffectHook(() => {
+      const el = containerRef.current;
+      if (!el || typeof ResizeObserver === 'undefined') return;
+      const measure = () => setViewportHeight(el.clientHeight);
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
+
+    const { rowHeight } = virtualization;
+    const overscan = virtualization.overscan ?? 8;
+    const headerCount =
+      tableValues.length > 0 && tableValues[0].options?.header ? 1 : 0;
+    const dataCount = tableValues.length - headerCount;
+    // Fall back to a generous window until the container is measured.
+    const effectiveViewport = viewportHeight > 0 ? viewportHeight : 600;
+    const first = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+    const windowRows = Math.ceil(effectiveViewport / rowHeight) + overscan * 2;
+    const last = Math.min(dataCount, first + windowRows);
+    const topPad = first * rowHeight;
+    const bottomPad = Math.max(0, (dataCount - last) * rowHeight);
+
+    const cells: ReactNode[] = [];
+    for (let r = 0; r < headerCount; r += 1) {
+      appendRowCells(cells, tableValues[r], r);
+    }
+    if (topPad > 0) {
+      cells.push(
+        h('div', {
+          key: 'virtual-top-spacer',
+          style: { gridColumn: '1 / -1', height: `${topPad}px` },
+        }),
+      );
+    }
+    for (let i = first; i < last; i += 1) {
+      const rowIndex = headerCount + i;
+      appendRowCells(cells, tableValues[rowIndex], rowIndex);
+    }
+    if (bottomPad > 0) {
+      cells.push(
+        h('div', {
+          key: 'virtual-bottom-spacer',
+          style: { gridColumn: '1 / -1', height: `${bottomPad}px` },
+        }),
+      );
+    }
+
+    return h(
+      'div',
+      {
+        ref: containerRef,
+        className: 'overflow-auto h-full',
+        onScroll: (event: ReactMouseEvent<HTMLDivElement>) =>
+          setScrollTop(event.currentTarget.scrollTop),
+      },
+      h(
+        'div',
+        {
+          className: gridClassName,
+          style: gridStyle,
+          onMouseLeave: () => setHoveredRowIndex(null),
+        },
+        cells,
+      ),
+    );
+  }
+
+  const cells: ReactNode[] = [];
+  tableValues.forEach((row, rowIndex) => appendRowCells(cells, row, rowIndex));
 
   return h(
     'div',
     {
-      className: `grid min-w-0 ${TABLE_DENSITY_SETTINGS[tableOptions.density]}`,
-      style: { gridTemplateColumns: tableOptions.columnTemplate },
+      className: gridClassName,
+      style: gridStyle,
       onMouseLeave: () => setHoveredRowIndex(null),
     },
     cells,

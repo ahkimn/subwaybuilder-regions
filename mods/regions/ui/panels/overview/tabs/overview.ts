@@ -26,7 +26,13 @@ import {
   formatPercentOrDefault,
 } from '@regions/core/utils';
 import type React from 'react';
-import type { createElement, useMemo, useState } from 'react';
+import type {
+  createElement,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { sortWithFallback } from '../../shared/sort';
 import {
@@ -37,6 +43,7 @@ import {
   OVERVIEW_MIN_COLUMN_PADDING_CH,
   OVERVIEW_MIN_NON_NAME_COLUMN_CH,
   OVERVIEW_NON_NAME_COLUMN_PADDING_WIDTH,
+  OVERVIEW_VIRTUAL_ROW_HEIGHT,
 } from '../constants';
 import type { RegionsOverviewRow } from '../types';
 
@@ -150,6 +157,8 @@ export function renderOverviewTabContent(
   onSelectRow: (selection: RegionSelection, toggleIfSame: boolean) => void,
   onDoubleClickRow: (selection: RegionSelection) => void,
   showUnpopulatedRegions: boolean,
+  useRefHook: typeof useRef,
+  useEffectHook: typeof useEffect,
 ): React.ReactNode {
   // Memoize the processed rows to avoid unnecessary re-computation on every render (e.g. when the user resizes the panel or drags it across the screen)
   const rows = useMemoHook(
@@ -181,20 +190,38 @@ export function renderOverviewTabContent(
     ],
   );
 
-  return h(
-    'div',
-    { className: 'flex flex-col gap-2 min-h-0 flex-1' },
-    renderOverviewSearchField(h, Input, searchTerm, onSearchTermChange),
-    renderOverviewTable(
-      h,
-      useStateHook,
+  // Memoize the built table element so a re-render with unchanged inputs (e.g.
+  // dragging/resizing the panel) reuses the same element and React skips the
+  // whole table subtree instead of rebuilding thousands of rows.
+  const table = useMemoHook(
+    () =>
+      renderOverviewTable(
+        h,
+        useStateHook,
+        useRefHook,
+        useEffectHook,
+        rows,
+        activeSelection,
+        sortState,
+        onSortChange,
+        onSelectRow,
+        onDoubleClickRow,
+      ),
+    [
       rows,
       activeSelection,
       sortState,
       onSortChange,
       onSelectRow,
       onDoubleClickRow,
-    ),
+    ],
+  );
+
+  return h(
+    'div',
+    { className: 'flex flex-col gap-2 min-h-0 flex-1' },
+    renderOverviewSearchField(h, Input, searchTerm, onSearchTermChange),
+    table,
   );
 }
 
@@ -228,6 +255,8 @@ function renderOverviewSearchField(
 function renderOverviewTable(
   h: typeof createElement,
   useStateHook: typeof useState,
+  useRefHook: typeof useRef,
+  useEffectHook: typeof useEffect,
   rows: RegionsOverviewRow[],
   activeSelection: RegionSelection | null,
   sortState: SortState,
@@ -360,23 +389,34 @@ function renderOverviewTable(
     });
   }
 
-  return h(
-    'div',
-    {
-      className: [
-        'rounded-md border border-border/60 overflow-hidden min-h-0',
-        shouldFillAvailableHeight ? 'flex-1' : '',
-      ]
-        .filter(Boolean)
-        .join(' '),
-    },
-    h(
+  // Once the table is tall enough to fill (and scroll) the panel, window it so
+  // only the visible rows render — the ReactDataTable owns the scroll container
+  // in that mode. Short tables render normally (no scroll, no windowing).
+  if (shouldFillAvailableHeight) {
+    return h(
       'div',
       {
-        className: shouldFillAvailableHeight
-          ? 'overflow-auto h-full'
-          : 'overflow-auto',
+        className:
+          'rounded-md border border-border/60 overflow-hidden min-h-0 flex-1',
       },
+      h(ReactDataTable, {
+        h,
+        useStateHook,
+        useRefHook,
+        useEffectHook,
+        tableOptions,
+        tableValues: tableRows,
+        virtualization: { rowHeight: OVERVIEW_VIRTUAL_ROW_HEIGHT },
+      }),
+    );
+  }
+
+  return h(
+    'div',
+    { className: 'rounded-md border border-border/60 overflow-hidden min-h-0' },
+    h(
+      'div',
+      { className: 'overflow-auto' },
       h(ReactDataTable, {
         h,
         useStateHook,

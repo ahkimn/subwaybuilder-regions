@@ -37,9 +37,14 @@ export function renderRegionsOverviewPanel(
     return null;
   }
 
-  const { h, useEffectHook, useMemoHook, useStateHook } = getGameReact(
-    props.api,
-  );
+  const {
+    h,
+    useCallbackHook,
+    useEffectHook,
+    useMemoHook,
+    useRefHook,
+    useStateHook,
+  } = getGameReact(props.api);
   const Input = props.api.utils.components
     .Input as React.ComponentType<InputFieldProperties>;
 
@@ -138,7 +143,10 @@ export function renderRegionsOverviewPanel(
   );
   const activeSelection = props.uiState.activeSelection;
 
-  const onSortChange = (columnIndex: number) => {
+  // Stable callback identities so the memoized table subtree (and its deps)
+  // don't invalidate on every render — otherwise dragging/resizing the panel
+  // rebuilds the whole region table each frame.
+  const onSortChange = useCallbackHook((columnIndex: number) => {
     setSortState((current) =>
       getNextSortState<OverviewSortMetrics>(
         current,
@@ -146,16 +154,22 @@ export function renderRegionsOverviewPanel(
         resolveSortConfig,
       ),
     );
-  };
+  }, [setSortState]);
 
-  const onSetTab = (tab: RegionsOverviewTab) => {
-    setActiveTab((current) => (current === tab ? current : tab));
-  };
+  const onSetTab = useCallbackHook(
+    (tab: RegionsOverviewTab) => {
+      setActiveTab((current) => (current === tab ? current : tab));
+    },
+    [setActiveTab],
+  );
 
-  const onSelectDataset = (datasetIdentifier: string) => {
-    if (datasetIdentifier === selectedDatasetIdentifier) return;
-    setSelectedDatasetIdentifier(datasetIdentifier);
-  };
+  const onSelectDataset = useCallbackHook(
+    (datasetIdentifier: string) => {
+      if (datasetIdentifier === selectedDatasetIdentifier) return;
+      setSelectedDatasetIdentifier(datasetIdentifier);
+    },
+    [selectedDatasetIdentifier, setSelectedDatasetIdentifier],
+  );
 
   // renderOverviewTabContent calls useMemoHook, so it must be invoked on every
   // render rather than only in the active tab branch.
@@ -175,6 +189,8 @@ export function renderRegionsOverviewPanel(
     props.onRegionSelect,
     props.onRegionDoubleClick,
     props.uiState.settings.showUnpopulatedRegions,
+    useRefHook,
+    useEffectHook,
   );
 
   return h(
