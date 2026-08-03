@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { REGIONS_MANIFEST_SCHEMA_VERSION } from './constants.js';
+import { LayerStyleSchema } from './style.js';
 
 // A filename relative to `.railyard_map/regions/`. Rejects absolute paths, drive
 // letters, and parent traversal so a manifest can only point inside the folder.
@@ -30,6 +31,8 @@ export const RegionsDatasetEntrySchema = z.object({
   // Feature count (matches the legacy `size` field). Used as a load sanity-check.
   size: z.number().int().nonnegative(),
   fileSizeMB: z.number().nonnegative().optional(),
+  // Optional per-layer render overrides (light/dark); mod defaults fill any gaps.
+  style: LayerStyleSchema.optional(),
 });
 export type RegionsDatasetEntry = z.infer<typeof RegionsDatasetEntrySchema>;
 

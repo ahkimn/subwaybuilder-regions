@@ -55,6 +55,84 @@
           "fileSizeMB": {
             "type": "number",
             "minimum": 0
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "light": {
+                "type": "object",
+                "properties": {
+                  "fill": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "fillHover": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "fillOpacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "line": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "lineOpacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "label": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "labelHalo": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "dark": {
+                "type": "object",
+                "properties": {
+                  "fill": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "fillHover": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "fillOpacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "line": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "lineOpacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "label": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "labelHalo": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
           }
         },
         "required": [

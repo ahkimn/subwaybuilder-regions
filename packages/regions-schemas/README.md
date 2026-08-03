@@ -46,6 +46,25 @@ field (so nothing can collide):
 constraint is enforced by the Zod validator; it is not expressible in JSON Schema, so
 JSON-Schema-only consumers should apply it separately.
 
+#### Optional per-layer `style`
+
+A dataset may override the mod's default colors per theme. Every field is optional —
+the mod's defaults fill any gaps. The mod theme is a binary light/dark swap, so
+colors are supplied per theme:
+
+```jsonc
+"style": {
+  "light": { "fill": "#5b8def", "fillHover": "#7ba6f5", "fillOpacity": 0.09,
+             "line": "#1f3d7a", "lineOpacity": 0.42,
+             "label": "#1e293b", "labelHalo": "#ffffff" },
+  "dark":  { "fill": "#2c4f9e", "fillOpacity": 0.07, "line": "#8fb0ff" }
+}
+```
+
+Colors are hex (`#RGB`/`#RRGGBB`/`#RRGGBBAA`); opacities are `0..1`. These map to the
+three layers a dataset draws (fill, outline, label). Global/interaction constants
+(hover accent, label font, zoom ramps) are intentionally **not** per-dataset.
+
 ### Dataset feature contract
 
 Each `<datasetId>.geojson.gz` is a `FeatureCollection` of `Polygon`/`MultiPolygon`
