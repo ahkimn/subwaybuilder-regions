@@ -89,6 +89,14 @@
         "UNIT_TYPE": {
           "type": "string",
           "minLength": 1
+        },
+        "NAME_NATIVE": {
+          "type": "string",
+          "minLength": 1
+        },
+        "NAME_EN": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

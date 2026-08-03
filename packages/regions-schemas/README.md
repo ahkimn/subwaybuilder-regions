@@ -51,16 +51,23 @@ JSON-Schema-only consumers should apply it separately.
 Each `<datasetId>.geojson.gz` is a `FeatureCollection` of `Polygon`/`MultiPolygon`
 features. Required per-feature `properties`:
 
-| Key                | Type             | Notes                           |
-| ------------------ | ---------------- | ------------------------------- |
-| `ID`               | string \| number | stable join key (required)      |
-| `NAME`             | string           | region name (required)          |
-| `LAT` / `LNG`      | number           | label point (required)          |
-| `DISPLAY_NAME`     | string           | optional; falls back to `NAME`  |
-| `TOTAL_AREA`       | number (km²)     | optional                        |
-| `AREA_WITHIN_BBOX` | number (km²)     | optional; playable-area         |
-| `POPULATION`       | number \| null   | optional                        |
-| `UNIT_TYPE`        | string           | optional per-feature unit label |
+| Key                | Type             | Notes                                         |
+| ------------------ | ---------------- | --------------------------------------------- |
+| `ID`               | string \| number | stable join key (required)                    |
+| `NAME`             | string           | region name (required)                        |
+| `LAT` / `LNG`      | number           | label point (required)                        |
+| `DISPLAY_NAME`     | string           | optional; falls back to `NAME`                |
+| `TOTAL_AREA`       | number (km²)     | optional                                      |
+| `AREA_WITHIN_BBOX` | number (km²)     | optional; playable-area                       |
+| `POPULATION`       | number \| null   | optional                                      |
+| `UNIT_TYPE`        | string           | optional per-feature unit label               |
+| `NAME_NATIVE`      | string           | optional; unlocalized native name (see below) |
+| `NAME_EN`          | string           | optional; romanized / Latin name              |
+
+`NAME_NATIVE` is the region's name in its own script, unlocalized — Cyrillic for UA,
+Traditional Chinese for TW, Japanese for JP, etc. It is the canonical go-forward
+field; the extractor historically emitted country-specific keys (`NAME_JA` /
+`NAME_ZH` / `NAME_UK`) which remain valid as passthrough.
 
 Unknown properties are preserved, not rejected.
 

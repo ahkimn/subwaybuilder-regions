@@ -1,14 +1,15 @@
 import { z } from 'zod';
 
 /**
- * Per-feature `properties` contract. Keys mirror what the extractor emits and the
- * mod reads at runtime (see docs/regions/POR-railyard-map-regions.md §4). Loose:
- * unknown extras (e.g. NAME_JA, NAME_EN, WITHIN_BBOX) are preserved, not rejected.
+ * Per-feature `properties` contract, grounded in what the extractor emits and what
+ * the mod reads at runtime. Loose: unknown extras are preserved, not rejected — so
+ * legacy per-country name keys still validate (see NAME_NATIVE below).
  */
 export const RegionFeaturePropertiesSchema = z.looseObject({
   // Hard requirement — the stable join key the runtime lookups key off.
   ID: z.union([z.string(), z.number()]),
-  // Label-critical: without these the region renders with no label.
+  // Label-critical: without these the region renders with no label. NAME is the
+  // display string (may be a native\nromanized two-line label).
   NAME: z.string().min(1),
   LAT: z.number(),
   LNG: z.number(),
@@ -18,6 +19,14 @@ export const RegionFeaturePropertiesSchema = z.looseObject({
   AREA_WITHIN_BBOX: z.number().nonnegative().optional(),
   POPULATION: z.number().nonnegative().nullable().optional(),
   UNIT_TYPE: z.string().min(1).optional(),
+  // Country-agnostic native name in the region's own script, unlocalized — e.g.
+  // Cyrillic for UA, Traditional Chinese for TW, Japanese for JP. This is the
+  // canonical go-forward field; the extractor historically emitted country-specific
+  // keys instead (NAME_JA / NAME_ZH / NAME_UK), which remain valid as loose
+  // passthrough so existing installs keep validating.
+  NAME_NATIVE: z.string().min(1).optional(),
+  // Romanized / Latin-script name (what the extractor emits as NAME_EN).
+  NAME_EN: z.string().min(1).optional(),
 });
 export type RegionFeatureProperties = z.infer<
   typeof RegionFeaturePropertiesSchema

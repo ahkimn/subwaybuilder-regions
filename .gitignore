@@ -20,6 +20,9 @@ INTRO.md
 .github/agents/
 config.yaml
 
+# Local planning docs (kept out of the repo)
+docs/regions/POR-railyard-map-regions.md
+
 # OS cruft
 .DS_Store
 Thumbs.db
