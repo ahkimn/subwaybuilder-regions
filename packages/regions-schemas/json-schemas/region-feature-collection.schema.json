@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.subwaybuilder-modded.dev/regions/region-feature-collection.schema.json",
+  "title": "Regions dataset feature collection",
+  "description": "A regions dataset file: a FeatureCollection of region features.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "FeatureCollection"
+    },
+    "features": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "Feature"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Polygon",
+                  "MultiPolygon"
+                ]
+              },
+              "coordinates": {
+                "type": "array",
+                "items": {}
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ],
+            "additionalProperties": {}
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "ID": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "NAME": {
+                "type": "string",
+                "minLength": 1
+              },
+              "LAT": {
+                "type": "number"
+              },
+              "LNG": {
+                "type": "number"
+              },
+              "DISPLAY_NAME": {
+                "type": "string",
+                "minLength": 1
+              },
+              "TOTAL_AREA": {
+                "type": "number",
+                "minimum": 0
+              },
+              "AREA_WITHIN_BBOX": {
+                "type": "number",
+                "minimum": 0
+              },
+              "POPULATION": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "UNIT_TYPE": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "ID",
+              "NAME",
+              "LAT",
+              "LNG"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ],
+        "additionalProperties": {}
+      }
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ],
+  "additionalProperties": {}
+}
