@@ -30,10 +30,6 @@ export const RegionsDatasetEntrySchema = z.object({
   // Feature count (matches the legacy `size` field). Used as a load sanity-check.
   size: z.number().int().nonnegative(),
   fileSizeMB: z.number().nonnegative().optional(),
-  // Optional per-dataset country override; the map-level `country` applies otherwise.
-  country: z.string().min(1).optional(),
-  // Optional per-map override of the catalog display order.
-  order: z.number().int().optional(),
 });
 export type RegionsDatasetEntry = z.infer<typeof RegionsDatasetEntrySchema>;
 
@@ -44,6 +40,7 @@ export const RegionsManifestSchema = z
     // Echoes the map's city code so a misplaced manifest can be detected.
     cityCode: z.string().min(1).optional(),
     country: z.string().min(1).optional(),
+    // Array order is the display order — no separate `order` field to collide.
     datasets: z.array(RegionsDatasetEntrySchema).min(1),
   })
   .superRefine((manifest, ctx) => {

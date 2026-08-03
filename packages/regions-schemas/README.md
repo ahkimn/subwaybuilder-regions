@@ -18,8 +18,9 @@ into [`json-schemas/`](./json-schemas) for language-agnostic tooling.
 
 ### `manifest.json`
 
-A superset of the legacy `data_index.json` per-city entry, plus `file`, `order`, and a
-`schemaVersion`:
+A superset of the legacy `data_index.json` per-city entry, plus `file` and a
+`schemaVersion`. Datasets display in **array order** — there is no separate `order`
+field (so nothing can collide):
 
 ```jsonc
 {
@@ -36,7 +37,6 @@ A superset of the legacy `data_index.json` per-city entry, plus `file`, `order`,
       "file": "shichouson.geojson.gz", // relative to .railyard_map/regions/
       "size": 62, // feature count
       "fileSizeMB": 1.2, // optional
-      "order": 0, // optional; overrides catalog display order
     },
   ],
 }

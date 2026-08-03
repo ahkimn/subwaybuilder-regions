@@ -21,7 +21,6 @@ function validManifest() {
         file: 'shichouson.geojson.gz',
         size: 62,
         fileSizeMB: 1.2,
-        order: 0,
       },
     ],
   };
