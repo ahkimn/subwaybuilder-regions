@@ -1,4 +1,9 @@
-export type DatasetOrigin = 'served' | 'dynamic' | 'static' | 'user';
+export type DatasetOrigin =
+  | 'served'
+  | 'dynamic'
+  | 'static'
+  | 'user'
+  | 'railyard';
 
 export type DatasetSource = {
   type: DatasetOrigin;

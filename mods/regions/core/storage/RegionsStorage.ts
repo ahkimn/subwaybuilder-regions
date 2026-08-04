@@ -7,6 +7,10 @@ import {
   type RegionsRegistryCache as RegistryCache,
   StaticRegistryCacheEntrySchema,
 } from '@regions/dataset-index';
+import {
+  type RegionsManifest,
+  validateRegionsManifest,
+} from '@subway-builder-modded/regions-schemas';
 import type { BBox } from 'geojson';
 import { z } from 'zod';
 
@@ -16,6 +20,7 @@ import {
 } from '../constants';
 import { DEFAULT_MOD_FOLDER, MOD_ID } from '../constants/global';
 import { decompressGzipResponse } from '../utils';
+import { buildRailyardMapRegionsPath } from './helpers';
 import { DEFAULT_REGIONS_SETTINGS } from './settings';
 import {
   clone,
@@ -237,6 +242,50 @@ export class RegionsStorage extends ModStorage<RegionsSettingsValue> {
       );
       return false;
     }
+  }
+
+  // Discover a city's regions datasets from the installed map's
+  // .railyard_map/regions/manifest.json. Returns null when the map ships no
+  // manifest (the common case) or the manifest is malformed. `basePath` is the
+  // installed-city dir (forward slashes) for building per-dataset file:// URLs.
+  async scanRailyardMapRegions(
+    cityCode: string,
+  ): Promise<{ basePath: string; manifest: RegionsManifest } | null> {
+    let basePath: string;
+    try {
+      const scan = await this.electronApi.scanCityDataFiles(cityCode);
+      if (!scan?.success || !scan.basePath) {
+        return null;
+      }
+      basePath = scan.basePath.replace(/\\/g, '/');
+    } catch (error) {
+      console.warn(
+        `[Regions] Failed to scan city data files for ${cityCode}.`,
+        error,
+      );
+      return null;
+    }
+
+    const manifestUrl = buildRailyardMapRegionsPath(basePath, 'manifest.json');
+    let raw: unknown;
+    try {
+      const response = await fetch(manifestUrl);
+      if (!response.ok) {
+        return null; // map ships no .railyard_map/regions manifest — normal
+      }
+      raw = await response.json();
+    } catch {
+      return null;
+    }
+
+    const result = validateRegionsManifest(raw);
+    if (!result.success) {
+      console.warn(
+        `[Regions] Ignoring invalid .railyard_map/regions/manifest.json for ${cityCode}: ${result.errors.join('; ')}`,
+      );
+      return null;
+    }
+    return { basePath, manifest: result.data };
   }
 
   async openModsFolder(): Promise<void> {

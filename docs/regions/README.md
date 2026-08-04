@@ -140,6 +140,28 @@ _Latest Changelog Entry:_ [v0.5.0](CHANGELOG.md#v050---2026-07-22)
   - `TOTAL_AREA`
   - `AREA_WITHIN_BBOX`
 
+### Map-provided datasets (`.railyard_map/regions`)
+
+The mod can also discover a map's region datasets directly from an **installed
+map** — no manual dataset download. If a map ships a `.railyard_map/regions/`
+folder, the mod reads it on load and uses it authoritatively (a self-declaring
+city bypasses the built-in static recognition entirely).
+
+```
+<installed map>/.railyard_map/regions/
+  manifest.json            -- discovery entry point (see below)
+  <datasetId>.geojson.gz   -- one per dataset declared in the manifest
+```
+
+`manifest.json` conforms to
+[`@subway-builder-modded/regions-schemas`](../../packages/regions-schemas): a
+`schemaVersion`, optional `cityCode`/`country`, and a `datasets[]` array (each with
+`datasetId`, `displayName`, `unitSingular`/`unitPlural`, `source`, `file`, and
+`size`). Datasets display in array order. The `<datasetId>.geojson.gz` files follow
+the GeoJSON feature requirements above. Map creators can produce a conformant folder
+themselves; for maps sourced from `subwaybuilder-jp-data`, `npm run export:railyard-map`
+generates it and jp-data's release packaging folds it into the map's `.railyard_map/`.
+
 ## Installation
 
 > :warning: The prebuilt release for general users lags behind the dev build and may be unstable!
