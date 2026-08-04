@@ -20,6 +20,9 @@ INTRO.md
 .github/agents/
 config.yaml
 
+# Local planning docs (kept out of the repo)
+plans/
+
 # OS cruft
 .DS_Store
 Thumbs.db

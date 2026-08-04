@@ -1,0 +1,34 @@
+{
+  "name": "@subway-builder-modded/regions-schemas",
+  "version": "0.1.0",
+  "description": "Versioned schema contract for SubwayBuilder Regions datasets embedded in a map's .railyard_map/regions folder.",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./json-schemas": "./json-schemas/index.json",
+    "./json-schemas/manifest": "./json-schemas/manifest.schema.json",
+    "./json-schemas/region-feature": "./json-schemas/region-feature.schema.json",
+    "./json-schemas/region-feature-collection": "./json-schemas/region-feature-collection.schema.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "json-schemas"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc",
+    "emit-json-schemas": "node dist/emit-json-schemas.js",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "prepublishOnly": "npm run build && npm run emit-json-schemas"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "typescript": "^5.9.3"
+  }
+}

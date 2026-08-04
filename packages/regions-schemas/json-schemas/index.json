@@ -1,0 +1,413 @@
+{
+  "$comment": "Aggregated JSON Schema documents for @subway-builder-modded/regions-schemas.",
+  "schemas": {
+    "manifest": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.subwaybuilder-modded.dev/regions/manifest.schema.json",
+      "title": "Regions map manifest",
+      "description": "Contents of .railyard_map/regions/manifest.json.",
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "cityCode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "country": {
+          "type": "string",
+          "minLength": 1
+        },
+        "datasets": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "datasetId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "displayName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unitSingular": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unitPlural": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "fileSizeMB": {
+                "type": "number",
+                "minimum": 0
+              },
+              "style": {
+                "type": "object",
+                "properties": {
+                  "light": {
+                    "type": "object",
+                    "properties": {
+                      "fill": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "fillHover": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "fillOpacity": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "line": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "lineOpacity": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "labelHalo": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "dark": {
+                    "type": "object",
+                    "properties": {
+                      "fill": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "fillHover": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "fillOpacity": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "line": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "lineOpacity": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "labelHalo": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "datasetId",
+              "displayName",
+              "unitSingular",
+              "unitPlural",
+              "source",
+              "file",
+              "size"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "datasets"
+      ],
+      "additionalProperties": false
+    },
+    "regionFeature": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.subwaybuilder-modded.dev/regions/region-feature.schema.json",
+      "title": "Regions dataset feature",
+      "description": "A single Polygon/MultiPolygon region feature.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "Feature"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "geometry": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "Polygon",
+                "MultiPolygon"
+              ]
+            },
+            "coordinates": {
+              "type": "array",
+              "items": {}
+            }
+          },
+          "required": [
+            "type",
+            "coordinates"
+          ],
+          "additionalProperties": {}
+        },
+        "properties": {
+          "type": "object",
+          "properties": {
+            "ID": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "NAME": {
+              "type": "string",
+              "minLength": 1
+            },
+            "LAT": {
+              "type": "number"
+            },
+            "LNG": {
+              "type": "number"
+            },
+            "DISPLAY_NAME": {
+              "type": "string",
+              "minLength": 1
+            },
+            "TOTAL_AREA": {
+              "type": "number",
+              "minimum": 0
+            },
+            "AREA_WITHIN_BBOX": {
+              "type": "number",
+              "minimum": 0
+            },
+            "POPULATION": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "UNIT_TYPE": {
+              "type": "string",
+              "minLength": 1
+            },
+            "NAME_NATIVE": {
+              "type": "string",
+              "minLength": 1
+            },
+            "NAME_EN": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "ID",
+            "NAME",
+            "LAT",
+            "LNG"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "type",
+        "geometry",
+        "properties"
+      ],
+      "additionalProperties": {}
+    },
+    "regionFeatureCollection": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.subwaybuilder-modded.dev/regions/region-feature-collection.schema.json",
+      "title": "Regions dataset feature collection",
+      "description": "A regions dataset file: a FeatureCollection of region features.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "FeatureCollection"
+        },
+        "features": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Feature"
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "geometry": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Polygon",
+                      "MultiPolygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {}
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ],
+                "additionalProperties": {}
+              },
+              "properties": {
+                "type": "object",
+                "properties": {
+                  "ID": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  "NAME": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "LAT": {
+                    "type": "number"
+                  },
+                  "LNG": {
+                    "type": "number"
+                  },
+                  "DISPLAY_NAME": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "TOTAL_AREA": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "AREA_WITHIN_BBOX": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "POPULATION": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "UNIT_TYPE": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "NAME_NATIVE": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "NAME_EN": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "ID",
+                  "NAME",
+                  "LAT",
+                  "LNG"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "type",
+              "geometry",
+              "properties"
+            ],
+            "additionalProperties": {}
+          }
+        }
+      },
+      "required": [
+        "type",
+        "features"
+      ],
+      "additionalProperties": {}
+    }
+  }
+}
