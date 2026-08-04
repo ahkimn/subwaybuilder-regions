@@ -122,12 +122,16 @@ function supportsTarForceLocal(): boolean {
 }
 
 function extractArchive(archivePath: string, outputDir: string): void {
-  const tarArgs = ['-xzf', archivePath, '-C', outputDir];
+  // Extract from `outputDir` as the cwd rather than passing `-C outputDir`: GNU tar
+  // reads a Windows drive-letter path (`C:\...`) after `-C` as a remote host and
+  // fails ("Cannot open"). --force-local rescues the archive path the same way.
+  const tarArgs = ['-xzf', archivePath];
   if (supportsTarForceLocal()) {
     tarArgs.unshift('--force-local');
   }
 
   const tarResult = spawnSync('tar', tarArgs, {
+    cwd: outputDir,
     encoding: 'utf8',
     shell: false,
   });
