@@ -579,6 +579,9 @@ export function applyJPOutputNameFields(
       NAME: formatBilingualName(nameParts.ja, nameParts.en),
       DISPLAY_NAME: formatBilingualName(nameParts.ja, nameParts.en),
       NAME_JA: nameParts.ja,
+      // Country-agnostic canonical native name (see regions-schemas), mirroring the
+      // legacy NAME_JA key for the .railyard_map contract.
+      NAME_NATIVE: nameParts.ja,
       NAME_EN: nameParts.en,
     };
   }
