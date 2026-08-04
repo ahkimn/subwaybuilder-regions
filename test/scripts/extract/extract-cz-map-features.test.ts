@@ -172,6 +172,42 @@ async function createCZFixture(options?: { bundleCountry?: string }): Promise<{
     'utf8',
   );
 
+  const ciszsjdRoot = path.join(sourceRoot, 'cz', 'raw', 'dojezdka_national');
+  await fs.ensureDir(ciszsjdRoot);
+  // Supplementary national ZSJ-díl labels (required source). Every entry mirrors a
+  // chocho_key already in zsj_dil_names.csv, so all are deduped (the CSV wins) —
+  // the fixture only satisfies the required-source load without changing outputs.
+  await writeGeoJson(path.join(ciszsjdRoot, 'ciszsjd.geojson'), {
+    type: 'FeatureCollection',
+    features: [
+      polygonFeature(square(0, 0, 1, 1), {
+        parent_obec_code: '500001',
+        kod: '0000001',
+        nazev: 'Žižkov',
+      }),
+      polygonFeature(square(0, 1, 0.5, 2), {
+        parent_obec_code: '500001',
+        kod: '0010101',
+        nazev: 'Bavoryně díl 1',
+      }),
+      polygonFeature(square(0.5, 1, 1, 2), {
+        parent_obec_code: '500001',
+        kod: '0010102',
+        nazev: 'Bavoryně díl 2',
+      }),
+      polygonFeature(square(1, 0, 2, 1), {
+        parent_obec_code: '500002',
+        kod: '0000002',
+        nazev: 'Černá Pole',
+      }),
+      polygonFeature(square(5, 0, 6, 1), {
+        parent_obec_code: '599999',
+        kod: '0000003',
+        nazev: 'Mimo',
+      }),
+    ],
+  });
+
   await writeGeoJson(path.join(phaseInputRoot, 'chocho_selected.geojson'), {
     type: 'FeatureCollection',
     features: [
@@ -259,7 +295,9 @@ describe('CZ map feature extraction', () => {
     );
     assert.equal(okres.features.length, 1);
     assert.equal(okres.features[0].properties?.SOURCE_NAME, 'Praha-východ');
-    assert.equal(okres.features[0].properties?.POPULATION, 300);
+    // Population is chocho-derived (pop_total), like zsj below: obec 500001
+    // (80+30+50=160) + obec 500002 (160) = 320; obec 599999 is outside the bundle.
+    assert.equal(okres.features[0].properties?.POPULATION, 320);
     assert.deepEqual(
       zsj.features.map((feature) => feature.properties?.SOURCE_ID),
       ['500001000000', '500001001010', '500002000000'],
