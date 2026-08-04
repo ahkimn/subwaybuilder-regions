@@ -2,6 +2,11 @@ import type { TableCellPaddingClassName } from '@lib/ui/elements/DataTable';
 
 export const MIN_ROWS_FOR_FULL_HEIGHT = 10;
 
+// Approximate rendered height (px) of one compact overview row (incl. row gap),
+// used to window the table when it fills the available height. Overscan absorbs
+// minor inaccuracy.
+export const OVERVIEW_VIRTUAL_ROW_HEIGHT = 22;
+
 export const OVERVIEW_HEADER_LABELS = [
   'Region Name',
   'Real Pop',
