@@ -8,6 +8,8 @@ export const LOCAL_ORIGIN_PRECEDENCE: Record<RegistryOrigin, number> = {
   static: 0,
   dynamic: 1,
   user: 2,
+  // An installed map's own datasets are authoritative over local discovery.
+  railyard: 3,
 } as const;
 
 export function toLogicalDatasetKey(

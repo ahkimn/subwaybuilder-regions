@@ -19,6 +19,16 @@ export function buildLocalDatasetPath(
   );
 }
 
+// A file:// URL to a file inside an installed map's .railyard_map/regions/ folder.
+// `basePath` is the installed-city dir from electron.scanCityDataFiles (forward
+// slashes); `relativeFile` is a manifest-declared filename (validated relative).
+export function buildRailyardMapRegionsPath(
+  basePath: string,
+  relativeFile: string,
+): string {
+  return encodeURI(`file:///${basePath}/.railyard_map/regions/${relativeFile}`);
+}
+
 export function buildLocalDatasetCandidatePaths(
   localModsDataRoot: string,
   cityCode: string,

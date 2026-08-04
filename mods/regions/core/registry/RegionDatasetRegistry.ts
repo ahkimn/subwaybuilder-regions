@@ -24,6 +24,10 @@ import {
   sortEntriesByCountryDatasetOrder,
   toLogicalDatasetKey,
 } from './cache';
+import {
+  gateLocalEntriesByRailyard,
+  railyardManifestToEntries,
+} from './railyard';
 import { resolveStaticTemplateCountry, STATIC_TEMPLATES } from './static';
 
 export type DynamicValidationRequest = {
@@ -164,11 +168,46 @@ export class RegionDatasetRegistry {
         });
     };
 
-    // Dynamically created/updated entries should override local static entries.
+    // Dynamically created/updated entries should override local static entries;
+    // an installed map's own datasets (railyard) are authoritative over both.
     registerbyOrigin('static');
     registerbyOrigin('dynamic');
+    registerbyOrigin('railyard');
 
     return registered;
+  }
+
+  // Discover datasets an installed map declares in its .railyard_map/regions/
+  // manifest. Runs fresh on every build (never persisted to the registry cache),
+  // so newly installed / updated maps are always picked up.
+  private async locateRailyardMapDatasets(): Promise<RegistryCacheEntry[]> {
+    const entries: RegistryCacheEntry[] = [];
+    for (const city of this.api.utils.getCities()) {
+      const discovered = await this.storage.scanRailyardMapRegions(city.code);
+      if (!discovered) {
+        continue;
+      }
+      entries.push(
+        ...railyardManifestToEntries(
+          city.code,
+          discovered.basePath,
+          discovered.manifest,
+        ),
+      );
+    }
+    return entries;
+  }
+
+  // Register local (static/dynamic) entries alongside freshly discovered railyard
+  // entries. A city that declares datasets in .railyard_map is authoritative:
+  // static/dynamic discovery is skipped for it entirely (not just per-datasetId).
+  private async registerLocalWithRailyard(
+    localEntries: RegistryCacheEntry[],
+  ): Promise<number> {
+    const railyardEntries = await this.locateRailyardMapDatasets();
+    return this.registerLocalEntries(
+      gateLocalEntriesByRailyard(localEntries, railyardEntries),
+    );
   }
 
   // --- Registry Building --- //
@@ -198,7 +237,7 @@ export class RegionDatasetRegistry {
     this.clear();
 
     const localEntries = await this.resolveAndPersistLocalCacheEntries();
-    const localCount = this.registerLocalEntries(localEntries);
+    const localCount = await this.registerLocalWithRailyard(localEntries);
 
     let servedCount = 0;
     const servedIndex = await this.fetchServedIndex(onFetchError);
@@ -220,7 +259,7 @@ export class RegionDatasetRegistry {
     this.clear();
 
     const localEntries = await this.resolveAndPersistLocalCacheEntries();
-    const localCount = this.registerLocalEntries(localEntries);
+    const localCount = await this.registerLocalWithRailyard(localEntries);
     if (localCount === 0) {
       throw new Error(
         '[Regions] No local datasets found in static mapping or dynamic cache',
@@ -253,7 +292,7 @@ export class RegionDatasetRegistry {
       }
       localEntries = normalizedCache.entries;
     }
-    let localCount = this.registerLocalEntries(localEntries);
+    let localCount = await this.registerLocalWithRailyard(localEntries);
 
     let servedCount = 0;
     const servedIndex = await this.fetchServedIndex(onFetchError);

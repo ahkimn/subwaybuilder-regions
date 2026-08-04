@@ -17,7 +17,9 @@ export type DatasetIndex = Record<string, DatasetMetadata[]>;
 export type RegistryOrigin = Extract<
   // We do not want to persist served dataset in registry cache as they are not related to actual files within the mod or game directory
   DatasetOrigin,
-  'static' | 'dynamic' | 'user'
+  // 'railyard' entries are discovered fresh from an installed map's .railyard_map
+  // on every build and never persisted (see StaticRegistryCacheEntrySchema).
+  'static' | 'dynamic' | 'user' | 'railyard'
 >;
 
 export type RegistryCacheEntry = DatasetMetadata & {
@@ -39,6 +41,8 @@ export const StaticRegistryCacheEntrySchema = z.object({
   size: z.number(),
   dataPath: z.string(),
   isPresent: z.boolean(),
+  // 'railyard' is intentionally absent: those entries are runtime-only (rediscovered
+  // each build from the installed map), so any that leak into storage are dropped.
   origin: z.enum(['static', 'dynamic', 'user']),
   fileSizeMB: z.number().optional(),
   compressed: z.boolean(),
