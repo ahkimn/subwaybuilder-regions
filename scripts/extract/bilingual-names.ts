@@ -42,6 +42,9 @@ export function applyBilingualOutputNameFields(
       NAME: formatBilingualName(nameParts.native, nameParts.en),
       DISPLAY_NAME: formatBilingualName(nameParts.native, nameParts.en),
       [options.nativePropertyName]: nameParts.native,
+      // Country-agnostic canonical native name (see regions-schemas). Kept
+      // alongside the legacy country-specific key for the .railyard_map contract.
+      NAME_NATIVE: nameParts.native,
       NAME_EN: nameParts.en,
     };
   }
