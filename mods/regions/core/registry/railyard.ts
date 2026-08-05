@@ -25,6 +25,7 @@ export function railyardManifestToEntries(
     origin: 'railyard',
     fileSizeMB: dataset.fileSizeMB,
     compressed: dataset.file.endsWith('.gz'),
+    style: dataset.style,
   }));
 }
 

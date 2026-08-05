@@ -1,3 +1,4 @@
+import type { LayerStyle } from '@subway-builder-modded/regions-schemas';
 import { z } from 'zod';
 
 import type { DatasetOrigin } from './core/domain';
@@ -11,6 +12,9 @@ export type DatasetMetadata = {
   source: string;
   size: number;
   fileSizeMB?: number; // Optional due to served datasets where size is not a constraint
+  // Optional per-dataset paint overrides, carried from a map's .railyard_map
+  // manifest. Never persisted (railyard entries are runtime-only).
+  style?: LayerStyle;
 };
 
 export type DatasetIndex = Record<string, DatasetMetadata[]>;
