@@ -229,10 +229,15 @@ function buildLabelCandidate(
   };
 }
 
+// Ordered by preference for the *primary* label point: the first candidate that
+// falls inside the polygon wins. Prefer the area centroid (centerOfMass) for a
+// natural, representative placement near the visual centre; fall back to polylabel
+// (pole of inaccessibility — always interior) for concave shapes whose centroid
+// lands in a hole/gap. pointOnFeature/centroid are last-resort fallbacks.
 const LABEL_POINT_METHODS = [
+  'centerOfMass',
   'polylabel',
   'pointOnFeature',
-  'centerOfMass',
   'centroid',
 ] as const;
 
