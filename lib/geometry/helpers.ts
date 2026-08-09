@@ -162,6 +162,116 @@ export function shouldUsePreparedBoundaryContainment(
   return preparedBoundary.polygonCount === 1 && !preparedBoundary.hasHoles;
 }
 
+// A uniform grid bucketing every boundary edge (by its bbox) into cells. Used to
+// answer "does any boundary edge fall inside this bbox?" in ~O(local) instead of
+// scanning all boundary segments — the key to a conservative containment fast-path
+// for features that sit far from the boundary edge (see isDefinitelyWithinOrOutside).
+export type BoundaryEdgeIndex = {
+  polygons: PolygonCoordinates[];
+  bbox: BBox;
+  cols: number;
+  rows: number;
+  cellW: number;
+  cellH: number;
+  cells: BBox[][]; // cells[row * cols + col] = edge bboxes overlapping that cell
+};
+
+const BOUNDARY_EDGE_GRID_DIM = 256;
+
+export function buildBoundaryEdgeIndex(
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): BoundaryEdgeIndex {
+  const polygons = featureToPreparedPolygons(boundaryFeature);
+  const bbox = featureBBox(boundaryFeature);
+  const width = bbox[2] - bbox[0];
+  const height = bbox[3] - bbox[1];
+  const cols = width > 0 ? BOUNDARY_EDGE_GRID_DIM : 1;
+  const rows = height > 0 ? BOUNDARY_EDGE_GRID_DIM : 1;
+  const cellW = width > 0 ? width / cols : 1;
+  const cellH = height > 0 ? height / rows : 1;
+  const cells: BBox[][] = Array.from({ length: cols * rows }, () => []);
+
+  const colOf = (x: number) =>
+    Math.max(0, Math.min(cols - 1, Math.floor((x - bbox[0]) / cellW)));
+  const rowOf = (y: number) =>
+    Math.max(0, Math.min(rows - 1, Math.floor((y - bbox[1]) / cellH)));
+
+  for (const polygon of polygons) {
+    for (const ring of polygon) {
+      for (let i = 0; i < ring.length - 1; i += 1) {
+        const a = ring[i];
+        const b = ring[i + 1];
+        const edgeBBox: BBox = [
+          Math.min(a[0], b[0]),
+          Math.min(a[1], b[1]),
+          Math.max(a[0], b[0]),
+          Math.max(a[1], b[1]),
+        ];
+        const c0 = colOf(edgeBBox[0]);
+        const c1 = colOf(edgeBBox[2]);
+        const r0 = rowOf(edgeBBox[1]);
+        const r1 = rowOf(edgeBBox[3]);
+        for (let r = r0; r <= r1; r += 1) {
+          for (let c = c0; c <= c1; c += 1) {
+            cells[r * cols + c].push(edgeBBox);
+          }
+        }
+      }
+    }
+  }
+
+  return { polygons, bbox, cols, rows, cellW, cellH, cells };
+}
+
+function boundaryHasEdgeInBBox(index: BoundaryEdgeIndex, query: BBox): boolean {
+  const { bbox, cols, rows, cellW, cellH, cells } = index;
+  const colOf = (x: number) =>
+    Math.max(0, Math.min(cols - 1, Math.floor((x - bbox[0]) / cellW)));
+  const rowOf = (y: number) =>
+    Math.max(0, Math.min(rows - 1, Math.floor((y - bbox[1]) / cellH)));
+  const c0 = colOf(query[0]);
+  const c1 = colOf(query[2]);
+  const r0 = rowOf(query[1]);
+  const r1 = rowOf(query[3]);
+  for (let r = r0; r <= r1; r += 1) {
+    for (let c = c0; c <= c1; c += 1) {
+      for (const edgeBBox of cells[r * cols + c]) {
+        if (bboxIntersects(edgeBBox, query)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// Conservative, exact fast-path for the fully-within check. Returns a definitive
+// boolean ONLY when the feature is provably clear of the boundary edge (its bbox is
+// inside the boundary bbox and no boundary edge falls in its bbox) — then it is
+// entirely inside or entirely outside, and a single point-in-polygon settles it,
+// identically to a full within-check (no edge can be crossed). Returns null when the
+// feature is near the boundary edge, so the caller runs the exact containment check.
+export function isDefinitelyWithinOrOutside(
+  feature: Feature<Polygon | MultiPolygon>,
+  index: BoundaryEdgeIndex,
+  featureBBoxValue: BBox,
+): boolean | null {
+  if (!isFeatureBBoxWithinBBox(featureBBoxValue, index.bbox)) {
+    return null;
+  }
+  if (boundaryHasEdgeInBBox(index, featureBBoxValue)) {
+    return null;
+  }
+  const samplePoint =
+    feature.geometry.type === 'Polygon'
+      ? feature.geometry.coordinates[0]?.[0]
+      : feature.geometry.coordinates[0]?.[0]?.[0];
+  if (!samplePoint) {
+    return null;
+  }
+  return pointInMultiPolygon([samplePoint[0], samplePoint[1]], index.polygons);
+}
+
 function isFeatureBBoxWithinBBox(
   featureBBoxValue: BBox,
   boundaryBBox: BBox,
