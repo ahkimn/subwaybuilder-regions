@@ -19,10 +19,34 @@ function bboxIntersects(a, b) {
   return !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
 }
 
+// turf.intersect (polyclip-ts) can throw "Unable to complete output ring" on
+// near-degenerate input. On throw, sanitize both inputs and retry once; if it
+// still throws, skip this feature rather than crashing the worker (which would
+// otherwise force the single-threaded fallback to re-hit the same throw).
+function safeIntersect(feature, boundaryFeature) {
+  try {
+    return turf.intersect(turf.featureCollection([feature, boundaryFeature]));
+  } catch {
+    try {
+      const sanitize = (f) =>
+        turf.truncate(turf.rewind(cleanCoords(f)), {
+          precision: 7,
+          coordinates: 2,
+        });
+      return turf.intersect(
+        turf.featureCollection([sanitize(feature), sanitize(boundaryFeature)]),
+      );
+    } catch (err) {
+      console.warn(
+        `[Regions] Skipping feature ${feature?.id ?? '<no id>'}: turf.intersect failed after sanitize (${err instanceof Error ? err.message : String(err)})`,
+      );
+      return null;
+    }
+  }
+}
+
 function intersectFeatureWithBoundary(feature, boundaryFeature) {
-  const intersection = turf.intersect(
-    turf.featureCollection([feature, boundaryFeature]),
-  );
+  const intersection = safeIntersect(feature, boundaryFeature);
   if (!intersection || !isPolygonFeature(intersection)) {
     return null;
   }

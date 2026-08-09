@@ -953,13 +953,44 @@ function intersectFeatureWithBoundaryChunks(
   return combinePolygonIntersections(intersections);
 }
 
+// turf.intersect (polyclip-ts) can throw "Unable to complete output ring" on
+// near-degenerate input (self-touching rings / coincident vertices). Guard it:
+// on throw, sanitize both inputs (dedupe coords, fix winding, drop excess
+// precision) and retry once; if it still throws, skip this feature rather than
+// aborting the whole bundle.
+function safeIntersect(
+  feature: Feature<Polygon | MultiPolygon>,
+  boundaryFeature: Feature<Polygon | MultiPolygon>,
+): Feature<Polygon | MultiPolygon> | null {
+  try {
+    return turf.intersect(turf.featureCollection([feature, boundaryFeature]));
+  } catch {
+    try {
+      const sanitize = (f: Feature<Polygon | MultiPolygon>) =>
+        turf.truncate(
+          turf.rewind(cleanCoords(f)) as Feature<Polygon | MultiPolygon>,
+          {
+            precision: 7,
+            coordinates: 2,
+          },
+        ) as Feature<Polygon | MultiPolygon>;
+      return turf.intersect(
+        turf.featureCollection([sanitize(feature), sanitize(boundaryFeature)]),
+      );
+    } catch (err) {
+      console.warn(
+        `[Regions] Skipping feature ${feature.id ?? '<no id>'}: turf.intersect failed after sanitize (${err instanceof Error ? err.message : String(err)})`,
+      );
+      return null;
+    }
+  }
+}
+
 function intersectFeatureWithBoundary(
   feature: Feature<Polygon | MultiPolygon>,
   boundaryFeature: Feature<Polygon | MultiPolygon>,
 ): Feature<Geometry, GeoJsonProperties> | null {
-  const intersection = turf.intersect(
-    turf.featureCollection([feature, boundaryFeature]),
-  );
+  const intersection = safeIntersect(feature, boundaryFeature);
   if (!intersection || !isPolygonFeature(intersection)) {
     return null;
   }
