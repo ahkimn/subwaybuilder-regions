@@ -15,7 +15,9 @@ import polylabel from 'polylabel';
 
 import {
   bboxIntersects,
+  buildBoundaryEdgeIndex,
   featureBBox,
+  isDefinitelyWithinOrOutside,
   isFullyWithinBBox,
   isFullyWithinFeature,
   isFullyWithinPreparedBoundary,
@@ -418,6 +420,13 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
   const usePreparedContainment =
     shouldUsePreparedBoundaryContainment(preparedBoundary);
   const safeBoundaryBBoxes = buildSafeBoundaryBBoxIndex(boundaryFeature);
+  // Built once up front and reused for both the per-feature within/intersects
+  // localization and the clip step below.
+  const boundaryClipChunks = buildBoundaryClipChunks(boundaryFeature);
+  // Edge index for the conservative within fast-path: features provably clear of
+  // the boundary edge are classified by a single point-in-polygon instead of a
+  // full containment check.
+  const boundaryEdgeIndex = buildBoundaryEdgeIndex(boundaryFeature);
   const totalFeatures = shapeJSON.features.length;
   const stats: GeometryFilterStats = {};
   const clipCandidates: ClipCandidate[] = [];
@@ -445,6 +454,20 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
     }
     incrementGeometryFilterStat(stats, 'bboxPrefilterPassed');
 
+    // Boundary chunks whose bbox overlaps the feature. If none overlap, the
+    // feature is nowhere near the boundary and cannot intersect it — discard.
+    // This replaces the old full-boundary turf.booleanIntersects cull: a real
+    // intersection requires overlapping bboxes, so no-overlap ⇒ no intersection,
+    // and any bbox-overlap-but-no-real-intersection feature is caught later when
+    // the clip returns null (identical output either way).
+    const matchingChunks = boundaryClipChunks.filter((chunk) =>
+      bboxIntersects(chunk.bbox, currentFeatureBBox),
+    );
+    if (matchingChunks.length === 0) {
+      incrementGeometryFilterStat(stats, 'rejectedNoIntersectionCount');
+      continue;
+    }
+
     let fullyWithinBoundary = isBBoxWithinAnyBBox(
       currentFeatureBBox,
       safeBoundaryBBoxes.bboxes,
@@ -453,40 +476,48 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
       incrementGeometryFilterStat(stats, 'safeBBoxWithinCount');
     } else {
       const withinCheckStart = performance.now();
-      fullyWithinBoundary = usePreparedContainment
-        ? isFullyWithinPreparedBoundary(
-            feature,
-            preparedBoundary,
-            currentFeatureBBox,
-          )
-        : isFullyWithinFeature(
-            feature,
-            boundaryFeature,
-            'boundary',
-            currentFeatureBBox,
-          );
-      addGeometryFilterTiming(
-        stats,
-        'withinCheckMs',
-        performance.now() - withinCheckStart,
+      // Fast-path: a feature provably clear of the boundary edge is entirely inside
+      // or outside, so one point-in-polygon settles it exactly (see helper). Only
+      // features near the boundary edge fall through to the full containment check.
+      const definitive = isDefinitelyWithinOrOutside(
+        feature,
+        boundaryEdgeIndex,
+        currentFeatureBBox,
       );
-    }
-
-    if (
-      !fullyWithinBoundary &&
-      (() => {
-        const intersectsCheckStart = performance.now();
-        const intersects = turf.booleanIntersects(boundaryFeature, feature);
+      if (definitive !== null) {
+        fullyWithinBoundary = definitive;
         addGeometryFilterTiming(
           stats,
-          'intersectsCheckMs',
-          performance.now() - intersectsCheckStart,
+          'withinCheckMs',
+          performance.now() - withinCheckStart,
         );
-        return !intersects;
-      })()
-    ) {
-      incrementGeometryFilterStat(stats, 'rejectedNoIntersectionCount');
-      continue;
+      } else {
+        // A feature overlapping exactly one chunk can only lie within/against that
+        // chunk, so "within that chunk" is identical to "within the whole boundary"
+        // — test the small chunk instead of the full multi-polygon. Features that
+        // straddle multiple chunks fall back to the exact full-boundary check.
+        const withinTarget =
+          !usePreparedContainment && matchingChunks.length === 1
+            ? matchingChunks[0].feature
+            : boundaryFeature;
+        fullyWithinBoundary = usePreparedContainment
+          ? isFullyWithinPreparedBoundary(
+              feature,
+              preparedBoundary,
+              currentFeatureBBox,
+            )
+          : isFullyWithinFeature(
+              feature,
+              withinTarget,
+              'boundary',
+              currentFeatureBBox,
+            );
+        addGeometryFilterTiming(
+          stats,
+          'withinCheckMs',
+          performance.now() - withinCheckStart,
+        );
+      }
     }
 
     if (fullyWithinBoundary) {
@@ -517,7 +548,6 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
   }
 
   const clippingStart = performance.now();
-  const boundaryClipChunks = buildBoundaryClipChunks(boundaryFeature);
   const clippedRegions = await clipCandidatesWithWorkers(
     clipCandidates,
     boundaryClipChunks,
