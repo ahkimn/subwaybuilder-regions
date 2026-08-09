@@ -6,6 +6,10 @@ import type { MapDisplayColor } from '@lib/ui/types/DisplayColor';
 import { PRIMARY_FILL_COLORS } from '@lib/ui/types/DisplayColor';
 import type { LayerToggleOptions } from '@lib/ui/types/LayerToggleOptions';
 import { resolveCountryDatasetOrder } from '@regions/datasets/catalog';
+import type {
+  LayerStyle,
+  LayerThemeStyle,
+} from '@subway-builder-modded/regions-schemas';
 
 import {
   OVERVIEW_REGION_FOCUS_DURATION_MS,
@@ -23,6 +27,7 @@ import {
   type RegionsSettings as RegionsSettingsValue,
 } from '../core/storage/types';
 import { LABEL_FONT_CANDIDATES, resolveLabelFont } from './font-resolver';
+import { resolveEffectiveFill } from './style-resolve';
 import type { LightMode } from './styles';
 import {
   DEFAULT_DARK_MODE_BOUNDARY_SETTINGS,
@@ -47,7 +52,8 @@ type MapLayerState = {
 };
 
 type MapLayerStyle = {
-  fillColor: MapDisplayColor;
+  fillColor: MapDisplayColor; // default palette color (used when the manifest omits fill)
+  style?: LayerStyle; // per-dataset manifest overrides, applied per theme
 };
 
 type LayerHandlers = {
@@ -628,7 +634,10 @@ export class RegionsMapLayers {
       return this.layerStyles.get(datasetIdentifier)!;
     }
 
-    const style: MapLayerStyle = { fillColor: this.resolveFillColor(dataset) };
+    const style: MapLayerStyle = {
+      fillColor: this.resolveFillColor(dataset),
+      style: dataset.style,
+    };
     this.layerStyles.set(datasetIdentifier, style);
     return style;
   }
@@ -718,17 +727,21 @@ export class RegionsMapLayers {
 
     const boundarySettings = this.resolveBoundarySettings(this.lightMode);
     const labelSettings = this.resolveLabelSettings(this.lightMode);
+    // Per-dataset manifest overrides for the current theme (undefined = use defaults).
+    const override: LayerThemeStyle | undefined = this.layerStyles.get(
+      layerState.datasetIdentifier,
+    )?.style?.[this.lightMode];
 
     if (this.tryGetLayer(layerState.boundaryLineLayerId)) {
       mapRef.setPaintProperty(
         layerState.boundaryLineLayerId,
         'line-color',
-        boundarySettings['line-color'],
+        override?.line ?? boundarySettings['line-color'],
       );
       mapRef.setPaintProperty(
         layerState.boundaryLineLayerId,
         'line-opacity',
-        boundarySettings['line-opacity'],
+        override?.lineOpacity ?? boundarySettings['line-opacity'],
       );
       mapRef.setPaintProperty(
         layerState.boundaryLineLayerId,
@@ -738,6 +751,21 @@ export class RegionsMapLayers {
     }
 
     if (this.tryGetLayer(layerState.boundaryLayerId)) {
+      // fill-color is (re)applied here, not only at layer creation, so a manifest
+      // can supply theme-split fill colors that swap on the light/dark toggle.
+      const layerStyle = this.layerStyles.get(layerState.datasetIdentifier);
+      if (layerStyle) {
+        const fill = resolveEffectiveFill(override, layerStyle.fillColor);
+        mapRef.setPaintProperty(
+          layerState.boundaryLayerId,
+          'fill-color',
+          stateBoolean(
+            'selected',
+            fill.hover,
+            stateBoolean('hover', fill.hover, fill.base),
+          ),
+        );
+      }
       mapRef.setPaintProperty(
         layerState.boundaryLayerId,
         'fill-opacity',
@@ -747,7 +775,7 @@ export class RegionsMapLayers {
           stateBoolean(
             'hover',
             boundarySettings['hover-fill-opacity'],
-            boundarySettings['fill-opacity'],
+            override?.fillOpacity ?? boundarySettings['fill-opacity'],
           ),
         ),
       );
@@ -759,11 +787,9 @@ export class RegionsMapLayers {
         'text-size',
         labelSettings['text-size'],
       );
-      mapRef.setLayoutProperty(
-        layerState.labelLayerId,
-        'text-font',
-        [this.resolvedLabelFont],
-      );
+      mapRef.setLayoutProperty(layerState.labelLayerId, 'text-font', [
+        this.resolvedLabelFont,
+      ]);
       mapRef.setLayoutProperty(
         layerState.labelLayerId,
         'text-letter-spacing',
@@ -775,13 +801,13 @@ export class RegionsMapLayers {
         stateBoolean(
           'hover',
           labelSettings['hover-text-color'],
-          labelSettings['text-color'],
+          override?.label ?? labelSettings['text-color'],
         ),
       );
       mapRef.setPaintProperty(
         layerState.labelLayerId,
         'text-halo-color',
-        labelSettings['text-halo-color'],
+        override?.labelHalo ?? labelSettings['text-halo-color'],
       );
       mapRef.setPaintProperty(
         layerState.labelLayerId,

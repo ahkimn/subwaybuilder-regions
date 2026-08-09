@@ -8,6 +8,7 @@ import {
 } from '@lib/geometry/helpers';
 import type { DemandData } from '@lib/types/game-state';
 import type { DatasetMetadata } from '@regions/dataset-index';
+import type { LayerStyle } from '@subway-builder-modded/regions-schemas';
 import * as turf from '@turf/turf';
 import type { BBox, Feature, MultiPolygon, Polygon } from 'geojson';
 
@@ -55,6 +56,8 @@ export class RegionDataset {
   readonly metadataSource: string;
   readonly expectedSize: number;
   readonly fileSizeMB?: number;
+  // Per-dataset paint overrides from a map's .railyard_map manifest (optional).
+  readonly style?: LayerStyle;
 
   // Static data store properties (boundaries / labels)
   boundaryData: GeoJSON.FeatureCollection | null = null;
@@ -96,6 +99,7 @@ export class RegionDataset {
       Number.isFinite(indexEntry.fileSizeMB)
         ? indexEntry.fileSizeMB
         : undefined;
+    this.style = indexEntry.style;
   }
 
   get isWritable(): boolean {

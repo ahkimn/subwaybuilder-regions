@@ -607,6 +607,7 @@ export class RegionDatasetRegistry {
       source: entry.source,
       size: entry.size,
       fileSizeMB: entry.fileSizeMB,
+      style: entry.style,
     };
   }
 
