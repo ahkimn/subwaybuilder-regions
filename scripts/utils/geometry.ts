@@ -418,6 +418,9 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
   const usePreparedContainment =
     shouldUsePreparedBoundaryContainment(preparedBoundary);
   const safeBoundaryBBoxes = buildSafeBoundaryBBoxIndex(boundaryFeature);
+  // Built once up front and reused for both the per-feature within/intersects
+  // localization and the clip step below.
+  const boundaryClipChunks = buildBoundaryClipChunks(boundaryFeature);
   const totalFeatures = shapeJSON.features.length;
   const stats: GeometryFilterStats = {};
   const clipCandidates: ClipCandidate[] = [];
@@ -445,6 +448,20 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
     }
     incrementGeometryFilterStat(stats, 'bboxPrefilterPassed');
 
+    // Boundary chunks whose bbox overlaps the feature. If none overlap, the
+    // feature is nowhere near the boundary and cannot intersect it — discard.
+    // This replaces the old full-boundary turf.booleanIntersects cull: a real
+    // intersection requires overlapping bboxes, so no-overlap ⇒ no intersection,
+    // and any bbox-overlap-but-no-real-intersection feature is caught later when
+    // the clip returns null (identical output either way).
+    const matchingChunks = boundaryClipChunks.filter((chunk) =>
+      bboxIntersects(chunk.bbox, currentFeatureBBox),
+    );
+    if (matchingChunks.length === 0) {
+      incrementGeometryFilterStat(stats, 'rejectedNoIntersectionCount');
+      continue;
+    }
+
     let fullyWithinBoundary = isBBoxWithinAnyBBox(
       currentFeatureBBox,
       safeBoundaryBBoxes.bboxes,
@@ -453,6 +470,14 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
       incrementGeometryFilterStat(stats, 'safeBBoxWithinCount');
     } else {
       const withinCheckStart = performance.now();
+      // A feature overlapping exactly one chunk can only lie within/against that
+      // chunk, so "within that chunk" is identical to "within the whole boundary"
+      // — test the small chunk instead of the full multi-polygon. Features that
+      // straddle multiple chunks fall back to the exact full-boundary check.
+      const withinTarget =
+        !usePreparedContainment && matchingChunks.length === 1
+          ? matchingChunks[0].feature
+          : boundaryFeature;
       fullyWithinBoundary = usePreparedContainment
         ? isFullyWithinPreparedBoundary(
             feature,
@@ -461,7 +486,7 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
           )
         : isFullyWithinFeature(
             feature,
-            boundaryFeature,
+            withinTarget,
             'boundary',
             currentFeatureBBox,
           );
@@ -470,23 +495,6 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
         'withinCheckMs',
         performance.now() - withinCheckStart,
       );
-    }
-
-    if (
-      !fullyWithinBoundary &&
-      (() => {
-        const intersectsCheckStart = performance.now();
-        const intersects = turf.booleanIntersects(boundaryFeature, feature);
-        addGeometryFilterTiming(
-          stats,
-          'intersectsCheckMs',
-          performance.now() - intersectsCheckStart,
-        );
-        return !intersects;
-      })()
-    ) {
-      incrementGeometryFilterStat(stats, 'rejectedNoIntersectionCount');
-      continue;
     }
 
     if (fullyWithinBoundary) {
@@ -517,7 +525,6 @@ export async function filterAndClipRegionsToBoundaryGeometryAsync(
   }
 
   const clippingStart = performance.now();
-  const boundaryClipChunks = buildBoundaryClipChunks(boundaryFeature);
   const clippedRegions = await clipCandidatesWithWorkers(
     clipCandidates,
     boundaryClipChunks,
