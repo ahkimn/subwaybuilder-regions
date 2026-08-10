@@ -3,16 +3,15 @@
   "name": "Regions",
   "description": "Add support for displaying/analyzing regional data within SubwayBuilder",
   "dependencies": {
-    "subway-builder": ">=1.0.0"
+    "subway-builder": ">=1.6.0"
   },
   "icon": "MapPinned",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": {
     "name": "ahkimn",
     "url": "https://github.com/ahkimn"
   },
-  "maxGameVersion": "1.3.0",
-  "minGameVersion": "1.0.0",
+  "minGameVersion": "1.6.0",
   "main": "index.js",
   "license": "MIT",
   "repository": {
@@ -26,5 +25,5 @@
     "boundaries",
     "geospatial"
   ],
-  "subwayBuilderVersion": ">=1.3.0"
+  "subwayBuilderVersion": ">=1.6.0"
 }

@@ -86,8 +86,10 @@ const REGISTRY_SORT_CONFIGS: ReadonlyArray<SortConfig<SettingsDatasetRow>> = [
 ];
 
 const REGISTRY_TABLE_OPTIONS: TableOptions = {
+  // Origin (5th) is sized to its content (max-content) so the widest value
+  // ("railyard") always fits and never spills into Filesize under a narrow panel.
   columnTemplate:
-    'minmax(8ch,max-content) minmax(14ch,max-content) minmax(10ch,max-content) minmax(14ch,1fr) minmax(8ch,max-content) minmax(8ch,max-content) minmax(12ch,max-content)',
+    'minmax(8ch,max-content) minmax(14ch,max-content) minmax(10ch,max-content) minmax(14ch,1fr) max-content minmax(8ch,max-content) minmax(12ch,max-content)',
   density: 'compact',
   tableCellOptions: {
     cellPaddingClassName: {
