@@ -13,6 +13,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: release
     defaults:
       run:
         working-directory: packages/regions-schemas
@@ -44,6 +45,9 @@ jobs:
         run: npm test
 
       - name: Publish package
+        # The default GITHUB_TOKEN cannot publish to the @subway-builder-modded
+        # org scope from this personal repo. PACKAGES_TOKEN is an org PAT with
+        # write:packages, shared with the release workflows (read via write).
         run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
