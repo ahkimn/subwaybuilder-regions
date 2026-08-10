@@ -687,7 +687,11 @@ function buildSettingsDatasetRows(
       origin: origin,
       fileSizeMB:
         matchingOriginEntry?.fileSizeMB ??
-        (origin === 'served' ? dataset.fileSizeMB : undefined),
+        // served + railyard entries aren't persisted to the local cache, so their
+        // size comes from the dataset (manifest / served index), not a cache entry.
+        (origin === 'served' || origin === 'railyard'
+          ? dataset.fileSizeMB
+          : undefined),
       issue: !knownCityCodes.has(dataset.cityCode)
         ? 'missing_city'
         : matchingOriginEntry
