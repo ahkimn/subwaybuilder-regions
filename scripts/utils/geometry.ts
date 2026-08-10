@@ -927,6 +927,8 @@ function runClipWorkerPool(
     let settled = false;
     let intersectCpuMs = 0;
     const wallStart = performance.now();
+    // ~20 progress lines over the run, so a long clip (HND) isn't silent.
+    const heartbeatEvery = Math.max(1, Math.floor(clipCandidates.length / 20));
 
     const cleanup = () => {
       for (const worker of workers) {
@@ -970,6 +972,18 @@ function runClipWorkerPool(
         results[message.index] = message.clippedRegion;
         intersectCpuMs += message.clippingDurationMs;
         completed += 1;
+        if (
+          completed < clipCandidates.length &&
+          completed % heartbeatEvery === 0
+        ) {
+          const elapsedMs = performance.now() - wallStart;
+          const fraction = completed / clipCandidates.length;
+          // Rate-extrapolated ETA; clip costs are heavy-tailed, so treat as rough.
+          const etaMs = fraction > 0 ? elapsedMs / fraction - elapsedMs : 0;
+          console.log(
+            `[Geometry] clip progress: ${completed}/${clipCandidates.length} (${(fraction * 100).toFixed(0)}%) | elapsed ${(elapsedMs / 1000).toFixed(0)}s | eta ~${(etaMs / 1000).toFixed(0)}s`,
+          );
+        }
         if (completed === clipCandidates.length) {
           settled = true;
           const wallMs = performance.now() - wallStart;
