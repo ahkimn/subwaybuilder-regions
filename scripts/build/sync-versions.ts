@@ -77,7 +77,9 @@ function syncManifestVersion(manifestPath: string, version: string): boolean {
  * Looks for a line like `_Game version_ v1.2.0` immediately after the header.
  */
 function extractGameVersion(changelogPath: string): string | null {
-  const content = readFileSync(changelogPath, 'utf8');
+  // Normalize CRLF → LF so the multi-line pattern matches on Windows-authored
+  // changelogs (otherwise `.*` stops at \r and the `\n+` never matches).
+  const content = readFileSync(changelogPath, 'utf8').replace(/\r\n/g, '\n');
   // Match the game version line under the first ## heading
   const match = content.match(
     /^##\s+v\d+\.\d+\.\d+.*\n+_Game version_\s+v([\d.]+)/m,
@@ -126,7 +128,10 @@ function updateReadmeTopline(
     return false;
   }
 
-  const changelogSlug = `v${version.replace(/\./g, '')}`;
+  // GitHub anchor for `## v0.5.1 - 2026-08-10` is `v051---2026-08-10`; include the
+  // date so the link resolves (matches the docs README anchor).
+  const versionSlug = `v${version.replace(/\./g, '')}`;
+  const changelogSlug = date ? `${versionSlug}---${date}` : versionSlug;
   const changelogDir = modId === 'regions' ? 'regions' : 'enhanced-demand-view';
 
   const lines: string[] = [];

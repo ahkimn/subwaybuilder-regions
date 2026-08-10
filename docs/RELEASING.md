@@ -8,6 +8,8 @@ This document describes the release flow for publishing mods from this repositor
 
 Each mod's `CHANGELOG.md` is the single source of truth for versioning. On release, the `sync-versions` script reads the latest entry from the changelog and propagates it to the mod's `manifest.json` and the root `README.md` status table. You never need to manually edit `manifest.json` version numbers.
 
+The changelog's `_Game version_` line syncs the **tested** game version into the README badges. The manifest's game **compatibility** fields (`minGameVersion`, `maxGameVersion`, `subwayBuilderVersion`, `dependencies.subway-builder`) are **not** synced — update them by hand when the supported game range changes.
+
 ## Repository Structure
 
 This monorepo contains multiple mods with a shared core library:

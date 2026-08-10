@@ -2,6 +2,33 @@
 
 [Back to README](../../README.md)
 
+## v0.5.1 - 2026-08-10
+
+_Game version_ v1.6.1
+
+### New Features
+
+- **Map-provided datasets (`.railyard_map`)**: the mod now discovers a city's region datasets directly from an installed map's `.railyard_map/regions/` folder. Maps that ship regions data are recognized automatically — no manual dataset download or unzip — and a self-declaring map is authoritative over the built-in static recognition.
+- **Per-map dataset styling**: a map can override the default region colors per layer and theme (light/dark) via its `.railyard_map/regions` manifest (fill, outline, and label colors), so map creators control their own palette. Datasets that omit a style fall back to the mod defaults.
+
+### Other Updates
+
+- Overview panel performance: the region table is now memoized and virtualized, so large datasets scroll and drag smoothly without re-rendering the whole table each frame.
+- Improved region label placement: labels now prefer a representative interior point near the area centroid instead of the farthest-from-edge point, falling back to a guaranteed-interior point for concave shapes. (Applies to re-exported datasets.)
+- Dataset Registry panel: the Origin column is sized to its content (no longer overflowing into Filesize), and map-provided (`railyard`) datasets now display their file sizes.
+
+### Bugfixes
+
+- Dataset Registry table: map-provided (`railyard`) datasets showed `N/A` for file size, and the wider `railyard` origin label encroached on the file-size column — both fixed.
+
+### Tooling & Data Pipeline
+
+- New `@subway-builder-modded/regions-schemas` contract package (Zod → JSON Schema) defining the `.railyard_map/regions` manifest and dataset feature format, so any map creator can author conformant datasets.
+- New `export:railyard-map` generator emits `.railyard_map/regions` bundles (manifest + datasets) into jp-data's export, which its release packaging folds into each map.
+- Extractor performance: large JP bundles (e.g. Tokyo) extract dramatically faster — a boundary-edge spatial index makes the containment check ~free, and a dynamic worker pool with a live progress/ETA log parallelizes the clip. All output verified byte-identical.
+- Extractor robustness: guarded a `turf.intersect` (polyclip) ring-closure crash that could abort a whole bundle on one near-degenerate polygon.
+- Export tooling now emits real `.zip` bundles grouped by country (Windows-native extraction).
+
 ## v0.5.0 - 2026-07-22
 
 _Game version_ v1.4.0
