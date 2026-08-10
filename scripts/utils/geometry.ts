@@ -1,3 +1,4 @@
+import os from 'node:os';
 import { Worker } from 'node:worker_threads';
 
 import { cleanCoords } from '@turf/clean-coords';
@@ -37,7 +38,19 @@ export type BoundaryBox = {
   north: number;
 };
 
-const DEFAULT_CLIP_WORKER_COUNT = 4;
+// The clip is CPU-bound; oversubscribing logical (hyperthreaded) cores inflates
+// per-clip time via contention, so default to ~physical cores (half of logical).
+// Override per-machine with SUBWAYBUILDER_CLIP_WORKERS for the re-export.
+const DEFAULT_CLIP_WORKER_COUNT = (() => {
+  const override = Number.parseInt(
+    process.env.SUBWAYBUILDER_CLIP_WORKERS ?? '',
+    10,
+  );
+  if (Number.isFinite(override) && override > 0) {
+    return override;
+  }
+  return Math.max(1, Math.floor(os.cpus().length / 2));
+})();
 const SAFE_BBOX_GRID_LEVELS = [8, 16, 32] as const;
 
 type ClipCandidate = {
@@ -56,6 +69,7 @@ type SafeBoundaryBBoxIndex = {
 };
 
 type ClipWorkerResult = {
+  type: 'result';
   index: number;
   clippedRegion: Feature<Geometry, GeoJsonProperties> | null;
   clippingDurationMs: number;
@@ -877,40 +891,12 @@ async function clipCandidatesWithWorkers(
     );
   }
 
-  const batches = Array.from(
-    { length: resolvedWorkerCount },
-    () =>
-      [] as Array<{
-        index: number;
-        feature: Feature<Polygon | MultiPolygon>;
-        featureBBox: BBox;
-      }>,
-  );
-  clipCandidates.forEach((candidate, index) => {
-    batches[index % resolvedWorkerCount].push({
-      index,
-      feature: candidate.sourceFeature,
-      featureBBox: candidate.featureBBox,
-    });
-  });
-
   try {
-    const workerResults = await Promise.all(
-      batches
-        .filter((batch) => batch.length > 0)
-        .map((batch) => runClipWorkerBatch(batch, boundaryClipChunks)),
+    return await runClipWorkerPool(
+      clipCandidates,
+      boundaryClipChunks,
+      resolvedWorkerCount,
     );
-
-    const clippedRegions = new Array<Feature<
-      Geometry,
-      GeoJsonProperties
-    > | null>(clipCandidates.length).fill(null);
-    for (const batchResults of workerResults) {
-      for (const result of batchResults) {
-        clippedRegions[result.index] = result.clippedRegion;
-      }
-    }
-    return clippedRegions;
   } catch (error) {
     console.warn(
       '[Geometry] Parallel clipping failed; falling back to single-threaded clipping.',
@@ -922,34 +908,88 @@ async function clipCandidatesWithWorkers(
   }
 }
 
-function runClipWorkerBatch(
-  batch: Array<{
-    index: number;
-    feature: Feature<Polygon | MultiPolygon>;
-    featureBBox: BBox;
-  }>,
+// Persistent worker pool with dynamic dispatch: each worker clones the boundary
+// once, then pulls the next candidate as it finishes. This keeps every worker busy
+// (no static-batch imbalance tail) and uses all requested cores. Output is
+// independent of dispatch order — results are placed by candidate index.
+function runClipWorkerPool(
+  clipCandidates: readonly ClipCandidate[],
   boundaryClipChunks: readonly BoundaryClipChunk[],
-): Promise<ClipWorkerResult[]> {
+  workerCount: number,
+): Promise<Array<Feature<Geometry, GeoJsonProperties> | null>> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      new URL('./geometry-clip-worker.cjs', import.meta.url),
-      {
-        workerData: {
-          boundaryClipChunks,
-          batch,
-        },
-      },
-    );
+    const results = new Array<Feature<Geometry, GeoJsonProperties> | null>(
+      clipCandidates.length,
+    ).fill(null);
+    const workers: Worker[] = [];
+    let nextIndex = 0;
+    let completed = 0;
+    let settled = false;
+    let intersectCpuMs = 0;
+    const wallStart = performance.now();
 
-    worker.once('message', (message: ClipWorkerResult[]) => {
-      resolve(message);
-    });
-    worker.once('error', reject);
-    worker.once('exit', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Clip worker exited with code ${code}`));
+    const cleanup = () => {
+      for (const worker of workers) {
+        void worker.terminate();
       }
-    });
+    };
+    const fail = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error instanceof Error ? error : new Error(String(error)));
+    };
+    const dispatch = (worker: Worker) => {
+      if (nextIndex >= clipCandidates.length) {
+        worker.postMessage({ type: 'done' });
+        return;
+      }
+      const index = nextIndex;
+      nextIndex += 1;
+      const candidate = clipCandidates[index];
+      worker.postMessage({
+        type: 'clip',
+        candidate: {
+          index,
+          feature: candidate.sourceFeature,
+          featureBBox: candidate.featureBBox,
+        },
+      });
+    };
+
+    for (let i = 0; i < workerCount; i += 1) {
+      const worker = new Worker(
+        new URL('./geometry-clip-worker.cjs', import.meta.url),
+        { workerData: { boundaryClipChunks } },
+      );
+      workers.push(worker);
+      worker.on('message', (message: ClipWorkerResult) => {
+        if (settled || message?.type !== 'result') {
+          return;
+        }
+        results[message.index] = message.clippedRegion;
+        intersectCpuMs += message.clippingDurationMs;
+        completed += 1;
+        if (completed === clipCandidates.length) {
+          settled = true;
+          const wallMs = performance.now() - wallStart;
+          console.log(
+            `[Geometry] clip: wall ${wallMs.toFixed(0)}ms | intersect-cpu-sum ${intersectCpuMs.toFixed(0)}ms | ideal-wall(cpu/workers) ${(intersectCpuMs / workerCount).toFixed(0)}ms | workers ${workerCount} | candidates ${clipCandidates.length}`,
+          );
+          cleanup();
+          resolve(results);
+          return;
+        }
+        dispatch(worker);
+      });
+      worker.on('error', fail);
+      worker.on('exit', (code) => {
+        if (code !== 0 && !settled) {
+          fail(new Error(`Clip worker exited with code ${code}`));
+        }
+      });
+      dispatch(worker);
+    }
   });
 }
 

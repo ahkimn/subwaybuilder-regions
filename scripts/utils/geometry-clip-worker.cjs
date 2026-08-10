@@ -105,24 +105,29 @@ function combinePolygonIntersections(intersections) {
   return coordinates.length > 0 ? turf.multiPolygon(coordinates) : null;
 }
 
-function main() {
-  const { boundaryClipChunks, batch } = workerData;
-  const results = batch.map(({ index, feature, featureBBox }) => {
-    const clippingStart = performance.now();
-    const clippedRegion = intersectFeatureWithBoundaryChunks(
-      feature,
-      featureBBox,
-      boundaryClipChunks,
-    );
+// Persistent worker: the boundary is cloned once (workerData) and reused for every
+// candidate the parent dispatches, so idle workers pull the next candidate from the
+// parent's queue (dynamic load balancing) instead of pre-sharded static batches.
+const { boundaryClipChunks } = workerData;
 
-    return {
-      index,
-      clippedRegion,
-      clippingDurationMs: performance.now() - clippingStart,
-    };
+parentPort?.on('message', (message) => {
+  if (message?.type === 'done') {
+    process.exit(0);
+  }
+  if (message?.type !== 'clip') {
+    return;
+  }
+  const { index, feature, featureBBox } = message.candidate;
+  const clippingStart = performance.now();
+  const clippedRegion = intersectFeatureWithBoundaryChunks(
+    feature,
+    featureBBox,
+    boundaryClipChunks,
+  );
+  parentPort?.postMessage({
+    type: 'result',
+    index,
+    clippedRegion,
+    clippingDurationMs: performance.now() - clippingStart,
   });
-
-  parentPort?.postMessage(results);
-}
-
-main();
+});
