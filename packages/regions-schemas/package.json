@@ -20,6 +20,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepare": "npm run build",
     "emit-json-schemas": "node dist/emit-json-schemas.js",
     "test": "npm run build && node --test tests/*.test.mjs",
     "prepublishOnly": "npm run build && npm run emit-json-schemas"
