@@ -37,15 +37,22 @@ export function applyBilingualOutputNameFields(
       );
     }
 
+    const native = cleanName(nameParts.native);
+    const english = cleanName(nameParts.en);
+
+    // NAME/DISPLAY_NAME always fall back to native-only when English is absent.
+    // The standalone name fields are optional in the regions-schemas contract
+    // and must be omitted (not emitted as "") when empty, otherwise the
+    // schema's min-length-1 rule rejects the feature.
     feature.properties = {
       ...feature.properties,
-      NAME: formatBilingualName(nameParts.native, nameParts.en),
-      DISPLAY_NAME: formatBilingualName(nameParts.native, nameParts.en),
-      [options.nativePropertyName]: nameParts.native,
+      NAME: formatBilingualName(native, english),
+      DISPLAY_NAME: formatBilingualName(native, english),
+      ...(native ? { [options.nativePropertyName]: native } : {}),
       // Country-agnostic canonical native name (see regions-schemas). Kept
       // alongside the legacy country-specific key for the .railyard_map contract.
-      NAME_NATIVE: nameParts.native,
-      NAME_EN: nameParts.en,
+      ...(native ? { NAME_NATIVE: native } : {}),
+      ...(english ? { NAME_EN: english } : {}),
     };
   }
 }
