@@ -16,6 +16,7 @@ const BUILT_IN_COUNTRY_CODES = [
   'LT',
   'LV',
   'PL',
+  'SK',
   'TW',
   'UA',
   'US',
@@ -27,6 +28,7 @@ const EXTERNAL_BUNDLE_COUNTRY_CODES = new Set([
   'LT',
   'LV',
   'PL',
+  'SK',
   'TW',
   'UA',
 ]);
