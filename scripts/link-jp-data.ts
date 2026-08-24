@@ -235,6 +235,15 @@ function main(): void {
       linkType: 'junction',
     },
     {
+      // SK okres/obce/zsj. Unlike CZ, SK needs no second link for labels: its
+      // ZSJ code IS the pipeline's chocho_key and the Slovak names ship inside
+      // the polygons, so `sk/regions` alone covers all three levels.
+      // Added 2026-08-24.
+      source: path.join(args.externalRepoRoot, 'source_data', 'sk', 'regions'),
+      target: path.join(jpMirrorRoot, 'sk', 'regions'),
+      linkType: 'junction',
+    },
+    {
       source: path.join(
         args.externalRepoRoot,
         'source_data',

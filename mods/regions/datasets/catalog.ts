@@ -226,6 +226,35 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'RÚIAN / CZSO ZSJ-díl',
     existsOnlineSource: false,
   },
+  // Slovakia. SK uses the same three words as CZ — okres, obec, ZSJ — but the
+  // publisher and the code system are different, so the ids are subscripted
+  // rather than shared: a single `okres` entry cannot carry both `RÚIAN / CZSO`
+  // and `ŠÚ SR`. First case of two countries wanting the same dataset name;
+  // every other country got distinct ones (PL: powiat / gmina / rejon).
+  okres_sk: {
+    datasetId: 'okres_sk',
+    displayName: 'Okresy',
+    unitSingular: 'Okres',
+    unitPlural: 'Okresy',
+    source: 'ŠÚ SR / ÚGKK ZBGIS',
+    existsOnlineSource: false,
+  },
+  obec_sk: {
+    datasetId: 'obec_sk',
+    displayName: 'Obce',
+    unitSingular: 'Obec',
+    unitPlural: 'Obce',
+    source: 'ŠÚ SR / ÚGKK ZBGIS',
+    existsOnlineSource: false,
+  },
+  zsj_sk: {
+    datasetId: 'zsj_sk',
+    displayName: 'ZSJ',
+    unitSingular: 'ZSJ',
+    unitPlural: 'ZSJ',
+    source: 'ŠÚ SR SODB 2021 / ÚGKK ZBGIS',
+    existsOnlineSource: false,
+  },
   powiat: {
     datasetId: 'powiat',
     displayName: 'Powiaty',
