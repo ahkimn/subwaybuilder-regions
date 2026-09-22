@@ -13,6 +13,7 @@ import { extractFRBoundaries } from './extract/extract-fr-map-features';
 import { extractGBBoundaries } from './extract/extract-gb-map-features';
 import { extractJPBoundaries } from './extract/extract-jp-map-features';
 import { extractLTBoundaries } from './extract/extract-lt-map-features';
+import { extractHUBoundaries } from './extract/extract-hu-map-features';
 import { extractLVBoundaries } from './extract/extract-lv-map-features';
 import { extractPLBoundaries } from './extract/extract-pl-map-features';
 import { extractSKBoundaries } from './extract/extract-sk-map-features';
@@ -70,6 +71,10 @@ async function extractBoundaries(args: ExtractMapFeaturesArgs): Promise<void> {
   }
   if (args.countryCode === 'LV') {
     await extractLVBoundaries(args);
+    return;
+  }
+  if (args.countryCode === 'HU') {
+    await extractHUBoundaries(args);
     return;
   }
   if (args.countryCode === 'LT') {

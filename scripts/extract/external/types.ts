@@ -14,7 +14,8 @@ export type ExternalCountryCode =
   | 'UA'
   | 'LV'
   | 'LT'
-  | 'SK';
+  | 'SK'
+  | 'HU';
 
 export type ExternalBundleIndexRecord = {
   bundle_id: string;

@@ -42,3 +42,5 @@ The `Population Data` column indicates whether population data can be attached f
 | **PL**         | rejon               | Rejony                                   | GUS BREC                          | No     | Local           |
 | **TW**         | township            | 鄉鎮市區 (Townships)                     | MOI / DGBAS                       | No     | Local           |
 | **TW**         | li                  | 里 (Villages)                            | MOI / DGBAS                       | No     | Local           |
+| **HU**         | hu-jaras            | Járások (Districts)                      | OSM admin boundaries / KSH        | No     | Local           |
+| **HU**         | hu-telepulesek      | Települések (Municipalities)             | Eurostat GISCO LAU 2024 / KSH     | No     | Local           |

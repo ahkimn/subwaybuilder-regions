@@ -7,6 +7,7 @@ import { getSupportedCountryCodes } from './osm-country-config';
 
 const BUILT_IN_COUNTRY_CODES = [
   'AU',
+  'HU',
   'CA',
   'CZ',
   'EE',
@@ -23,6 +24,7 @@ const BUILT_IN_COUNTRY_CODES = [
 ];
 const EXTERNAL_BUNDLE_COUNTRY_CODES = new Set([
   'CZ',
+  'HU',
   'EE',
   'JP',
   'LT',

@@ -415,6 +415,22 @@ export const DATASET_METADATA_CATALOG: Readonly<
     source: 'Registrų centras',
     existsOnlineSource: false,
   },
+  'hu-jaras': {
+    datasetId: 'hu-jaras',
+    displayName: 'Járások (Districts)',
+    unitSingular: 'Járás',
+    unitPlural: 'Járások',
+    source: 'OSM admin boundaries / KSH Népszámlálás 2022',
+    existsOnlineSource: false,
+  },
+  'hu-telepulesek': {
+    datasetId: 'hu-telepulesek',
+    displayName: 'Települések (Municipalities)',
+    unitSingular: 'Település',
+    unitPlural: 'Települések',
+    source: 'Eurostat GISCO LAU 2024 / KSH',
+    existsOnlineSource: false,
+  },
 });
 
 export const COUNTRY_DATASET_ORDER: Readonly<
@@ -435,6 +451,7 @@ export const COUNTRY_DATASET_ORDER: Readonly<
   UA: ['ua-raions', 'ua-hromadas', 'ua-naseleni-punkty'],
   LV: ['lv-pasvaldibas', 'lv-apkaimes'],
   LT: ['lt-savivaldybes', 'lt-seniunijos', 'lt-gyvenvietes'],
+  HU: ['hu-jaras', 'hu-telepulesek'],
 });
 
 export const CATALOG_STATIC_COUNTRIES = [
